@@ -21,6 +21,7 @@ use Doctrine\DBAL\ParameterType;
 
 // Okay, someone wants to use this outside of normal game flow.. no real harm
 use Lotgd\Output;
+use Lotgd\Forms;
 
 define("OVERRIDE_FORCED_NAV", true);
 
@@ -39,6 +40,19 @@ SuAccess::check(SU_IS_TRANSLATOR);
 Translator::getInstance()->setSchema("untranslated");
 
 $op = Http::get('op');
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 Header::pageHeader("Untranslated Texts");
 
 Nav::add("Navigation");
@@ -98,7 +112,7 @@ if ($op == "list") {
     }
 
     if ($mode == "edit") {
-        $output->rawOutput("<form action='untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace) . "' method='post'>");
+        $output->rawOutput("<form action='untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace) . "' method='post'>" . Forms::csrfField());
         Nav::add("", "untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace));
     } else {
         $output->rawOutput("<form action='untranslated.php?op=list' method='get'>");
@@ -219,7 +233,7 @@ if ($op == "list") {
             $row['intext'] = stripslashes($row['intext']);
             $submit = Translator::translateInline("Save Translation");
             $skip = Translator::translateInline("Skip Translation");
-            $output->rawOutput("<form action='untranslated.php?op=step2' method='post'>");
+            $output->rawOutput("<form action='untranslated.php?op=step2' method='post'>" . Forms::csrfField());
             $output->output("`^`cThere are `&%s`^ untranslated texts in the database.`c`n`n", $count['count']);
             $output->rawOutput("<table width='80%'>");
             $output->rawOutput("<tr><td width='30%'>");
@@ -235,7 +249,7 @@ if ($op == "list") {
             $output->rawOutput("<input type='hidden' name='namespace' value='{$row['namespace']}'>");
             $output->rawOutput("<input type='submit' value='$submit' class='button'>");
             $output->rawOutput("</form>");
-            $output->rawOutput("<form action='untranslated.php' method='post'>");
+            $output->rawOutput("<form action='untranslated.php' method='post'>" . Forms::csrfField());
             $output->rawOutput("<input type='submit' value='$skip' class='button'>");
             $output->rawOutput("</form>");
             Nav::add("", "untranslated.php?op=step2");

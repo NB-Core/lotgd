@@ -13,6 +13,7 @@ use Lotgd\Nltoappon;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Forms;
 
         Header::pageHeader("Update Clan Description / MoTD");
         Nav::add("Clan Options");
@@ -115,7 +116,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     $output->output("`&`bCurrent Description:`b `#by %s`2`n", $descauthname);
     $output->outputNotl(Nltoappon::convert($claninfo['clandesc']) . "`n");
 
-    $output->rawOutput("<form action='clan.php?op=motd' method='POST'>");
+    $output->rawOutput("<form action='clan.php?op=motd' method='POST'>" . Forms::csrfField());
     Nav::add("", "clan.php?op=motd");
     $output->output("`&`bMoTD:`b `7(4096 chars)`n");
     $output->rawOutput("<textarea name='clanmotd' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clanmotd'], ENT_COMPAT, $charset) . "</textarea><br>");

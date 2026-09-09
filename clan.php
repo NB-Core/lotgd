@@ -13,6 +13,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
+use Lotgd\Forms;
 
 /**
  * \file clan.php
@@ -47,6 +48,19 @@ $apply_short = "`@Clan App: `&%s`0";
 $apply_subj = array($apply_short, $session['user']['name']);
 
 $op = Http::get('op');
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 
 // Normalized here because it reaches SQL, a cache key and generated URLs in
 // pages/clan/detail.php. A clan id is an integer; anything else is not one.

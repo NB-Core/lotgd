@@ -161,8 +161,8 @@ final class FormCsrfRegressionTest extends TestCase
 
         Csrf::seed(Csrf::SCOPE_CREATURE_EDITOR, $pageToken);
         $_POST = $separate;
-        self::assertTrue(
-            Csrf::validatePostRequest(Csrf::SCOPE_CREATURE_EDITOR),
+        self::assertFalse(
+            Forms::isUnverifiedPost(Csrf::SCOPE_CREATURE_EDITOR),
             'the editor guard must survive a showForm() nested in its form'
         );
     }
@@ -184,28 +184,53 @@ final class FormCsrfRegressionTest extends TestCase
     }
 
     /**
-     * Every save branch that showForm() feeds validates before it writes.
+     * Every page that changes state carries the entry guard, exactly once.
      *
-     * Source assertions, deliberately paired with the behavioural coverage in
-     * tests/User: emission is proven above, and what remains is that the one
-     * line exists at each write.
+     * One shape, not one per branch. A per-branch check is one somebody can
+     * forget, which is how a dozen editors came to write with no token at all;
+     * and it has to be repeated for every branch a page grows. The guard sits
+     * after the page reads `$op` and turns an unverified POST into a plain page
+     * view, which every branch already handles.
+     *
+     * The list is the point: it is what "everywhere" means, and adding a
+     * state-changing page without the guard fails here.
      */
-    public function testEverySaveBranchValidates(): void
+    public function testEveryStateChangingPageCarriesTheEntryGuard(): void
     {
-        $expected = [
-            'configuration.php' => 3,
-            'titleedit.php' => 1,
-            'prefs.php' => 1,
-            'pages/user/user_save.php' => 1,
-            'pages/user/user_savemodule.php' => 1,
-            'pages/user/user_special.php' => 1,
+        $pages = [
+            'badword.php', 'configuration.php', 'deathmessages.php', 'donators.php',
+            'masters.php', 'moderate.php', 'modules.php', 'prefs.php', 'taunt.php',
+            'titleedit.php', 'translatortool.php', 'untranslated.php', 'user.php',
+            'viewpetition.php',
         ];
 
-        foreach ($expected as $file => $count) {
+        foreach ($pages as $page) {
+            $code = $this->code($page);
             self::assertSame(
-                $count,
-                substr_count($this->code($file), 'Forms::validateCsrf()'),
-                $file . ' must validate before writing'
+                1,
+                substr_count($code, 'Forms::isUnverifiedPost()'),
+                $page . ' must carry the entry guard exactly once'
+            );
+            // It has to clear both: a delete keys off $op with its id in the
+            // query string, so emptying the body alone would not stop it.
+            self::assertMatchesRegularExpression(
+                '/isUnverifiedPost\(\)\) \{.*?\$op = \x27\x27;.*?\$_POST = \[\];.*?\}/s',
+                $code,
+                $page . ' must clear both $op and the body'
+            );
+        }
+    }
+
+    /**
+     * And nobody keeps a private copy of the check.
+     */
+    public function testNoPageValidatesOnItsOwn(): void
+    {
+        foreach (['configuration.php', 'prefs.php', 'titleedit.php', 'user.php'] as $page) {
+            self::assertStringNotContainsString(
+                'Forms::validateCsrf()',
+                $this->code($page),
+                $page . ' must use the entry guard rather than its own check'
             );
         }
     }

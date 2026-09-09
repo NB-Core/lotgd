@@ -17,6 +17,7 @@ use Lotgd\Settings;
 // Moved into core by JT Traub
 
 use Lotgd\Output;
+use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";
 
@@ -28,6 +29,19 @@ SuAccess::check(SU_EDIT_CREATURES);
 Translator::getInstance()->setSchema("masters");
 
 $op = Http::get('op');
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 $id = (int)Http::get('id');
 $act = Http::get('act');
 
@@ -139,7 +153,7 @@ if ($op == "del") {
         $row = Database::fetchAssoc($res);
     }
     Nav::add("", "masters.php?op=save&id=$id");
-    $output->rawOutput("<form action='masters.php?op=save&id=$id' method='POST'>");
+    $output->rawOutput("<form action='masters.php?op=save&id=$id' method='POST'>" . Forms::csrfField());
         $output->rawOutput("<label for='level'>");
         $output->output("`^Master's level:`n");
         $output->rawOutput("</label>");
@@ -190,7 +204,6 @@ if ($op == "") {
     $edit = Translator::translateInline("Edit");
     $del = Translator::translateInline("Del");
     $delconfirm = Translator::translateInline("Are you sure you wish to delete this master.");
-    $delconfirmJs = json_encode($delconfirm, JSON_HEX_APOS | JSON_HEX_QUOT);
     $name = Translator::translateInline("Name");
     $level = Translator::translateInline("Level");
     $lose = Translator::translateInline("Lose to Master");
@@ -204,9 +217,7 @@ if ($op == "") {
         $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'><td nowrap>");
         $output->rawOutput("[ <a href='masters.php?op=edit&id=$id'>");
         $output->outputNotl($edit);
-        $output->rawOutput("</a> | <a href='masters.php?op=del&id=$id' onClick='return confirm($delconfirmJs);'>");
-        $output->outputNotl($del);
-        $output->rawOutput("</a> ]");
+        $output->rawOutput("</a> | " . Forms::postButton("masters.php?op=del&id=$id", $del, $delconfirm, 'linkbutton') . " ]");
         Nav::add("", "masters.php?op=edit&id=$id");
         Nav::add("", "masters.php?op=del&id=$id");
         $output->rawOutput("</td><td>");

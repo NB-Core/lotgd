@@ -289,6 +289,24 @@ modules.
 
 ## 7. Breaking Changes
 
+- **Every state-changing page now refuses a POST without its form token, and
+  every destructive trigger is a button rather than a link.** Two things affect
+  custom code:
+  - A module or bookmark that links to `?op=del`, `?op=delete`, `?op=remove`,
+    `?op=uninstall`, `?op=delban` or a clan `&remove=`/`&setrank=` URL stops
+    working. These render through `Forms::postButton()` now, which emits an
+    inline POST form with the token. Build one the same way rather than an
+    anchor.
+  - A handwritten form posting to one of these pages needs
+    `Forms::csrfField()` inside it, or the page treats the submission as if
+    nothing had been sent (HTTP 400, `$op` and the body cleared). A GET form —
+    search, filtering, pagination — is unaffected.
+
+  Output encoding moved into `Lotgd\Security\Escape`. If your module builds a
+  `confirm()` handler by hand, use `Escape::confirmAttribute()`; `addslashes`
+  and `htmlentities` into JavaScript were both wrong and are gone.
+
+
 - **Destructive operations are POST-only and carry a CSRF token.** Three things
   that used to be reachable by making a browser issue a request no longer are:
   - `user.php?op=del&userid=N` (deleting an account) was a link in the user

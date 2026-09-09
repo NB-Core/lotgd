@@ -20,6 +20,7 @@ use Lotgd\PlayerSearch;
 // addnews ready
 // mail ready
 use Lotgd\Output;
+use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";
 
@@ -44,7 +45,7 @@ Nav::add("Return whence you came", $return);
 Translator::getInstance()->setSchema();
 
 $add = Translator::translate("Add Donation");
-$output->rawOutput("<form action='donators.php?op=add1&ret=" . rawurlencode($ret) . "' method='POST'>");
+$output->rawOutput("<form action='donators.php?op=add1&ret=" . rawurlencode($ret) . "' method='POST'>" . Forms::csrfField());
 Nav::add("", "donators.php?op=add1&ret=" . rawurlencode($ret) . "");
 
 $coerceToString = static function ($value): string {
@@ -107,6 +108,19 @@ if (
     Nav::add("Payment Log", "paylog.php");
 }
 $op = Http::get('op');
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 if ($op == "add2") {
     $id = Http::get('id');
     $id = filter_var($id, FILTER_VALIDATE_INT);

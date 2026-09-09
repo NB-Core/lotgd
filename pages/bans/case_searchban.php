@@ -10,6 +10,7 @@ use Lotgd\PlayerSearch;
 use Lotgd\Translator;
 use Lotgd\Output;
 use Lotgd\DateTime;
+use Lotgd\Forms;
 
 $output = Output::getInstance();
 
@@ -113,9 +114,7 @@ foreach ($bans as $row) {
     $liftban = Translator::translateInline("Lift&nbsp;ban");
     $showuser = Translator::translateInline("Click&nbsp;to&nbsp;show&nbsp;users");
     $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
-    $output->rawOutput("<td><a href='bans.php?op=delban&ipfilter=" . URLEncode($row['ipfilter']) . "&uniqueid=" . URLEncode($row['uniqueid']) . "'>");
-    $output->outputNotl("%s", $liftban, true);
-    $output->rawOutput("</a>");
+    $output->rawOutput("<td>" . Forms::postButton("bans.php?op=delban&ipfilter=" . URLEncode($row['ipfilter']) . "&uniqueid=" . URLEncode($row['uniqueid']), $liftban, null, 'linkbutton'));
     Nav::add("", "bans.php?op=delban&ipfilter=" . URLEncode($row['ipfilter']) . "&uniqueid=" . URLEncode($row['uniqueid']));
     $output->rawOutput("</td><td>");
     $output->outputNotl("`&%s`0", $row['banner']);

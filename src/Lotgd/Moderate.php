@@ -23,6 +23,7 @@ use Lotgd\HolidayText;
 use Lotgd\Commentary;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Security\Escape;
 
 class Moderate
 {
@@ -499,13 +500,13 @@ class Moderate
             Navigation::add('', "$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']));
             $mod_Del1 = htmlentities(Translator::translateInline('Delete Checked Comments'), ENT_COMPAT,);
             $mod_Del2 = htmlentities(Translator::translateInline('Delete Checked & Ban (3 days)'), ENT_COMPAT,);
-            $mod_Del_confirm = addslashes(htmlentities(Translator::translateInline('Are you sure you wish to ban this user and have you specified the exact reason for the ban, i.e. cut/pasted their offensive comments?'), ENT_COMPAT,));
+            $mod_Del_confirm = Translator::translateInline('Are you sure you wish to ban this user and have you specified the exact reason for the ban, i.e. cut/pasted their offensive comments?');
             $mod_reason = Translator::translateInline('Reason:');
             $mod_reason_desc = htmlentities(Translator::translateInline('Banned for comments you posted.'), ENT_COMPAT,);
 
-            $output->outputNotl("<form action='$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']) . "' method='POST'>", true);
+            $output->outputNotl("<form action='$scriptname?op=commentdelete&return=" . URLEncode($_SERVER['REQUEST_URI']) . "' method='POST'>" . Forms::csrfField(), true);
             $output->outputNotl("<input type='submit' class='button' value=\"$mod_Del1\">", true);
-            $output->outputNotl("<input type='submit' class='button' name='delnban' value=\"$mod_Del2\" onClick=\"return confirm('$mod_Del_confirm');\">", true);
+            $output->outputNotl("<input type='submit' class='button' name='delnban' value='" . Escape::html($mod_Del2) . "'" . Escape::confirmAttribute($mod_Del_confirm) . ">", true);
             $output->outputNotl("`n$mod_reason <input name='reason0' size='40' value=\"$mod_reason_desc\" onChange=\"document.getElementById('reason').value=this.value;\">", true);
         }
 
@@ -544,7 +545,7 @@ class Moderate
         if ($moderating) {
             $output->outputNotl("`n");
             $output->rawOutput("<input type='submit' class='button' value=\"$mod_Del1\">");
-            $output->rawOutput("<input type='submit' class='button' name='delnban' value=\"$mod_Del2\" onClick=\"return confirm('$mod_Del_confirm');\">");
+            $output->rawOutput("<input type='submit' class='button' name='delnban' value='" . Escape::html($mod_Del2) . "'" . Escape::confirmAttribute($mod_Del_confirm) . ">");
             $output->outputNotl("`n%s ", $mod_reason);
             $output->rawOutput("<input name='reason' size='40' id='reason' value=\"$mod_reason_desc\">");
             $output->rawOutput("</form>");

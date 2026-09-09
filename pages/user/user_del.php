@@ -9,11 +9,12 @@ use Lotgd\Translator;
 use Lotgd\MySQL\Database;
 use Lotgd\AddNews;
 use Lotgd\GameLog;
+use Lotgd\Forms;
 
 // Deleting an account was a plain GET reached from a link in the user list, so
 // an admin who followed a crafted URL removed the account. The trigger is a
 // POST form now; this is the check that makes that mean something.
-if (!Csrf::validatePostRequest(Csrf::SCOPE_USER_EDITOR)) {
+if (Forms::isUnverifiedPost(Csrf::SCOPE_USER_EDITOR)) {
     debuglog('Rejected user deletion with an invalid CSRF token.');
     http_response_code(400);
     $output->output("`\$Not deleted.`0`n");

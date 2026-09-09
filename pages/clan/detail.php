@@ -14,6 +14,7 @@ use Lotgd\Nltoappon;
 use Lotgd\Page\Header;
 use Lotgd\Output;
 use Lotgd\Settings;
+use Lotgd\Forms;
 
 $output = Output::getInstance();
 $settings = Settings::getInstance();
@@ -71,7 +72,7 @@ if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     $row1 = Database::fetchAssoc($result1);
 if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
     $output->rawOutput("<div id='hidearea'>");
-    $output->rawOutput("<form action='clan.php?detail=$detail' method='POST'>");
+    $output->rawOutput("<form action='clan.php?detail=$detail' method='POST'>" . Forms::csrfField());
     Nav::add("", "clan.php?detail=$detail");
     $output->output("Superuser / Moderator renaming:`n");
     $output->output("Long Name: ");

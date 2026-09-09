@@ -150,7 +150,7 @@ function charrestore_restore_csrf_token(): string
 /** Validate the shared restore form's CSRF token. */
 function charrestore_restore_csrf_valid(): bool
 {
-    return \Lotgd\Security\Csrf::validatePost(\Lotgd\Security\Csrf::SCOPE_CHARRESTORE);
+    return !\Lotgd\Forms::isUnverifiedPost(\Lotgd\Security\Csrf::SCOPE_CHARRESTORE);
 }
 
 /**

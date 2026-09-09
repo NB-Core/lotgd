@@ -11,6 +11,8 @@ use Lotgd\SafeEscape;
 use Lotgd\Translator;
 use Lotgd\Sanitize;
 use Lotgd\Output;
+use Lotgd\Security\Escape;
+use Lotgd\Forms;
 
 /**
  * Handle clan membership operations.
@@ -223,12 +225,17 @@ function clanMembership(): void
             if ($row['clanrank'] == CLAN_FOUNDER && $row['login'] == $session['user']['login']) {
                 $conf = Translator::translateInline('Are you really sure to step down as founder? You can NEVER rise again to that rank!');
                 $output->outputNotl(
-                    "<form action='clan.php?op=membership&setrank=" . clan_previousrank($ranks, $row['clanrank']) . "&whoacctid=" . $row['acctid'] . "' METHOD='POST'><input type='submit' class='button' onClick='return confirm(\"$conf\");' value='" . Sanitize::sanitize($stepdown) . "'></form> | ",
+                    Forms::postButton(
+                        'clan.php?op=membership&setrank=' . clan_previousrank($ranks, $row['clanrank'])
+                            . '&whoacctid=' . $row['acctid'],
+                        Sanitize::sanitize($stepdown),
+                        $conf
+                    ) . ' | ',
                     true
                 );
                 Nav::add('', 'clan.php?op=membership&setrank=' . clan_previousrank($ranks, $row['clanrank']) . '&whoacctid=' . $row['acctid']);
             } elseif ($row['clanrank'] != CLAN_FOUNDER) {
-                $output->rawOutput("<form action='clan.php?op=membership&whoacctid={$row['acctid']}' method='post'><select name='setrank'>");
+                $output->rawOutput("<form action='clan.php?op=membership&whoacctid={$row['acctid']}' method='post'><select name='setrank'>" . Forms::csrfField());
                 $output->rawOutput($list);
                 $output->rawOutput('</select>');
                 $output->rawOutput("<input type='submit' class='button' value='$submit'></form>");
@@ -241,7 +248,7 @@ function clanMembership(): void
                 && $row['clanrank'] < CLAN_FOUNDER
                 && $session['user']['clanrank'] >= CLAN_ADMINISTRATIVE
             ) {
-                $output->rawOutput("[<a href='clan.php?op=membership&remove=" . $row['acctid'] . "' onClick=\"return confirm('$confirm');\"> $removeText</a> ]");
+                $output->rawOutput("[" . Forms::postButton("clan.php?op=membership&remove=" . $row['acctid'], $removeText, $confirm, 'linkbutton') . " ]");
                 Nav::add('', 'clan.php?op=membership&remove=' . $row['acctid']);
             } else {
                 $output->outputNotl('`2[ `)%s`2 ]', $removeText);

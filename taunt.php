@@ -18,6 +18,8 @@ use Doctrine\DBAL\ParameterType;
 // mail ready
 // translator ready
 use Lotgd\Output;
+use Lotgd\Security\Escape;
+use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";
 
@@ -32,6 +34,19 @@ SuAccess::check(SU_EDIT_CREATURES);
 Header::pageHeader("Taunt Editor");
 SuperuserNav::render();
 $op = Http::get('op');
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 $tauntidRequest = Http::get('tauntid');
 $tauntid = taunt_normalize_optional_int($tauntidRequest);
 $tauntidParam = $tauntid === null ? '' : (string) $tauntid;
@@ -39,7 +54,7 @@ $commentaryPage = taunt_normalize_optional_int(Http::get('c'));
 if ($op == "edit") {
     Nav::add("Taunts");
     Nav::add("Return to the taunt editor", "taunt.php");
-    $output->rawOutput("<form action='taunt.php?op=save&tauntid=" . rawurlencode($tauntidParam) . "' method='POST'>", true);
+    $output->rawOutput("<form action='taunt.php?op=save&tauntid=" . rawurlencode($tauntidParam) . "' method='POST'>" . Forms::csrfField(), true);
     Nav::add("", "taunt.php?op=save&tauntid=" . rawurlencode($tauntidParam));
     if ($tauntid !== null) {
         $result = $connection->executeQuery(
@@ -135,7 +150,7 @@ if ($op == "") {
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this taunt?");
         $id = (int) $row['tauntid'];
-        $output->rawOutput("[ <a href='taunt.php?op=edit&tauntid=$id'>$edit</a> | <a href='taunt.php?op=del&tauntid=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
+        $output->rawOutput("[ <a href='taunt.php?op=edit&tauntid=$id'>$edit</a> | " . Forms::postButton("taunt.php?op=del&tauntid=$id", $del, $conf, 'linkbutton') . " ]");
         Nav::add("", "taunt.php?op=edit&tauntid=$id");
         Nav::add("", "taunt.php?op=del&tauntid=$id");
         $output->rawOutput("</td><td>");

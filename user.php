@@ -21,6 +21,7 @@ use Lotgd\PlayerSearch;
 //addnews ready
 // mail ready
 use Lotgd\Output;
+use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";
 
@@ -31,6 +32,19 @@ Translator::getInstance()->setSchema("user");
 SuAccess::check(SU_EDIT_USERS);
 
 $op = Http::get('op');
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 
 if ($op === 'removeban' || $op === 'searchban') {
     $destination = sprintf('bans.php?op=%s', $op);

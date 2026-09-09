@@ -13,6 +13,8 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Sanitize;
+use Lotgd\Security\Escape;
+use Lotgd\Forms;
 
 // addnews ready
 // translator ready
@@ -45,6 +47,19 @@ Output::addHeadMarkup("<style>
 
 Nav::add("", PhpGenericEnvironment::getRequestUri());
 $op = Http::get('op');
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 $module = Http::get('module');
 
 if ($op == 'mass') {
@@ -216,17 +231,13 @@ if ($op == "") {
                 $output->rawOutput("</a>");
                 Nav::add("", "modules.php?op=activate&module={$row['modulename']}&cat=$catQuery");
             }
-            $output->rawOutput(" |<a href='modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery' onClick='return confirm(\"$uninstallconfirm\");'>");
-            $output->outputNotl($uninstall);
-            $output->rawOutput("</a>");
+            $output->rawOutput(" |" . Forms::postButton("modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery", $uninstall, $uninstallconfirm, 'linkbutton'));
             Nav::add("", "modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery");
             $output->rawOutput(" | <a href='modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery'>");
             $output->outputNotl($reinstall);
             $output->rawOutput("</a>");
             Nav::add("", "modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery");
-            $output->rawOutput(" | <a href='modules.php?op=remove&module={$row['modulename']}&cat=$catQuery' onClick='return confirm(\"$removeconfirm\");'>");
-            $output->outputNotl($remove);
-            $output->rawOutput("</a>");
+            $output->rawOutput(" | " . Forms::postButton("modules.php?op=remove&module={$row['modulename']}&cat=$catQuery", $remove, $removeconfirm, 'linkbutton'));
             Nav::add("", "modules.php?op=remove&module={$row['modulename']}&cat=$catQuery");
 
             if ($session['user']['superuser'] & SU_EDIT_CONFIG) {

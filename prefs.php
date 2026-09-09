@@ -116,6 +116,19 @@ Header::pageHeader("Preferences");
 
 $op = Http::get('op');
 
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
+
 Nav::add("Navigation");
 if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // Two things were wrong here, and only one of them is CSRF.
@@ -132,7 +145,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // blind spot SECURITY.md describes; the id comes from the session now, and
     // the request parameter is not consulted at all.
     $userid = (int) ($session['user']['acctid'] ?? 0);
-    if (!Csrf::validatePostRequest(Csrf::SCOPE_SELF_DELETE)) {
+    if (Forms::isUnverifiedPost(Csrf::SCOPE_SELF_DELETE)) {
         DebugLog::add('Rejected character self-deletion with an invalid CSRF token.');
         http_response_code(400);
         $output->output("`\$Your character was not deleted.`0`n");
@@ -320,16 +333,6 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     $allowedPrefKeys = array_fill_keys(array_filter(array_keys($formDefinition), 'is_string'), true);
     foreach (array_keys($msettings) as $allowedKey) {
         $allowedPrefKeys[$allowedKey] = true;
-    }
-
-    // The write gate below is "did anything get posted"; an unvalidated post
-    // becomes an empty one, so a refusal takes the same do-nothing path the
-    // page already had rather than needing a second one.
-    if (count($post) > 0 && !Forms::validateCsrf()) {
-        DebugLog::add('Rejected a preferences save with an invalid CSRF token.');
-        http_response_code(400);
-        $output->output("`\$Your preferences were not saved.`0`n");
-        $post = [];
     }
 
     if (count($post) == 0) {
@@ -597,22 +600,14 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // Stop clueless lusers from deleting their character just because a
     // monster killed them.
     if ($session['user']['alive'] && $settings->getSetting('selfdelete', 0) != 0) {
-        $output->rawOutput("<form action='prefs.php?op=suicide' method='POST'>");
-        $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_SELF_DELETE));
         $deltext = Translator::translateInline('Delete Character');
         $conf = Translator::translateInline('Are you sure you wish to PERMANENTLY delete your character?');
         // Both strings come from the translations table, which SU_IS_TRANSLATOR
-        // writes -- so they are not constants, and they landed raw in an
-        // attribute and inside a JS string literal. An apostrophe closed the
-        // attribute; a double quote closed the confirm() argument. json_encode
-        // with the two HEX flags quotes the value itself and escapes both, the
-        // same way this is done in user_.php and Motd.php.
-        $deltextHtml = htmlspecialchars($deltext, ENT_QUOTES, 'UTF-8');
-        $confJs = json_encode($conf, JSON_HEX_APOS | JSON_HEX_QUOT);
+        // writes, so they are not constants -- the escaping is Forms::postButton's
+        // business now, in one place for every such button in the tree.
         $output->rawOutput("<table class='noborder' width='100%'><tr><td width='100%'></td><td style='background-color:#FF00FF' align='right'>");
-        $output->rawOutput("<input type='submit' class='button' value='$deltextHtml' onClick='return confirm($confJs);'>");
-        $output->rawOutput("</td></tr></table>");
-        $output->rawOutput("</form><br>");
+        $output->rawOutput(Forms::postButton('prefs.php?op=suicide', $deltext, $conf, 'button', Csrf::SCOPE_SELF_DELETE));
+        $output->rawOutput("</td></tr></table><br>");
         Nav::add("", "prefs.php?op=suicide");
     }
 }

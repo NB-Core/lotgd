@@ -17,6 +17,7 @@ use Lotgd\Translator;
 use Lotgd\Output;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Security\Csrf;
+use Lotgd\Forms;
 
 // addnews ready
 // mail ready
@@ -595,7 +596,7 @@ function companionEditorCsrfToken(): string
 /** Return whether the current request is POST and carries the session CSRF token. */
 function companionEditorValidPostRequest(): bool
 {
-    return Csrf::validatePostRequest(Csrf::SCOPE_COMPANION_EDITOR);
+    return !Forms::isUnverifiedPost(Csrf::SCOPE_COMPANION_EDITOR);
 }
 
 /** Render a POST-only, CSRF-protected button for a state-changing companion action. */

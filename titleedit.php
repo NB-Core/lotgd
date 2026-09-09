@@ -31,6 +31,19 @@ Translator::getInstance()->setSchema("retitle");
 
 Header::pageHeader("Title Editor");
 $op = Http::get('op');
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 // Every other use in this file already casts; line 215 did not.
 $id = (int) Http::get('id');
 $editarray = array(
@@ -47,14 +60,6 @@ Nav::add("Functions");
 
 switch ($op) {
     case "save":
-        if (!Forms::validateCsrf()) {
-            debuglog('Rejected a title save with an invalid CSRF token.');
-            http_response_code(400);
-            $output->output("`\$Not saved.`0`n");
-            $op = "";
-
-            break;
-        }
         $male = Http::post('male');
         $female = Http::post('female');
         $dk = Http::post('dk');
@@ -256,7 +261,6 @@ switch ($op) {
         $edit = Translator::translateInline("Edit");
         $del = Translator::translateInline("Delete");
         $delconfirm = Translator::translateInline("Are you sure you wish to delete this title?");
-        $delconfirmJs = json_encode($delconfirm, JSON_HEX_APOS | JSON_HEX_QUOT);
         $output->rawOutput("<table border=0 cellspacing=0 cellpadding=2 width='100%' align='center'>");
         // reference tag is currently unused
         // $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$reftag</td><td>$mtit</td><td>$ftit</td></tr>");
@@ -266,7 +270,7 @@ switch ($op) {
         while ($row = Database::fetchAssoc($result)) {
             $id = $row['titleid'];
             $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
-            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|<a href='titleedit.php?op=delete&id=$id' onClick='return confirm($delconfirmJs);'>$del</a>]</td>");
+            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|" . Forms::postButton("titleedit.php?op=delete&id=$id", $del, $delconfirm, 'linkbutton') . "]</td>");
             Nav::add("", "titleedit.php?op=edit&id=$id");
             Nav::add("", "titleedit.php?op=delete&id=$id");
             $output->rawOutput("<td>");

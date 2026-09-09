@@ -20,6 +20,7 @@ use Lotgd\Output;
 use Lotgd\Sanitize;
 use Lotgd\DataCache;
 use Lotgd\Redirect;
+use Lotgd\Forms;
 
 // translator ready
 // addnews ready
@@ -54,6 +55,19 @@ Nav::add("Modules");
 Nav::add("Clan Halls");
 
 $op = Http::get("op");
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 if ($op == "commentdelete") {
     $comment = Http::post('comment');
     $conn = Database::getDoctrineConnection();
@@ -224,7 +238,7 @@ if ($op == "") {
     $area = Http::get('area');
     $link = "moderate.php" . ($area ? "?area=$area" : "");
     $refresh = Translator::translateInline("Refresh");
-    $output->rawOutput("<form action='$link' method='POST'>");
+    $output->rawOutput("<form action='$link' method='POST'>" . Forms::csrfField());
     $output->rawOutput("<input type='submit' class='button' value='$refresh'>");
     $output->rawOutput("</form>");
     Nav::add("", "$link");
@@ -314,7 +328,7 @@ if ($op == "") {
     $when = Translator::translateInline("When");
     $com = Translator::translateInline("Comment");
     $unmod = Translator::translateInline("Unmoderate");
-    $output->rawOutput("<form action='moderate.php?op=audit&subop=undelete' method='POST'>");
+    $output->rawOutput("<form action='moderate.php?op=audit&subop=undelete' method='POST'>" . Forms::csrfField());
     Nav::add("", "moderate.php?op=audit&subop=undelete");
     $output->rawOutput("<table border='0' cellpadding='2' cellspacing='0'>");
     $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$mod</td><td>$when</td><td>$com</td></tr>");

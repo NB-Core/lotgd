@@ -9,6 +9,7 @@ use Lotgd\DumpItem;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Security\Csrf;
+use Lotgd\Security\Escape;
 use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\DataCache;
@@ -59,6 +60,98 @@ class Forms
     public static function validateCsrf(): bool
     {
         return Csrf::validatePostRequest(self::csrfScope(), Csrf::FORM_FIELD);
+    }
+
+    /**
+     * A POST arrived that does not carry this page's form token.
+     *
+     * The one question every state-changing page asks, at its entry, right
+     * after it reads `$op`:
+     *
+     *     if (Forms::isUnverifiedPost()) {
+     *         debuglog('…');
+     *         http_response_code(400);
+     *         $op = '';
+     *         $_POST = [];
+     *     }
+     *
+     * At the entry rather than in each branch, because a branch check is one
+     * someone can forget -- that is how a dozen editors came to write with no
+     * token at all -- and because a delete keys off `$op` with its id in the
+     * query string, so emptying the body alone would not stop it. Clearing both
+     * makes an unverified POST indistinguishable from a plain page view, which
+     * is the behaviour every branch already handles.
+     *
+     * A GET is never a state change here, so it passes untouched: the pages
+     * that search or filter with a GET form keep working.
+     *
+     * @param ?string $scope A narrower scope than the page's, for an editor
+     *                       whose token must not be interchangeable with one
+     *                       the same script hands to an ordinary viewer. Null
+     *                       uses the page scope.
+     */
+    public static function isUnverifiedPost(?string $scope = null): bool
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            return false;
+        }
+
+        return $scope === null
+            ? !self::validateCsrf()
+            : !Csrf::validatePostRequest($scope);
+    }
+
+    /**
+     * An inline POST button carrying this page's form token.
+     *
+     * Deleting a creature, a taunt, a title, a ban, a mail or a module used to
+     * be `<a href='…?op=del&id=N'>` with a JavaScript confirm beside it. Neither
+     * half held: `SameSite=Lax` sends the session cookie on a top-level GET
+     * navigation, so following a crafted link was enough, and the confirm never
+     * runs on a navigation the user did not start. `ForcedNavigation` matches
+     * the URI and ignores the method, so a `Nav::add()` entry next to the form
+     * does not reintroduce the GET.
+     *
+     * One helper rather than the same twelve lines twelve times: every such
+     * trigger in the tree renders through here, so the quoting, the token and
+     * the confirmation are decided once. The caller still registers its own
+     * `Nav::add()`, because that URL is the page's business, not this method's.
+     *
+     * @param string  $url     Form action. Already URL-encoded by the caller.
+     * @param string  $label   Button text. Escaped here.
+     * @param ?string $confirm Message to ask first, or null to act immediately.
+     * @param string  $class   CSS class, so a converted link keeps its look.
+     * @param ?string $scope   A narrower CSRF scope than this page's, when the
+     *                         action needs one. `motd.php` is the reason it
+     *                         exists: the page renders a form for every player
+     *                         who sees a poll, so the page-wide token reaches
+     *                         voters, and deleting an entry must not accept it.
+     *                         Null uses the page scope, which is right whenever
+     *                         only the privileged view renders the button.
+     * @param array<string, string|int> $fields Extra hidden inputs, for a page
+     *                         that reads its operation from the body rather
+     *                         than the query string.
+     */
+    public static function postButton(
+        string $url,
+        string $label,
+        ?string $confirm = null,
+        string $class = 'button',
+        ?string $scope = null,
+        array $fields = []
+    ): string {
+        $hidden = '';
+        foreach ($fields as $name => $value) {
+            $hidden .= "<input type='hidden' name='" . Escape::html($name)
+                . "' value='" . Escape::html($value) . "'>";
+        }
+
+        return "<form action='" . Escape::html($url) . "' method='POST' style='display:inline'>"
+            . ($scope === null ? self::csrfField() : Csrf::hiddenField($scope))
+            . $hidden
+            . "<button type='submit' class='" . Escape::html($class) . "'"
+            . ($confirm !== null ? Escape::confirmAttribute($confirm) : '')
+            . '>' . Escape::html($label) . '</button></form>';
     }
 
     /**

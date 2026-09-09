@@ -42,8 +42,14 @@ final class MotdEditingCsrfRegressionTest extends TestCase
     {
         $source = $this->source('src/Lotgd/Motd.php');
 
-        self::assertStringContainsString("<form action='motd.php?op=del&id=\$id' method='POST'", $source);
-        self::assertStringContainsString('Csrf::hiddenField(Csrf::SCOPE_MOTD_EDIT)', $source);
+        // Every such button in the tree renders through one helper now, so what
+        // this asserts is that the call is made with the editing scope -- the
+        // POST method, the token field and the confirmation are the helper's
+        // business, covered behaviourally in FormPostButtonTest.
+        self::assertStringContainsString(
+            'Forms::postButton("motd.php?op=del&id=$id", $del, $conf, \'motd-del\', Csrf::SCOPE_MOTD_EDIT)',
+            $source
+        );
 
         // The shape that was the problem: a delete reachable by following a link.
         self::assertStringNotContainsString("<a href='motd.php?op=del&id=\$id'", $source);
@@ -68,10 +74,10 @@ final class MotdEditingCsrfRegressionTest extends TestCase
         // del, save and savenew: three writes, and the vote path already had one.
         self::assertSame(
             2,
-            substr_count($source, 'Csrf::validatePostRequest(Csrf::SCOPE_MOTD_EDIT)'),
+            substr_count($source, 'Forms::isUnverifiedPost(Csrf::SCOPE_MOTD_EDIT)'),
             'both the save/savenew branch and the del branch must validate'
         );
-        self::assertStringContainsString('Csrf::validatePost(Csrf::SCOPE_MOTD_VOTE)', $source);
+        self::assertStringContainsString('Forms::isUnverifiedPost(Csrf::SCOPE_MOTD_VOTE)', $source);
     }
 
     /**
@@ -93,9 +99,13 @@ final class MotdEditingCsrfRegressionTest extends TestCase
     {
         $source = $this->source('src/Lotgd/Motd.php');
 
-        // motdForm (op=save) and motdPollForm (op=savenew), plus the delete
-        // button rendered by motdAdminLinks.
-        self::assertSame(3, substr_count($source, 'Csrf::hiddenField(Csrf::SCOPE_MOTD_EDIT)'));
+        // motdForm (op=save) and motdPollForm (op=savenew) render the field
+        // directly; the delete button passes the same scope to the shared
+        // helper. All three must name SCOPE_MOTD_EDIT rather than the page
+        // scope, which motd.php also issues to every player who sees a poll.
+        self::assertSame(2, substr_count($source, 'Csrf::hiddenField(Csrf::SCOPE_MOTD_EDIT)'));
+        self::assertSame(1, substr_count($source, 'Csrf::SCOPE_MOTD_EDIT)' . "\n"), 'the delete button passes the scope');
+        self::assertSame(3, substr_count($source, 'Csrf::SCOPE_MOTD_EDIT'));
     }
 
     private function source(string $relativePath): string

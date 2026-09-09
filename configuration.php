@@ -41,6 +41,19 @@ Translator::getInstance()->setSchema("configuration");
 
 $opRequest = Http::get('op');
 $op = is_string($opRequest) ? $opRequest : '';
+
+// One shape on every page that changes state: a POST that does not carry this
+// page's form token is treated as if nothing had been sent. It sits here, after
+// $op is read, rather than in each branch -- a delete keys off $op with its id
+// in the query string, so blanking the body alone would not stop it, and the
+// next branch someone adds is the one that would forget its own check.
+if (Forms::isUnverifiedPost()) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 $moduleRequest = Http::get('module');
 $module = is_string($moduleRequest) ? $moduleRequest : '';
 $typeSettingRequest = Http::get('settings');
@@ -52,17 +65,6 @@ switch ($type_setting) {
         switch ($op) {
             case "save":
                 include_once("lib/gamelog.php");
-                // One line, at the point of writing. showForm() emits the
-                // token; only the save branch knows when a write is about to
-                // happen, which is the moment that has to be guarded.
-                if (!Forms::validateCsrf()) {
-                    debuglog('Rejected an extended settings save with an invalid CSRF token.');
-                    http_response_code(400);
-                    $output->output("`$Settings not saved.`0`n");
-                    $op = "";
-
-                    break;
-                }
                 $post = Csrf::stripFrom(httpallpost());
                 $old = $settings_extended->getArray();
                 $current = $settings_extended->getArray();
@@ -106,17 +108,6 @@ switch ($type_setting) {
         switch ($op) {
             case "save":
                 include_once("lib/gamelog.php");
-                // One line, at the point of writing. showForm() emits the
-                // token; only the save branch knows when a write is about to
-                // happen, which is the moment that has to be guarded.
-                if (!Forms::validateCsrf()) {
-                    debuglog('Rejected a core settings save with an invalid CSRF token.');
-                    http_response_code(400);
-                    $output->output("`$Settings not saved.`0`n");
-                    $op = "";
-
-                    break;
-                }
                 $blockDupEmail = Http::post('blockdupemail');
                 $requireValidEmail = Http::post('requirevalidemail');
                 $requireEmail = Http::post('requireemail');
@@ -304,12 +295,6 @@ switch ($type_setting) {
                 if (injectmodule($module, true)) {
                     $saveRequest = Http::get('save');
                     $save = is_string($saveRequest) ? $saveRequest : '';
-                    if ($save != "" && !Forms::validateCsrf()) {
-                        debuglog('Rejected a module settings save with an invalid CSRF token.');
-                        http_response_code(400);
-                        $output->output("`$Settings not saved.`0`n");
-                        $save = "";
-                    }
                     if ($save != "") {
                         load_module_settings($module);
                         $module_settings = ModuleManager::settings();

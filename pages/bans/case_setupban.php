@@ -10,6 +10,8 @@ use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\DateTime;
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Security\Escape;
+use Lotgd\Forms;
 
 $output = Output::getInstance();
 $settings = Settings::getInstance();
@@ -21,7 +23,7 @@ $row = Database::fetchAssoc($result);
 if (isset($row['name']) && !empty($row['name'])) {
     $output->output("Setting up ban information based on `\$%s`0", $row['name']);
 }
-$output->rawOutput("<form action='bans.php?op=saveban' method='POST'>");
+$output->rawOutput("<form action='bans.php?op=saveban' method='POST'>" . Forms::csrfField());
 $output->output("Set up a new ban by IP or by ID.`n");
 $output->output("`qWe recommended ID as this bans all users who are sitting on THAT machine with THAT browser. A cookie can be deleted, but the char stays locked anyway, regardless of that.`n`n");
 $output->output("If you ban via IP and if you have several different users behind a NAT(sharing IPs, many big providers do this currently), you will ban much more users. However, you can ban multichars from different PCs too.`n`0");
@@ -44,7 +46,7 @@ $output->rawOutput("<input name='reason' size=50 value=\"$reason\">");
 $output->outputNotl("`n");
 $pban = Translator::translateInline("Post ban");
 $conf = Translator::translateInline("Are you sure you wish to issue a permanent ban?");
-$output->rawOutput("<input type='submit' class='button' value='$pban' onClick='if (document.getElementById(\"duration\").value==0) {return confirm(\"$conf\");} else {return true;}'>");
+$output->rawOutput("<input type='submit' class='button' value='" . Escape::html($pban) . "' onclick='if (document.getElementById(\"duration\").value==0) {return confirm(" . Escape::js($conf) . ");} else {return true;}'>");
 $output->rawOutput("</form>");
 $output->output("For an IP ban, enter the beginning part of the IP you wish to ban if you wish to ban a range, or simply a full IP to ban a single IP`n`n");
 Nav::add("", "bans.php?op=saveban");

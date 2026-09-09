@@ -92,7 +92,7 @@ if ($op === 'edit' || $op === 'add') {
         $output->rawOutput('</form>');
     }
 } elseif ($op === 'del' || $op === 'save') {
-    if (!Csrf::validatePost(Csrf::SCOPE_WEAPON_EDITOR)) {
+    if (Forms::isUnverifiedPost(Csrf::SCOPE_WEAPON_EDITOR)) {
         debuglog('Rejected weapon editor state change with an invalid CSRF token.');
         http_response_code(400);
     } elseif ($op === 'del') {
@@ -157,7 +157,6 @@ if ($op === '') {
     $edit = Translator::translateInline('Edit');
     $delete = Translator::translateInline('Del');
     $deleteConfirmation = Translator::translateInline('Are you sure you wish to delete this weapon?');
-    $deleteConfirmationJs = json_encode($deleteConfirmation, JSON_HEX_APOS | JSON_HEX_QUOT);
     $output->rawOutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
     $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$name</td><td>$cost</td><td>$damage</td><td>$level</td></tr>");
     $i = 0;
@@ -167,7 +166,14 @@ if ($op === '') {
             continue;
         }
         $output->rawOutput("<tr class='" . ($i++ % 2 ? 'trdark' : 'trlight') . "'><td>[<a href='weaponeditor.php?op=edit&amp;id=$rowId&amp;level=$weaponlevel'>$edit</a>|");
-        $output->rawOutput("<form method='POST' action='weaponeditor.php?level=$weaponlevel' style='display:inline' onsubmit='return confirm($deleteConfirmationJs);'><input type='hidden' name='op' value='del'><input type='hidden' name='id' value='$rowId'><input type='hidden' name='csrf_token' value='$csrfField'><button type='submit'>$delete</button></form>]</td>");
+        $output->rawOutput("" . Forms::postButton(
+            "weaponeditor.php?level=$weaponlevel",
+            $delete,
+            $deleteConfirmation,
+            'button',
+            Csrf::SCOPE_WEAPON_EDITOR,
+            ['op' => 'del', 'id' => $rowId]
+        ) . "]</td>");
         Nav::add('', "weaponeditor.php?op=edit&id=$rowId&level=$weaponlevel");
         $output->rawOutput('<td>');
         $output->outputNotl((string) $row['weaponname']);

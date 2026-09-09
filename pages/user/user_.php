@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Forms;
 use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\MySQL\Database;
@@ -30,7 +31,6 @@ if ($display == 1) {
     $ed = Translator::translateInline("Edit");
     $del = Translator::translateInline("Del");
     $conf = Translator::translateInline("Are you sure you wish to delete this user?");
-    $confJs = json_encode($conf, JSON_HEX_APOS | JSON_HEX_QUOT);
     $ban = Translator::translateInline("Ban");
     $log = Translator::translateInline("Log");
         $output->rawOutput("<table>");
@@ -66,12 +66,13 @@ if ($display == 1) {
         // confirm never runs on a navigation the admin did not start. It is a
         // POST carrying the user editor's token now.
         $output->rawOutput("[ <a href='user.php?op=edit&userid={$row['acctid']}$m'>$ed</a> | ");
-        $output->rawOutput(
-            "<form action='user.php?op=del&userid={$row['acctid']}' method='POST' style='display:inline'"
-            . " onsubmit='return confirm($confJs);'>"
-            . Csrf::hiddenField(Csrf::SCOPE_USER_EDITOR)
-            . "<button type='submit' class='user-del'>$del</button></form>"
-        );
+        $output->rawOutput(Forms::postButton(
+            "user.php?op=del&userid={$row['acctid']}",
+            $del,
+            $conf,
+            'user-del',
+            Csrf::SCOPE_USER_EDITOR
+        ));
         $output->rawOutput(" | <a href='bans.php?op=setupban&userid={$row['acctid']}'>$ban</a> | <a href='user.php?op=debuglog&userid={$row['acctid']}'>$log</a> ]");
         Nav::add("", "user.php?op=edit&userid={$row['acctid']}$m");
         Nav::add("", "user.php?op=del&userid={$row['acctid']}");
