@@ -61,8 +61,9 @@ if (! in_array($severity, $allowedSeverities, true)) {
 }
 
 // The filters are bound, not interpolated: this page was the last place in the
-// core still building SQL with addslashes(), and the category comes straight
-// from the query string.
+// core still escaping a value into an SQL string by hand, and the category comes
+// straight from the query string. GameLogFilterBindingRegressionTest holds the
+// line, both on the statements this page issues and on the source itself.
 $filterParams = [];
 
 if ($category !== '') {
