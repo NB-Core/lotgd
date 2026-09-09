@@ -29,6 +29,12 @@ namespace Lotgd\Tests\Async {
             }
 
             require_once __DIR__ . '/../../async/process.php';
+
+            // These tests are about authorization, privileges and the session
+            // lock, not about CSRF. Present a valid token the way a real
+            // client does, so the endpoint's CSRF gate is not what they
+            // end up measuring.
+            $_SERVER['HTTP_X_LOTGD_CSRF'] = \Lotgd\Security\Csrf::token(\Lotgd\Security\Csrf::SCOPE_ASYNC);
         }
 
         /**

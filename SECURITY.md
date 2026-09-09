@@ -150,23 +150,44 @@ compares it in `lotgd_async_csrf_state()`.
 
 Three things about this are worth knowing before changing it.
 
-**It ships in log-only mode.** `csrf_mode` in `config/async.settings.php`
-defaults to `log`: failures go to `error_log` and the request proceeds.
-The token has to survive a transport this project cannot verify in CI — the
-Jaxon runtime is loaded from a CDN rather than vendored — and polling runs
-every few seconds for every player with the AJAX preference on, so enforcing a
-check that silently never receives its token would break all of them at once.
-Read the log over a release, then switch to `enforce`.
+**The transport is the fragile part, and it has already failed once.** Jaxon
+defaults `httpRequestOptions.mode` to `no-cors`. Under that mode the browser
+applies the "request-no-cors" header guard and silently drops every header that
+is not CORS-safelisted — including this one, and including on same-origin
+requests. The first release of this check shipped in log-only mode for exactly
+that reason and would have recorded a failure on every poll.
+`async/js/lotgd.jaxon.js` now sets `same-origin`, the Jaxon runtime is served
+from `async/js/vendor/jaxon` rather than a CDN so it can be read and pinned,
+and the header was confirmed to arrive in a real browser against those files.
+`csrf_mode` nonetheless still defaults to `log`, for a second reason the
+transport check does not address: the client is inlined into each page, so a
+page rendered before an upgrade keeps the old one — no `same-origin`, and no
+recovery handler. Promotion to `enforce` belongs to the operator, once open
+tabs have aged out and the log is quiet.
 
 **It is a defence in depth, not a plugged hole.** `common.php` configures the
 session cookie before the AJAX branch and defaults it to `SameSite=Lax`, so a
 cross-site POST does not carry the cookie at all. The gap becomes live only if
 an operator sets `SESSION_COOKIE_SAMESITE` to `None`.
 
-**The unauthenticated passkey pair is exempt.** `beginAuthentication` and
-`verifyAuthentication` run before a login exists, so there is no session-scoped
-token for them to carry; they keep their own check inside the handler, against
-the token the challenge view seeds.
+**The unauthenticated passkey pair is checked but never refused.**
+`beginAuthentication` and `verifyAuthentication` do carry a token — every page
+that can reach them calls `twofactorauth_force_async_bootstrap()`, which loads
+`async/setup.php`, which issues one — so the check runs and a failure is
+recorded. Refusing on it is held back deliberately: the gain would be defence
+in depth on a path that already validates a token of its own inside the
+handler, while the loss, if any entry point turns out not to bootstrap, is that
+nobody completes two-factor login. A release without `Jaxon csrf` lines naming
+those two is what should promote them.
+
+**Only logged-in callers are recorded**, plus that observe-only pair. An
+unauthenticated request is refused on authentication whatever its token says,
+so its token is not evidence about the transport — and two ordinary things
+would otherwise produce an endless stream of lines: a tab whose session timed
+out keeps polling with the token inlined into the page it was rendered from,
+and a bare POST to the endpoint carries none at all. The log an operator is
+told to watch before promoting has to be about players, or it never falls
+quiet and means nothing when it does.
 
 Async code must never call `Csrf::token()` or the other issuing methods.
 `async/process.php` releases the session lock before dispatch for read-only

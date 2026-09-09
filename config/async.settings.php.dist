@@ -22,13 +22,29 @@ return [
     //   'log'     - check it, record failures via error_log, let the request through
     //   'enforce' - refuse the request with HTTP 403
     //
-    // Ships as 'log'. The token travels in an X-LotGD-Csrf header added by
-    // async/js/lotgd.jaxon.js, and the Jaxon runtime that carries it is loaded
-    // from a CDN rather than vendored, so the transport cannot be verified in
-    // CI. Polling runs every few seconds for every player with the AJAX
-    // preference on: enforcing a check that never receives its token would
-    // break all of them at once. Watch error_log for "Jaxon csrf" over a
-    // release; if it stays quiet, switch this to 'enforce'.
+    // Still ships as 'log', and the reason is no longer the transport.
+    //
+    // The transport is now verified: the Jaxon runtime is served from
+    // async/js/vendor/jaxon rather than a CDN, and the header was confirmed to
+    // reach the server in a real browser against those exact files. That check
+    // also found why it could not have worked before -- Jaxon defaults
+    // httpRequestOptions.mode to 'no-cors', under which the browser silently
+    // drops every non-safelisted header. lotgd.jaxon.js now sets 'same-origin'.
+    //
+    // What remains is the upgrade itself. The client is inlined into each page,
+    // so a page rendered *before* the upgrade is still running the old one: it
+    // sets no 'same-origin', so its header is dropped, and it has no recovery
+    // handler either. Enforcing at upgrade time would leave those tabs polling
+    // into a 403 with nothing to fix it but a manual reload.
+    //
+    // So: deploy, let the tabs age out, confirm error_log carries no
+    // "Jaxon csrf" lines, then set this to 'enforce' at a time of your
+    // choosing. Every client rendered after the upgrade can recover on its own.
+    //
+    // Only logged-in callers are recorded, so that signal stays about players:
+    // an unauthenticated request is refused on authentication whatever its
+    // token says, and a timed-out tab polling on -- or anyone POSTing to the
+    // endpoint -- would otherwise keep the log from ever going quiet.
     'csrf_mode' => 'log',
 
     // Prevent session timeout while the browser remains open.

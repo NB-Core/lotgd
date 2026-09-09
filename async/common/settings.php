@@ -90,8 +90,8 @@ $clearScriptExecutionSeconds = (int) ($clear_script_execution_seconds ?? -1);
 $debugConsole = $debug_console ?? 0;
 \Lotgd\Async\DebugMode::setEnabled((int) $debugConsole === 1);
 
-// Unknown values resolve to 'log' inside setMode(), so a typo here neither
-// disables the check nor starts rejecting live traffic.
+// Unknown values resolve to 'log' inside setMode(): a typo should neither
+// disable the check nor start rejecting live traffic.
 \Lotgd\Async\CsrfMode::setMode((string) ($csrf_mode ?? \Lotgd\Async\CsrfMode::LOG));
 
 $timeout->setNeverTimeoutIfBrowserOpen($neverTimeoutIfBrowserOpen === 1);

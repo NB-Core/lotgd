@@ -48,6 +48,7 @@ final class Csrf
     public const SCOPE_WEAPON_EDITOR = 'weapon_editor';
     public const SCOPE_MOUNT_EDITOR = 'mount_editor';
     public const SCOPE_COMPANION_EDITOR = 'companion_editor';
+    public const SCOPE_CREATURE_EDITOR = 'creature_editor';
     public const SCOPE_MOTD_VOTE = 'motd_vote';
 
     /**

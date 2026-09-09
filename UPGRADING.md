@@ -195,20 +195,49 @@ modules.
     `X-LotGD-Csrf` header. Existing installs pick the default up automatically,
     because the loader merges `config/async.settings.php` over the shipped
     `.dist` defaults, so **no action is required to upgrade**.
-  - Why it ships as `log` rather than `enforce`: the token travels through the
-    Jaxon client runtime, which is loaded from a CDN rather than vendored and
-    therefore cannot be verified in CI. Polling runs every few seconds for
-    every player with the Ajax preference on, so enforcing a check that never
-    receives its token would stop polling for all of them at once, with a
-    symptom that looks nothing like the cause.
-  - What to do: after upgrading, grep `error_log` for `Jaxon csrf`. Nothing
-    there over a release means the transport works — set `'csrf_mode' =>
-    'enforce'`. Lines there name the handler and whether the token was
-    `missing` or a `mismatch`. Expect roughly one line per poll per active
-    session if the transport is broken, so watch log volume during the first
-    day.
+  - **Still ships as `log`**, and the reason has changed. The transport is now
+    verified — the Jaxon client runtime is served from `async/js/vendor/jaxon`
+    instead of a CDN, and the header was confirmed to reach the server in a
+    real browser against those files. What remains is the upgrade itself.
+  - That check found a real defect, which is why the earlier release would have
+    logged a failure on every poll: Jaxon defaults `httpRequestOptions.mode` to
+    `no-cors`, under which the browser silently drops every non-safelisted
+    request header — on same-origin requests too. `async/js/lotgd.jaxon.js` now
+    sets `same-origin`.
+  - Set `'csrf_mode' => 'log'` if you carry local modifications to the async
+    client and want evidence first. Failures are recorded as
+    `Jaxon csrf <reason>` in `error_log`, naming the handler.
+  - A browser tab left open across the upgrade holds the **old** inlined client,
+    which has neither the `same-origin` fix nor the recovery handler added here.
+    Enforcing immediately would leave those tabs polling into a 403 with nothing
+    but a manual reload to fix it, which is why this stays on `log` for now.
+  - **When to promote:** deploy, let open tabs age out (any page load delivers
+    the new client), confirm `error_log` carries no `Jaxon csrf` lines, then set
+    `'csrf_mode' => 'enforce'` at a time of your choosing. Clients rendered
+    after the upgrade recover on their own: a refusal stops the polling loop and
+    reloads the page once, guarded in `sessionStorage` so a persistent failure
+    cannot turn into a reload loop.
+  - Lines naming `TwoFactorAuthPasskey` are the deliberately observe-only
+    pre-login pair and never refuse anything; other handlers are the ones to act
+    on.
+  - Only logged-in callers are recorded, so the log stays about players. An
+    unauthenticated request is refused on authentication whatever its token
+    says, and logging it would mean the signal never falls quiet: a tab whose
+    session timed out keeps polling with the token inlined into the page it came
+    from, and a bare POST to the endpoint carries no token at all. Neither says
+    anything about whether the transport works.
   - Gameplay is unaffected in every mode: async carries commentary, mail and
     timeout polling, never a game action.
+
+- **Async client assets**
+  - The Jaxon browser runtime is no longer fetched from `cdn.jsdelivr.net`. It
+    ships in `async/js/vendor/jaxon` and is served from your own installation.
+    Nothing to configure; the files are part of the release archive.
+  - If your deployment blocks or rewrites `/async/js/`, allow it: without those
+    files the async layer does not load at all.
+  - `tests/Async/check-jaxon-assets.sh` verifies the files against recorded
+    checksums and reports when upstream has moved on. Nothing proposes that
+    update automatically, because the files are not a declared dependency.
 
 - **Mail**  
   - Uses **PHPMailer** via Composer.  
