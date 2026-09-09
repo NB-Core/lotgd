@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
+use Lotgd\Security\Csrf;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Nav;
@@ -36,6 +37,15 @@ Nav::add('PHP', 'rawsql.php?op=php');
 $op = (string) Http::get('op');
 if ($op == "" || $op == "sql") {
     $sql = (string) Http::post('sql');
+    // This page runs whatever it is handed, which makes it the most valuable
+    // target in the tree and the cheapest to protect. Nothing is executed
+    // until the token checks out.
+    if ($sql != "" && !Csrf::validatePostRequest(Csrf::SCOPE_RAW_SQL)) {
+        debuglog('Rejected raw SQL execution with an invalid CSRF token.');
+        http_response_code(400);
+        $output->output("`\$Not executed.`0`n`n");
+        $sql = "";
+    }
     if ($sql != "") {
         $sql = stripslashes($sql);
         HookHandler::hook("rawsql-execsql", array("sql" => $sql));
@@ -78,6 +88,7 @@ if ($op == "" || $op == "sql") {
     $ret = HookHandler::hook("rawsql-modsql", array("sql" => $sql));
     $sql = $ret['sql'];
     $output->rawOutput("<form action='rawsql.php' method='post'>");
+    $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_RAW_SQL));
     $output->rawOutput("<textarea name='sql' class='input' cols='60' rows='10'>" . htmlentities($sql, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br>");
     $output->rawOutput("<input type='submit' class='button' value='$execute'>");
     $output->rawOutput("</form>");
@@ -86,6 +97,12 @@ if ($op == "" || $op == "sql") {
     $php = stripslashes((string) Http::post('php'));
     $source = Translator::translate("Source:");
     $execute = Translator::translate("Execute");
+    if ($php !== "" && !Csrf::validatePostRequest(Csrf::SCOPE_RAW_SQL)) {
+        debuglog('Rejected raw PHP execution with an invalid CSRF token.');
+        http_response_code(400);
+        $output->output("`\$Not executed.`0`n`n");
+        $php = "";
+    }
     if ($php > "") {
         $output->rawOutput("<div style='background-color: #FFFFFF; color: #000000; width: 100%'><b>$source</b><br>");
         $output->rawOutput(highlight_string("<?php\n$php\n?>", true));
@@ -101,6 +118,7 @@ if ($op == "" || $op == "sql") {
     $ret = HookHandler::hook("rawsql-modphp", array("php" => $php));
     $php = $ret['php'];
     $output->rawOutput("<form action='rawsql.php?op=php' method='post'>");
+    $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_RAW_SQL));
     $output->rawOutput("&lt;?php<br><textarea name='php' class='input' cols='60' rows='10'>" . htmlentities($php, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br>?&gt;<br>");
     $output->rawOutput("<input type='submit' class='button' value='$execute'>");
     $output->rawOutput("</form>");

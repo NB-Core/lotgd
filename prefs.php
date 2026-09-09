@@ -15,6 +15,7 @@ use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Sanitize;
+use Lotgd\Security\Csrf;
 use Lotgd\PasswordHelper;
 use Lotgd\DataCache;
 use Lotgd\DebugLog;
@@ -117,10 +118,30 @@ $op = Http::get('op');
 
 Nav::add("Navigation");
 if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
-    $userid = (int)Http::get('userid');
-    if (PlayerFunctions::charCleanup($userid, CHAR_DELETE_SUICIDE)) {
-        $sql = "DELETE FROM " . Database::prefix("accounts") . " WHERE acctid=$userid";
-        Database::query($sql);
+    // Two things were wrong here, and only one of them is CSRF.
+    //
+    // The page rendered a POST form but also registered the same URL as a
+    // navigation entry, and nothing checked the request method -- so a plain
+    // GET deleted the character, and SameSite=Lax sends the session cookie on
+    // a top-level GET navigation. A crafted link was enough.
+    //
+    // The account it deleted came from the query string. charCleanup() takes
+    // whatever id it is handed and does not compare it to the session, so the
+    // only thing standing between a player and deleting somebody else was the
+    // navigation allowlist happening to contain just their own id. That is the
+    // blind spot SECURITY.md describes; the id comes from the session now, and
+    // the request parameter is not consulted at all.
+    $userid = (int) ($session['user']['acctid'] ?? 0);
+    if (!Csrf::validatePostRequest(Csrf::SCOPE_SELF_DELETE)) {
+        DebugLog::add('Rejected character self-deletion with an invalid CSRF token.');
+        http_response_code(400);
+        $output->output("`\$Your character was not deleted.`0`n");
+    } elseif ($userid > 0 && PlayerFunctions::charCleanup($userid, CHAR_DELETE_SUICIDE)) {
+        Database::getDoctrineConnection()->executeStatement(
+            'DELETE FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+            ['acctid' => $userid],
+            ['acctid' => \Doctrine\DBAL\ParameterType::INTEGER]
+        );
         $output->output("Your character has been deleted!");
         AddNews::add("`#%s quietly passed from this world.", $session['user']['name']);
         Nav::add("Login Page", "index.php");
@@ -566,14 +587,15 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // Stop clueless lusers from deleting their character just because a
     // monster killed them.
     if ($session['user']['alive'] && $settings->getSetting('selfdelete', 0) != 0) {
-        $output->rawOutput("<form action='prefs.php?op=suicide&userid={$session['user']['acctid']}' method='POST'>");
+        $output->rawOutput("<form action='prefs.php?op=suicide' method='POST'>");
+        $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_SELF_DELETE));
         $deltext = Translator::translateInline('Delete Character');
         $conf = Translator::translateInline('Are you sure you wish to PERMANENTLY delete your character?');
         $output->rawOutput("<table class='noborder' width='100%'><tr><td width='100%'></td><td style='background-color:#FF00FF' align='right'>");
         $output->rawOutput("<input type='submit' class='button' value='$deltext' onClick='return confirm(\"$conf\");'>");
         $output->rawOutput("</td></tr></table>");
         $output->rawOutput("</form><br>");
-        Nav::add("", "prefs.php?op=suicide&userid={$session['user']['acctid']}");
+        Nav::add("", "prefs.php?op=suicide");
     }
 }
 Footer::pageFooter();

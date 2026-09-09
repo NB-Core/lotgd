@@ -60,6 +60,27 @@ final class Csrf
     public const SCOPE_TWOFACTORAUTH = 'twofactorauth';
     public const SCOPE_CHARRESTORE = 'charrestore_restore';
 
+    /** The user editor's destructive operations (user.php). */
+    public const SCOPE_USER_EDITOR = 'user_editor';
+
+    /**
+     * A player deleting their own character (prefs.php).
+     *
+     * Deliberately its own scope rather than a shared preferences token: it is
+     * the only irreversible thing that page can do, and a token minted for
+     * saving preferences has no business authorising it.
+     */
+    public const SCOPE_SELF_DELETE = 'self_delete';
+
+    /**
+     * rawsql.php, which executes whatever it is given.
+     *
+     * Separate from every editor scope on purpose. This one is worth more than
+     * all the others put together, so it is never issued by a page that only
+     * needs to edit a creature.
+     */
+    public const SCOPE_RAW_SQL = 'raw_sql';
+
     /**
      * The async endpoint. Issued once per session when async/setup.php renders
      * the polling client, and carried back in the {@see self::HEADER} request
