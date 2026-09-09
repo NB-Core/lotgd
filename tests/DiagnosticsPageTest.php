@@ -20,11 +20,12 @@ final class DiagnosticsPageTest extends TestCase
 {
     protected function setUp(): void
     {
-        global $diagnostics_output, $diagnostics_navs, $diagnostics_su_checks, $session;
+        global $diagnostics_output, $diagnostics_navs, $diagnostics_su_checks, $diagnostics_translated, $session;
 
         $diagnostics_output = '';
         $diagnostics_navs = [];
         $diagnostics_su_checks = [];
+        $diagnostics_translated = [];
         $session = ['user' => ['acctid' => 1, 'superuser' => SU_MEGAUSER]];
 
         if (!class_exists('\\Lotgd\\SuAccess', false)) {
@@ -57,7 +58,14 @@ final class DiagnosticsPageTest extends TestCase
             }');
         }
         if (!class_exists('\\Lotgd\\Translator', false)) {
-            eval('namespace Lotgd; class Translator { public static function getInstance() { return new self(); } public function setSchema(?string $s = null): void {} }');
+            // Records what was handed to it so a test can assert that the static
+            // labels go through the translator instead of straight to output.
+            eval('namespace Lotgd; class Translator {
+                public static function getInstance() { return new self(); }
+                public function setSchema(?string $s = null): void {}
+                public static function translate($in, $namespace = false) { global $diagnostics_translated; $diagnostics_translated[] = (string) $in; return $in; }
+                public static function sprintfTranslate(...$args) { global $diagnostics_translated; $format = (string) array_shift($args); $diagnostics_translated[] = $format; return $args === [] ? $format : vsprintf($format, $args); }
+            }');
         }
         if (!class_exists('\\Lotgd\\Page', false)) {
             eval('namespace Lotgd; class Page { public static function getInstance() { return new self(); } public function getLogdVersion(): string { return "2.0.6 +nb Edition"; } }');
@@ -168,6 +176,37 @@ final class DiagnosticsPageTest extends TestCase
         self::assertContains('diagnostics.php?hours=24', $links);
         foreach ($links as $link) {
             self::assertStringNotContainsString('999999', (string) $link);
+        }
+    }
+
+    /**
+     * AGENTS.md asks for Translator on new user-facing strings. The table
+     * headers and the snapshot labels are static text, so they have to pass
+     * through it -- only the log data itself goes out untranslated.
+     */
+    public function testStaticHeadersAndLabelsGoThroughTheTranslator(): void
+    {
+        $this->renderPage();
+
+        global $diagnostics_translated;
+
+        // The log tables are empty in this fixture and an empty table renders no
+        // header row, so the assertion uses the runtime block: it always has
+        // rows, and its headers go through the same diagnosticsTable() path as
+        // every other table's.
+        $expected = [
+            'Runtime',                                   // section title
+            'Item', 'Value',                             // table headers
+            'Version', 'Environment', 'Maintenance', 'Logging', // group titles
+            'Game version', 'PHP version', 'DEBUG mode', // row labels
+        ];
+
+        foreach ($expected as $label) {
+            self::assertContains(
+                $label,
+                $diagnostics_translated,
+                sprintf('the static label "%s" must be translated', $label)
+            );
         }
     }
 

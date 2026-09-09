@@ -95,10 +95,12 @@ It is strictly read-only: it changes nothing, offers no buttons, and does not re
 a time window from the navigation (one hour up to thirty days, twenty-four hours by default) and
 the page shows:
 
-- a **runtime snapshot** — game and schema version and whether they agree, PHP and database
-  versions, missing PHP extensions, how many players are online, when the last new day and the
-  last maintenance run happened, the configured retention for each log, and whether `debug` mode
-  or `show_error_details` is switched on;
+- a **runtime snapshot** — game and schema version, PHP and database versions, missing PHP
+  extensions, how many players are online, when the last new day and the last maintenance run
+  happened, the configured retention for each log, and whether `debug` mode or
+  `show_error_details` is switched on. The two versions are reference information rather than a
+  check: when they differ the game serves "Upgrade Needed" instead of any page, so reaching this
+  one already means they match;
 - a **timeline** merging the events worth noticing across sources: security events, anything
   logged as a warning or an error, and failed logins;
 - **collapsible sections** per source with the detail — game log, failed logins, the character

@@ -83,9 +83,10 @@ Output::addHeadMarkup(
 /**
  * Render a table of already-formatted rows.
  *
- * Every cell goes through outputNotl() without the privileged flag, so
- * appoencode() escapes HTML while leaving the game's colour codes intact --
- * the same treatment gamelog.php gives its messages.
+ * Headers are source strings and are translated here in the `diagnostics`
+ * namespace; the cells are log data and go through outputNotl() without the
+ * privileged flag, so appoencode() escapes HTML while leaving the game's colour
+ * codes intact -- the same treatment gamelog.php gives its messages.
  *
  * The function_exists guard is there because this page is pulled in with
  * require by its tests.
@@ -108,7 +109,7 @@ if (!function_exists('diagnosticsTable')) {
         $output->rawOutput("<table border='0' cellpadding='2' cellspacing='1'><tr class='trhead'>");
         foreach ($headers as $header) {
             $output->rawOutput("<td>");
-            $output->outputNotl($header);
+            $output->outputNotl((string) Translator::translate($header, 'diagnostics'));
             $output->rawOutput("</td>");
         }
         $output->rawOutput("</tr>");
@@ -153,7 +154,7 @@ if (!function_exists('diagnosticsSeverityColour')) {
 }
 
 $diagnostics = new Diagnostics();
-$counts = $diagnostics->counts($hours);
+$counts = $diagnostics->counts($hours, $severity);
 
 $output->rawOutput("<div class='diagnostics'>");
 $output->outputNotl(
@@ -163,22 +164,44 @@ $output->outputNotl(
 );
 
 // ---------------------------------------------------------------- snapshot --
-$output->outputNotl("`b`^Runtime`0`b`n");
+$output->outputNotl("`b`^%s`0`b`n", (string) Translator::translate('Runtime', 'diagnostics'));
 foreach ($diagnostics->runtime() as $group => $entries) {
     $rows = [];
     foreach ($entries as $entry) {
+        // The class hands out source strings and their arguments rather than
+        // finished sentences, so the whole sentence stays one translatable unit
+        // instead of being concatenated around the data. A row marked as data
+        // (a version, a path, a number) is passed through untouched.
+        if ($entry['args'] !== []) {
+            // The page's schema is already `diagnostics` (set at the top), and
+            // sprintfTranslate() reads the active namespace -- its schema form
+            // takes a `true, '<schema>'` prefix, not a bare namespace argument.
+            $value = (string) Translator::sprintfTranslate(
+                $entry['value'],
+                ...array_map(static fn ($arg): string => Sanitize::sanitize((string) $arg), $entry['args'])
+            );
+        } elseif ($entry['translate']) {
+            $value = (string) Translator::translate($entry['value'], 'diagnostics');
+        } else {
+            $value = Sanitize::sanitize($entry['value']);
+        }
+
         $rows[] = [
-            "`7" . Sanitize::sanitize($entry['label']) . "`0",
-            diagnosticsStatusColour($entry['status']) . Sanitize::sanitize($entry['value']) . "`0",
+            "`7" . Sanitize::sanitize((string) Translator::translate($entry['label'], 'diagnostics')) . "`0",
+            diagnosticsStatusColour($entry['status']) . Sanitize::sanitize($value) . "`0",
         ];
     }
-    $output->outputNotl("`n`b%s`b`n", Sanitize::sanitize((string) $group));
+    $output->outputNotl("`n`b%s`b`n", Sanitize::sanitize((string) Translator::translate((string) $group, 'diagnostics')));
     diagnosticsTable(['Item', 'Value'], $rows);
 }
 
 // ---------------------------------------------------------------- timeline --
 $timeline = $diagnostics->timeline($hours, Diagnostics::ROW_LIMIT);
-$output->outputNotl("`n`n`b`^Timeline`0`b `7(security events, warnings, errors and failed logins)`0`n");
+$output->outputNotl(
+    "`n`n`b`^%s`0`b `7(%s)`0`n",
+    (string) Translator::translate('Timeline', 'diagnostics'),
+    (string) Translator::translate('security events, warnings, errors and failed logins', 'diagnostics')
+);
 $timelineRows = [];
 foreach ($timeline as $event) {
     $timelineRows[] = [
@@ -205,9 +228,11 @@ foreach ($diagnostics->gameLog($hours, $severity, Diagnostics::ROW_LIMIT) as $ro
 }
 $output->rawOutput("<details open><summary>");
 $output->outputNotl(
-    "Game log `7(showing %s of %s)`0",
-    (string) count($gameLogRows),
-    (string) ($counts['gamelog'] ?? 0)
+    (string) Translator::sprintfTranslate(
+        'Game log `7(showing %s of %s)`0',
+        (string) count($gameLogRows),
+        (string) ($counts['gamelog'] ?? 0)
+    )
 );
 $output->rawOutput("</summary>");
 diagnosticsTable(['When', 'Severity', 'Category', 'Who', 'Message'], $gameLogRows);
@@ -227,9 +252,11 @@ foreach ($diagnostics->failLog($hours, Diagnostics::ROW_LIMIT) as $row) {
 }
 $output->rawOutput("<details><summary>");
 $output->outputNotl(
-    "Failed logins `7(showing %s of %s)`0",
-    (string) count($failLogRows),
-    (string) ($counts['faillog'] ?? 0)
+    (string) Translator::sprintfTranslate(
+        'Failed logins `7(showing %s of %s)`0',
+        (string) count($failLogRows),
+        (string) ($counts['faillog'] ?? 0)
+    )
 );
 $output->rawOutput("</summary>");
 diagnosticsTable(['When', 'IP', 'Login attempted', 'Account', 'Privileged'], $failLogRows);
@@ -250,9 +277,11 @@ foreach ($diagnostics->debugLog($hours, Diagnostics::ROW_LIMIT) as $row) {
 }
 $output->rawOutput("<details><summary>");
 $output->outputNotl(
-    "Character audit trail `7(showing %s of %s)`0",
-    (string) count($debugLogRows),
-    (string) ($counts['debuglog'] ?? 0)
+    (string) Translator::sprintfTranslate(
+        'Character audit trail `7(showing %s of %s)`0',
+        (string) count($debugLogRows),
+        (string) ($counts['debuglog'] ?? 0)
+    )
 );
 $output->rawOutput("</summary>");
 diagnosticsTable(['When', 'Actor', 'Target', 'Field', 'Value', 'Message'], $debugLogRows);
@@ -261,7 +290,12 @@ $output->rawOutput("</details>");
 
 // --------------------------------------------------------------- profiling --
 $output->rawOutput("<details><summary>");
-$output->outputNotl("Runtimes `7(%s samples in window)`0", (string) ($counts['debug'] ?? 0));
+$output->outputNotl(
+    (string) Translator::sprintfTranslate(
+        'Runtimes `7(%s samples in window)`0',
+        (string) ($counts['debug'] ?? 0)
+    )
+);
 $output->rawOutput("</summary>");
 
 if (($counts['debug'] ?? 0) === 0) {
@@ -278,7 +312,7 @@ if (($counts['debug'] ?? 0) === 0) {
                 (string) (int) $row['hits'],
             ];
         }
-        $output->outputNotl("`n`b%s`b`n", $label);
+        $output->outputNotl("`n`b%s`b`n", (string) Translator::translate($label, 'diagnostics'));
         diagnosticsTable(['Category', 'Name', 'Total s', 'Average s', 'Hits'], $profileRows);
     }
 }

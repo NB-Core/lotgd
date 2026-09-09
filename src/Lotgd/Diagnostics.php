@@ -244,14 +244,13 @@ class Diagnostics
      *
      * @return array<string,int>
      */
-    public function counts(int $hours): array
+    public function counts(int $hours, ?string $severity = null): array
     {
         $since = self::since($hours);
         $connection = Database::getDoctrineConnection();
         $counts = [];
 
         $sources = [
-            'gamelog' => [Database::prefix('gamelog'), 'date'],
             'faillog' => [Database::prefix('faillog'), 'date'],
             'debug' => [Database::prefix('debug'), 'date'],
         ];
@@ -259,6 +258,33 @@ class Diagnostics
         foreach ($sources as $key => [$table, $column]) {
             $counts[$key] = (int) $connection->fetchOne(
                 "SELECT COUNT(*) FROM {$table} WHERE {$column} > :since",
+                ['since' => $since],
+                ['since' => ParameterType::STRING]
+            );
+        }
+
+        // The game log count carries the same severity filter as the listing,
+        // or the section reads "showing 5 of 1000" when only five rows match.
+        $gamelog = Database::prefix('gamelog');
+        $params = ['since' => $since];
+        $types = ['since' => ParameterType::STRING];
+        $severityClause = '';
+        if ($severity !== null) {
+            $severityClause = ' AND severity = :severity';
+            $params['severity'] = $severity;
+            $types['severity'] = ParameterType::STRING;
+        }
+
+        try {
+            $counts['gamelog'] = (int) $connection->fetchOne(
+                "SELECT COUNT(*) FROM {$gamelog} WHERE date > :since" . $severityClause,
+                $params,
+                $types
+            );
+        } catch (\Throwable $exception) {
+            // No severity column: the unfiltered count is the only one available.
+            $counts['gamelog'] = (int) $connection->fetchOne(
+                "SELECT COUNT(*) FROM {$gamelog} WHERE date > :since",
                 ['since' => $since],
                 ['since' => ParameterType::STRING]
             );
@@ -280,6 +306,63 @@ class Diagnostics
     }
 
     /**
+     * Game log entries worth putting on the timeline, newest first.
+     *
+     * The restriction has to be in the statement rather than applied to the
+     * rows afterwards. Ordinary bookkeeping is the bulk of this table -- the
+     * comment cleanup alone writes nine maintenance rows per run, and every
+     * settings change and module install adds one -- so a plain "newest N"
+     * query followed by a filter in PHP drops every warning, error and security
+     * event behind the first N routine rows. On a busy server that is all of
+     * them, which is exactly what this timeline exists to prevent.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function notableGameLog(int $hours, int $limit): array
+    {
+        $gamelog = Database::prefix('gamelog');
+        $accounts = Database::prefix('accounts');
+        $since = self::since($hours);
+        $columns = "g.logid, g.date, g.category, g.severity, g.message, g.who, a.name AS name";
+        $from = " FROM {$gamelog} g LEFT JOIN {$accounts} a ON g.who = a.acctid";
+
+        $sql = "SELECT {$columns}" . $from
+            . " WHERE g.date > :since"
+            . " AND (g.category = :security OR g.severity IN (:warning, :error))"
+            . " ORDER BY g.date DESC LIMIT " . $this->cap($limit);
+
+        try {
+            return Database::getDoctrineConnection()->fetchAllAssociative(
+                $sql,
+                [
+                    'since' => $since,
+                    'security' => GameLog::CATEGORY_SECURITY,
+                    'warning' => GameLog::SEVERITY_WARNING,
+                    'error' => GameLog::SEVERITY_ERROR,
+                ],
+                [
+                    'since' => ParameterType::STRING,
+                    'security' => ParameterType::STRING,
+                    'warning' => ParameterType::STRING,
+                    'error' => ParameterType::STRING,
+                ]
+            );
+        } catch (\Throwable $exception) {
+            // Without the severity column the timeline can only be built from
+            // the security category. Narrower, but honest and not fatal.
+            $fallback = "SELECT g.logid, g.date, g.category, g.message, g.who, a.name AS name" . $from
+                . " WHERE g.date > :since AND g.category = :security"
+                . " ORDER BY g.date DESC LIMIT " . $this->cap($limit);
+
+            return Database::getDoctrineConnection()->fetchAllAssociative(
+                $fallback,
+                ['since' => $since, 'security' => GameLog::CATEGORY_SECURITY],
+                ['since' => ParameterType::STRING, 'security' => ParameterType::STRING]
+            );
+        }
+    }
+
+    /**
      * One chronological stream of the events worth noticing.
      *
      * Fed by exactly two sources: game log entries that are security events or
@@ -293,15 +376,9 @@ class Diagnostics
     {
         $events = [];
 
-        foreach ($this->gameLog($hours, null, $limit) as $row) {
+        foreach ($this->notableGameLog($hours, $limit) as $row) {
             $severity = strtolower((string) ($row['severity'] ?? GameLog::SEVERITY_INFO));
             $category = (string) ($row['category'] ?? '');
-            $isSecurity = $category === GameLog::CATEGORY_SECURITY;
-            $isTrouble = in_array($severity, [GameLog::SEVERITY_WARNING, GameLog::SEVERITY_ERROR], true);
-
-            if (! $isSecurity && ! $isTrouble) {
-                continue;
-            }
 
             $events[] = [
                 'at' => (string) $row['date'],
@@ -347,7 +424,7 @@ class Diagnostics
      * only job is to describe the current state is a poor place for that to
      * happen.
      *
-     * @return array<string,list<array{label:string,value:string,status:string}>>
+     * @return array<string,list<array{label:string,value:string,args:list<string|int>,translate:bool,status:string}>>
      */
     public function runtime(): array
     {
@@ -364,25 +441,30 @@ class Diagnostics
     /**
      * @param array<string,mixed> $settings
      *
-     * @return list<array{label:string,value:string,status:string}>
+     * @return list<array{label:string,value:string,args:list<string|int>,translate:bool,status:string}>
      */
     private function versionRows(array $settings): array
     {
         $code = Page::getInstance()->getLogdVersion();
         $schema = (string) ($settings['installer_version'] ?? '');
         $rows = [
-            $this->row('Game version', $code),
+            $this->row('Game version', $code, 'ok', [], false),
+            // Reference only, deliberately without a warning state. When the two
+            // disagree, common.php:484 renders "Upgrade Needed" and its footer
+            // calls exit(), so this page is never reached -- a mismatch cannot be
+            // reported from here, and pretending otherwise would advertise a
+            // check that cannot fire.
+            $schema === ''
+                ? $this->row('Schema version', 'unknown')
+                : $this->row('Schema version', $schema, 'ok', [], false),
             $this->row(
-                'Schema version',
-                $schema === '' ? 'unknown' : $schema,
-                // A mismatch is a finding in itself: common.php diverts to the
-                // installer when these disagree.
-                ($schema !== '' && $schema === $code) ? 'ok' : 'warn'
+                'Version check',
+                'the game refuses to start while these differ, so reaching this page means they match'
             ),
         ];
 
         try {
-            $rows[] = $this->row('Database server', Database::getServerVersion());
+            $rows[] = $this->row('Database server', Database::getServerVersion(), 'ok', [], false);
         } catch (\Throwable $exception) {
             $rows[] = $this->row('Database server', 'unknown', 'unknown');
         }
@@ -390,7 +472,7 @@ class Diagnostics
         // Read the cache the core news page fills; never trigger a fetch here.
         $release = DataCache::getInstance()->datacache('github_release_latest', 86400);
         if (is_array($release) && isset($release['tag_name'])) {
-            $rows[] = $this->row('Latest upstream release', (string) $release['tag_name']);
+            $rows[] = $this->row('Latest upstream release', (string) $release['tag_name'], 'ok', [], false);
         } else {
             $rows[] = $this->row('Latest upstream release', 'not cached', 'unknown');
         }
@@ -399,7 +481,7 @@ class Diagnostics
     }
 
     /**
-     * @return list<array{label:string,value:string,status:string}>
+     * @return list<array{label:string,value:string,args:list<string|int>,translate:bool,status:string}>
      */
     private function environmentRows(): array
     {
@@ -411,21 +493,19 @@ class Diagnostics
         }
 
         return [
-            $this->row('PHP version', PHP_VERSION),
-            $this->row(
-                'Missing extensions',
-                $missing === [] ? 'none' : implode(', ', $missing),
-                $missing === [] ? 'ok' : 'error'
-            ),
-            $this->row('memory_limit', (string) ini_get('memory_limit')),
-            $this->row('max_execution_time', (string) ini_get('max_execution_time')),
+            $this->row('PHP version', PHP_VERSION, 'ok', [], false),
+            $missing === []
+                ? $this->row('Missing extensions', 'none')
+                : $this->row('Missing extensions', implode(', ', $missing), 'error', [], false),
+            $this->row('memory_limit', (string) ini_get('memory_limit'), 'ok', [], false),
+            $this->row('max_execution_time', (string) ini_get('max_execution_time'), 'ok', [], false),
         ];
     }
 
     /**
      * @param array<string,mixed> $settings
      *
-     * @return list<array{label:string,value:string,status:string}>
+     * @return list<array{label:string,value:string,args:list<string|int>,translate:bool,status:string}>
      */
     private function maintenanceRows(array $settings): array
     {
@@ -434,15 +514,16 @@ class Diagnostics
         $online = (int) ($settings['OnlineCount'] ?? 0);
         $onlineLast = (int) ($settings['OnlineCountLast'] ?? 0);
         $maxOnline = (int) ($settings['maxonline'] ?? 0);
-        $rows[] = $this->row(
-            'Players online',
-            sprintf(
-                '%d%s (%s)',
-                $online,
-                $maxOnline > 0 ? ' of ' . $maxOnline : '',
-                $onlineLast > 0 ? $this->ageLabel(time() - $onlineLast) . ' old' : 'never counted'
-            )
-        );
+        if ($onlineLast <= 0) {
+            $rows[] = $maxOnline > 0
+                ? $this->row('Players online', '%s of %s, never counted', 'ok', [$online, $maxOnline])
+                : $this->row('Players online', '%s, never counted', 'ok', [$online]);
+        } else {
+            $age = $this->ageLabel(time() - $onlineLast);
+            $rows[] = $maxOnline > 0
+                ? $this->row('Players online', '%s of %s, counted %s ago', 'ok', [$online, $maxOnline, $age])
+                : $this->row('Players online', '%s, counted %s ago', 'ok', [$online, $age]);
+        }
 
         // Written before the work runs, and also bumped by a player-triggered
         // new day, so it only means "cron ran" when newdaycron is on. It is
@@ -453,12 +534,20 @@ class Diagnostics
             $rows[] = $this->row('Last new day', 'never', 'warn');
         } else {
             $age = time() - (int) strtotime($semaphore . ' +0000');
-            $rows[] = $this->row(
-                'Last new day',
-                $semaphore . ' UTC (' . $this->ageLabel($age) . ' ago)'
-                    . ($cronEnabled ? '' : ' -- newdaycron is off, so this may be player-triggered'),
-                $age > 26 * 3600 ? 'warn' : 'ok'
-            );
+            $status = $age > 26 * 3600 ? 'warn' : 'ok';
+            $rows[] = $cronEnabled
+                ? $this->row(
+                    'Last new day',
+                    '%s UTC, %s ago',
+                    $status,
+                    [$semaphore, $this->ageLabel($age)]
+                )
+                : $this->row(
+                    'Last new day',
+                    '%s UTC, %s ago; newdaycron is off, so this may be player-triggered',
+                    $status,
+                    [$semaphore, $this->ageLabel($age)]
+                );
         }
 
         // The better completion signal: these rows are written after the work,
@@ -470,8 +559,9 @@ class Diagnostics
             $age = time() - (int) strtotime($lastMaintenance);
             $rows[] = $this->row(
                 'Last maintenance run',
-                $lastMaintenance . ' (' . $this->ageLabel($age) . ' ago)',
-                $age > 26 * 3600 ? 'warn' : 'ok'
+                '%s, %s ago',
+                $age > 26 * 3600 ? 'warn' : 'ok',
+                [$lastMaintenance, $this->ageLabel($age)]
             );
         }
 
@@ -481,52 +571,79 @@ class Diagnostics
     /**
      * @param array<string,mixed> $settings
      *
-     * @return list<array{label:string,value:string,status:string}>
+     * @return list<array{label:string,value:string,args:list<string|int>,translate:bool,status:string}>
      */
     private function loggingRows(array $settings): array
     {
         $target = (string) ini_get('error_log');
         $readable = $target !== '' && is_file($target) && is_readable($target);
         $rows = [
-            $this->row(
-                'PHP error log',
-                $target === ''
-                    ? 'the web server log'
-                    : $target . ($readable ? '' : ' -- not readable from PHP, use the container log'),
-                $readable ? 'ok' : 'unknown'
-            ),
+            $this->errorLogRow($target, $readable),
         ];
 
         $debugMode = (int) ($settings['debug'] ?? 0) === 1;
-        $rows[] = $this->row(
-            'DEBUG mode',
-            $debugMode ? 'on -- runtimes are being collected' : 'off -- no runtimes are collected',
-            $debugMode ? 'warn' : 'ok'
-        );
+        $rows[] = $debugMode
+            ? $this->row('DEBUG mode', 'on; runtimes are being collected', 'warn')
+            : $this->row('DEBUG mode', 'off; no runtimes are collected');
 
         // The one setting on this page that is a live risk rather than a fact.
         $detailsPublic = (int) ($settings['show_error_details'] ?? 0) === 1;
-        $rows[] = $this->row(
-            'Public error details',
-            $detailsPublic
-                ? 'ON -- every visitor sees messages, paths and backtraces'
-                : 'off',
-            $detailsPublic ? 'error' : 'ok'
-        );
+        $rows[] = $detailsPublic
+            ? $this->row(
+                'Public error details',
+                'ON; every visitor sees messages, paths and backtraces',
+                'error'
+            )
+            : $this->row('Public error details', 'off');
 
         foreach (
             [
-                'expiregamelog' => 'Game log retention',
-                'expiredebuglog' => 'Debug log retention',
-                'expirefaillog' => 'Fail log retention',
-                'expiredebug' => 'DEBUG runtime retention',
-            ] as $key => $label
+                'expiregamelog' => ['Game log retention', 30],
+                'expiredebuglog' => ['Debug log retention', 18],
+                'expirefaillog' => ['Fail log retention', 1],
+                'expiredebug' => ['DEBUG runtime retention', 7],
+            ] as $key => [$label, $default]
         ) {
-            $days = (int) ($settings[$key] ?? 0);
-            $rows[] = $this->row($label, $days > 0 ? $days . ' days' : 'kept indefinitely');
+            // The defaults mirror the ones Newday passes to getSetting() when it
+            // cleans up (Newday.php:87-89, 143-144, 188-189, 206-207). A key that
+            // has not been materialised yet is still governed by them, so
+            // reporting "indefinitely" would describe a retention that is not the
+            // one in force. Read here without persisting; the pages that use a
+            // setting are where a default belongs in the table.
+            $days = (int) ($settings[$key] ?? $default);
+            $rows[] = $days > 0
+                ? $this->row($label, '%s days', 'ok', [$days])
+                : $this->row($label, 'kept indefinitely');
         }
 
         return $rows;
+    }
+
+    /**
+     * Where PHP's error log goes, and whether this page could read it.
+     *
+     * In the container image the destination is /dev/stderr, which is
+     * write-only, so the honest answer is the destination plus where to look
+     * instead -- not an attempt to open it.
+     *
+     * @return array{label:string,value:string,args:list<string|int>,translate:bool,status:string}
+     */
+    private function errorLogRow(string $target, bool $readable): array
+    {
+        if ($target === '') {
+            return $this->row('PHP error log', 'the web server log', 'unknown');
+        }
+
+        if ($readable) {
+            return $this->row('PHP error log', '%s', 'ok', [$target]);
+        }
+
+        return $this->row(
+            'PHP error log',
+            '%s; not readable from PHP, use the container log',
+            'unknown',
+            [$target]
+        );
     }
 
     /**
@@ -600,9 +717,36 @@ class Diagnostics
     /**
      * @return array{label:string,value:string,status:string}
      */
-    private function row(string $label, string $value, string $status = 'ok'): array
-    {
-        return ['label' => $label, 'value' => $value, 'status' => $status];
+    /**
+     * Build one snapshot row.
+     *
+     * The label and the value are source strings for the translator, not
+     * finished output: the page translates them in the `diagnostics` namespace
+     * before rendering. Anything that varies -- a version, a count, a path, a
+     * timestamp -- goes into `args` as a positional `%s` so the sentence stays
+     * one translatable unit instead of being concatenated around the data.
+     *
+     * `translate: false` marks a value that is pure data and has no business in
+     * the translation table.
+     *
+     * @param list<string|int> $args
+     *
+     * @return array{label:string,value:string,args:list<string|int>,translate:bool,status:string}
+     */
+    private function row(
+        string $label,
+        string $value,
+        string $status = 'ok',
+        array $args = [],
+        bool $translate = true
+    ): array {
+        return [
+            'label' => $label,
+            'value' => $value,
+            'args' => $args,
+            'translate' => $translate,
+            'status' => $status,
+        ];
     }
 
     /**
