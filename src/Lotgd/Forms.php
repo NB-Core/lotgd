@@ -8,12 +8,59 @@ use Lotgd\Settings;
 use Lotgd\DumpItem;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
+use Lotgd\Security\Csrf;
 use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\DataCache;
 
 class Forms
 {
+    /**
+     * The CSRF scope a form built here belongs to.
+     *
+     * Derived from the entry script rather than passed in, so a caller cannot
+     * forget it and cannot pick the wrong one. That works because the script
+     * that renders one of these forms is also the script it posts to:
+     * `prefs.php` posts to `prefs.php?op=save`, and `pages/user/user_edit.php`
+     * is included from `user.php`, which is both the SCRIPT_NAME at render time
+     * and the target of `user.php?op=save`.
+     *
+     * Per script rather than one shared scope, because the project keeps its
+     * scopes separated on purpose: a token minted by the title editor has no
+     * business opening the game configuration.
+     */
+    public static function csrfScope(): string
+    {
+        $script = $_SERVER['SCRIPT_NAME'] ?? '';
+        $name = is_string($script) ? basename($script) : '';
+        // Not a request-derived value in any deployment, but it reaches a
+        // session key, so it is narrowed rather than trusted.
+        $name = (string) preg_replace('/[^A-Za-z0-9._-]/', '', $name);
+
+        return 'form:' . ($name !== '' ? $name : 'unknown');
+    }
+
+    /**
+     * The hidden token input that {@see self::showForm()} emits.
+     */
+    public static function csrfField(): string
+    {
+        return Csrf::hiddenField(self::csrfScope(), Csrf::FORM_FIELD);
+    }
+
+    /**
+     * Validate the token a form built here posted back.
+     *
+     * The one line a save branch adds. Emission is automatic; validation
+     * cannot be, because it has to happen where the page decides to write --
+     * before anything is persisted -- and that is not a place `showForm()`
+     * ever reaches.
+     */
+    public static function validateCsrf(): bool
+    {
+        return Csrf::validatePostRequest(self::csrfScope(), Csrf::FORM_FIELD);
+    }
+
     /**
      * Render a message preview input field with javascript helper.
      */
@@ -235,6 +282,11 @@ JS;
         $save = Translator::translateInline('Save');
         Translator::getInstance()->setSchema();
         if (!$nosave) {
+            // $nosave is the right gate: a form with no submit button cannot
+            // post, so it needs no token, and giving one to a read-only view
+            // would issue a scope's token to every page that merely displays
+            // settings.
+            $output->rawOutput(self::csrfField());
             $output->rawOutput("<input type='submit' class='button' value='$save'>");
         }
 
@@ -310,6 +362,11 @@ JS;
         $save = Translator::translateInline('Save');
         Translator::getInstance()->setSchema();
         if (!$nosave) {
+            // $nosave is the right gate: a form with no submit button cannot
+            // post, so it needs no token, and giving one to a read-only view
+            // would issue a scope's token to every page that merely displays
+            // settings.
+            $output->rawOutput(self::csrfField());
             $output->rawOutput("<input type='submit' class='button' value='$save'>");
         }
 

@@ -42,6 +42,9 @@ Nav::add("Bans");
 Nav::add("Set up ban", "bans.php?op=setupban&userid={$row['acctid']}");
 if (Http::get('subop') == "") {
     $output->rawOutput("<form action='user.php?op=special&userid=$userid$returnpetition' method='POST'>");
+    // Not a showForm() form, so the field is added by hand -- same scope, so
+    // the same one-line check validates it.
+    $output->rawOutput(Forms::csrfField());
     Nav::add("", "user.php?op=special&userid=$userid$returnpetition");
     $grant = Translator::translateInline("Grant New Day");
     $output->rawOutput("<input type='submit' class='button' name='newday' value='$grant'>");

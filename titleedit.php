@@ -47,6 +47,14 @@ Nav::add("Functions");
 
 switch ($op) {
     case "save":
+        if (!Forms::validateCsrf()) {
+            debuglog('Rejected a title save with an invalid CSRF token.');
+            http_response_code(400);
+            $output->output("`\$Not saved.`0`n");
+            $op = "";
+
+            break;
+        }
         $male = Http::post('male');
         $female = Http::post('female');
         $dk = Http::post('dk');

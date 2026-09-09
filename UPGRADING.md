@@ -306,6 +306,22 @@ modules.
   A `Nav::add()` entry next to a form does not make a GET equivalent:
   `ForcedNavigation` matches the URI and ignores the method, and `SameSite=Lax`
   sends the session cookie on a top-level GET navigation.
+- **Forms built by `Forms::showForm()` now carry a CSRF token, and the pages
+  behind them validate it.** This affects custom code in two ways:
+  - A submittable `showForm()`/`showFormTabbed()` form gains a hidden
+    `form_csrf_token` input. A module that iterates the POST body and writes
+    every key must run it through `Csrf::stripFrom()`, or it will store the
+    token as data. Forms rendered with `$nosave = true` are unchanged: they
+    cannot post, so they get no token.
+  - Anything posting to `configuration.php`, `prefs.php`, `titleedit.php` or
+    `user.php` (`op=save`, `savemodule`, `special`) without that field is now
+    refused with 400. Render the page's form and submit the token it contains;
+    a handwritten form posting to the same script can use
+    `Forms::csrfField()`.
+
+  The field is deliberately not named `csrf_token`: a page may render its own
+  token *and* contain a `showForm()` form, and PHP keeps the last input of a
+  given name.
 - **Namespaces**: Core code moved to `Lotgd\...`. Custom modules calling internal functions may need refactoring.
 - **Twig**: Default rendering pipeline. Legacy template hooks may not work without updates.
 - **Doctrine**: Direct SQL hacks should be migrated to repositories or services.

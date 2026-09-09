@@ -207,7 +207,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         Http::postSet('showFormTabIndex', $showFormTabIndex);
     }
 
-    $post = Http::allPost();
+    $post = Csrf::stripFrom(Http::allPost());
     //strip unnecessary values
     unset($post['oldvalues']);
     unset($post['showFormTabIndex']);
@@ -320,6 +320,16 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     $allowedPrefKeys = array_fill_keys(array_filter(array_keys($formDefinition), 'is_string'), true);
     foreach (array_keys($msettings) as $allowedKey) {
         $allowedPrefKeys[$allowedKey] = true;
+    }
+
+    // The write gate below is "did anything get posted"; an unvalidated post
+    // becomes an empty one, so a refusal takes the same do-nothing path the
+    // page already had rather than needing a second one.
+    if (count($post) > 0 && !Forms::validateCsrf()) {
+        DebugLog::add('Rejected a preferences save with an invalid CSRF token.');
+        http_response_code(400);
+        $output->output("`\$Your preferences were not saved.`0`n");
+        $post = [];
     }
 
     if (count($post) == 0) {

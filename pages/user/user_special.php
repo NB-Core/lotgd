@@ -2,8 +2,20 @@
 
 declare(strict_types=1);
 
+use Lotgd\Forms;
 use Lotgd\MySQL\Database;
 use Lotgd\Http;
+
+// One line at the point of writing; showForm() (or Forms::csrfField() for the
+// handwritten form) put the token there.
+if (!Forms::validateCsrf()) {
+    debuglog('Rejected a user special action with an invalid CSRF token.');
+    http_response_code(400);
+    $output->output("`$Not saved.`0`n");
+
+    return;
+}
+
 
 if (Http::post('newday') !== false) {
 #   $offset = '-' . (24 / (int) \Lotgd\Settings::getInstance()->getSetting('daysperday', 4)) . ' hours';
