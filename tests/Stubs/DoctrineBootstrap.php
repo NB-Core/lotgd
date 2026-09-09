@@ -85,6 +85,8 @@ class DoctrineConnection
     public array $lastExecuteStatementTypes = [];
     public array $executeQueryParams = [];
     public array $executeQueryTypes = [];
+    /** When true, the next fetchAllAssociative() throws instead of returning rows. */
+    public bool $throwOnceOnFetchAll = false;
 
     private function makeResult(array $rows): DoctrineResult
     {
@@ -301,6 +303,15 @@ class DoctrineConnection
             'params' => $params,
             'types'  => $types,
         ];
+
+        // Lets a test exercise a degradation path -- a query against a column an
+        // unmigrated installation does not have, for instance. The statement is
+        // still logged above, so the assertion can see what was attempted.
+        if ($this->throwOnceOnFetchAll) {
+            $this->throwOnceOnFetchAll = false;
+
+            throw new \RuntimeException('simulated query failure');
+        }
 
         if (!empty(Database::$mockResults)) {
             $rows = array_shift(Database::$mockResults);
