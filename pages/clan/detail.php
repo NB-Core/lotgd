@@ -22,7 +22,7 @@ $charset = $settings->getSetting('charset', 'UTF-8');
 
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     // Same shape: the writes here key off posted fields.
-    if (Forms::isUnverifiedPost()
+    if (Forms::isUnverifiedRequest()
         && (Http::postIsset('clanname') || Http::postIsset('clanshort')
             || Http::postIsset('block') || Http::postIsset('unblock'))
     ) {

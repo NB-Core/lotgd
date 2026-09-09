@@ -29,7 +29,7 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
 
         // POST-only and the token check now come from the shared helper; the
         // guarantee is unchanged, the recipe is no longer copied here.
-        self::assertStringContainsString('Forms::isUnverifiedPost(Csrf::SCOPE_MOUNT_EDITOR)', $source);
+        self::assertStringContainsString('Forms::isUnverifiedRequest(Csrf::SCOPE_MOUNT_EDITOR)', $source);
         self::assertStringContainsString("WHERE mountid = :mountId", $source);
         self::assertStringContainsString("WHERE hashorse = :mountId", $source);
         self::assertStringNotContainsString("mountid='\$id'", $source);
@@ -45,7 +45,7 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
         self::assertStringContainsString('$normalizedValue = serialize($abilities);', $source);
         self::assertStringNotContainsString('addslashes(serialize(', $source);
         self::assertStringContainsString("['id' => ParameterType::INTEGER]", $source);
-        self::assertStringContainsString('Forms::isUnverifiedPost(Csrf::SCOPE_COMPANION_EDITOR)', $source);
+        self::assertStringContainsString('Forms::isUnverifiedRequest(Csrf::SCOPE_COMPANION_EDITOR)', $source);
     }
 
     public function testEquipmentEditorsValidateIndicesAndBindNames(): void
@@ -57,7 +57,7 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
             self::assertStringContainsString("'name' => ParameterType::STRING", $source);
             self::assertStringContainsString("'$stat' => ParameterType::INTEGER", $source);
             $scope = $file === 'armoreditor.php' ? 'SCOPE_ARMOR_EDITOR' : 'SCOPE_WEAPON_EDITOR';
-            self::assertStringContainsString("Forms::isUnverifiedPost(Csrf::$scope)", $source);
+            self::assertStringContainsString("Forms::isUnverifiedRequest(Csrf::$scope)", $source);
             // The delete control is a shared POST button now; the editor form itself
             // still posts.
             self::assertStringContainsString("method='POST'", $source);

@@ -149,7 +149,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // blind spot SECURITY.md describes; the id comes from the session now, and
     // the request parameter is not consulted at all.
     $userid = (int) ($session['user']['acctid'] ?? 0);
-    if (Forms::isUnverifiedPost(Csrf::SCOPE_SELF_DELETE)) {
+    if (Forms::isUnverifiedRequest(Csrf::SCOPE_SELF_DELETE)) {
         DebugLog::add('Rejected character self-deletion with an invalid CSRF token.');
         http_response_code(400);
         $output->output("`\$Your character was not deleted.`0`n");

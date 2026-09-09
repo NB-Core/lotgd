@@ -51,7 +51,7 @@ $op = is_string($opRequest) ? $opRequest : '';
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['save', 'modulesettings', 'testsmtp'])) {
+if (Forms::isUnverifiedCoreOp($op, ['save', 'testsmtp'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
@@ -299,6 +299,14 @@ switch ($type_setting) {
                 if (injectmodule($module, true)) {
                     $saveRequest = Http::get('save');
                     $save = is_string($saveRequest) ? $saveRequest : '';
+                    // op=modulesettings is also the *view* that opens this
+                    // form, reached by a link from modules.php, so it cannot be
+                    // guarded as a whole. The write is the branch below.
+                    if ($save != "" && Forms::isUnverifiedRequest()) {
+                        debuglog('Rejected a module settings save with an invalid CSRF token.');
+                        http_response_code(400);
+                        $save = "";
+                    }
                     if ($save != "") {
                         load_module_settings($module);
                         $module_settings = ModuleManager::settings();
@@ -372,16 +380,12 @@ switch ($type_setting) {
                             if (is_module_active($module)) {
                                 $output->output("This module is currently active: ");
                                 $deactivate = Translator::translateInline("Deactivate");
-                                $output->rawOutput("<a href='modules.php?op=deactivate&module={$module}&cat={$info['category']}'>");
-                                $output->outputNotl($deactivate);
-                                $output->rawOutput("</a>");
+                                $output->rawOutput(Forms::postButton("modules.php?op=deactivate&module={$module}&cat={$info['category']}", $deactivate, null, 'linkbutton'));
                                 Nav::add("", "modules.php?op=deactivate&module={$module}&cat={$info['category']}");
                             } else {
                                 $output->output("This module is currently deactivated: ");
                                 $deactivate = Translator::translateInline("Activate");
-                                $output->rawOutput("<a href='modules.php?op=activate&module={$module}&cat={$info['category']}'>");
-                                $output->outputNotl($deactivate);
-                                $output->rawOutput("</a>");
+                                $output->rawOutput(Forms::postButton("modules.php?op=activate&module={$module}&cat={$info['category']}", $deactivate, null, 'linkbutton'));
                                 Nav::add("", "modules.php?op=activate&module={$module}&cat={$info['category']}");
                             }
                             $output->rawOutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>", true);

@@ -145,7 +145,7 @@ function mailRead(): void
     $output->rawOutput("<td><a href='mail.php?op=write&replyto={$message['messageid']}' class='motd'>$replyLabel</a></td>");
     $output->rawOutput("<td>" . Forms::postButton("mail.php?op=del&id={$message['messageid']}", $deleteLabel, null, 'motd') . "</td>");
     $output->rawOutput('</tr><tr>');
-    $output->rawOutput("<td><a href='mail.php?op=unread&id={$message['messageid']}' class='motd'>$unreadLabel</a></td>");
+    $output->rawOutput("<td>" . Forms::postButton("mail.php?op=unread&id={$message['messageid']}", $unreadLabel, null, 'motd') . "</td>");
 
     if ((int) $message['msgfrom'] !== 0) {
         $escapedProblem = htmlentities($reportMessage, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));

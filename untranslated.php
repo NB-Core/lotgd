@@ -73,6 +73,14 @@ if ($op == "list") {
     $mode = Http::get('mode');
     $namespace = Http::get('ns');
 
+    // op=list is also the browsing view, so it cannot be guarded as a whole:
+    // the write is mode=save, which arrives as a POST from the form below.
+    if ($mode == "save" && Forms::isUnverifiedRequest()) {
+        debuglog('Rejected a translation save with an invalid CSRF token.');
+        http_response_code(400);
+        $mode = "";
+        $_POST = [];
+    }
     if ($mode == "save") {
         $intext = Http::post('intext');
         $outtext = Http::post('outtext');

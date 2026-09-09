@@ -74,10 +74,10 @@ final class MotdEditingCsrfRegressionTest extends TestCase
         // del, save and savenew: three writes, and the vote path already had one.
         self::assertSame(
             2,
-            substr_count($source, 'Forms::isUnverifiedPost(Csrf::SCOPE_MOTD_EDIT)'),
+            substr_count($source, 'Forms::isUnverifiedRequest(Csrf::SCOPE_MOTD_EDIT)'),
             'both the save/savenew branch and the del branch must validate'
         );
-        self::assertStringContainsString('Forms::isUnverifiedPost(Csrf::SCOPE_MOTD_VOTE)', $source);
+        self::assertStringContainsString('Forms::isUnverifiedRequest(Csrf::SCOPE_MOTD_VOTE)', $source);
     }
 
     /**

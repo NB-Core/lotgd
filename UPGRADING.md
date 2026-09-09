@@ -291,9 +291,12 @@ modules.
 
 - **The core's own state-changing operations now require a CSRF token, and
   every destructive trigger is a button rather than a link.**
-  - A module or bookmark that links to a *core* `?op=del`, `?op=delete`,
-    `?op=remove`, `?op=uninstall`, `?op=delban` or a clan `&remove=`/`&setrank=`
-    URL stops working. These render through `Forms::postButton()` now, which
+  - A module or bookmark that links to a *core* state-changing operation stops
+    working — `?op=del`, `?op=delete`, `?op=remove`, `?op=uninstall`,
+    `?op=install`, `?op=activate`, `?op=deactivate`, `?op=reinstall`,
+    `?op=delban`, `mail.php?op=unread`, `donators.php?op=add2` or a clan
+    `&remove=`/`&setrank=` URL. A GET can never be verified, which is the point:
+    following a crafted link was the original hole. These render through `Forms::postButton()` now, which
     emits an inline POST form with the token. Build one the same way rather than
     an anchor.
   - A handwritten form posting to one of *these operations* needs

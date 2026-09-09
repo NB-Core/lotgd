@@ -253,12 +253,16 @@ if ($op == "") {
     }
     foreach ($results as $row) {
         if ($ret != "") {
-            $output->rawOutput("<a href='donators.php?op=add2&id={$row['acctid']}&amt=$amt&ret=" . rawurlencode($ret) . "&reason=" . rawurlencode($reason) . "'>");
+            $target = "donators.php?op=add2&id={$row['acctid']}&amt=$amt&ret=" . rawurlencode($ret) . "&reason=" . rawurlencode($reason);
         } else {
-            $output->rawOutput("<a href='donators.php?op=add2&id={$row['acctid']}&amt=$amt&reason=" . rawurlencode($reason) . "&txnid=$txnid'>");
+            $target = "donators.php?op=add2&id={$row['acctid']}&amt=$amt&reason=" . rawurlencode($reason) . "&txnid=$txnid";
         }
-        $output->outputNotl("%s (%s/%s)", $row['name'], $row['donation'], $row['donationspent']);
-        $output->rawOutput("</a>");
+        $output->rawOutput(Forms::postButton(
+            $target,
+            sprintf('%s (%s/%s)', $row['name'], $row['donation'], $row['donationspent']),
+            null,
+            'linkbutton'
+        ));
         $output->outputNotl("`n");
         if ($ret != "") {
             Nav::add("", "donators.php?op=add2&id={$row['acctid']}&amt=$amt&ret=" . rawurlencode($ret) . "&reason=" . rawurlencode($reason));

@@ -36,7 +36,7 @@ function clanMembership(): void
     // Promote, demote and remove are triggered by posted fields and by the
     // buttons rendered below, so the guard sits at the write. A module posting
     // its own fields to clan.php sends none of these names.
-    if (Forms::isUnverifiedPost() && (Http::postIsset('setrank') || Http::postIsset('remove'))) {
+    if (Forms::isUnverifiedRequest() && (Http::postIsset('setrank') || Http::postIsset('remove'))) {
         debuglog('Rejected a clan membership change with an invalid CSRF token.');
         http_response_code(400);
         $_POST = [];

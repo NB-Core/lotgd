@@ -38,12 +38,12 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
         $source = $this->source('pages/user/user_del.php');
 
         self::assertStringContainsString(
-            'Forms::isUnverifiedPost(Csrf::SCOPE_USER_EDITOR)',
+            'Forms::isUnverifiedRequest(Csrf::SCOPE_USER_EDITOR)',
             $source
         );
         // Refusal must not fall through into the deletion.
         self::assertMatchesRegularExpression(
-            '/if \(Forms::isUnverifiedPost\(Csrf::SCOPE_USER_EDITOR\)\) \{.*?return;\s*\}/s',
+            '/if \(Forms::isUnverifiedRequest\(Csrf::SCOPE_USER_EDITOR\)\) \{.*?return;\s*\}/s',
             $source
         );
     }
@@ -90,7 +90,7 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
     {
         $source = $this->source('prefs.php');
 
-        self::assertStringContainsString('Forms::isUnverifiedPost(Csrf::SCOPE_SELF_DELETE)', $source);
+        self::assertStringContainsString('Forms::isUnverifiedRequest(Csrf::SCOPE_SELF_DELETE)', $source);
         self::assertStringContainsString(
             "Forms::postButton('prefs.php?op=suicide', \$deltext, \$conf, 'button', Csrf::SCOPE_SELF_DELETE)",
             $source
@@ -154,7 +154,7 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
 
         self::assertSame(
             2,
-            substr_count($source, 'Forms::isUnverifiedPost(Csrf::SCOPE_RAW_SQL)'),
+            substr_count($source, 'Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)'),
             'both the SQL and the PHP branch must be guarded'
         );
         self::assertSame(
@@ -164,7 +164,7 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
         );
 
         // The guard has to precede execution, not merely exist in the file.
-        $guard = strpos($source, 'Forms::isUnverifiedPost(Csrf::SCOPE_RAW_SQL)');
+        $guard = strpos($source, 'Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)');
         self::assertIsInt($guard);
         self::assertLessThan(strpos($source, 'Database::query($sql, false)'), $guard);
         self::assertLessThan(strpos($source, 'eval($php)'), $guard);

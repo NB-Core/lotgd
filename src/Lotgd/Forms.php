@@ -30,10 +30,18 @@ class Forms
      * scopes separated on purpose: a token minted by the title editor has no
      * business opening the game configuration.
      */
-    public static function csrfScope(): string
+    public static function csrfScope(?string $url = null): string
     {
-        $script = $_SERVER['SCRIPT_NAME'] ?? '';
-        $name = is_string($script) ? basename($script) : '';
+        if ($url !== null) {
+            // The scope belongs to where the form *posts*, not to where it was
+            // rendered: configuration.php renders buttons that submit to
+            // modules.php, and modules.php is the page that will check them.
+            $path = (string) (parse_url($url, PHP_URL_PATH) ?? $url);
+            $name = basename($path);
+        } else {
+            $script = $_SERVER['SCRIPT_NAME'] ?? '';
+            $name = is_string($script) ? basename($script) : '';
+        }
         // Not a request-derived value in any deployment, but it reaches a
         // session key, so it is narrowed rather than trusted.
         $name = (string) preg_replace('/[^A-Za-z0-9._-]/', '', $name);
@@ -44,9 +52,9 @@ class Forms
     /**
      * The hidden token input that {@see self::showForm()} emits.
      */
-    public static function csrfField(): string
+    public static function csrfField(?string $url = null): string
     {
-        return Csrf::hiddenField(self::csrfScope(), Csrf::FORM_FIELD);
+        return Csrf::hiddenField(self::csrfScope($url), Csrf::FORM_FIELD);
     }
 
     /**
@@ -68,7 +76,7 @@ class Forms
      * The one question every state-changing page asks, at its entry, right
      * after it reads `$op`:
      *
-     *     if (Forms::isUnverifiedPost()) {
+     *     if (Forms::isUnverifiedRequest()) {
      *         debuglog('…');
      *         http_response_code(400);
      *         $op = '';
@@ -90,9 +98,9 @@ class Forms
      *                       the same script hands to an ordinary viewer. Null
      *                       uses the page scope.
      */
-    public static function isUnverifiedPost(?string $scope = null): bool
+    public static function isUnverifiedRequest(?string $scope = null): bool
     {
-        return self::isUnverifiedPostInternal($scope);
+        return self::isUnverifiedRequestInternal($scope);
     }
 
     /**
@@ -116,15 +124,28 @@ class Forms
             return false;
         }
 
-        return self::isUnverifiedPostInternal($scope);
+        return self::isUnverifiedRequestInternal($scope);
     }
 
-    private static function isUnverifiedPostInternal(?string $scope): bool
+    /**
+     * A GET is unverified too, and that is the whole point.
+     *
+     * The first version of this returned false for a non-POST, reasoning that
+     * "a GET is never a state change". That reasoning had it backwards: a GET
+     * *was* a state change on these pages -- following a crafted
+     * `user.php?op=del&userid=N` deleted the account, which is what the
+     * previous release was about -- and the check it replaced,
+     * Csrf::validatePostRequest(), refused a GET precisely for that reason.
+     * Returning false here handed that hole straight back.
+     *
+     * A request that is not a POST carrying the right token is unverified,
+     * whatever its method. What keeps ordinary browsing working is *where* the
+     * question is asked: an operation the core does not own is never asked
+     * about, and a page whose write keys off a posted field asks only when that
+     * field is present, which a GET never has.
+     */
+    private static function isUnverifiedRequestInternal(?string $scope): bool
     {
-        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            return false;
-        }
-
         return $scope === null
             ? !self::validateCsrf()
             : !Csrf::validatePostRequest($scope);
@@ -176,7 +197,7 @@ class Forms
         }
 
         return "<form action='" . Escape::html($url) . "' method='POST' style='display:inline'>"
-            . ($scope === null ? self::csrfField() : Csrf::hiddenField($scope))
+            . ($scope === null ? self::csrfField($url) : Csrf::hiddenField($scope))
             . $hidden
             . "<button type='submit' class='" . Escape::html($class) . "'"
             . ($confirm !== null ? Escape::confirmAttribute($confirm) : '')

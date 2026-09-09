@@ -92,7 +92,7 @@ if ($op === 'edit' || $op === 'add') {
         $output->rawOutput('</form>');
     }
 } elseif ($op === 'del' || $op === 'save') {
-    if (Forms::isUnverifiedPost(Csrf::SCOPE_WEAPON_EDITOR)) {
+    if (Forms::isUnverifiedRequest(Csrf::SCOPE_WEAPON_EDITOR)) {
         debuglog('Rejected weapon editor state change with an invalid CSRF token.');
         http_response_code(400);
     } elseif ($op === 'del') {

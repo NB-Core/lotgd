@@ -70,7 +70,7 @@ $insertCommentary = (string) Http::post('insertcommentary');
 // This page writes on a posted field rather than on $op, so the guard sits at
 // the write instead of the entry. Same question, asked where the core decides
 // to change something -- a module posting its own fields here is untouched.
-if ($insertCommentary !== '' && Forms::isUnverifiedPost()) {
+if ($insertCommentary !== '' && Forms::isUnverifiedRequest()) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $insertCommentary = '';

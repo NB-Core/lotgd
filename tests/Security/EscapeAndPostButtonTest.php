@@ -107,7 +107,7 @@ final class EscapeAndPostButtonTest extends TestCase
         // The token it renders is the one the page will accept back.
         self::assertSame(1, preg_match("/value='([a-f0-9]{64})'/", $html, $m));
         $_POST[Csrf::FORM_FIELD] = $m[1];
-        self::assertFalse(Forms::isUnverifiedPost());
+        self::assertFalse(Forms::isUnverifiedRequest());
     }
 
     public function testPostButtonEscapesLabelUrlAndConfirmation(): void
@@ -145,26 +145,66 @@ final class EscapeAndPostButtonTest extends TestCase
     }
 
     /**
-     * A GET is never a state change, so the guard lets it through — the pages
-     * that search or filter with a GET form must keep working.
+     * A GET is unverified too, and this test exists because I got it backwards.
+     *
+     * The first version of the guard returned false for a non-POST, on the
+     * reasoning that "a GET is never a state change" — and the first version of
+     * this test asserted exactly that, so it pinned the bug rather than the
+     * behaviour. It was wrong twice over: a GET *was* a state change on these
+     * pages (following a crafted `user.php?op=del&userid=N` deleted the
+     * account, which is what the previous release was about), and the check it
+     * replaced, `Csrf::validatePostRequest()`, refused a GET for precisely that
+     * reason. Returning false handed that hole straight back, at every site the
+     * sweep touched.
+     *
+     * Ordinary browsing keeps working because of *where* the question is asked,
+     * not because of the method: an operation the core does not own is never
+     * asked about, and a page whose write keys off a posted field asks only
+     * when that field is present, which a GET never has.
      */
-    public function testTheGuardIgnoresAGet(): void
+    public function testAGetIsUnverified(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
 
-        self::assertFalse(Forms::isUnverifiedPost());
+        self::assertTrue(Forms::isUnverifiedRequest(), 'a GET can never be verified');
+        self::assertTrue(
+            Forms::isUnverifiedCoreOp('del', ['del']),
+            'a GET asking for a core state change must be refused'
+        );
+
+        // But an operation the core does not implement is still none of its
+        // business, whatever the method -- that is the module boundary.
+        self::assertFalse(Forms::isUnverifiedCoreOp('mymoduleop', ['del']));
+    }
+
+    /**
+     * The control, spelled out: the check this replaced refused a GET, so the
+     * replacement has to as well. Same inputs, same answer.
+     */
+    public function testItMatchesTheCheckItReplaced(): void
+    {
+        foreach (['GET', 'POST'] as $method) {
+            $_SERVER['REQUEST_METHOD'] = $method;
+            $_POST = [];
+
+            self::assertSame(
+                !Csrf::validatePostRequest(Csrf::SCOPE_USER_EDITOR),
+                Forms::isUnverifiedRequest(Csrf::SCOPE_USER_EDITOR),
+                $method . ': the guard must agree with the check it replaced'
+            );
+        }
     }
 
     public function testTheGuardCatchesAPostWithNoTokenAndAWrongOne(): void
     {
-        self::assertTrue(Forms::isUnverifiedPost(), 'no token at all');
+        self::assertTrue(Forms::isUnverifiedRequest(), 'no token at all');
 
         Csrf::seed(Forms::csrfScope(), str_repeat('a', 64));
         $_POST[Csrf::FORM_FIELD] = str_repeat('b', 64);
-        self::assertTrue(Forms::isUnverifiedPost(), 'a wrong token');
+        self::assertTrue(Forms::isUnverifiedRequest(), 'a wrong token');
 
         $_POST[Csrf::FORM_FIELD] = str_repeat('a', 64);
-        self::assertFalse(Forms::isUnverifiedPost(), 'the right one passes');
+        self::assertFalse(Forms::isUnverifiedRequest(), 'the right one passes');
     }
 
     /**
@@ -175,10 +215,10 @@ final class EscapeAndPostButtonTest extends TestCase
         $_SERVER['SCRIPT_NAME'] = '/taunt.php';
         Csrf::seed(Forms::csrfScope(), str_repeat('a', 64));
         $_POST[Csrf::FORM_FIELD] = str_repeat('a', 64);
-        self::assertFalse(Forms::isUnverifiedPost());
+        self::assertFalse(Forms::isUnverifiedRequest());
 
         $_SERVER['SCRIPT_NAME'] = '/rawsql.php';
-        self::assertTrue(Forms::isUnverifiedPost(), 'the taunt token must not open rawsql.php');
+        self::assertTrue(Forms::isUnverifiedRequest(), 'the taunt token must not open rawsql.php');
     }
 
     /**

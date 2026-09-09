@@ -65,7 +65,7 @@ $csrfToken = Csrf::token(Csrf::SCOPE_MOUNT_EDITOR);
 if (in_array($op, ['activate', 'deactivate', 'del', 'give', 'save'], true)) {
     // Same guard as every other page, with the editor's own scope: mounts.php
     // must not accept a token it issued to a viewer of another of its views.
-    if (Forms::isUnverifiedPost(Csrf::SCOPE_MOUNT_EDITOR)) {
+    if (Forms::isUnverifiedRequest(Csrf::SCOPE_MOUNT_EDITOR)) {
         debuglog('Rejected a state change with an invalid CSRF token.');
         http_response_code(400);
         $op = '';

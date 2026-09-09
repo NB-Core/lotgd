@@ -596,7 +596,7 @@ function companionEditorCsrfToken(): string
 /** Return whether the current request is POST and carries the session CSRF token. */
 function companionEditorValidPostRequest(): bool
 {
-    return !Forms::isUnverifiedPost(Csrf::SCOPE_COMPANION_EDITOR);
+    return !Forms::isUnverifiedRequest(Csrf::SCOPE_COMPANION_EDITOR);
 }
 
 /** Render a POST-only, CSRF-protected button for a state-changing companion action. */

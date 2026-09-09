@@ -52,7 +52,7 @@ if ($op == "vote") {
     // The token check is its own clause: folded into the value checks it was
     // hard to see which of the eight conditions was the security one.
     if (
-        Forms::isUnverifiedPost(Csrf::SCOPE_MOTD_VOTE)
+        Forms::isUnverifiedRequest(Csrf::SCOPE_MOTD_VOTE)
         || $motditem === null
         || $choice === null
         || $account <= 0
@@ -72,7 +72,7 @@ if ($op == "vote") {
 if (($op == "save" || $op == "savenew") && ($session['user']['superuser'] & SU_POST_MOTD)) {
     // SU_POST_MOTD says who may edit, not that this request was meant. Both
     // ops write, so both need the editing token and a POST.
-    if (Forms::isUnverifiedPost(Csrf::SCOPE_MOTD_EDIT)) {
+    if (Forms::isUnverifiedRequest(Csrf::SCOPE_MOTD_EDIT)) {
         debuglog('Rejected MoTD save with an invalid CSRF token.');
         http_response_code(400);
         header('Location: motd.php');
@@ -105,7 +105,7 @@ if ($op == "add" || $op == "addpoll" || $op == "del") {
             // list -- but an admin sitting on the MoTD page who followed a
             // crafted link deleted the entry, because SameSite=Lax sends the
             // cookie on a top-level GET navigation.
-            if (Forms::isUnverifiedPost(Csrf::SCOPE_MOTD_EDIT)) {
+            if (Forms::isUnverifiedRequest(Csrf::SCOPE_MOTD_EDIT)) {
                 debuglog('Rejected MoTD deletion with an invalid CSRF token.');
                 http_response_code(400);
                 header('Location: motd.php');

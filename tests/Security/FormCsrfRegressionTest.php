@@ -162,7 +162,7 @@ final class FormCsrfRegressionTest extends TestCase
         Csrf::seed(Csrf::SCOPE_CREATURE_EDITOR, $pageToken);
         $_POST = $separate;
         self::assertFalse(
-            Forms::isUnverifiedPost(Csrf::SCOPE_CREATURE_EDITOR),
+            Forms::isUnverifiedRequest(Csrf::SCOPE_CREATURE_EDITOR),
             'the editor guard must survive a showForm() nested in its form'
         );
     }
@@ -234,7 +234,7 @@ final class FormCsrfRegressionTest extends TestCase
             'pages/clan/detail.php',
         ] as $page) {
             self::assertStringContainsString(
-                'Forms::isUnverifiedPost()',
+                'Forms::isUnverifiedRequest()',
                 $this->code($page),
                 $page . ' must guard its write'
             );

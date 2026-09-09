@@ -179,7 +179,7 @@ if ($op == "save") {
         // field straight into module preferences, which is exactly the shape
         // that needs one -- and the stripFrom(), or the token itself would be
         // persisted as a preference.
-        if (Forms::isUnverifiedPost(Csrf::SCOPE_CREATURE_EDITOR)) {
+        if (Forms::isUnverifiedRequest(Csrf::SCOPE_CREATURE_EDITOR)) {
             debuglog('Rejected creature module preference save with an invalid CSRF token.');
             http_response_code(400);
             $output->output("`\$Not saved.`0`n");
