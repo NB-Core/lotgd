@@ -276,6 +276,21 @@ class DoctrineConnection
         return $this->makeResult($rows);
     }
 
+    /**
+     * Fetch the first column of the first row, mirroring DBAL's own fetchOne().
+     */
+    public function fetchOne(string $sql, array $params = [], array $types = []): mixed
+    {
+        $rows = $this->fetchAllAssociative($sql, $params, $types);
+        $row = $rows[0] ?? null;
+
+        if (!is_array($row) || $row === []) {
+            return false;
+        }
+
+        return reset($row);
+    }
+
     public function fetchAllAssociative(string $sql, array $params = [], array $types = []): array
     {
         $this->queries[] = $sql;

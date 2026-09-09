@@ -51,7 +51,9 @@ function charrestore_snapshot_log(array $context, string $message): void
 {
     $category = (string) ($context['log_category'] ?? $context['owner'] ?? 'charrestore');
     if (class_exists('\\Lotgd\\GameLog') && method_exists('\\Lotgd\\GameLog', 'log')) {
-        \Lotgd\GameLog::log($message, $category);
+        // Severity as a literal, not a constant: this file is a shared library that
+        // may be loaded by an older core than the one that introduced them.
+        \Lotgd\GameLog::log($message, $category, false, null, 'error');
     } elseif (function_exists('gamelog')) {
         gamelog('[' . $category . '] ' . $message);
     } else {

@@ -57,7 +57,9 @@ For any PR touching **authentication, session handling, admin/superuser flows, a
 - An id naming *which* record to act on comes from the session when the action is about the caller's own account. The navigation allowlist narrows which URLs are reachable; it does not bind a value, so a helper that takes an id and does not compare it to the session must not be handed a request parameter.
 - Prepared statements are used for SQL writes/reads; do not introduce new `addslashes`-based SQL patterns.
 - Authorization checks exist for superuser and module-privileged actions.
-- Security-relevant outcomes are logged (for example: auth failures, privilege changes, denied admin actions, suspicious async activity).
+- Security-relevant outcomes go through `Lotgd\SecurityLog::event()` (for example: auth failures, privilege changes, denied admin actions, suspicious async activity). It writes the game log's `security` category *and* PHP's error log in one call, with a shared `diag=` correlation id, so an operator finds the event where they look for it and can match it to the container log. Do not reach for `debuglog()` — that is a character's own audit trail of gold and experience, not a record of what the server refused — and do not use a bare `error_log()`, which no administrator reading `gamelog.php` will ever see.
+- For a path an unauthenticated caller can repeat at will, pass `$persist: false` so the event reaches the error log without letting one request drive one database write. Persist the outcome that matters instead: the ban, not each guess.
+- A failure is expressed by the **severity** argument, never by inventing a category for it. Categories come from the `Lotgd\GameLog::CATEGORY_*` constants and name a subsystem; `gamelog.php` filters on both, and a failure hidden in its own category cannot be found by either filter.
 
 These rules apply to all directories unless a more specific file overrides them.
 

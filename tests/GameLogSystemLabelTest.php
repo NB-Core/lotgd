@@ -96,7 +96,10 @@ final class GameLogSystemLabelTest extends TestCase
 
         require __DIR__ . '/../gamelog.php';
 
-        $this->assertGreaterThanOrEqual(2, count(Database::$queries));
-        $this->assertMatchesRegularExpression('/ORDER BY\s+date\s+DESC/i', Database::$queries[1]);
+        // The page binds its filters now, so both statements go through the
+        // Doctrine connection rather than the legacy query stub.
+        $queries = Database::getDoctrineConnection()->queries;
+        $this->assertGreaterThanOrEqual(2, count($queries));
+        $this->assertMatchesRegularExpression('/ORDER BY\s+date\s+DESC/i', $queries[1]);
     }
 }

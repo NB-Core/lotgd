@@ -22,6 +22,7 @@ use Lotgd\PlayerSearch;
 // mail ready
 use Lotgd\Output;
 use Lotgd\Forms;
+use Lotgd\SecurityLog;
 
 require_once __DIR__ . "/common.php";
 
@@ -46,7 +47,7 @@ $op = Http::get('op');
 // SCOPE_USER_EDITOR, and the button carries that token rather than the page's.
 // Listing it here would reject the scoped token before its own check ran.
 if (Forms::isUnverifiedCoreOp($op, ['save', 'savemodule', 'special', 'delban', 'saveban'])) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
+    SecurityLog::event('Refused a user editor state change with an invalid CSRF token', ['page' => 'user.php', 'op' => $op]);
     http_response_code(400);
     $op = '';
     $_POST = [];

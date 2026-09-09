@@ -20,6 +20,8 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
 use Lotgd\PasswordHelper;
 use Lotgd\Security\RuntimeHardening;
+use Lotgd\SecurityLog;
+use Lotgd\GameLog;
 use Doctrine\DBAL\Exception as DbalException;
 
 define("ALLOW_ANONYMOUS", true);
@@ -403,6 +405,30 @@ if ($name != "") {
                         $c += 1;
                         $alert .= "`3{$row2['date']}`7: Failed attempt from `&{$row2['ip']}`7 [`3{$row2['id']}`7] to log on to `^{$row2['login']}`7 ({$row2['name']}`7)`n";
                     }
+                    /**
+                     * The faillog table records every attempt, but nothing reads it back:
+                     * there is no viewer for it, and it is purged after `expirefaillog`
+                     * days. Mirror the attempt into the security channel so an operator
+                     * sees it in the game log.
+                     *
+                     * Only attempts against a privileged account are persisted to the
+                     * database. Persisting all of them would let an unauthenticated
+                     * caller drive one INSERT per guess; the error log, which is a cheap
+                     * append, still receives every attempt.
+                     */
+                    SecurityLog::event(
+                        'Failed login attempt',
+                        [
+                            'login' => $name,
+                            'ip' => $remoteAddr,
+                            'acctid' => (int) ($row['acctid'] ?? 0),
+                            'recent_failures' => $c,
+                            'privileged_target' => $su,
+                        ],
+                        (int) ($row['acctid'] ?? 0),
+                        GameLog::SEVERITY_WARNING,
+                        $su
+                    );
                     if ($c >= 10) {
                         // 5 failed attempts for superuser, 10 for regular user
                         $banmessage = Translator::translateInline("Automatic System Ban: Too many failed login attempts.");
@@ -427,6 +453,18 @@ if ($name != "") {
                             );
                             Database::query($sql);
                         }
+                        SecurityLog::event(
+                            'Automatic ban issued after repeated failed logins',
+                            [
+                                'ip' => $remoteAddr,
+                                'login' => $name,
+                                'recent_failures' => $c,
+                                'expires' => date('Y-m-d H:i:s', strtotime('+15 minutes')),
+                                'privileged_target' => $su,
+                            ],
+                            (int) ($row['acctid'] ?? 0),
+                            GameLog::SEVERITY_ERROR
+                        );
                         if ($su) {
                             // send a system message to admins regarding
                             // this failed attempt if it includes superusers.

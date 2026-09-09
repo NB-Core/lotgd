@@ -88,7 +88,7 @@ class PlayerFunctions
                     }
                     GameLog::log(
                         'Clan ' . $cid . ' has a new leader ' . $row['name'] . ' as there were no others left',
-                        'clan',
+                        GameLog::CATEGORY_CLAN,
                         false,
                         $session['user']['acctid'] ?? 0
                     );
@@ -100,7 +100,7 @@ class PlayerFunctions
                     );
                     GameLog::log(
                         'Clan ' . $cid . ' has been disbanded as the last member left',
-                        'clan',
+                        GameLog::CATEGORY_CLAN,
                         false,
                         $session['user']['acctid'] ?? 0
                     );

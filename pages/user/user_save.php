@@ -254,8 +254,8 @@ if ($updates > 0 && $fieldUpdates !== []) {
         ));
         $output->output("%s fields in the user's record were updated.", $updates);
         GameLog::log(
-            'User ' . $session['user']['acctid'] . ' edited ' . $updates . ' fields for user ' . $userid,
-            'user management'
+            'Edited ' . $updates . ' fields for account ' . $userid,
+            GameLog::CATEGORY_USERS
         );
     }
 } else {

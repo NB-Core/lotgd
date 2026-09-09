@@ -6,6 +6,9 @@ namespace Lotgd\Async\Handler;
 
 use Jaxon\Response\Response;
 use Lotgd\DebugLog;
+use Lotgd\GameLog;
+use Lotgd\SecurityLog;
+use Lotgd\Settings;
 use Lotgd\Security\Csrf;
 use Lotgd\Security\PasskeyCredentialRepository;
 use Lotgd\Security\PasskeyService;
@@ -159,13 +162,11 @@ class TwoFactorAuthPasskey
             $ok = (bool) ($result['ok'] ?? false);
             $errorCode = (string) ($result['error'] ?? 'unknown');
 
-            DebugLog::add(
-                sprintf('2FA passkey registration %s for account %d%s.', $ok ? 'success' : 'failure', $acctId, $ok ? '' : ' (reason: ' . $errorCode . ')'),
+            SecurityLog::event(
+                $ok ? '2FA passkey registration succeeded' : '2FA passkey registration failed',
+                $ok ? [] : ['reason' => $errorCode],
                 $acctId,
-                $acctId,
-                '2fa_passkey',
-                false,
-                false
+                $ok ? GameLog::SEVERITY_INFO : GameLog::SEVERITY_WARNING
             );
 
             if ($ok) {
@@ -176,13 +177,11 @@ class TwoFactorAuthPasskey
 
             return $this->respond($requestId, $this->errorPayload($errorCode));
         } catch (\Throwable $error) {
-            DebugLog::add(
-                sprintf('2FA passkey registration finish exception for account %d (%s: %s).', $acctId, $error::class, $error->getMessage()),
+            SecurityLog::event(
+                '2FA passkey registration finish raised an exception',
+                ['type' => $error::class, 'message' => $error->getMessage()],
                 $acctId,
-                $acctId,
-                '2fa_passkey',
-                false,
-                false
+                GameLog::SEVERITY_ERROR
             );
 
             return $this->respond($requestId, $this->errorPayload('finish_exception', $error));
@@ -212,13 +211,11 @@ class TwoFactorAuthPasskey
             return $this->respond($requestId, ['ok' => true, 'options' => $options]);
         } catch (\Throwable $error) {
             $acctId = $this->accountId();
-            DebugLog::add(
-                sprintf('2FA passkey authentication begin exception for account %d (%s: %s).', $acctId, $error::class, $error->getMessage()),
+            SecurityLog::event(
+                '2FA passkey authentication begin raised an exception',
+                ['type' => $error::class, 'message' => $error->getMessage()],
                 $acctId,
-                $acctId,
-                '2fa_passkey',
-                false,
-                false
+                GameLog::SEVERITY_ERROR
             );
 
             return $this->respond($requestId, $this->errorPayload('begin_auth_exception', $error));
@@ -250,13 +247,11 @@ class TwoFactorAuthPasskey
         try {
             $result = $this->service()->finishAuthentication($acctId, $credentialPayload);
         } catch (\Throwable $error) {
-            DebugLog::add(
-                sprintf('2FA passkey authentication verify exception for account %d (%s: %s).', $acctId, $error::class, $error->getMessage()),
+            SecurityLog::event(
+                '2FA passkey authentication verify raised an exception',
+                ['type' => $error::class, 'message' => $error->getMessage()],
                 $acctId,
-                $acctId,
-                '2fa_passkey',
-                false,
-                false
+                GameLog::SEVERITY_ERROR
             );
 
             return $this->respond($requestId, $this->errorPayload('verify_exception', $error));
@@ -264,7 +259,7 @@ class TwoFactorAuthPasskey
 
         if ((bool) ($result['ok'] ?? false)) {
             $this->clearPendingState();
-            DebugLog::add(sprintf('2FA passkey authentication success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
+            SecurityLog::event('2FA passkey authentication succeeded', [], $acctId, GameLog::SEVERITY_INFO);
 
             return $this->respond($requestId, ['ok' => true]);
         }
@@ -277,13 +272,11 @@ class TwoFactorAuthPasskey
             $this->setModulePref('locked_until', $now + (int) $this->getModuleSetting('lock_seconds'), $acctId);
         }
 
-        DebugLog::add(
-            sprintf('2FA passkey authentication failure for account %d (reason: %s).', $acctId, $errorCode),
+        SecurityLog::event(
+            '2FA passkey authentication failed',
+            ['reason' => $errorCode, 'failed_attempts' => $fails],
             $acctId,
-            $acctId,
-            '2fa_passkey',
-            false,
-            false
+            GameLog::SEVERITY_WARNING
         );
 
         return $this->respond($requestId, $this->errorPayload($errorCode));
@@ -353,9 +346,16 @@ class TwoFactorAuthPasskey
 
     /**
      * Write begin-registration checkpoints so failures can be localized quickly.
+     *
+     * These are step traces, not outcomes, so they follow the DEBUG setting
+     * rather than writing to every player's audit trail on every request.
      */
     private function logCheckpoint(string $method, string $checkpoint, int $acctId): void
     {
+        if ($acctId < 1 || ! Settings::getInstance()->getSetting('debug', 0)) {
+            return;
+        }
+
         DebugLog::add(
             sprintf('2FA passkey async %s checkpoint=%s acct=%d.', $method, $checkpoint, $acctId),
             $acctId,
@@ -441,20 +441,23 @@ class TwoFactorAuthPasskey
     }
 
     /**
-     * Send begin-registration exception details to both in-game debug logs and server logs.
+     * Record a begin-registration failure in the security channel.
+     *
+     * SecurityLog writes to the game log and the server log in one call, so this
+     * no longer has to keep two copies of the same message in step.
      */
     private function logBeginRegistrationException(int $acctId, string $phase, \Throwable $error): void
     {
-        $message = sprintf(
-            '2FA passkey registration begin exception for account %d phase=%s (%s: %s).',
+        SecurityLog::event(
+            '2FA passkey registration begin raised an exception',
+            [
+                'phase' => $phase,
+                'type' => $error::class,
+                'message' => $error->getMessage(),
+            ],
             $acctId,
-            $phase,
-            $error::class,
-            $error->getMessage()
+            GameLog::SEVERITY_ERROR
         );
-
-        DebugLog::add($message, $acctId, $acctId, '2fa_passkey', false, false);
-        error_log($message);
     }
 
     private function repository(): PasskeyCredentialRepository

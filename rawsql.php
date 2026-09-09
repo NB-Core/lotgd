@@ -19,6 +19,8 @@ use Lotgd\Settings;
 // mail ready
 use Lotgd\Output;
 use Lotgd\Forms;
+use Lotgd\SecurityLog;
+use Lotgd\GameLog;
 
 require_once __DIR__ . '/common.php';
 
@@ -42,7 +44,7 @@ if ($op == "" || $op == "sql") {
     // target in the tree and the cheapest to protect. Nothing is executed
     // until the token checks out.
     if ($sql != "" && Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)) {
-        debuglog('Rejected raw SQL execution with an invalid CSRF token.');
+        SecurityLog::event('Refused raw SQL execution with an invalid CSRF token', ['page' => 'rawsql.php', 'op' => $op], null, GameLog::SEVERITY_ERROR);
         http_response_code(400);
         $output->output("`\$Not executed.`0`n`n");
         $sql = "";
@@ -99,7 +101,7 @@ if ($op == "" || $op == "sql") {
     $source = Translator::translate("Source:");
     $execute = Translator::translate("Execute");
     if ($php !== "" && Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)) {
-        debuglog('Rejected raw PHP execution with an invalid CSRF token.');
+        SecurityLog::event('Refused raw PHP execution with an invalid CSRF token', ['page' => 'rawsql.php', 'op' => $op], null, GameLog::SEVERITY_ERROR);
         http_response_code(400);
         $output->output("`\$Not executed.`0`n`n");
         $php = "";

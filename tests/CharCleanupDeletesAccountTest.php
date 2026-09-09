@@ -35,7 +35,7 @@ final class CharCleanupDeletesAccountTest extends TestCase
             eval('namespace Lotgd; class PlayerFunctions { public static function charCleanup(int $id, int $type): bool { return true; } }');
         }
         if (! class_exists('Lotgd\\GameLog', false)) {
-            eval('namespace Lotgd; class GameLog { public static function log(string $m, string $c, bool $f = false, ?int $a = null, string $s = "info"): void {} }');
+            eval('namespace Lotgd; class GameLog { const SEVERITY_INFO = "info"; const SEVERITY_WARNING = "warning"; const SEVERITY_ERROR = "error"; const SEVERITY_DEBUG = "debug"; const CATEGORY_GENERAL = "general"; const CATEGORY_SECURITY = "security"; const CATEGORY_MAINTENANCE = "maintenance"; const CATEGORY_EXPIRATION = "expiration"; const CATEGORY_MODULES = "modules"; const CATEGORY_USERS = "user management"; const CATEGORY_SETTINGS = "settings"; const CATEGORY_CLAN = "clan"; const CATEGORY_BATTLE = "battle"; const CATEGORY_CACHE = "cache"; public static function log(string $m, string $c, bool $f = false, ?int $a = null, string $s = "info"): void {} }');
         }
 
         Database::$mockResults = [

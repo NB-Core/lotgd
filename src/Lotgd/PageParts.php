@@ -1072,25 +1072,31 @@ class PageParts
         if ($settings->getSetting('debug', 0)) {
             $connection = Database::getDoctrineConnection();
             $connection->executeStatement(
-                'INSERT INTO ' . Database::prefix('debug') . " VALUES (0,'pagegentime','runtime',:script,:runtime)",
+                'INSERT INTO ' . Database::prefix('debug')
+                    . " (type,category,subcategory,value,date) VALUES ('pagegentime','runtime',:script,:runtime,:date)",
                 [
                     'script' => PhpGenericEnvironment::getScriptName(),
                     'runtime' => (string) $gentime,
+                    'date' => date('Y-m-d H:i:s'),
                 ],
                 [
                     'script' => ParameterType::STRING,
                     'runtime' => ParameterType::STRING,
+                    'date' => ParameterType::STRING,
                 ]
             );
             $connection->executeStatement(
-                'INSERT INTO ' . Database::prefix('debug') . " VALUES (0,'pagegentime','dbtime',:script,:dbtime)",
+                'INSERT INTO ' . Database::prefix('debug')
+                    . " (type,category,subcategory,value,date) VALUES ('pagegentime','dbtime',:script,:dbtime,:date)",
                 [
                     'script' => PhpGenericEnvironment::getScriptName(),
                     'dbtime' => (string) round(Database::getInfo('querytime', 0), 3),
+                    'date' => date('Y-m-d H:i:s'),
                 ],
                 [
                     'script' => ParameterType::STRING,
                     'dbtime' => ParameterType::STRING,
+                    'date' => ParameterType::STRING,
                 ]
             );
         }

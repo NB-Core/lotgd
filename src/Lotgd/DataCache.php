@@ -156,10 +156,10 @@ class DataCache
             if (is_file($fullname) && ! @unlink($fullname)) {
                 GameLog::log(
                     'Failed to remove cache file ' . $fullname,
-                    'cache',
+                    GameLog::CATEGORY_CACHE,
                     false,
                     $session['user']['acctid'] ?? 0,
-                    'warning'
+                    GameLog::SEVERITY_WARNING
                 );
             }
             if ($withpath) {

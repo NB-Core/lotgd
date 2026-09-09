@@ -13,6 +13,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\GameLog;
 use Lotgd\DebugLog;
+use Lotgd\SecurityLog;
 use Lotgd\Redirect;
 use Lotgd\Serialization;
 use Lotgd\Settings;
@@ -210,16 +211,7 @@ function twofactorauth_run(): void
     Translator::tlschema('module_twofactorauth');
 
     $acctId = (int) ($session['user']['acctid'] ?? 0);
-    if ($acctId > 0) {
-        DebugLog::add(
-            sprintf('2FA run entry account %d op=%s.', $acctId, $op),
-            $acctId,
-            $acctId,
-            '2fa_verify',
-            false,
-            false
-        );
-    }
+    twofactorauth_trace($acctId, '2fa_verify', sprintf('2FA run entry account %d op=%s.', $acctId, $op));
     twofactorauth_log_setup_async_checkpoint('twofactorauth_run', 'entry', $acctId);
 
     // Keep setup async routes in the explicit nav allow-list for this request lifecycle.
@@ -532,9 +524,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     global $session;
 
     $acctId = (int) ($session['user']['acctid'] ?? 0);
-    if ($acctId > 0) {
-        DebugLog::add(sprintf('2FA verify handler entry account %d.', $acctId), $acctId, $acctId, '2fa_verify', false, false);
-    }
+    twofactorauth_trace($acctId, '2fa_verify', sprintf('2FA verify handler entry account %d.', $acctId));
     if ((int) get_module_pref('pending_challenge') !== 1) {
         Redirect::redirect('village.php', '2FA verify without pending state');
     }
@@ -547,40 +537,24 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     }
     $hasToken = $token !== '';
     $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
-    // Temporary diagnostics: only persist verify request-entry details for valid accounts to
-    // avoid noisy target=0 rows when unauthenticated/invalid requests hit the endpoint.
-    if ($acctId > 0) {
-        DebugLog::add(
-            sprintf(
-                '2FA verify entry account %d method=%s token_present=%s token_length=%d.',
-                $acctId,
-                $requestMethod,
-                $hasToken ? 'yes' : 'no',
-                strlen($token)
-            ),
+    twofactorauth_trace(
+        $acctId,
+        '2fa_verify',
+        sprintf(
+            '2FA verify entry account %d method=%s token_present=%s token_length=%d.',
             $acctId,
-            $acctId,
-            '2fa_verify',
-            false,
-            false
-        );
-    }
+            $requestMethod,
+            $hasToken ? 'yes' : 'no',
+            strlen($token)
+        )
+    );
 
     if ($requestMethod !== 'POST') {
-        if ($acctId > 0) {
-            DebugLog::add(
-                sprintf(
-                    '2FA verify request account %d used unexpected method=%s.',
-                    $acctId,
-                    $requestMethod
-                ),
-                $acctId,
-                $acctId,
-                '2fa_verify',
-                false,
-                false
-            );
-        }
+        twofactorauth_trace(
+            $acctId,
+            '2fa_verify',
+            sprintf('2FA verify request account %d used unexpected method=%s.', $acctId, $requestMethod)
+        );
         // Only classic form POST submissions are supported for verification; ignore other methods
         // without mutating lockout or failed-attempts state.
         $output->output('Invalid request method for verification.`n');
@@ -592,9 +566,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
     $lockedUntil = (int) get_module_pref('locked_until');
     if ($lockedUntil > $now) {
         twofactorauth_log_challenge_outcome($acctId, 'failure', 'locked');
-        if ($acctId > 0) {
-            DebugLog::add(sprintf('2FA verify exit account %d branch=locked.', $acctId), $acctId, $acctId, '2fa_verify', false, false);
-        }
+        twofactorauth_trace($acctId, '2fa_verify', sprintf('2FA verify exit account %d branch=locked.', $acctId));
         $output->output('Too many failures. Please wait before trying again.`n');
 
         return;
@@ -614,7 +586,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         twofactorauth_clear_pending_state();
         twofactorauth_log_challenge_outcome($acctId, 'success');
         if ($acctId > 0) {
-            DebugLog::add(sprintf('2FA verify exit account %d branch=valid timestep=%d.', $acctId, (int) $result['timestep']), $acctId, $acctId, '2fa_verify', false, false);
+            twofactorauth_trace($acctId, '2fa_verify', sprintf('2FA verify exit account %d branch=valid timestep=%d.', $acctId, (int) $result['timestep']));
         }
         $output->output('Two-factor authentication complete. Welcome back.`n');
         Nav::add('Continue', 'runmodule.php?module=twofactorauth&op=resume');
@@ -631,7 +603,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         set_module_pref('locked_until', $now + $lockSeconds);
         twofactorauth_log_challenge_outcome($acctId, 'failure', 'locked');
         if ($acctId > 0) {
-            DebugLog::add(sprintf('2FA verify exit account %d branch=locked fails=%d.', $acctId, $fails), $acctId, $acctId, '2fa_verify', false, false);
+            twofactorauth_trace($acctId, '2fa_verify', sprintf('2FA verify exit account %d branch=locked fails=%d.', $acctId, $fails));
         }
         $output->output('Too many failures. Challenge temporarily locked.`n');
     } else {
@@ -639,7 +611,7 @@ function twofactorauth_handle_challenge_verification(Output $output): void
         sleep(2);
         twofactorauth_log_challenge_outcome($acctId, 'failure', (string) $result['reason']);
         if ($acctId > 0) {
-            DebugLog::add(sprintf('2FA verify exit account %d branch=invalid reason=%s fails=%d.', $acctId, (string) ($result['reason'] ?? 'unknown'), $fails), $acctId, $acctId, '2fa_verify', false, false);
+            twofactorauth_trace($acctId, '2fa_verify', sprintf('2FA verify exit account %d branch=invalid reason=%s fails=%d.', $acctId, (string) ($result['reason'] ?? 'unknown'), $fails));
         }
         $output->output('Invalid token. Please try again.`n');
         twofactorauth_render_challenge($output);
@@ -647,7 +619,11 @@ function twofactorauth_handle_challenge_verification(Output $output): void
 }
 
 /**
- * Add debug-log audit events for 2FA challenge verification outcomes.
+ * Record the outcome of a 2FA challenge in the security channel.
+ *
+ * A verification result is an authentication outcome, so it belongs where an
+ * administrator reviews them and not in the character's own audit trail, which
+ * is a record of what a player earned and spent.
  */
 function twofactorauth_log_challenge_outcome(int $acctId, string $event, ?string $reason = null): void
 {
@@ -655,16 +631,36 @@ function twofactorauth_log_challenge_outcome(int $acctId, string $event, ?string
         return;
     }
 
-    $suffix = $reason !== null && $reason !== '' ? sprintf(' (reason: %s)', $reason) : '';
-    DebugLog::add(
-        sprintf('2FA token verification %s for account %d%s.', $event, $acctId, $suffix),
+    SecurityLog::event(
+        sprintf('2FA token verification %s', $event),
+        ['reason' => $reason],
         $acctId,
-        $acctId,
-        // Keep this short: debuglog.field is varchar(20) in legacy schema.
-        '2fa_verify',
-        false,
-        false
+        $event === 'success' ? GameLog::SEVERITY_INFO : GameLog::SEVERITY_WARNING
     );
+}
+
+/**
+ * Write a step-by-step diagnostic trace for the 2FA flow.
+ *
+ * These lines were added as "temporary diagnostics" and wrote several rows into
+ * the per-character audit trail on every single verification, permanently and
+ * with no way to switch them off. They are gated on the same DEBUG setting that
+ * gates the page and hook runtime samples, so an operator turns them on to chase
+ * a fault and they cost nothing the rest of the time.
+ */
+function twofactorauth_trace(int $acctId, string $field, string $message): void
+{
+    if ($acctId < 1) {
+        return;
+    }
+
+    $settings = Settings::getInstance();
+    if (! $settings->getSetting('debug', 0)) {
+        return;
+    }
+
+    // Keep the field short: debuglog.field is varchar(20) in the legacy schema.
+    DebugLog::add($message, $acctId, $acctId, $field, false, false);
 }
 
 /**
@@ -768,7 +764,12 @@ function twofactorauth_handle_disable_confirmation(Output $output): void
 
     twofactorauth_clear_pending_state();
 
-    GameLog::log('2FA disabled via email recovery link', 'security', false, (int) $session['user']['acctid'], 'warning');
+    SecurityLog::event(
+        '2FA disabled via email recovery link',
+        [],
+        (int) $session['user']['acctid'],
+        GameLog::SEVERITY_WARNING
+    );
 
     $output->output('Two-factor authentication has been disabled. Please log in again with your password.`n');
     Nav::add('Log out now', 'login.php?op=logout');
@@ -1263,19 +1264,16 @@ function twofactorauth_setup_async_correlation_id(): string
  */
 function twofactorauth_log_setup_async_checkpoint(string $handler, string $checkpoint, int $acctId): void
 {
-    DebugLog::add(
+    twofactorauth_trace(
+        $acctId,
+        '2fa_passkey',
         sprintf(
             '2FA passkey setup async [%s] checkpoint=%s corr=%s acct=%d.',
             $handler,
             $checkpoint,
             twofactorauth_setup_async_correlation_id(),
             $acctId
-        ),
-        $acctId,
-        $acctId,
-        '2fa_passkey',
-        false,
-        false
+        )
     );
 }
 
@@ -1339,19 +1337,15 @@ function twofactorauth_handle_begin_passkey_registration(): void
 
         return;
     } catch (\Throwable $e) {
-        DebugLog::add(
-            sprintf(
-                '2FA passkey registration begin exception for account %d corr=%s (%s: %s).',
-                $acctId,
-                twofactorauth_setup_async_correlation_id(),
-                $e::class,
-                $e->getMessage()
-            ),
+        SecurityLog::event(
+            '2FA passkey registration begin raised an exception',
+            [
+                'corr' => twofactorauth_setup_async_correlation_id(),
+                'type' => $e::class,
+                'message' => $e->getMessage(),
+            ],
             $acctId,
-            $acctId,
-            '2fa_passkey',
-            false,
-            false
+            GameLog::SEVERITY_ERROR
         );
 
         twofactorauth_log_setup_async_checkpoint('begin_passkey_registration', 'pre-output', $acctId);
@@ -1397,9 +1391,14 @@ function twofactorauth_handle_finish_passkey_registration(): void
         twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'post-service_call', $acctId);
 
         if ($result['ok']) {
-            DebugLog::add(sprintf('2FA passkey registration success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
+            SecurityLog::event('2FA passkey registration succeeded', [], $acctId, GameLog::SEVERITY_INFO);
         } else {
-            DebugLog::add(sprintf('2FA passkey registration failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
+            SecurityLog::event(
+                '2FA passkey registration failed',
+                ['reason' => (string) $result['error']],
+                $acctId,
+                GameLog::SEVERITY_WARNING
+            );
         }
 
         twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-output', $acctId);
@@ -1408,19 +1407,15 @@ function twofactorauth_handle_finish_passkey_registration(): void
 
         return;
     } catch (\Throwable $e) {
-        DebugLog::add(
-            sprintf(
-                '2FA passkey registration finish exception for account %d corr=%s (%s: %s).',
-                $acctId,
-                twofactorauth_setup_async_correlation_id(),
-                $e::class,
-                $e->getMessage()
-            ),
+        SecurityLog::event(
+            '2FA passkey registration finish raised an exception',
+            [
+                'corr' => twofactorauth_setup_async_correlation_id(),
+                'type' => $e::class,
+                'message' => $e->getMessage(),
+            ],
             $acctId,
-            $acctId,
-            '2fa_passkey',
-            false,
-            false
+            GameLog::SEVERITY_ERROR
         );
 
         twofactorauth_log_setup_async_checkpoint('finish_passkey_registration', 'pre-output', $acctId);
@@ -1482,13 +1477,11 @@ function twofactorauth_handle_begin_passkey_auth(): void
         twofactorauth_output_json(['ok' => true, 'options' => $options]);
     } catch (\Throwable $exception) {
         $acctId = (int) ($session['user']['acctid'] ?? 0);
-        DebugLog::add(
-            sprintf('2FA passkey challenge begin exception for account %d (%s: %s).', $acctId, $exception::class, $exception->getMessage()),
+        SecurityLog::event(
+            '2FA passkey challenge begin raised an exception',
+            ['type' => $exception::class, 'message' => $exception->getMessage()],
             $acctId,
-            $acctId,
-            '2fa_passkey',
-            false,
-            false
+            GameLog::SEVERITY_ERROR
         );
 
         twofactorauth_output_json(twofactorauth_challenge_async_error_payload('begin_auth_exception', $exception));
@@ -1530,7 +1523,7 @@ function twofactorauth_handle_passkey_verification(): void
         if ($result['ok']) {
             twofactorauth_clear_pending_state();
             twofactorauth_log_challenge_outcome($acctId, 'success', 'passkey');
-            DebugLog::add(sprintf('2FA passkey authentication success for account %d.', $acctId), $acctId, $acctId, '2fa_passkey', false, false);
+            SecurityLog::event('2FA passkey authentication succeeded', [], $acctId, GameLog::SEVERITY_INFO);
             twofactorauth_output_json(['ok' => true]);
 
             return;
@@ -1544,17 +1537,20 @@ function twofactorauth_handle_passkey_verification(): void
         }
 
         twofactorauth_log_challenge_outcome($acctId, 'failure', 'passkey_' . $result['error']);
-        DebugLog::add(sprintf('2FA passkey authentication failure for account %d (reason: %s).', $acctId, $result['error']), $acctId, $acctId, '2fa_passkey', false, false);
+        SecurityLog::event(
+            '2FA passkey authentication failed',
+            ['reason' => (string) $result['error']],
+            $acctId,
+            GameLog::SEVERITY_WARNING
+        );
         twofactorauth_output_json(['ok' => false, 'error' => $result['error']]);
     } catch (\Throwable $exception) {
         $acctId = (int) ($session['user']['acctid'] ?? 0);
-        DebugLog::add(
-            sprintf('2FA passkey challenge verify exception for account %d (%s: %s).', $acctId, $exception::class, $exception->getMessage()),
+        SecurityLog::event(
+            '2FA passkey challenge verify raised an exception',
+            ['type' => $exception::class, 'message' => $exception->getMessage()],
             $acctId,
-            $acctId,
-            '2fa_passkey',
-            false,
-            false
+            GameLog::SEVERITY_ERROR
         );
 
         twofactorauth_output_json(twofactorauth_challenge_async_error_payload('verify_auth_exception', $exception));

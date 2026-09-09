@@ -230,7 +230,7 @@ function charrestore_load_library(): bool
 function charrestore_create_snapshot(int $acctid): bool
 {
     if (!charrestore_load_library()) {
-        GameLog::log('Character Restorer shared library is unavailable.', 'charrestore');
+        GameLog::log('Character Restorer shared library is unavailable.', 'charrestore', false, null, GameLog::SEVERITY_ERROR);
         return false;
     }
     return charrestore_snapshot_create($acctid, charrestore_context());
@@ -257,7 +257,7 @@ Staff of %s",
 function charrestore_notify_admin_snapshot_failure(string $path, string $reason): void
 {
     $message = sprintf('Character snapshot failure: %s Path: %s', $reason, $path);
-    GameLog::log($message, 'charrestore');
+    GameLog::log($message, 'charrestore', false, null, GameLog::SEVERITY_ERROR);
 
     $settings = Settings::getInstance();
     $adminmail = $settings->getSetting('gameadminemail', 'postmaster@localhost');
@@ -326,7 +326,7 @@ function charrestore_run(): void
     $operation = (string) httpget('op');
     if (in_array($operation, array('list', 'beginrestore', 'finishrestore'), true)) {
         if (!charrestore_load_library()) {
-            GameLog::log('Character Restorer shared library is unavailable.', 'charrestore');
+            GameLog::log('Character Restorer shared library is unavailable.', 'charrestore', false, null, GameLog::SEVERITY_ERROR);
             output('`$Character Restorer shared services are unavailable.`0');
         } else {
             charrestore_restore_admin_flow(
@@ -349,7 +349,7 @@ function charrestore_run(): void
         // Hash conversion also consumes validated snapshots, so it must establish
         // the shared API independently of the list/preview/restore operations.
         if (!charrestore_load_library()) {
-            GameLog::log('Character Restorer shared library is unavailable.', 'charrestore');
+            GameLog::log('Character Restorer shared library is unavailable.', 'charrestore', false, null, GameLog::SEVERITY_ERROR);
             output('`$Character Restorer shared services are unavailable.`0');
             page_footer();
             return;
@@ -466,8 +466,11 @@ function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $
                 if (! is_array($values)) {
                     $hadErrors = true;
                     GameLog::log(
-                        sprintf('charrestore: malformed prefs payload for module %s during upsert restore.', $modulename),
-                        'charrestore'
+                        sprintf('Malformed prefs payload for module %s during upsert restore.', $modulename),
+                        'charrestore',
+                        false,
+                        null,
+                        GameLog::SEVERITY_WARNING
                     );
                     output("`\$Skipping malformed prefs for module `^%s`\$ (expected key/value array).`n", $modulename);
                     continue;
@@ -502,8 +505,11 @@ function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $
                 $conn->rollBack();
             }
             GameLog::log(
-                sprintf('charrestore: transactional upsert failed; switching to fallback restore: %s', $e->getMessage()),
-                'charrestore'
+                sprintf('Transactional upsert failed; switching to fallback restore: %s', $e->getMessage()),
+                'charrestore',
+                false,
+                null,
+                GameLog::SEVERITY_WARNING
             );
         }
     }
@@ -535,8 +541,11 @@ function charrestore_restore_prefs_fallback(int $acctid, array $prefs): bool
         if (! is_array($values)) {
             $allApplied = false;
             GameLog::log(
-                sprintf('charrestore: malformed prefs payload for module %s during fallback restore.', $modulename),
-                'charrestore'
+                sprintf('Malformed prefs payload for module %s during fallback restore.', $modulename),
+                'charrestore',
+                false,
+                null,
+                GameLog::SEVERITY_WARNING
             );
             output("`\$Skipping malformed prefs for module `^%s`\$ (expected key/value array).`n", $modulename);
             continue;
@@ -550,12 +559,15 @@ function charrestore_restore_prefs_fallback(int $acctid, array $prefs): bool
                 $allApplied = false;
                 GameLog::log(
                     sprintf(
-                        'charrestore: failed fallback pref restore for module %s setting %s: %s',
+                        'Failed fallback pref restore for module %s setting %s: %s',
                         $modulename,
                         (string) $prefname,
                         $e->getMessage()
                     ),
-                    'charrestore'
+                    'charrestore',
+                    false,
+                    null,
+                    GameLog::SEVERITY_ERROR
                 );
             }
         }
@@ -603,8 +615,11 @@ function charrestore_can_use_userprefs_upsert_key(Connection $conn): bool
         $indexes = $conn->fetchAllAssociative("SHOW INDEX FROM {$prefsTable}");
     } catch (\Throwable $e) {
         GameLog::log(
-            sprintf('charrestore: failed to inspect module_userprefs indexes for upsert check: %s', $e->getMessage()),
-            'charrestore'
+            sprintf('Failed to inspect module_userprefs indexes for upsert check: %s', $e->getMessage()),
+            'charrestore',
+            false,
+            null,
+            GameLog::SEVERITY_ERROR
         );
         return false;
     }
@@ -614,8 +629,11 @@ function charrestore_can_use_userprefs_upsert_key(Connection $conn): bool
     }
 
     GameLog::log(
-        'charrestore: module_userprefs unique key (userid, modulename, setting) missing; using fallback preference restore.',
-        'charrestore'
+        'The module_userprefs unique key (userid, modulename, setting) is missing; using fallback preference restore.',
+        'charrestore',
+        false,
+        null,
+        GameLog::SEVERITY_WARNING
     );
     return false;
 }

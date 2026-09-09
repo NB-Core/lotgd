@@ -78,7 +78,7 @@ class ModuleManager
             DataCache::getInstance()->massinvalidate('module-prepare');
             GameLog::log(
                 "Module {$module} installed",
-                'modules',
+                GameLog::CATEGORY_MODULES,
                 false,
                 $session['user']['acctid'] ?? 0
             );
@@ -103,7 +103,7 @@ class ModuleManager
             DataCache::getInstance()->invalidatedatacache("inject-$module");
             GameLog::log(
                 "Module {$module} uninstalled",
-                'modules',
+                GameLog::CATEGORY_MODULES,
                 false,
                 $session['user']['acctid'] ?? 0
             );
@@ -129,7 +129,7 @@ class ModuleManager
         if ($res) {
             GameLog::log(
                 "Module {$module} activated",
-                'modules',
+                GameLog::CATEGORY_MODULES,
                 false,
                 $session['user']['acctid'] ?? 0
             );
@@ -151,7 +151,7 @@ class ModuleManager
         if ($res) {
             GameLog::log(
                 "Module {$module} deactivated",
-                'modules',
+                GameLog::CATEGORY_MODULES,
                 false,
                 $session['user']['acctid'] ?? 0
             );
@@ -186,7 +186,7 @@ class ModuleManager
         Modules::inject($module, true);
         GameLog::log(
             "Module {$module} reinstalled",
-            'modules',
+            GameLog::CATEGORY_MODULES,
             false,
             $session['user']['acctid'] ?? 0
         );
@@ -206,7 +206,7 @@ class ModuleManager
             DataCache::getInstance()->invalidatedatacache("inject-$module");
             GameLog::log(
                 "Module {$module} force-uninstalled",
-                'modules',
+                GameLog::CATEGORY_MODULES,
                 false,
                 $session['user']['acctid'] ?? 0
             );

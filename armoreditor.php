@@ -14,6 +14,7 @@ use Lotgd\Page\Header;
 use Lotgd\SuAccess;
 use Lotgd\Translator;
 use Lotgd\Security\Csrf;
+use Lotgd\SecurityLog;
 
 require_once __DIR__ . '/common.php';
 
@@ -72,7 +73,7 @@ if ($op === 'edit' || $op === 'add') {
             ['armorId' => ParameterType::INTEGER]
         )->fetchAssociative();
         if ($row === false) {
-            debuglog('Rejected armor editor lookup with an invalid or unknown armor ID.');
+            SecurityLog::event('Refused armor editor lookup with an invalid or unknown armor ID', ['page' => 'armoreditor.php', 'op' => $op]);
             http_response_code(400);
             $op = '';
         }
@@ -92,12 +93,12 @@ if ($op === 'edit' || $op === 'add') {
     }
 } elseif ($op === 'del' || $op === 'save') {
     if (Forms::isUnverifiedRequest(Csrf::SCOPE_ARMOR_EDITOR)) {
-        debuglog('Rejected armor editor state change with an invalid CSRF token.');
+        SecurityLog::event('Refused armor editor state change with an invalid CSRF token', ['page' => 'armoreditor.php', 'op' => $op]);
         http_response_code(400);
     } elseif ($op === 'del') {
         $id = armorEditorInteger(Http::post('id'), 1, PHP_INT_MAX);
         if ($id === null) {
-            debuglog('Rejected armor deletion with an invalid armor ID.');
+            SecurityLog::event('Refused armor deletion with an invalid armor ID', ['page' => 'armoreditor.php', 'op' => $op]);
             http_response_code(400);
         } else {
             $connection->executeStatement(
@@ -111,7 +112,7 @@ if ($op === 'edit' || $op === 'add') {
         $defense = armorEditorInteger(Http::post('defense'), 1, count($values));
         $armorname = Http::post('armorname');
         if ($armorid === null || $defense === null || !is_string($armorname) || $armorname === '') {
-            debuglog('Rejected armor save with malformed editor fields.');
+            SecurityLog::event('Refused armor save with malformed editor fields', ['page' => 'armoreditor.php', 'op' => $op]);
             http_response_code(400);
         } else {
             $params = ['level' => $armorlevel, 'defense' => $defense, 'name' => $armorname, 'value' => $values[$defense]];

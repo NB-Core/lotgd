@@ -577,7 +577,9 @@ class Modules
                         $output->debug('Slow Hook (' . round($endtime - $starttime, 2) . 's): ' . $hookName . ' - ' . $row['modulename'] . '`n');
                     }
                     if ($settings->getSetting('debug', 0)) {
-                        $sql = 'INSERT INTO ' . Database::prefix('debug') . ' (id, type, category, subcategory, value) VALUES (0, :type, :category, :subcategory, :value)';
+                        $sql = 'INSERT INTO ' . Database::prefix('debug')
+                            . ' (id, type, category, subcategory, value, date)'
+                            . ' VALUES (0, :type, :category, :subcategory, :value, :date)';
                         Database::getDoctrineConnection()->executeStatement(
                             $sql,
                             [
@@ -585,12 +587,14 @@ class Modules
                                 'category' => $hookName,
                                 'subcategory' => (string) $row['modulename'],
                                 'value' => (string) ($endtime - $starttime),
+                                'date' => date('Y-m-d H:i:s'),
                             ],
                             [
                                 'type' => ParameterType::STRING,
                                 'category' => ParameterType::STRING,
                                 'subcategory' => ParameterType::STRING,
                                 'value' => ParameterType::STRING,
+                                'date' => ParameterType::STRING,
                             ]
                         );
                     }

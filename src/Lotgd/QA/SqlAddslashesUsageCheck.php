@@ -30,6 +30,16 @@ final class SqlAddslashesUsageCheck
     ];
 
     /**
+     * Scan the PHP files that sit directly in the repository root as well.
+     *
+     * The directory roots above missed every legacy entry point, which is how
+     * gamelog.php kept building its category filter with addslashes() long after
+     * the rest of the tree had moved to bound parameters. Only the top level is
+     * scanned: install/ and vendor/ are deliberately out of scope.
+     */
+    private const SCAN_ROOT_FILES = true;
+
+    /**
      * @var list<string>
      */
     private const SQL_KEYWORDS = [
@@ -77,6 +87,23 @@ final class SqlAddslashesUsageCheck
     public function collectViolations(string $repositoryRoot): array
     {
         $violations = [];
+
+        if (self::SCAN_ROOT_FILES) {
+            foreach ((array) glob(rtrim($repositoryRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '*.php') as $rootFile) {
+                if (!is_string($rootFile) || !is_file($rootFile)) {
+                    continue;
+                }
+
+                $relativePath = basename($rootFile);
+                if ($this->isWhitelistedPath($relativePath)) {
+                    continue;
+                }
+
+                foreach ($this->collectFileViolations($rootFile, $relativePath) as $violation) {
+                    $violations[] = $violation;
+                }
+            }
+        }
 
         foreach (self::SCAN_ROOTS as $relativeRoot) {
             $absoluteRoot = rtrim($repositoryRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $relativeRoot;

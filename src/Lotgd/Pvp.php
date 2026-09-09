@@ -208,7 +208,14 @@ class Pvp
             . 'gold = IF(gold < :creaturegold_for_gold, 0, gold - :creaturegold_for_subtract), '
             . 'experience = IF(experience >= :lostexp_for_check, experience - :lostexp_for_subtract, 0) '
             . 'WHERE acctid = :acctid';
-        DebugLog::add($sql, (int) $badguy['acctid'], $session['user']['acctid']);
+        // This used to log the interpolated UPDATE, so the amounts were readable.
+        // Since the query is parameterised it would only record the placeholder
+        // template, so state what actually happened to the account instead.
+        DebugLog::add(
+            'lost gold and experience to a PvP defeat (' . (int) $badguy['creaturegold'] . ' gold, ' . (int) $lostexp . ' exp)',
+            (int) $badguy['acctid'],
+            $session['user']['acctid']
+        );
         $connection->executeStatement(
             $sql,
             [
@@ -295,7 +302,14 @@ class Pvp
 
         if ($row['level'] >= $badguy['creaturelevel']) {
             $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET gold = gold + :winamount, experience = experience + :wonexp WHERE acctid = :acctid';
-            DebugLog::add($sql);
+            // The defender is the one who gains here, so they are the actor and the
+            // attacker is the target -- the mirror of the "being slain by" entry
+            // written for the attacker a few lines below.
+            DebugLog::add(
+                'gained ' . (int) $winamount . ' gold and ' . (int) $wonexp . ' exp for winning a PvP defence against ',
+                (int) $session['user']['acctid'],
+                (int) $badguy['acctid']
+            );
             $connection->executeStatement(
                 $sql,
                 ['winamount' => (int) $winamount, 'wonexp' => (int) $wonexp, 'acctid' => (int) $badguy['acctid']],

@@ -186,6 +186,35 @@ modules.
 
 ## 6. Configuration Changes
 
+- **Logging consolidation (this release)**
+  - **New: `show_error_details`** (Error Notification section, default off).
+    Detailed error output — message, file path, backtrace — used to be published
+    to *every* visitor whenever `debug` was on. `debug` turns on page and hook
+    profiling and its own warning text talks about load, so an operator enabling
+    it to find a slow page had no reason to expect backtraces to become public.
+    Detail is now shown to megausers, or to everyone only when this new setting
+    is switched on deliberately. **If you relied on `debug` to see errors on a
+    live site, enable `show_error_details` after upgrading.**
+  - **New: `expiredebug`** (Server Maintenance / Debugging, default 7 days).
+    The `debug` table had no retention at all and grew by two rows per page view
+    plus one per module hook for as long as `debug` stayed on. It now carries a
+    `date` column (migration `Version20250724000024`) and is trimmed by the
+    comment cleanup cron routine like every other log table. Set it to `0` to
+    keep the old unbounded behaviour.
+  - Security-relevant outcomes — a denied superuser page, a refused CSRF token,
+    a failed login, an automatic ban, a 2FA failure or lockout, a denied async
+    call — now all go to **one** place: the game log under the `security`
+    category, and PHP's error log with a matching `diag=` correlation id.
+    Several of these were previously only in the per-character debug log or only
+    in `error_log`. Nothing needs configuring; the entries simply appear in
+    `gamelog.php` where the severity filter can reach them.
+  - Game log categories are a closed vocabulary now (`Lotgd\GameLog::CATEGORY_*`).
+    `char expiration` and `char deletion failure` became `expiration`, and
+    `comment expiration` became `maintenance`, with failure carried by the
+    **severity** rather than by a separate category. Existing rows keep their old
+    category strings, so both appear in the category navigation until they age
+    out of the retention window.
+
 - **Async (Ajax)**  
   - Config is in `config/async.settings.php`.  
   - Default rate limit: ~1 request/second.  
@@ -416,7 +445,9 @@ If you maintain custom overrides of any migrated page, update those overrides to
 
 ### SQL addslashes baseline status
 
-The SQL addslashes QA baseline (`src/Lotgd/QA/SqlAddslashesUsageCheck.php`) remains empty: all previously tracked core call sites have been migrated to Doctrine DBAL parameter binding. Any new SQL-building `addslashes()` usage in `pages/` or `src/` will fail QA and should be migrated to `executeQuery()` / `executeStatement()` with explicit parameter types.
+The SQL addslashes QA baseline (`src/Lotgd/QA/SqlAddslashesUsageCheck.php`) remains empty: all previously tracked core call sites have been migrated to Doctrine DBAL parameter binding. Any new SQL-building `addslashes()` usage will fail QA and should be migrated to `executeQuery()` / `executeStatement()` with explicit parameter types.
+
+The check now also scans the PHP files that sit directly in the repository root. It previously covered `pages/` and `src/` only, which is how `gamelog.php` kept building its category filter with `addslashes()` on a value taken straight from the query string long after the rest of the tree had moved on. That call site is now bound; it was the last one in the core.
 
 A companion guard, `src/Lotgd/QA/SqlValueInterpolationCheck.php`, flags request values interpolated into the **value** position of an SQL string. It replaces an earlier `InterpolatedDatabaseQueryCheck` that required `Database::query()` to receive a string literal: 193 of 194 call sites in this codebase pass a previously assembled `$sql` variable, so that rule could never be switched on, and it never ran anywhere.
 
