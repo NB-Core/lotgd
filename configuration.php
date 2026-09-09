@@ -60,7 +60,6 @@ switch ($type_setting) {
                     http_response_code(400);
                     $output->output("`$Settings not saved.`0`n");
                     $op = "";
-                    Http::set($op, "");
 
                     break;
                 }
@@ -100,7 +99,6 @@ switch ($type_setting) {
                 }
                 $output->output("`^Extended Settings saved.`0");
                 $op = "";
-                Http::set($op, "");
                 break;
         }
         break;
@@ -116,7 +114,6 @@ switch ($type_setting) {
                     http_response_code(400);
                     $output->output("`$Settings not saved.`0`n");
                     $op = "";
-                    Http::set($op, "");
 
                     break;
                 }
@@ -237,7 +234,6 @@ switch ($type_setting) {
                 }
                 $output->output("`^Settings saved.`0");
                 $op = "";
-                Http::set($op, "");
                 break;
 
             case "testsmtp":

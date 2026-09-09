@@ -211,6 +211,29 @@ final class FormCsrfRegressionTest extends TestCase
     }
 
     /**
+     * The dead `Http::set($op, "")` must not come back.
+     *
+     * The house idiom is `$op = Http::get('op'); Http::set('op', ''); …;`
+     * (Modules.php), and configuration.php had it with the *variable* where
+     * the key belongs. After `$op = ""` that passes the empty string as the
+     * key, and Http::set() only writes a key that is already present, so the
+     * call did nothing at all: `$_GET['op']` stayed `"save"`.
+     *
+     * Removed rather than corrected. Nothing on the page reads `Http::get('op')`
+     * again -- the local `$op = ""` is what makes it fall through to the editor
+     * -- so making the call work would switch on behaviour that has never
+     * existed, for no benefit. Two of the four were copied in by the refusal
+     * branches added here, which is how it surfaced.
+     */
+    public function testTheDeadOpResetIsGone(): void
+    {
+        $code = $this->code('configuration.php');
+
+        self::assertStringNotContainsString('Http::set($op', $code);
+        self::assertStringContainsString('$op = "";', $code, 'the local reset is what actually works');
+    }
+
+    /**
      * A page that hands its whole POST body onward strips first.
      */
     public function testTheBulkWritersStrip(): void
