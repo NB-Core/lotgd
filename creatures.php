@@ -178,7 +178,7 @@ if ($op == "save") {
         // field straight into module preferences, which is exactly the shape
         // that needs one -- and the stripFrom(), or the token itself would be
         // persisted as a preference.
-        if (!Csrf::validatePostRequest(Csrf::SCOPE_CREATURE_EDITOR)) {
+        if (Forms::isUnverifiedRequest(Csrf::SCOPE_CREATURE_EDITOR)) {
             debuglog('Rejected creature module preference save with an invalid CSRF token.');
             http_response_code(400);
             $output->output("`\$Not saved.`0`n");
@@ -298,9 +298,12 @@ if ($op == "" || $op == "search") {
         $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'>", true);
         $output->rawOutput("<td>[ <a href='creatures.php?op=edit&creatureid={$row['creatureid']}'>");
         $output->outputNotl("%s", $edit);
-        $output->rawOutput("</a> | <a href='creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}' onClick='return confirm(\"$confirm\");'>");
-        $output->outputNotl("%s", $del);
-        $output->rawOutput("</a> ]</td><td>");
+        $output->rawOutput("</a> | " . Forms::postButton(
+            "creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}",
+            $del,
+            $confirm,
+            'linkbutton'
+        ) . " ]</td><td>");
         Nav::add("", "creatures.php?op=edit&creatureid={$row['creatureid']}");
         Nav::add("", "creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}");
         $output->outputNotl("%s", $row['creatureid']);

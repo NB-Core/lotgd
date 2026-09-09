@@ -116,6 +116,29 @@ Header::pageHeader("Preferences");
 
 $op = Http::get('op');
 
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+//
+// Two of this page's writes are deliberately absent. `suicide` has its own
+// SCOPE_SELF_DELETE guard below and the button carries that token rather than
+// the page's. The preference save has no $op of its own to list: `op=save` and
+// a plain view fall into the same branch and the write is driven by the posted
+// body, so it is guarded where that body is taken, further down.
+if (Forms::isUnverifiedCoreOp($op, ['forcechangeemail', 'cancelemail'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
+
 Nav::add("Navigation");
 if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // Two things were wrong here, and only one of them is CSRF.
@@ -132,7 +155,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // blind spot SECURITY.md describes; the id comes from the session now, and
     // the request parameter is not consulted at all.
     $userid = (int) ($session['user']['acctid'] ?? 0);
-    if (!Csrf::validatePostRequest(Csrf::SCOPE_SELF_DELETE)) {
+    if (Forms::isUnverifiedRequest(Csrf::SCOPE_SELF_DELETE)) {
         DebugLog::add('Rejected character self-deletion with an invalid CSRF token.');
         http_response_code(400);
         $output->output("`\$Your character was not deleted.`0`n");
@@ -207,7 +230,13 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         Http::postSet('showFormTabIndex', $showFormTabIndex);
     }
 
-    $post = Csrf::stripFrom(Http::allPost());
+    // The preference save is body-driven, not $op-driven: `op=save` and an
+    // ordinary page view enter this same branch, and everything below writes
+    // out of $post rather than switching on $op. So the question is asked here,
+    // where the body is taken, and an unverified one is treated as if nothing
+    // had been posted -- `if (count($post) == 0)` below already means "nothing
+    // to write". A GET carries no body either way, so browsing is untouched.
+    $post = Forms::isUnverifiedRequest() ? [] : Csrf::stripFrom(Http::allPost());
     //strip unnecessary values
     unset($post['oldvalues']);
     unset($post['showFormTabIndex']);
@@ -320,16 +349,6 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     $allowedPrefKeys = array_fill_keys(array_filter(array_keys($formDefinition), 'is_string'), true);
     foreach (array_keys($msettings) as $allowedKey) {
         $allowedPrefKeys[$allowedKey] = true;
-    }
-
-    // The write gate below is "did anything get posted"; an unvalidated post
-    // becomes an empty one, so a refusal takes the same do-nothing path the
-    // page already had rather than needing a second one.
-    if (count($post) > 0 && !Forms::validateCsrf()) {
-        DebugLog::add('Rejected a preferences save with an invalid CSRF token.');
-        http_response_code(400);
-        $output->output("`\$Your preferences were not saved.`0`n");
-        $post = [];
     }
 
     if (count($post) == 0) {
@@ -572,7 +591,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
                 // display the direct link to change it.
                 $changeemail = Translator::translateInline('Force your email address NOW');
                 $output->output("`n`qTime is up, you can now accept the change via this button:`n`n");
-                $output->rawOutput("<form action='prefs.php?op=forcechangeemail' method='POST'><input type='submit' class='button' value='$changeemail'></form><br>");
+                $output->rawOutput("<form action='prefs.php?op=forcechangeemail' method='POST'>" . Forms::csrfField() . "<input type='submit' class='button' value='$changeemail'></form><br>");
                 Nav::add("", "prefs.php?op=forcechangeemail");
             }
         } else {
@@ -580,7 +599,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         }
         $cancelemail = Translator::translateInline('Cancel email change request');
         $output->output("`\$Cancel the request with the following button:`n`n");
-        $output->rawOutput("<form action='prefs.php?op=cancelemail' method='POST'><input type='submit' class='button' value='$cancelemail'></form><br>");
+        $output->rawOutput("<form action='prefs.php?op=cancelemail' method='POST'>" . Forms::csrfField() . "<input type='submit' class='button' value='$cancelemail'></form><br>");
         Nav::add("", "prefs.php?op=cancelemail");
     }
 
@@ -597,22 +616,14 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // Stop clueless lusers from deleting their character just because a
     // monster killed them.
     if ($session['user']['alive'] && $settings->getSetting('selfdelete', 0) != 0) {
-        $output->rawOutput("<form action='prefs.php?op=suicide' method='POST'>");
-        $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_SELF_DELETE));
         $deltext = Translator::translateInline('Delete Character');
         $conf = Translator::translateInline('Are you sure you wish to PERMANENTLY delete your character?');
         // Both strings come from the translations table, which SU_IS_TRANSLATOR
-        // writes -- so they are not constants, and they landed raw in an
-        // attribute and inside a JS string literal. An apostrophe closed the
-        // attribute; a double quote closed the confirm() argument. json_encode
-        // with the two HEX flags quotes the value itself and escapes both, the
-        // same way this is done in user_.php and Motd.php.
-        $deltextHtml = htmlspecialchars($deltext, ENT_QUOTES, 'UTF-8');
-        $confJs = json_encode($conf, JSON_HEX_APOS | JSON_HEX_QUOT);
+        // writes, so they are not constants -- the escaping is Forms::postButton's
+        // business now, in one place for every such button in the tree.
         $output->rawOutput("<table class='noborder' width='100%'><tr><td width='100%'></td><td style='background-color:#FF00FF' align='right'>");
-        $output->rawOutput("<input type='submit' class='button' value='$deltextHtml' onClick='return confirm($confJs);'>");
-        $output->rawOutput("</td></tr></table>");
-        $output->rawOutput("</form><br>");
+        $output->rawOutput(Forms::postButton('prefs.php?op=suicide', $deltext, $conf, 'button', Csrf::SCOPE_SELF_DELETE));
+        $output->rawOutput("</td></tr></table><br>");
         Nav::add("", "prefs.php?op=suicide");
     }
 }

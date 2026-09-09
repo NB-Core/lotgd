@@ -19,6 +19,7 @@ use Lotgd\Mounts;
 use Lotgd\Output;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Security\Csrf;
+use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";
 
@@ -59,11 +60,12 @@ if ($op == "xml") {
 
 SuAccess::check(SU_EDIT_MOUNTS);
 
-$csrfToken = Csrf::token(Csrf::SCOPE_MOUNT_EDITOR);
-
 if (in_array($op, ['activate', 'deactivate', 'del', 'give', 'save'], true)) {
-    if (!Csrf::validatePostRequest(Csrf::SCOPE_MOUNT_EDITOR)) {
-        error_log('Denied mount editor state change: invalid method or CSRF token');
+    // Same guard as every other page, with the editor's own scope: mounts.php
+    // must not accept a token it issued to a viewer of another of its views.
+    if (Forms::isUnverifiedRequest(Csrf::SCOPE_MOUNT_EDITOR)) {
+        debuglog('Rejected a state change with an invalid CSRF token.');
+        http_response_code(400);
         $op = '';
         Http::set('op', '');
     } else {
@@ -313,18 +315,17 @@ if ($op == "") {
         $output->rawOutput("<tr class='" . ($count % 2 ? "trlight" : "trdark") . "'>");
         $output->rawOutput("<td nowrap>[ <a href='mounts.php?op=edit&id={$row['mountid']}'>$edit</a> |");
         Nav::add("", "mounts.php?op=edit&id={$row['mountid']}");
-        $output->rawOutput(mountEditorActionForm('give', (int) $row['mountid'], $give, $csrfToken) . ' |', true);
+        $output->rawOutput(Forms::postButton('mounts.php?op=give', $give, null, 'button', Csrf::SCOPE_MOUNT_EDITOR, ['id' => (int) $row['mountid']]) . ' |', true);
         if ($row['mountactive']) {
             $output->rawOutput("$del |");
         } else {
             $mconf = sprintf($conf, $mounts[$row['mountid']]);
-            $mconfJs = json_encode($mconf, JSON_HEX_APOS | JSON_HEX_QUOT);
-            $output->rawOutput(mountEditorActionForm('del', (int) $row['mountid'], $del, $csrfToken, $mconfJs) . ' |');
+            $output->rawOutput(Forms::postButton('mounts.php?op=del', $del, $mconf, 'button', Csrf::SCOPE_MOUNT_EDITOR, ['id' => (int) $row['mountid']]) . ' |');
         }
         if ($row['mountactive']) {
-            $output->rawOutput(mountEditorActionForm('deactivate', (int) $row['mountid'], $deac, $csrfToken) . ' ]</td>');
+            $output->rawOutput(Forms::postButton('mounts.php?op=deactivate', $deac, null, 'button', Csrf::SCOPE_MOUNT_EDITOR, ['id' => (int) $row['mountid']]) . ' ]</td>');
         } else {
-            $output->rawOutput(mountEditorActionForm('activate', (int) $row['mountid'], $act, $csrfToken) . ' ]</td>');
+            $output->rawOutput(Forms::postButton('mounts.php?op=activate', $act, null, 'button', Csrf::SCOPE_MOUNT_EDITOR, ['id' => (int) $row['mountid']]) . ' ]</td>');
         }
         $output->rawOutput("<td>");
         $output->outputNotl("`&%s`0", $row['mountname']);
@@ -694,18 +695,3 @@ function mountEditorNullableNonNegativeInteger(mixed $value): ?int
     return $validated === false ? null : $validated;
 }
 
-/**
- * Render a POST-only state-change control containing the editor CSRF token.
- */
-function mountEditorActionForm(string $operation, int $id, string $label, string $csrfToken, string|false $confirmation = false): string
-{
-    $operation = htmlspecialchars($operation, ENT_QUOTES, 'UTF-8');
-    $label = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
-    $csrfToken = htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8');
-    $confirm = $confirmation === false ? '' : ' onclick="return confirm(' . $confirmation . ');"';
-
-    return "<form action='mounts.php?op={$operation}' method='POST' style='display:inline'>"
-        . "<input type='hidden' name='id' value='{$id}'>"
-        . "<input type='hidden' name='csrf_token' value='{$csrfToken}'>"
-        . "<button type='submit' class='button'{$confirm}>{$label}</button></form>";
-}

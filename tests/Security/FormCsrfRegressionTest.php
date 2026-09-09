@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Security;
 
 use Lotgd\Forms;
+use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Security\Csrf;
 use PHPUnit\Framework\TestCase;
@@ -50,6 +51,22 @@ final class FormCsrfRegressionTest extends TestCase
         }
 
         return $out;
+    }
+
+    /**
+     * The pages that carry an entry guard. This list is what "everywhere"
+     * means: a new state-changing page without a guard fails the test below.
+     *
+     * @return list<string>
+     */
+    private function guardedPages(): array
+    {
+        return [
+            'badword.php', 'bans.php', 'configuration.php', 'deathmessages.php',
+            'donators.php', 'mail.php', 'masters.php', 'moderate.php', 'modules.php',
+            'prefs.php', 'taunt.php', 'titleedit.php', 'translatortool.php',
+            'untranslated.php', 'user.php',
+        ];
     }
 
     private function render(bool $nosave = false, bool $tabbed = false): string
@@ -161,8 +178,8 @@ final class FormCsrfRegressionTest extends TestCase
 
         Csrf::seed(Csrf::SCOPE_CREATURE_EDITOR, $pageToken);
         $_POST = $separate;
-        self::assertTrue(
-            Csrf::validatePostRequest(Csrf::SCOPE_CREATURE_EDITOR),
+        self::assertFalse(
+            Forms::isUnverifiedRequest(Csrf::SCOPE_CREATURE_EDITOR),
             'the editor guard must survive a showForm() nested in its form'
         );
     }
@@ -184,28 +201,430 @@ final class FormCsrfRegressionTest extends TestCase
     }
 
     /**
-     * Every save branch that showForm() feeds validates before it writes.
+     * Every page that changes state guards its own operations, exactly once.
      *
-     * Source assertions, deliberately paired with the behavioural coverage in
-     * tests/User: emission is proven above, and what remains is that the one
-     * line exists at each write.
+     * One shape, not one per branch: a per-branch check is one somebody can
+     * forget, which is how a dozen editors came to write with no token at all.
+     *
+     * The list is the point twice over. It is what "everywhere" means, so a new
+     * state-changing page without a guard fails here; and each page's own list
+     * of operations is what keeps the core out of modules' way — see
+     * testAnOperationTheCoreDoesNotKnowIsLeftAlone().
      */
-    public function testEverySaveBranchValidates(): void
+    public function testEveryStateChangingPageGuardsItsOwnOperations(): void
     {
-        $expected = [
-            'configuration.php' => 3,
-            'titleedit.php' => 1,
-            'prefs.php' => 1,
-            'pages/user/user_save.php' => 1,
-            'pages/user/user_savemodule.php' => 1,
-            'pages/user/user_special.php' => 1,
-        ];
-
-        foreach ($expected as $file => $count) {
+        foreach ($this->guardedPages() as $page) {
+            $code = $this->code($page);
             self::assertSame(
-                $count,
-                substr_count($this->code($file), 'Forms::validateCsrf()'),
-                $file . ' must validate before writing'
+                1,
+                substr_count($code, 'Forms::isUnverifiedCoreOp($op, ['),
+                $page . ' must guard its own operations exactly once'
+            );
+            // It has to clear both: a delete keys off $op with its id in the
+            // query string, so emptying the body alone would not stop it.
+            self::assertMatchesRegularExpression(
+                '/isUnverifiedCoreOp\(.*?\) \{.*?\$op = \x27\x27;.*?\$_POST = \[\];.*?\}/s',
+                $code,
+                $page . ' must clear both $op and the body'
+            );
+        }
+    }
+
+    /**
+     * Pages whose writes key off a posted field rather than $op guard at the
+     * write instead. Same question, asked where the core decides to change
+     * something.
+     */
+    public function testBodyDrivenWritesGuardAtTheWrite(): void
+    {
+        foreach ([
+            'viewpetition.php',
+            'pages/clan/clan_motd.php',
+            'pages/clan/clan_membership.php',
+            'pages/clan/detail.php',
+            // The preference save has no $op of its own: `op=save` and a plain
+            // view fall into the same branch and everything is written out of
+            // the posted body, so listing an op could not have guarded it.
+            'prefs.php',
+            // op=audit is the review view; the write under it is subop=undelete.
+            'moderate.php',
+            // op=list is the browsing view; the write under it is mode=save.
+            'untranslated.php',
+        ] as $page) {
+            self::assertStringContainsString(
+                'Forms::isUnverifiedRequest()',
+                $this->code($page),
+                $page . ' must guard its write'
+            );
+        }
+    }
+
+    /**
+     * The preference save, which had fallen through the sweep entirely.
+     *
+     * prefs.php has no `op=save` branch: `op=save` and an ordinary page view
+     * enter the same `else`, and every write below runs out of the posted body.
+     * The entry guard listed `''` for that reason, which got it backwards in
+     * both directions at once -- `save` was not listed, so the save itself was
+     * left with no CSRF check at all after the inline one was removed, while
+     * `''` matched every ordinary GET view of the page and answered it 400.
+     *
+     * So the question is asked where the body is taken. The write is already
+     * gated on `count($post)`, so an emptied body is the page's own way of
+     * saying "nothing was posted".
+     */
+    public function testThePreferenceSaveIsGuardedAtTheBodyItWrites(): void
+    {
+        $code = $this->code('prefs.php');
+
+        self::assertStringContainsString(
+            '$post = Forms::isUnverifiedRequest() ? [] : Csrf::stripFrom(Http::allPost());',
+            $code,
+            'the body a tokenless POST carries must never reach the write'
+        );
+        // The write really is gated on the body being non-empty, which is what
+        // makes emptying it sufficient.
+        self::assertStringContainsString('if (count($post) == 0) {', $code);
+
+        self::assertSame(1, preg_match('/isUnverifiedCoreOp\(\$op, \[([^\]]*)\]/', $code, $m));
+        // Listing the empty op answered 400 on every ordinary page view.
+        self::assertStringNotContainsString("''", $m[1], 'a page view is not a state change');
+        // And the two email buttons are real POST forms, so they carry a token.
+        foreach (['forcechangeemail', 'cancelemail'] as $emailOp) {
+            self::assertStringContainsString(
+                "prefs.php?op=" . $emailOp . "' method='POST'>\" . Forms::csrfField()",
+                $code,
+                $emailOp . ' posts, so its form must carry the token'
+            );
+        }
+    }
+
+    /**
+     * The clan membership writes read their ids from the body, not the URL.
+     *
+     * This guard was written to look right and fired for none of the operations
+     * it existed to protect. It asked the body for `setrank`/`remove`, but the
+     * two destructive buttons carried those in the *query string* and posted
+     * only a token, so `postIsset()` was false and the guard was skipped for
+     * exactly them. Founder demotion and member removal stayed triggerable by a
+     * forged top-level GET -- the hole this whole PR is about. Only the rank
+     * `<select>`, the one path that genuinely posts, was ever covered.
+     *
+     * Clearing `$_POST` could not have saved it either: the ids were read with
+     * `Http::get()`, so the values survived the guard that was meant to erase
+     * them. Both halves had to move into the body.
+     */
+    public function testTheClanMembershipIdsComeOnlyFromTheBody(): void
+    {
+        $code = $this->code('pages/clan/clan_membership.php');
+
+        // The reads. A GET-carried id is what made the guard cosmetic.
+        foreach (['setrank', 'whoacctid', 'remove'] as $field) {
+            self::assertStringContainsString(
+                "\$" . ($field === 'setrank' ? 'setrank' : ($field === 'remove' ? 'remove' : 'whoacctid'))
+                    . " = (int) Http::post('" . $field . "');",
+                $code,
+                $field . ' must be read from the body'
+            );
+            self::assertStringNotContainsString(
+                "Http::get('" . $field . "')",
+                $code,
+                $field . ' must not fall back to the query string'
+            );
+        }
+
+        // The triggers. Every destructive one posts its ids as hidden fields,
+        // so the target URL carries no id at all.
+        self::assertStringNotContainsString('op=membership&setrank=', $code);
+        self::assertStringNotContainsString('op=membership&remove=', $code);
+        self::assertStringNotContainsString('op=membership&whoacctid=', $code);
+
+        // And the guard still stands in front of them.
+        self::assertMatchesRegularExpression(
+            '/Forms::isUnverifiedRequest\(\).*?postIsset\(\x27setrank\x27\).*?postIsset\(\x27remove\x27\)/s',
+            $code,
+            'the write must still be guarded'
+        );
+    }
+
+    /**
+     * The guard is *called* the way the pages call it, not merely written.
+     *
+     * Every other test in this file reads source strings. That is why five
+     * rounds of review found breakage the suite was green through, and this is
+     * the one that would have caught the worst of it: `Http::get('op')` returns
+     * `string|false`, false when there is no `op` -- which is the default view
+     * of every one of these pages -- and twelve of them passed that straight
+     * into a `string` parameter under `declare(strict_types=1)`. An op-less
+     * request was a fatal TypeError, not a page. On `prefs.php`, which every
+     * player opens.
+     *
+     * So this one builds the request the browser sends and calls the guard with
+     * whatever `Http::get()` really hands back. An absent op must come back
+     * "not an operation this page owns" and let the default view render.
+     */
+    public function testAnOpLessRequestReachesTheDefaultViewOfEveryGuardedPage(): void
+    {
+        foreach ($this->guardedPages() as $page) {
+            self::assertSame(1, preg_match(
+                '/isUnverifiedCoreOp\(\$op, \[([^\]]*)\]/',
+                $this->code($page),
+                $m
+            ), $page . ' must carry an entry guard');
+            preg_match_all("/'([^']*)'/", $m[1], $ops);
+
+            // Exactly what the page does: an ordinary GET with no `op` at all.
+            $_GET = [];
+            $_POST = [];
+            $_SERVER['REQUEST_METHOD'] = 'GET';
+            $_SERVER['SCRIPT_NAME'] = '/' . $page;
+
+            $op = Http::get('op');
+            self::assertFalse($op, 'Http::get() returns false for an absent op');
+
+            self::assertFalse(
+                Forms::isUnverifiedCoreOp($op, $ops[1]),
+                $page . ': an op-less request must fall through to the default view'
+            );
+        }
+    }
+
+    /**
+     * And a request that does name an operation still behaves.
+     */
+    public function testANamedOperationIsStillJudgedOnItsToken(): void
+    {
+        $_GET = ['op' => 'save'];
+        $_POST = [];
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['SCRIPT_NAME'] = '/configuration.php';
+
+        $op = Http::get('op');
+        self::assertSame('save', $op);
+        self::assertTrue(
+            Forms::isUnverifiedCoreOp($op, ['save']),
+            'a tokenless POST naming a guarded op must still be refused'
+        );
+
+        Csrf::seed(Forms::csrfScope(), str_repeat('a', 64));
+        $_POST[Csrf::FORM_FIELD] = str_repeat('a', 64);
+        self::assertFalse(Forms::isUnverifiedCoreOp($op, ['save']));
+    }
+
+    /**
+     * A page scope must never be passed as an explicit scope argument.
+     *
+     * The two paths through the guard read *different fields*. A scopeless call
+     * goes to `validateCsrf()`, which reads `FORM_FIELD` -- what
+     * `Forms::csrfField()` renders. An explicit scope goes straight to
+     * `Csrf::validatePostRequest($scope)`, which defaults to `FIELD` -- what a
+     * narrower `postButton()` scope renders.
+     *
+     * `pages/clan/applicant_new.php` passed `'form:clan.php'`, which names the
+     * right scope and reads the wrong field, so no clan application could ever
+     * pass. The scope matching is what makes it look correct at a glance.
+     */
+    public function testAPageScopePassedExplicitlyReadsTheWrongField(): void
+    {
+        $_SERVER['SCRIPT_NAME'] = '/clan.php';
+        $scope = Forms::csrfScope();
+        Csrf::seed($scope, str_repeat('a', 64));
+
+        // What clanform() renders is the page token, in FORM_FIELD.
+        $_POST = [Csrf::FORM_FIELD => str_repeat('a', 64)];
+
+        // The control: the explicit-scope path reads FIELD and finds nothing.
+        self::assertTrue(
+            Forms::isUnverifiedRequest($scope),
+            'the explicit-scope path reads csrf_token -- this is the bug'
+        );
+        // The scopeless path reads FORM_FIELD and accepts it.
+        self::assertFalse(
+            Forms::isUnverifiedRequest(),
+            'the page path must accept the token the page rendered'
+        );
+
+        // So no caller may name a page scope. A real narrower scope is fine --
+        // its button renders FIELD to match.
+        $callers = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(dirname(__DIR__, 2)));
+        foreach ($it as $file) {
+            $path = $file->getPathname();
+            if (!str_ends_with($path, '.php')) {
+                continue;
+            }
+            if (str_contains($path, '/vendor/') || str_contains($path, '/tests/')) {
+                continue;
+            }
+            if (preg_match_all('/isUnverifiedRequest\(\s*[\x27"]([^\x27"]+)[\x27"]/', (string) file_get_contents($path), $m)) {
+                foreach ($m[1] as $literal) {
+                    $callers[] = basename($path) . ": '" . $literal . "'";
+                }
+            }
+        }
+
+        self::assertSame(
+            [],
+            $callers,
+            "a scope passed as a string literal reads the wrong field:\n" . implode("\n", $callers)
+        );
+    }
+
+    /**
+     * The shared commentary form carries the page token.
+     *
+     * `Commentary::talkForm()` renders the comment box on every page that has
+     * one, and it emitted no token at all -- so the guard on viewpetition.php,
+     * which keys off `insertcommentary` in the body, refused every legitimate
+     * petition response. The form posts back to the page it was rendered on, so
+     * the page scope is the right one for it to carry.
+     */
+    public function testTheCommentaryFormCarriesTheToken(): void
+    {
+        $code = $this->code('src/Lotgd/Commentary.php');
+
+        // Immediately inside the form tag, not merely somewhere in the file.
+        $formTag = '$output->outputNotl("<form action=\\"$req\\" method=\'POST\' autocomplete=\'false\'>", true);';
+        $position = strpos($code, $formTag);
+        self::assertIsInt($position, 'the commentary form tag must still exist');
+        self::assertStringStartsWith(
+            '$output->rawOutput(Forms::csrfField());',
+            ltrim(substr($code, $position + strlen($formTag))),
+            'the token must be the first thing inside the form'
+        );
+        // And it is the page token, which is what the guard reading the body
+        // on viewpetition.php accepts.
+        self::assertStringContainsString('Forms::isUnverifiedRequest()', $this->code('viewpetition.php'));
+    }
+
+    /**
+     * No guarded operation may also be a link somebody can click.
+     *
+     * This is the shape of the mistake the guard itself created. Once a listed
+     * op required a verified POST -- which is the whole point, and what 15cb88c
+     * restored -- every listed op that was actually a *view* started answering
+     * 400. Five did: `titleedit.php?op=add` and `?op=reset`,
+     * `configuration.php?op=testsmtp`, `moderate.php?op=audit`,
+     * `untranslated.php?op=list`, plus `donators.php?op=add1`, which is reached
+     * by a nav link from two other pages and which nothing in the manual pass
+     * caught -- this check did.
+     *
+     * A `Nav::add()` with link text is a clickable GET, so an op that is both
+     * listed and linked is either a broken view or a destructive link. Neither
+     * may exist: the view comes off the list, the destructive link becomes a
+     * `Forms::postButton()`. The allowlist-only form, `Nav::add('', $url)`, is
+     * how a POST target stays navigable and is deliberately not matched.
+     */
+    public function testNoGuardedOperationIsAlsoAClickableLink(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $lists = [];
+        foreach ($this->guardedPages() as $page) {
+            self::assertSame(1, preg_match(
+                '/isUnverifiedCoreOp\(\$op, \[([^\]]*)\]/',
+                $this->code($page),
+                $m
+            ), $page . ' must carry an entry guard');
+            preg_match_all("/'([^']*)'/", $m[1], $ops);
+            $lists[$page] = array_filter($ops[1], static fn (string $op): bool => $op !== '');
+        }
+
+        $found = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root));
+        foreach ($it as $file) {
+            $path = $file->getPathname();
+            if (!str_ends_with($path, '.php')) {
+                continue;
+            }
+            if (str_contains($path, '/vendor/') || str_contains($path, '/tests/')) {
+                continue;
+            }
+
+            $code = (string) file_get_contents($path);
+            // Nav::add("text", "page.php?op=…") -- a non-empty first argument.
+            $pattern = '/(?:Nav|Navigation)::add\(\s*(["\'])((?:(?!\1).)+)\1\s*,\s*(["\'])([^"\']*?)\3/';
+            if (!preg_match_all($pattern, $code, $matches, PREG_SET_ORDER)) {
+                continue;
+            }
+
+            foreach ($matches as $match) {
+                $url = $match[4];
+                foreach ($lists as $page => $ops) {
+                    foreach ($ops as $op) {
+                        $needle = $page . '?op=' . $op;
+                        if (!str_starts_with($url, $needle)) {
+                            continue;
+                        }
+                        // Only a whole op, so `op=add` does not match `op=add1`.
+                        if (strlen($url) !== strlen($needle) && $url[strlen($needle)] !== '&') {
+                            continue;
+                        }
+                        $found[] = substr($path, strlen($root) + 1)
+                            . ': Nav::add("' . $match[2] . '", "' . $url . '")';
+                    }
+                }
+            }
+        }
+
+        self::assertSame(
+            [],
+            array_values(array_unique($found)),
+            "a guarded op must not also be a clickable GET link:\n"
+                . implode("\n", array_unique($found))
+        );
+    }
+
+    /**
+     * The guarantee for modules, which is why the op list exists.
+     *
+     * Modules render into prefs.php, clan.php, mail.php and moderate.php
+     * through hooks and may post forms of their own. An old module cannot carry
+     * a token it has never heard of, and `runmodule.php` is not guarded at all,
+     * so an operation the core page does not implement must pass through
+     * untouched — otherwise this release silently breaks working modules.
+     */
+    public function testAnOperationTheCoreDoesNotKnowIsLeftAlone(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['SCRIPT_NAME'] = '/prefs.php';
+        $_POST = ['mymodulefield' => 'x'];
+        $GLOBALS['session'] = [];
+
+        // No token anywhere, which is exactly an old module's POST.
+        self::assertFalse(
+            Forms::isUnverifiedCoreOp('mymoduleop', ['save', 'suicide']),
+            "a module's own operation must not be refused"
+        );
+
+        // And the core's own operation is still guarded in the same call.
+        self::assertTrue(
+            Forms::isUnverifiedCoreOp('suicide', ['save', 'suicide']),
+            "the core's operation must still be refused"
+        );
+    }
+
+    /**
+     * runmodule.php is the module entry point and carries no guard, so a
+     * module's own pages are untouched by any of this.
+     */
+    public function testRunmoduleIsNotGuarded(): void
+    {
+        $code = $this->code('runmodule.php');
+
+        self::assertStringNotContainsString('isUnverifiedCoreOp', $code);
+        self::assertStringNotContainsString('isUnverifiedPost', $code);
+    }
+
+    /**
+     * And nobody keeps a private copy of the check.
+     */
+    public function testNoPageValidatesOnItsOwn(): void
+    {
+        foreach (['configuration.php', 'prefs.php', 'titleedit.php', 'user.php'] as $page) {
+            self::assertStringNotContainsString(
+                'Forms::validateCsrf()',
+                $this->code($page),
+                $page . ' must use the entry guard rather than its own check'
             );
         }
     }

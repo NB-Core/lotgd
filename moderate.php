@@ -20,6 +20,7 @@ use Lotgd\Output;
 use Lotgd\Sanitize;
 use Lotgd\DataCache;
 use Lotgd\Redirect;
+use Lotgd\Forms;
 
 // translator ready
 // addnews ready
@@ -54,6 +55,26 @@ Nav::add("Modules");
 Nav::add("Clan Halls");
 
 $op = Http::get("op");
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+// `audit` is not listed: it is the review view, reached by a nav link per
+// moderator. The write underneath it is `subop=undelete`, which arrives as a
+// POST from the form on that view and is guarded there.
+if (Forms::isUnverifiedCoreOp($op, ['commentdelete'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 if ($op == "commentdelete") {
     $comment = Http::post('comment');
     $conn = Database::getDoctrineConnection();
@@ -224,7 +245,7 @@ if ($op == "") {
     $area = Http::get('area');
     $link = "moderate.php" . ($area ? "?area=$area" : "");
     $refresh = Translator::translateInline("Refresh");
-    $output->rawOutput("<form action='$link' method='POST'>");
+    $output->rawOutput("<form action='$link' method='POST'>" . Forms::csrfField());
     $output->rawOutput("<input type='submit' class='button' value='$refresh'>");
     $output->rawOutput("</form>");
     Nav::add("", "$link");
@@ -238,6 +259,13 @@ if ($op == "") {
     }
 } elseif ($op == "audit") {
     $subop = Http::get("subop");
+    // op=audit is also the review view, so it cannot be guarded as a whole:
+    // the write is subop=undelete, which arrives as a POST from the form below.
+    if ($subop == "undelete" && Forms::isUnverifiedRequest()) {
+        debuglog('Rejected a comment undeletion with an invalid CSRF token.');
+        http_response_code(400);
+        $subop = '';
+    }
     if ($subop == "undelete") {
         $unkeys = Http::post("mod");
         if ($unkeys && is_array($unkeys)) {
@@ -314,7 +342,7 @@ if ($op == "") {
     $when = Translator::translateInline("When");
     $com = Translator::translateInline("Comment");
     $unmod = Translator::translateInline("Unmoderate");
-    $output->rawOutput("<form action='moderate.php?op=audit&subop=undelete' method='POST'>");
+    $output->rawOutput("<form action='moderate.php?op=audit&subop=undelete' method='POST'>" . Forms::csrfField());
     Nav::add("", "moderate.php?op=audit&subop=undelete");
     $output->rawOutput("<table border='0' cellpadding='2' cellspacing='0'>");
     $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$mod</td><td>$when</td><td>$com</td></tr>");

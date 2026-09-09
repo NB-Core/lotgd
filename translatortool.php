@@ -17,6 +17,7 @@ use Lotgd\Settings;
 // translator ready
 // mail ready
 use Lotgd\Output;
+use Lotgd\Forms;
 
 define("OVERRIDE_FORCED_NAV", true);
 
@@ -62,6 +63,23 @@ function translatortoolBuildTranslationCacheKey(string $namespace, string $langu
 SuAccess::check(SU_IS_TRANSLATOR);
 $opRequest = Http::get('op');
 $op = is_string($opRequest) ? $opRequest : '';
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+if (Forms::isUnverifiedCoreOp($op, ['save'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 if ($op == "") {
     popup_header("Translator Tool");
     $uriRequest = Http::get('u');
@@ -79,7 +97,7 @@ if ($op == "") {
     $translation = Translator::translate("Translation:");
     $saveclose = htmlentities(Translator::translate("Save & Close"), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
     $savenotclose = htmlentities(Translator::translate("Save No Close"), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
-    $output->rawOutput("<form action='translatortool.php?op=save' method='POST'>");
+    $output->rawOutput("<form action='translatortool.php?op=save' method='POST'>" . Forms::csrfField());
     $output->rawOutput("$namespace <input name='uri' value=\"" . htmlentities(stripslashes($uri), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" readonly><br/>");
     $output->rawOutput("$texta<br>");
     $output->rawOutput("<textarea name='text' cols='60' rows='5' readonly>" . htmlentities($text, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "</textarea><br/>");

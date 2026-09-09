@@ -20,6 +20,7 @@ use Lotgd\PlayerSearch;
 // addnews ready
 // mail ready
 use Lotgd\Output;
+use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";
 
@@ -44,7 +45,7 @@ Nav::add("Return whence you came", $return);
 Translator::getInstance()->setSchema();
 
 $add = Translator::translate("Add Donation");
-$output->rawOutput("<form action='donators.php?op=add1&ret=" . rawurlencode($ret) . "' method='POST'>");
+$output->rawOutput("<form action='donators.php?op=add1&ret=" . rawurlencode($ret) . "' method='POST'>" . Forms::csrfField());
 Nav::add("", "donators.php?op=add1&ret=" . rawurlencode($ret) . "");
 
 $coerceToString = static function ($value): string {
@@ -107,6 +108,27 @@ if (
     Nav::add("Payment Log", "paylog.php");
 }
 $op = Http::get('op');
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+// `add1` is not listed: it is the search view, reached both by its own form
+// and by the "Add donation points" nav links on user.php and viewpetition.php,
+// and it writes nothing -- it lists candidates as buttons. The write those
+// buttons lead to is `add2`, which is listed.
+if (Forms::isUnverifiedCoreOp($op, ['add2'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 if ($op == "add2") {
     $id = Http::get('id');
     $id = filter_var($id, FILTER_VALIDATE_INT);
@@ -235,12 +257,16 @@ if ($op == "") {
     }
     foreach ($results as $row) {
         if ($ret != "") {
-            $output->rawOutput("<a href='donators.php?op=add2&id={$row['acctid']}&amt=$amt&ret=" . rawurlencode($ret) . "&reason=" . rawurlencode($reason) . "'>");
+            $target = "donators.php?op=add2&id={$row['acctid']}&amt=$amt&ret=" . rawurlencode($ret) . "&reason=" . rawurlencode($reason);
         } else {
-            $output->rawOutput("<a href='donators.php?op=add2&id={$row['acctid']}&amt=$amt&reason=" . rawurlencode($reason) . "&txnid=$txnid'>");
+            $target = "donators.php?op=add2&id={$row['acctid']}&amt=$amt&reason=" . rawurlencode($reason) . "&txnid=$txnid";
         }
-        $output->outputNotl("%s (%s/%s)", $row['name'], $row['donation'], $row['donationspent']);
-        $output->rawOutput("</a>");
+        $output->rawOutput(Forms::postButton(
+            $target,
+            sprintf('%s (%s/%s)', $row['name'], $row['donation'], $row['donationspent']),
+            null,
+            'linkbutton'
+        ));
         $output->outputNotl("`n");
         if ($ret != "") {
             Nav::add("", "donators.php?op=add2&id={$row['acctid']}&amt=$amt&ret=" . rawurlencode($ret) . "&reason=" . rawurlencode($reason));

@@ -41,6 +41,26 @@ Translator::getInstance()->setSchema("configuration");
 
 $opRequest = Http::get('op');
 $op = is_string($opRequest) ? $opRequest : '';
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+// `testsmtp` is not listed: it is reached only by a nav link, so it has
+// never been a token-carrying POST, and it writes nothing -- it sends one
+// test mail to the address the admin just configured.
+if (Forms::isUnverifiedCoreOp($op, ['save'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 $moduleRequest = Http::get('module');
 $module = is_string($moduleRequest) ? $moduleRequest : '';
 $typeSettingRequest = Http::get('settings');
@@ -52,17 +72,6 @@ switch ($type_setting) {
         switch ($op) {
             case "save":
                 include_once("lib/gamelog.php");
-                // One line, at the point of writing. showForm() emits the
-                // token; only the save branch knows when a write is about to
-                // happen, which is the moment that has to be guarded.
-                if (!Forms::validateCsrf()) {
-                    debuglog('Rejected an extended settings save with an invalid CSRF token.');
-                    http_response_code(400);
-                    $output->output("`$Settings not saved.`0`n");
-                    $op = "";
-
-                    break;
-                }
                 $post = Csrf::stripFrom(httpallpost());
                 $old = $settings_extended->getArray();
                 $current = $settings_extended->getArray();
@@ -106,17 +115,6 @@ switch ($type_setting) {
         switch ($op) {
             case "save":
                 include_once("lib/gamelog.php");
-                // One line, at the point of writing. showForm() emits the
-                // token; only the save branch knows when a write is about to
-                // happen, which is the moment that has to be guarded.
-                if (!Forms::validateCsrf()) {
-                    debuglog('Rejected a core settings save with an invalid CSRF token.');
-                    http_response_code(400);
-                    $output->output("`$Settings not saved.`0`n");
-                    $op = "";
-
-                    break;
-                }
                 $blockDupEmail = Http::post('blockdupemail');
                 $requireValidEmail = Http::post('requirevalidemail');
                 $requireEmail = Http::post('requireemail');
@@ -304,10 +302,12 @@ switch ($type_setting) {
                 if (injectmodule($module, true)) {
                     $saveRequest = Http::get('save');
                     $save = is_string($saveRequest) ? $saveRequest : '';
-                    if ($save != "" && !Forms::validateCsrf()) {
+                    // op=modulesettings is also the *view* that opens this
+                    // form, reached by a link from modules.php, so it cannot be
+                    // guarded as a whole. The write is the branch below.
+                    if ($save != "" && Forms::isUnverifiedRequest()) {
                         debuglog('Rejected a module settings save with an invalid CSRF token.');
                         http_response_code(400);
-                        $output->output("`$Settings not saved.`0`n");
                         $save = "";
                     }
                     if ($save != "") {
@@ -383,16 +383,12 @@ switch ($type_setting) {
                             if (is_module_active($module)) {
                                 $output->output("This module is currently active: ");
                                 $deactivate = Translator::translateInline("Deactivate");
-                                $output->rawOutput("<a href='modules.php?op=deactivate&module={$module}&cat={$info['category']}'>");
-                                $output->outputNotl($deactivate);
-                                $output->rawOutput("</a>");
+                                $output->rawOutput(Forms::postButton("modules.php?op=deactivate&module={$module}&cat={$info['category']}", $deactivate, null, 'linkbutton'));
                                 Nav::add("", "modules.php?op=deactivate&module={$module}&cat={$info['category']}");
                             } else {
                                 $output->output("This module is currently deactivated: ");
                                 $deactivate = Translator::translateInline("Activate");
-                                $output->rawOutput("<a href='modules.php?op=activate&module={$module}&cat={$info['category']}'>");
-                                $output->outputNotl($deactivate);
-                                $output->rawOutput("</a>");
+                                $output->rawOutput(Forms::postButton("modules.php?op=activate&module={$module}&cat={$info['category']}", $deactivate, null, 'linkbutton'));
                                 Nav::add("", "modules.php?op=activate&module={$module}&cat={$info['category']}");
                             }
                             $output->rawOutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>", true);

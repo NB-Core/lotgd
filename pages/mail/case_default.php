@@ -10,6 +10,8 @@ use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Forms;
+use Lotgd\Security\Escape;
 
 /**
  * Default mail case handler.
@@ -88,7 +90,12 @@ function renderMailTableHeader(string $sortOrder, int $sortingDirection, int $ne
 {
     $output = Output::getInstance();
 
-    $output->rawOutput("<form action='mail.php?op=process' onsubmit=\"return confirm('Do you really want to delete/move/process those entries?');\" method='post'><table>");
+    $processConfirm = Translator::translateInline('Do you really want to delete/move/process those entries?');
+    $output->rawOutput(
+        "<form action='mail.php?op=process' method='post'"
+        . Escape::confirmAttribute($processConfirm, 'onsubmit') . '>'
+        . Forms::csrfField() . '<table>'
+    );
     $output->rawOutput("<tr class='trhead'><td></td>");
     $output->rawOutput("<td>" . ($sortOrder === 'subject' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=subject&direction=" . ($sortOrder === 'subject' ? $newDirection : $sortingDirection) . "'>$subject</a></td>");
     $output->rawOutput("<td>" . ($sortOrder === 'name' ? "<img src='images/shapes/$arrow' alt='$arrow'>" : '') . "<a href='mail.php?sortorder=name&direction=" . ($sortOrder === 'name' ? $newDirection : $sortingDirection) . "'>$from</a></td>");

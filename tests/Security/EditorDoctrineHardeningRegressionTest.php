@@ -29,7 +29,7 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
 
         // POST-only and the token check now come from the shared helper; the
         // guarantee is unchanged, the recipe is no longer copied here.
-        self::assertStringContainsString('Csrf::validatePostRequest(Csrf::SCOPE_MOUNT_EDITOR)', $source);
+        self::assertStringContainsString('Forms::isUnverifiedRequest(Csrf::SCOPE_MOUNT_EDITOR)', $source);
         self::assertStringContainsString("WHERE mountid = :mountId", $source);
         self::assertStringContainsString("WHERE hashorse = :mountId", $source);
         self::assertStringNotContainsString("mountid='\$id'", $source);
@@ -45,7 +45,7 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
         self::assertStringContainsString('$normalizedValue = serialize($abilities);', $source);
         self::assertStringNotContainsString('addslashes(serialize(', $source);
         self::assertStringContainsString("['id' => ParameterType::INTEGER]", $source);
-        self::assertStringContainsString('Csrf::validatePostRequest(Csrf::SCOPE_COMPANION_EDITOR)', $source);
+        self::assertStringContainsString('Forms::isUnverifiedRequest(Csrf::SCOPE_COMPANION_EDITOR)', $source);
     }
 
     public function testEquipmentEditorsValidateIndicesAndBindNames(): void
@@ -57,7 +57,9 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
             self::assertStringContainsString("'name' => ParameterType::STRING", $source);
             self::assertStringContainsString("'$stat' => ParameterType::INTEGER", $source);
             $scope = $file === 'armoreditor.php' ? 'SCOPE_ARMOR_EDITOR' : 'SCOPE_WEAPON_EDITOR';
-            self::assertStringContainsString("Csrf::validatePost(Csrf::$scope)", $source);
+            self::assertStringContainsString("Forms::isUnverifiedRequest(Csrf::$scope)", $source);
+            // The delete control is a shared POST button now; the editor form itself
+            // still posts.
             self::assertStringContainsString("method='POST'", $source);
             self::assertStringNotContainsString("\$values[(int)", $source);
         }
@@ -78,8 +80,13 @@ final class EditorDoctrineHardeningRegressionTest extends TestCase
                 "Translator::translateInline('Are you sure you wish to delete this $item?')",
                 $source
             );
-            self::assertStringContainsString("onsubmit='return confirm(\$deleteConfirmationJs);'", $source);
-            self::assertStringContainsString('JSON_HEX_APOS | JSON_HEX_QUOT', $source);
+            // The delete control goes through the shared helper, which owns
+            // the POST method, the token and the JS-safe confirmation. The
+            // editors no longer spell any of that out themselves.
+            self::assertStringContainsString('Forms::postButton(', $source);
+            self::assertStringContainsString('$deleteConfirmation,', $source);
+            self::assertStringNotContainsString('deleteConfirmationJs', $source);
+            self::assertStringNotContainsString('JSON_HEX_APOS', $source);
         }
     }
 

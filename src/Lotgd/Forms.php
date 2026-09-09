@@ -9,6 +9,7 @@ use Lotgd\DumpItem;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Security\Csrf;
+use Lotgd\Security\Escape;
 use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\DataCache;
@@ -29,10 +30,18 @@ class Forms
      * scopes separated on purpose: a token minted by the title editor has no
      * business opening the game configuration.
      */
-    public static function csrfScope(): string
+    public static function csrfScope(?string $url = null): string
     {
-        $script = $_SERVER['SCRIPT_NAME'] ?? '';
-        $name = is_string($script) ? basename($script) : '';
+        if ($url !== null) {
+            // The scope belongs to where the form *posts*, not to where it was
+            // rendered: configuration.php renders buttons that submit to
+            // modules.php, and modules.php is the page that will check them.
+            $path = (string) (parse_url($url, PHP_URL_PATH) ?? $url);
+            $name = basename($path);
+        } else {
+            $script = $_SERVER['SCRIPT_NAME'] ?? '';
+            $name = is_string($script) ? basename($script) : '';
+        }
         // Not a request-derived value in any deployment, but it reaches a
         // session key, so it is narrowed rather than trusted.
         $name = (string) preg_replace('/[^A-Za-z0-9._-]/', '', $name);
@@ -43,9 +52,9 @@ class Forms
     /**
      * The hidden token input that {@see self::showForm()} emits.
      */
-    public static function csrfField(): string
+    public static function csrfField(?string $url = null): string
     {
-        return Csrf::hiddenField(self::csrfScope(), Csrf::FORM_FIELD);
+        return Csrf::hiddenField(self::csrfScope($url), Csrf::FORM_FIELD);
     }
 
     /**
@@ -59,6 +68,181 @@ class Forms
     public static function validateCsrf(): bool
     {
         return Csrf::validatePostRequest(self::csrfScope(), Csrf::FORM_FIELD);
+    }
+
+    /**
+     * A submit button that redirects the form it already sits inside.
+     *
+     * {@see self::postButton()} opens a form of its own, which is right almost
+     * everywhere -- but not inside another form. `modules.php` wraps its table
+     * in a bulk-action form, and a nested form is invalid HTML: browsers close
+     * the outer one while parsing, so the row buttons would submit the mass
+     * action and the checkboxes below would detach from it.
+     *
+     * `formaction` is the HTML answer: the button submits the enclosing form,
+     * with its token and its fields, to this URL instead. Same guarantees, no
+     * nesting.
+     */
+    public static function formActionButton(
+        string $url,
+        string $label,
+        ?string $confirm = null,
+        string $class = 'button'
+    ): string {
+        return "<button type='submit' class='" . Escape::html($class) . "'"
+            . " formaction='" . Escape::html($url) . "'"
+            . ($confirm !== null ? Escape::confirmAttribute($confirm) : '')
+            . '>' . Escape::html($label) . '</button>';
+    }
+
+    /**
+     * A POST arrived that does not carry this page's form token.
+     *
+     * The one question every state-changing page asks, at its entry, right
+     * after it reads `$op`:
+     *
+     *     if (Forms::isUnverifiedRequest()) {
+     *         debuglog('…');
+     *         http_response_code(400);
+     *         $op = '';
+     *         $_POST = [];
+     *     }
+     *
+     * At the entry rather than in each branch, because a branch check is one
+     * someone can forget -- that is how a dozen editors came to write with no
+     * token at all -- and because a delete keys off `$op` with its id in the
+     * query string, so emptying the body alone would not stop it. Clearing both
+     * makes an unverified POST indistinguishable from a plain page view, which
+     * is the behaviour every branch already handles.
+     *
+     * A GET is unverified too -- see isUnverifiedRequestInternal() for why the
+     * opposite reasoning, which this docblock used to carry, reopened the very
+     * hole the previous release closed. What keeps the pages that search or
+     * filter with a GET form working is not the method but *where* the question
+     * is asked: an operation the core does not own is never asked about, and a
+     * page whose write keys off a posted field asks only when that field is
+     * present. A guard added here must satisfy one of those two, not assume a
+     * GET is safe.
+     *
+     * @param ?string $scope A narrower scope than the page's, for an editor
+     *                       whose token must not be interchangeable with one
+     *                       the same script hands to an ordinary viewer. Null
+     *                       uses the page scope.
+     */
+    public static function isUnverifiedRequest(?string $scope = null): bool
+    {
+        return self::isUnverifiedRequestInternal($scope);
+    }
+
+    /**
+     * The same question, asked only about an operation the core page owns.
+     *
+     * Modules render into these pages through hooks and may post forms of their
+     * own -- `prefs.php`, `clan.php`, `mail.php` and `moderate.php` all run
+     * module hooks that can emit arbitrary HTML. An old module cannot be
+     * expected to carry a token it has never heard of, so an `$op` this page
+     * does not itself handle is none of the core's business and passes through
+     * untouched. The core guards the operations it owns, named here, and the
+     * list doubles as the page's inventory of what changes state.
+     *
+     * `$op` is typed to match what `Http::get('op')` actually returns, which is
+     * `string|false` -- false when the parameter is absent, i.e. on the default
+     * view of every one of these pages. Twelve callers passed that straight in
+     * under `declare(strict_types=1)`, so an op-less request was a fatal
+     * TypeError rather than a page. Widening here fixes all of them at once and
+     * is the honest signature: `in_array(false, $coreOps, true)` is false, so
+     * an absent op falls through as "not an operation this page owns", which is
+     * exactly right.
+     *
+     * @param string|false  $op      The operation this request asked for, or
+     *                               false when it asked for none.
+     * @param array<string> $coreOps The operations this page implements.
+     * @param ?string       $scope   A narrower scope, as above.
+     */
+    public static function isUnverifiedCoreOp(string|false $op, array $coreOps, ?string $scope = null): bool
+    {
+        if (!in_array($op, $coreOps, true)) {
+            return false;
+        }
+
+        return self::isUnverifiedRequestInternal($scope);
+    }
+
+    /**
+     * A GET is unverified too, and that is the whole point.
+     *
+     * The first version of this returned false for a non-POST, reasoning that
+     * "a GET is never a state change". That reasoning had it backwards: a GET
+     * *was* a state change on these pages -- following a crafted
+     * `user.php?op=del&userid=N` deleted the account, which is what the
+     * previous release was about -- and the check it replaced,
+     * Csrf::validatePostRequest(), refused a GET precisely for that reason.
+     * Returning false here handed that hole straight back.
+     *
+     * A request that is not a POST carrying the right token is unverified,
+     * whatever its method. What keeps ordinary browsing working is *where* the
+     * question is asked: an operation the core does not own is never asked
+     * about, and a page whose write keys off a posted field asks only when that
+     * field is present, which a GET never has.
+     */
+    private static function isUnverifiedRequestInternal(?string $scope): bool
+    {
+        return $scope === null
+            ? !self::validateCsrf()
+            : !Csrf::validatePostRequest($scope);
+    }
+
+    /**
+     * An inline POST button carrying this page's form token.
+     *
+     * Deleting a creature, a taunt, a title, a ban, a mail or a module used to
+     * be `<a href='…?op=del&id=N'>` with a JavaScript confirm beside it. Neither
+     * half held: `SameSite=Lax` sends the session cookie on a top-level GET
+     * navigation, so following a crafted link was enough, and the confirm never
+     * runs on a navigation the user did not start. `ForcedNavigation` matches
+     * the URI and ignores the method, so a `Nav::add()` entry next to the form
+     * does not reintroduce the GET.
+     *
+     * One helper rather than the same twelve lines twelve times: every such
+     * trigger in the tree renders through here, so the quoting, the token and
+     * the confirmation are decided once. The caller still registers its own
+     * `Nav::add()`, because that URL is the page's business, not this method's.
+     *
+     * @param string  $url     Form action. Already URL-encoded by the caller.
+     * @param string  $label   Button text. Escaped here.
+     * @param ?string $confirm Message to ask first, or null to act immediately.
+     * @param string  $class   CSS class, so a converted link keeps its look.
+     * @param ?string $scope   A narrower CSRF scope than this page's, when the
+     *                         action needs one. `motd.php` is the reason it
+     *                         exists: the page renders a form for every player
+     *                         who sees a poll, so the page-wide token reaches
+     *                         voters, and deleting an entry must not accept it.
+     *                         Null uses the page scope, which is right whenever
+     *                         only the privileged view renders the button.
+     * @param array<string, string|int> $fields Extra hidden inputs, for a page
+     *                         that reads its operation from the body rather
+     *                         than the query string.
+     */
+    public static function postButton(
+        string $url,
+        string $label,
+        ?string $confirm = null,
+        string $class = 'button',
+        ?string $scope = null,
+        array $fields = []
+    ): string {
+        $hidden = '';
+        foreach ($fields as $name => $value) {
+            $hidden .= "<input type='hidden' name='" . Escape::html($name)
+                . "' value='" . Escape::html($value) . "'>";
+        }
+
+        return "<form action='" . Escape::html($url) . "' method='POST' style='display:inline'>"
+            . ($scope === null ? self::csrfField($url) : Csrf::hiddenField($scope))
+            . $hidden
+            . "<button type='submit' class='" . Escape::html($class) . "'"
+            . ($confirm !== null ? Escape::confirmAttribute($confirm) : '')
+            . '>' . Escape::html($label) . '</button></form>';
     }
 
     /**

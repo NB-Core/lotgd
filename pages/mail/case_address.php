@@ -6,6 +6,7 @@ use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Settings;
+use Lotgd\Forms;
 
 $id = (int) Http::get('id');
 $preop = (string) Http::get('preop');
@@ -22,7 +23,7 @@ function mailAddress(int $id, string $preop): void
     $settings = Settings::getInstance();
     $charset = $settings->getSetting('charset', 'UTF-8');
 
-    $output->outputNotl("<form action='mail.php?op=write' method='post'>", true);
+    $output->outputNotl("<form action='mail.php?op=write' method='post'>" . Forms::csrfField('mail.php'), true);
     $output->output("`b`2Address:`b`n");
     $to = Translator::translateInline("To: ");
     $forwardto = Translator::translateInline("Forward To: ");

@@ -12,6 +12,7 @@ use Lotgd\Settings;
 use Lotgd\SuAccess;
 use Lotgd\Translator;
 use Lotgd\PlayerSearch;
+use Lotgd\Forms;
 
 //addnews ready
 // mail ready
@@ -24,6 +25,23 @@ Translator::getInstance()->setSchema("bans");
 SuAccess::check(SU_EDIT_BANS);
 
 $op = Http::get('op');
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+if (Forms::isUnverifiedCoreOp($op, ['delban', 'saveban'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 $userid = Http::get("userid");
 
 Header::pageHeader("Ban Editor");

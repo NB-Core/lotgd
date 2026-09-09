@@ -13,6 +13,7 @@ use Lotgd\Nltoappon;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Forms;
 
         Header::pageHeader("Update Clan Description / MoTD");
         Nav::add("Clan Options");
@@ -21,6 +22,15 @@ use Doctrine\DBAL\ParameterType;
     $charset = $settings->getSetting('charset', 'UTF-8');
     $charsetIso = $settings->getSetting('charset', 'ISO-8859-1');
 if ($session['user']['clanrank'] >= CLAN_OFFICER) {
+    // The writes below are triggered by posted fields rather than by $op, so
+    // the guard sits here. A module posting its own fields to clan.php is not
+    // affected: nothing it sends matches these names.
+    if (Forms::isUnverifiedRequest() && (Http::postIsset('clanmotd') || Http::postIsset('clandesc') || Http::postIsset('customsay'))) {
+        debuglog('Rejected a clan state change with an invalid CSRF token.');
+        http_response_code(400);
+        $_POST = [];
+    }
+
     $connection = Database::getDoctrineConnection();
     $clanmotd = stripslashes(Sanitize::sanitizeMb(mb_substr((string) Http::post('clanmotd'), 0, 4096, $charsetIso)));
     if (
@@ -115,7 +125,7 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     $output->output("`&`bCurrent Description:`b `#by %s`2`n", $descauthname);
     $output->outputNotl(Nltoappon::convert($claninfo['clandesc']) . "`n");
 
-    $output->rawOutput("<form action='clan.php?op=motd' method='POST'>");
+    $output->rawOutput("<form action='clan.php?op=motd' method='POST'>" . Forms::csrfField());
     Nav::add("", "clan.php?op=motd");
     $output->output("`&`bMoTD:`b `7(4096 chars)`n");
     $output->rawOutput("<textarea name='clanmotd' cols='50' rows='10' class='input' style='width: 66%'>" . htmlentities($claninfo['clanmotd'], ENT_COMPAT, $charset) . "</textarea><br>");

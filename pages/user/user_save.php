@@ -13,16 +13,6 @@ use Lotgd\PasswordHelper;
 use Lotgd\Settings;
 use Lotgd\Http;
 
-// One line at the point of writing; showForm() (or Forms::csrfField() for the
-// handwritten form) put the token there.
-if (!Forms::validateCsrf()) {
-    debuglog('Rejected a user save with an invalid CSRF token.');
-    http_response_code(400);
-    $output->output("`$Not saved.`0`n");
-
-    return;
-}
-
 
 $fieldUpdates = [];
 $updates = 0;

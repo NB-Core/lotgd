@@ -383,13 +383,10 @@ class Motd
             // it used to be a plain GET, so anything that made the browser
             // follow a crafted URL removed the entry. It is a POST carrying the
             // editing token now, rendered as a button in the same bracketed row.
-            $confJs = json_encode($conf, JSON_HEX_APOS | JSON_HEX_QUOT);
             $output->rawOutput(" [ <a href='motd.php?op=$editop&id=$id'>$edit</a> | ");
             $output->rawOutput(
-                "<form action='motd.php?op=del&id=$id' method='POST' style='display:inline'"
-                . " onsubmit='return confirm($confJs);'>"
-                . Csrf::hiddenField(Csrf::SCOPE_MOTD_EDIT)
-                . "<button type='submit' class='motd-del'>$del</button></form> ]"
+                Forms::postButton("motd.php?op=del&id=$id", $del, $conf, 'motd-del', Csrf::SCOPE_MOTD_EDIT)
+                . " ]"
             );
             Nav::add('', "motd.php?op=$editop&id=$id");
             Nav::add('', "motd.php?op=del&id=$id");

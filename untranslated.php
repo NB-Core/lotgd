@@ -21,6 +21,7 @@ use Doctrine\DBAL\ParameterType;
 
 // Okay, someone wants to use this outside of normal game flow.. no real harm
 use Lotgd\Output;
+use Lotgd\Forms;
 
 define("OVERRIDE_FORCED_NAV", true);
 
@@ -39,6 +40,27 @@ SuAccess::check(SU_IS_TRANSLATOR);
 Translator::getInstance()->setSchema("untranslated");
 
 $op = Http::get('op');
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+// `list` is not listed. It is the browsing view -- the namespace nav link,
+// the `method='get'` filter form and every edit link go through it -- and a
+// view is not a state change. Its one write, `mode=save`, arrives as a POST
+// from the form below and is guarded there.
+if (Forms::isUnverifiedCoreOp($op, ['step2'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 Header::pageHeader("Untranslated Texts");
 
 Nav::add("Navigation");
@@ -55,6 +77,14 @@ if ($op == "list") {
     $mode = Http::get('mode');
     $namespace = Http::get('ns');
 
+    // op=list is also the browsing view, so it cannot be guarded as a whole:
+    // the write is mode=save, which arrives as a POST from the form below.
+    if ($mode == "save" && Forms::isUnverifiedRequest()) {
+        debuglog('Rejected a translation save with an invalid CSRF token.');
+        http_response_code(400);
+        $mode = "";
+        $_POST = [];
+    }
     if ($mode == "save") {
         $intext = Http::post('intext');
         $outtext = Http::post('outtext');
@@ -98,7 +128,7 @@ if ($op == "list") {
     }
 
     if ($mode == "edit") {
-        $output->rawOutput("<form action='untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace) . "' method='post'>");
+        $output->rawOutput("<form action='untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace) . "' method='post'>" . Forms::csrfField());
         Nav::add("", "untranslated.php?op=list&mode=save&ns=" . rawurlencode($namespace));
     } else {
         $output->rawOutput("<form action='untranslated.php?op=list' method='get'>");
@@ -219,7 +249,7 @@ if ($op == "list") {
             $row['intext'] = stripslashes($row['intext']);
             $submit = Translator::translateInline("Save Translation");
             $skip = Translator::translateInline("Skip Translation");
-            $output->rawOutput("<form action='untranslated.php?op=step2' method='post'>");
+            $output->rawOutput("<form action='untranslated.php?op=step2' method='post'>" . Forms::csrfField());
             $output->output("`^`cThere are `&%s`^ untranslated texts in the database.`c`n`n", $count['count']);
             $output->rawOutput("<table width='80%'>");
             $output->rawOutput("<tr><td width='30%'>");
@@ -235,7 +265,7 @@ if ($op == "list") {
             $output->rawOutput("<input type='hidden' name='namespace' value='{$row['namespace']}'>");
             $output->rawOutput("<input type='submit' value='$submit' class='button'>");
             $output->rawOutput("</form>");
-            $output->rawOutput("<form action='untranslated.php' method='post'>");
+            $output->rawOutput("<form action='untranslated.php' method='post'>" . Forms::csrfField());
             $output->rawOutput("<input type='submit' value='$skip' class='button'>");
             $output->rawOutput("</form>");
             Nav::add("", "untranslated.php?op=step2");

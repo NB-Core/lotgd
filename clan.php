@@ -13,6 +13,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
+use Lotgd\Forms;
 
 /**
  * \file clan.php
@@ -48,6 +49,8 @@ $apply_subj = array($apply_short, $session['user']['name']);
 
 $op = Http::get('op');
 
+
+
 // Normalized here because it reaches SQL, a cache key and generated URLs in
 // pages/clan/detail.php. A clan id is an integer; anything else is not one.
 $detail = (int) Http::get('detail');
@@ -71,7 +74,7 @@ function clanform()
     $output = Output::getInstance();
     $settings = Settings::getInstance();
 
-    $output->rawOutput("<form action='clan.php?op=new&apply=1' method='POST'>");
+    $output->rawOutput("<form action='clan.php?op=new&apply=1' method='POST'>" . Forms::csrfField());
     Nav::add("", "clan.php?op=new&apply=1");
     $output->output("`b`cNew Clan Application Form`c`b");
     $output->output("Clan Name: ");

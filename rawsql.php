@@ -18,6 +18,7 @@ use Lotgd\Settings;
 // addnews ready
 // mail ready
 use Lotgd\Output;
+use Lotgd\Forms;
 
 require_once __DIR__ . '/common.php';
 
@@ -40,7 +41,7 @@ if ($op == "" || $op == "sql") {
     // This page runs whatever it is handed, which makes it the most valuable
     // target in the tree and the cheapest to protect. Nothing is executed
     // until the token checks out.
-    if ($sql != "" && !Csrf::validatePostRequest(Csrf::SCOPE_RAW_SQL)) {
+    if ($sql != "" && Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)) {
         debuglog('Rejected raw SQL execution with an invalid CSRF token.');
         http_response_code(400);
         $output->output("`\$Not executed.`0`n`n");
@@ -97,7 +98,7 @@ if ($op == "" || $op == "sql") {
     $php = stripslashes((string) Http::post('php'));
     $source = Translator::translate("Source:");
     $execute = Translator::translate("Execute");
-    if ($php !== "" && !Csrf::validatePostRequest(Csrf::SCOPE_RAW_SQL)) {
+    if ($php !== "" && Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)) {
         debuglog('Rejected raw PHP execution with an invalid CSRF token.');
         http_response_code(400);
         $output->output("`\$Not executed.`0`n`n");

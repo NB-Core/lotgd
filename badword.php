@@ -24,6 +24,7 @@ use Lotgd\DataCache;
 // addnews ready
 // mail ready
 use Lotgd\Output;
+use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";
 
@@ -35,6 +36,23 @@ Translator::getInstance()->setSchema("badword");
 
 $opRequest = Http::get('op');
 $op = is_string($opRequest) ? $opRequest : '';
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+if (Forms::isUnverifiedCoreOp($op, ['add', 'addgood', 'remove', 'removegood'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 //yuck, this page is a mess, but it gets the job done.
 Header::pageHeader("Bad word editor");
 
@@ -45,7 +63,7 @@ Nav::add("Refresh the list", "badword.php");
 $output->output("`7Here you can edit the words that the game filters.  Using * at the start or end of a word will be a wildcard matching anything else attached to the word.  These words are only filtered if bad word filtering is turned on in the game settings page.`n`n`0");
 
 $test = Translator::translate("Test");
-$output->rawOutput("<form action='badword.php?op=test' method='POST'>");
+$output->rawOutput("<form action='badword.php?op=test' method='POST'>" . Forms::csrfField());
 Nav::add("", "badword.php?op=test");
 $output->output("`7Test a word:`0");
 $output->rawOutput("<input name='word'><input type='submit' class='button' value='$test'></form>");
@@ -67,11 +85,11 @@ $output->output("`7 (bad word exceptions)`0`n");
 
 $add = Translator::translate("Add");
 $remove = Translator::translate("Remove");
-$output->rawOutput("<form action='badword.php?op=addgood' method='POST'>");
+$output->rawOutput("<form action='badword.php?op=addgood' method='POST'>" . Forms::csrfField());
 Nav::add("", "badword.php?op=addgood");
 $output->output("`7Add a word:`0");
 $output->rawOutput("<input name='word'><input type='submit' class='button' value='$add'></form>");
-$output->rawOutput("<form action='badword.php?op=removegood' method='POST'>");
+$output->rawOutput("<form action='badword.php?op=removegood' method='POST'>" . Forms::csrfField());
 Nav::add("", "badword.php?op=removegood");
 $output->output("`7Remove a word:`0");
 $output->rawOutput("<input name='word'><input type='submit' class='button' value='$remove'></form>");
@@ -146,11 +164,11 @@ $output->output("`7`bNasty Words`b`0");
 $output->rawOutput("</font>");
 $output->outputNotl("`n");
 
-$output->rawOutput("<form action='badword.php?op=add' method='POST'>");
+$output->rawOutput("<form action='badword.php?op=add' method='POST'>" . Forms::csrfField());
 Nav::add("", "badword.php?op=add");
 $output->output("`7Add a word:`0");
 $output->rawOutput("<input name='word'><input type='submit' class='button' value='$add'></form>");
-$output->rawOutput("<form action='badword.php?op=remove' method='POST'>");
+$output->rawOutput("<form action='badword.php?op=remove' method='POST'>" . Forms::csrfField());
 Nav::add("", "badword.php?op=remove");
 $output->output("`7Remove a word:`0");
 $output->rawOutput("<input name='word'><input type='submit' class='button' value='$remove'></form>");

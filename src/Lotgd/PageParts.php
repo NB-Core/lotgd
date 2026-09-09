@@ -638,7 +638,7 @@ class PageParts
             $u = rawurlencode($u);
             $paypalstr .= "<script defer type='text/javascript' charset='UTF-8' src='images/logdnet.php?op=register&c=$c&l=$l&v=$v&a=$a&d=$d&e=$e&u=$u'></script>";
         } else {
-            $paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" onsubmit=\"return confirm('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.');\">" .
+            $paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" " . \Lotgd\Security\Escape::confirmAttribute('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.', 'onsubmit') . ">" .
                 "<input type='hidden' name='cmd' value='_xclick'>" .
                 "<input type='hidden' name='business' value='logd@mightye.org'>" .
                 "<input type='hidden' name='item_name' value='Legend of the Green Dragon Author Donation from " . Sanitize::stripAllColorCodes($session['user']['name']) . "'>" .

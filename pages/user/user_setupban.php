@@ -10,6 +10,8 @@ use Lotgd\Settings;
 use Lotgd\Http;
 use Lotgd\Sanitize;
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Security\Escape;
+use Lotgd\Forms;
 
 global $session;
 
@@ -22,7 +24,7 @@ $charset = $settings->getSetting('charset', 'UTF-8');
 if ($row['name'] != "") {
     $output->output("Setting up ban information based on `\$%s`0", $row['name']);
 }
-$output->rawOutput("<form action='user.php?op=saveban' method='POST'>");
+$output->rawOutput("<form action='user.php?op=saveban' method='POST'>" . Forms::csrfField());
 $output->output("Set up a new ban by IP or by ID (recommended IP, though if you have several different users behind a NAT, you can try ID which is easily defeated)`n");
 $output->rawOutput("<input type='radio' value='ip' id='ipradio' name='type' checked>");
 $output->output("IP: ");
@@ -75,7 +77,7 @@ $output->rawOutput("<input name='reason' size=50 value=\"$reason\">");
 $output->outputNotl("`n");
 $pban = Translator::translateInline("Post ban");
 $conf = Translator::translateInline("Are you sure you wish to issue a permanent ban?");
-$output->rawOutput("<input type='submit' class='button' value='$pban' onClick='if (document.getElementById(\"duration\").value==0) {return confirm(\"$conf\");} else {return true;}'>");
+$output->rawOutput("<input type='submit' class='button' value='" . Escape::html($pban) . "' onclick='if (document.getElementById(\"duration\").value==0) {return confirm(" . Escape::js($conf) . ");} else {return true;}'>");
 $output->rawOutput("</form>");
 $output->output("For an IP ban, enter the beginning part of the IP you wish to ban if you wish to ban a range, or simply a full IP to ban a single IP`n`n");
 Nav::add("", "user.php?op=saveban");

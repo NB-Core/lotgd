@@ -38,12 +38,12 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
         $source = $this->source('pages/user/user_del.php');
 
         self::assertStringContainsString(
-            'Csrf::validatePostRequest(Csrf::SCOPE_USER_EDITOR)',
+            'Forms::isUnverifiedRequest(Csrf::SCOPE_USER_EDITOR)',
             $source
         );
         // Refusal must not fall through into the deletion.
         self::assertMatchesRegularExpression(
-            '/if \(!Csrf::validatePostRequest\(Csrf::SCOPE_USER_EDITOR\)\) \{.*?return;\s*\}/s',
+            '/if \(Forms::isUnverifiedRequest\(Csrf::SCOPE_USER_EDITOR\)\) \{.*?return;\s*\}/s',
             $source
         );
     }
@@ -52,8 +52,11 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
     {
         $source = $this->source('pages/user/user_.php');
 
-        self::assertStringContainsString("action='user.php?op=del&userid={\$row['acctid']}' method='POST'", $source);
-        self::assertStringContainsString('Csrf::hiddenField(Csrf::SCOPE_USER_EDITOR)', $source);
+        // Rendered through the shared helper with the user editor's scope; the
+        // POST method, token field and confirmation are the helper's, covered
+        // behaviourally in EscapeAndPostButtonTest.
+        self::assertStringContainsString('Forms::postButton(', $source);
+        self::assertStringContainsString('Csrf::SCOPE_USER_EDITOR', $source);
         // The bare anchor is what made a crafted URL enough.
         self::assertStringNotContainsString("<a href='user.php?op=del", $source);
     }
@@ -87,8 +90,11 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
     {
         $source = $this->source('prefs.php');
 
-        self::assertStringContainsString('Csrf::validatePostRequest(Csrf::SCOPE_SELF_DELETE)', $source);
-        self::assertStringContainsString('Csrf::hiddenField(Csrf::SCOPE_SELF_DELETE)', $source);
+        self::assertStringContainsString('Forms::isUnverifiedRequest(Csrf::SCOPE_SELF_DELETE)', $source);
+        self::assertStringContainsString(
+            "Forms::postButton('prefs.php?op=suicide', \$deltext, \$conf, 'button', Csrf::SCOPE_SELF_DELETE)",
+            $source
+        );
 
         // The account came from the query string, and charCleanup() never
         // compares its argument to the session -- so the allowlist was the only
@@ -134,12 +140,12 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
         self::assertStringNotContainsString('"', substr($confJs, 1, -1), 'no bare quote may survive');
         self::assertStringNotContainsString("'", htmlspecialchars($apostrophe, ENT_QUOTES, 'UTF-8'));
 
-        // And that the page actually uses it.
+        // And that the page delegates rather than spelling any of it out.
         $source = $this->source('prefs.php');
-        self::assertStringContainsString('JSON_HEX_APOS | JSON_HEX_QUOT', $source);
-        self::assertStringContainsString('confirm($confJs)', $source);
-        self::assertStringNotContainsString('confirm(\\"$conf\\")', $source);
+        self::assertStringContainsString('Forms::postButton(', $source);
+        self::assertStringNotContainsString('confirm(', str_replace('confirm() argument', '', $source));
         self::assertStringNotContainsString("value='\$deltext'", $source);
+        self::assertStringNotContainsString('JSON_HEX_APOS', $source);
     }
 
     public function testRawSqlAndRawPhpRefuseToRunWithoutAToken(): void
@@ -148,7 +154,7 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
 
         self::assertSame(
             2,
-            substr_count($source, 'Csrf::validatePostRequest(Csrf::SCOPE_RAW_SQL)'),
+            substr_count($source, 'Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)'),
             'both the SQL and the PHP branch must be guarded'
         );
         self::assertSame(
@@ -158,7 +164,7 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
         );
 
         // The guard has to precede execution, not merely exist in the file.
-        $guard = strpos($source, 'Csrf::validatePostRequest(Csrf::SCOPE_RAW_SQL)');
+        $guard = strpos($source, 'Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)');
         self::assertIsInt($guard);
         self::assertLessThan(strpos($source, 'Database::query($sql, false)'), $guard);
         self::assertLessThan(strpos($source, 'eval($php)'), $guard);

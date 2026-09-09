@@ -1114,6 +1114,12 @@ SQL;
         }
         Navigation::add("", $req);
         $output->outputNotl("<form action=\"$req\" method='POST' autocomplete='false'>", true);
+        $output->rawOutput(Forms::csrfField());
+        // Every commentary form posts back to the page it is rendered on, and
+        // some of those pages guard the write it drives -- viewpetition.php
+        // keys off `insertcommentary` in the body. The form emitted no token at
+        // all, so that guard refused every legitimate comment. The scope
+        // follows the entry script, which is the page this posts back to.
 
         Forms::previewfield(
             "insertcommentary",

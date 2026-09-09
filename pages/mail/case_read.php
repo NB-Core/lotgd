@@ -9,6 +9,7 @@ use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Settings;
+use Lotgd\Forms;
 
 /**
  * Build a navigation link for adjacent messages.
@@ -142,9 +143,9 @@ function mailRead(): void
     // Bottom action links and navigation
     $output->rawOutput("<table width='50%' border='0' cellpadding='0' cellspacing='5'><tr>");
     $output->rawOutput("<td><a href='mail.php?op=write&replyto={$message['messageid']}' class='motd'>$replyLabel</a></td>");
-    $output->rawOutput("<td><a href='mail.php?op=del&id={$message['messageid']}' class='motd'>$deleteLabel</a></td>");
+    $output->rawOutput("<td>" . Forms::postButton("mail.php?op=del&id={$message['messageid']}", $deleteLabel, null, 'motd') . "</td>");
     $output->rawOutput('</tr><tr>');
-    $output->rawOutput("<td><a href='mail.php?op=unread&id={$message['messageid']}' class='motd'>$unreadLabel</a></td>");
+    $output->rawOutput("<td>" . Forms::postButton("mail.php?op=unread&id={$message['messageid']}", $unreadLabel, null, 'motd') . "</td>");
 
     if ((int) $message['msgfrom'] !== 0) {
         $escapedProblem = htmlentities($reportMessage, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));

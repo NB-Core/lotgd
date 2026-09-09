@@ -9,6 +9,7 @@ use Lotgd\Output;
 use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\Translator;
+use Lotgd\Forms;
 
 // translator ready
 // addnews ready
@@ -22,6 +23,23 @@ $args   = HookHandler::hook("header-mail", ["done" => 0]);
 
 
 $op = Http::get('op');
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+if (Forms::isUnverifiedCoreOp($op, ['del', 'process', 'send', 'unread'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 $id = (int) Http::get('id');
 if ($op == "del" && !$args['done']) {
         Mail::deleteMessage($session['user']['acctid'], $id);

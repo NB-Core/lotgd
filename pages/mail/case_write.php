@@ -11,6 +11,7 @@ use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Modules;
+use Lotgd\Forms;
 
 /**
  * Display the mail compose form.
@@ -117,7 +118,7 @@ function mailWrite(): void
         }
     }
 
-    $output->rawOutput("<form action='mail.php?op=send' method='post'>");
+    $output->rawOutput("<form action='mail.php?op=send' method='post'>" . Forms::csrfField('mail.php'));
     $output->rawOutput("<input type='hidden' name='returnto' value=\"$msgId\">");
 
     $superusers = [];

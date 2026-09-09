@@ -20,6 +20,7 @@ use Doctrine\DBAL\ParameterType;
 // mail ready
 
 use Lotgd\Output;
+use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";
 
@@ -29,6 +30,18 @@ $output = Output::getInstance();
 Translator::getInstance()->setSchema('petition');
 
 SuAccess::check(SU_EDIT_PETITIONS);
+
+// Before addCommentary(), not after: this page writes on a posted field rather
+// than on $op, and the comment system stores its entry as soon as it runs. A
+// guard placed further down would refuse the request after the comment had
+// already been saved, which is worse than either outcome on its own.
+$insertCommentary = (string) Http::post('insertcommentary');
+if ($insertCommentary !== '' && Forms::isUnverifiedRequest()) {
+    debuglog('Rejected a petition update with an invalid CSRF token.');
+    http_response_code(400);
+    $insertCommentary = '';
+    $_POST = [];
+}
 
 Commentary::addCommentary();
 
@@ -50,6 +63,8 @@ $statuses = HookHandler::hook("petition-status", $statuses);
 $statuses = Translator::translateInline($statuses);
 
 $op = Http::get("op") ?? "";
+
+
 /**
  * Lotgd\Http returns raw request payloads; normalize petition IDs before
  * using them in SQL statements or nav URLs.
@@ -63,7 +78,6 @@ if ($invalidViewRequest) {
     $op = '';
 }
 $connection = Database::getDoctrineConnection();
-$insertCommentary = (string) Http::post('insertcommentary');
 if (!empty(trim($insertCommentary)) && $id !== null) {
     /* Update the bug if someone adds comments as well */
     $connection->executeStatement(

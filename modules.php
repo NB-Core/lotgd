@@ -13,6 +13,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Sanitize;
+use Lotgd\Forms;
 
 // addnews ready
 // translator ready
@@ -45,6 +46,23 @@ Output::addHeadMarkup("<style>
 
 Nav::add("", PhpGenericEnvironment::getRequestUri());
 $op = Http::get('op');
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+if (Forms::isUnverifiedCoreOp($op, ['activate', 'deactivate', 'install', 'mass', 'reinstall', 'remove', 'uninstall'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 $module = Http::get('module');
 
 if ($op == 'mass') {
@@ -177,7 +195,7 @@ if ($op == "") {
         $installstr = Translator::translateInline("by %s");
         $active = Translator::translateInline("`@Active`0");
         $inactive = Translator::translateInline("`\$Inactive`0");
-        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>");
+        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>" . Forms::csrfField());
         Nav::add("", "modules.php?op=mass&cat=$catQuery");
         $installedCaption = Translator::translateInline("Installed modules table");
         $output->rawOutput("<div class='table-responsive'>");
@@ -206,27 +224,17 @@ if ($op == "") {
             $output->rawOutput("<input type='checkbox' name='module[]' value=\"{$row['modulename']}\">");
             $output->rawOutput("</td><td class='text-nowrap align-top'>[ ");
             if ($row['active']) {
-                $output->rawOutput("<a href='modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery'>");
-                $output->outputNotl($deactivate);
-                $output->rawOutput("</a>");
+                $output->rawOutput(Forms::formActionButton("modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery", $deactivate, null, 'linkbutton'));
                 Nav::add("", "modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery");
             } else {
-                $output->rawOutput("<a href='modules.php?op=activate&module={$row['modulename']}&cat=$catQuery'>");
-                $output->outputNotl($activate);
-                $output->rawOutput("</a>");
+                $output->rawOutput(Forms::formActionButton("modules.php?op=activate&module={$row['modulename']}&cat=$catQuery", $activate, null, 'linkbutton'));
                 Nav::add("", "modules.php?op=activate&module={$row['modulename']}&cat=$catQuery");
             }
-            $output->rawOutput(" |<a href='modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery' onClick='return confirm(\"$uninstallconfirm\");'>");
-            $output->outputNotl($uninstall);
-            $output->rawOutput("</a>");
+            $output->rawOutput(" |" . Forms::formActionButton("modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery", $uninstall, $uninstallconfirm, 'linkbutton'));
             Nav::add("", "modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery");
-            $output->rawOutput(" | <a href='modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery'>");
-            $output->outputNotl($reinstall);
-            $output->rawOutput("</a>");
+            $output->rawOutput(" | " . Forms::formActionButton("modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery", $reinstall, null, 'linkbutton'));
             Nav::add("", "modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery");
-            $output->rawOutput(" | <a href='modules.php?op=remove&module={$row['modulename']}&cat=$catQuery' onClick='return confirm(\"$removeconfirm\");'>");
-            $output->outputNotl($remove);
-            $output->rawOutput("</a>");
+            $output->rawOutput(" | " . Forms::formActionButton("modules.php?op=remove&module={$row['modulename']}&cat=$catQuery", $remove, $removeconfirm, 'linkbutton'));
             Nav::add("", "modules.php?op=remove&module={$row['modulename']}&cat=$catQuery");
 
             if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
@@ -286,7 +294,7 @@ if ($op == "") {
         $mauth = Translator::translateInline("Module Author");
         $categ = Translator::translateInline("Category");
         $fname = Translator::translateInline("Filename");
-        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>");
+        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>" . Forms::csrfField());
         Nav::add("", "modules.php?op=mass&cat=$catQuery");
         $uninstalledCaption = Translator::translateInline("Uninstalled modules table");
         $output->rawOutput("<div class='table-responsive'>");
@@ -349,9 +357,7 @@ if ($op == "") {
                 } else {
                     $output->rawOutput("<td><input type='checkbox' name='module[]' value='{$moduleinfo[$i]['shortname']}'></td>");
                     $output->rawOutput("<td class='text-nowrap align-top'>");
-                    $output->rawOutput("[ <a href='modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}'>");
-                    $output->outputNotl($install);
-                    $output->rawOutput("</a>]</td>");
+                    $output->rawOutput("[ " . Forms::formActionButton("modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}", $install, null, 'linkbutton') . "]</td>");
                     Nav::add("", "modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}");
                 }
                 $output->rawOutput("<td class='text-nowrap align-top'><span title=\"" .

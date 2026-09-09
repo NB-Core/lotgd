@@ -289,6 +289,35 @@ modules.
 
 ## 7. Breaking Changes
 
+- **The core's own state-changing operations now require a CSRF token, and
+  every destructive trigger is a button rather than a link.**
+  - A module or bookmark that links to a *core* state-changing operation stops
+    working — `?op=del`, `?op=delete`, `?op=remove`, `?op=uninstall`,
+    `?op=install`, `?op=activate`, `?op=deactivate`, `?op=reinstall`,
+    `?op=delban`, `mail.php?op=unread`, `donators.php?op=add2` or a clan
+    `&remove=`/`&setrank=` URL. A GET can never be verified, which is the point:
+    following a crafted link was the original hole. These render through `Forms::postButton()` now, which
+    emits an inline POST form with the token. Build one the same way rather than
+    an anchor.
+  - A handwritten form posting to one of *these operations* needs
+    `Forms::csrfField()` inside it, or the page treats the submission as if
+    nothing had been sent (HTTP 400, `$op` and the body cleared). A GET form —
+    search, filtering, pagination — is unaffected.
+
+  **Modules are deliberately not affected.** `runmodule.php` carries no guard at
+  all, so `runmodule.php?module=yours&op=whatever` is untouched. On the core
+  pages that run module hooks — `prefs.php`, `clan.php`, `mail.php`,
+  `moderate.php` — the guard fires only for the operations that page implements
+  itself, named in a list beside it. An `$op` the core does not know belongs to
+  a module and passes through, so an old module that posts its own form keeps
+  working without carrying a token it has never heard of. Pages whose writes key
+  off a posted field rather than `$op` (`viewpetition.php`, the clan pages)
+  guard at the write and name the fields, for the same reason.
+
+  Output encoding moved into `Lotgd\Security\Escape`. If your module builds a
+  `confirm()` handler by hand, use `Escape::confirmAttribute()`; `addslashes`
+  and `htmlentities` into JavaScript were both wrong and are gone.
+
 - **Destructive operations are POST-only and carry a CSRF token.** Three things
   that used to be reachable by making a browser issue a request no longer are:
   - `user.php?op=del&userid=N` (deleting an account) was a link in the user

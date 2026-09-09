@@ -18,6 +18,7 @@ use Doctrine\DBAL\ParameterType;
 // mail ready
 // translator ready
 use Lotgd\Output;
+use Lotgd\Forms;
 
 require_once __DIR__ . "/common.php";
 
@@ -32,6 +33,23 @@ SuAccess::check(SU_EDIT_CREATURES);
 Header::pageHeader("Deathmessage Editor");
 SuperuserNav::render();
 $op = Http::get('op');
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+if (Forms::isUnverifiedCoreOp($op, ['del', 'save'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 $deathmessageidRequest = Http::get('deathmessageid');
 $deathmessageid = deathmessages_normalize_optional_int($deathmessageidRequest);
 $deathmessageidParam = $deathmessageid === null ? '' : (string) $deathmessageid;
@@ -40,7 +58,7 @@ switch ($op) {
     case "edit":
         Nav::add("Deathmessages");
         Nav::add("Return to the Deathmessage editor", "deathmessages.php");
-        $output->rawOutput("<form action='deathmessages.php?op=save&deathmessageid=" . rawurlencode($deathmessageidParam) . "' method='POST'>", true);
+        $output->rawOutput("<form action='deathmessages.php?op=save&deathmessageid=" . rawurlencode($deathmessageidParam) . "' method='POST'>" . Forms::csrfField(), true);
         Nav::add("", "deathmessages.php?op=save&deathmessageid=" . rawurlencode($deathmessageidParam));
         if ($deathmessageid !== null) {
             $result = $connection->executeQuery(
@@ -214,7 +232,7 @@ if ($op == "") {
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this deathmessage?");
         $id = (int) $row['deathmessageid'];
-        $output->rawOutput("[ <a href='deathmessages.php?op=edit&deathmessageid=$id'>$edit</a> | <a href='deathmessages.php?op=del&deathmessageid=$id' onClick='return confirm(\"$conf\");'>$del</a> ]");
+        $output->rawOutput("[ <a href='deathmessages.php?op=edit&deathmessageid=$id'>$edit</a> | " . Forms::postButton("deathmessages.php?op=del&deathmessageid=$id", $del, $conf, 'linkbutton') . " ]");
         Nav::add("", "deathmessages.php?op=edit&deathmessageid=$id");
         Nav::add("", "deathmessages.php?op=del&deathmessageid=$id");
         $output->rawOutput("</td><td>");

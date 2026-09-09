@@ -31,6 +31,25 @@ Translator::getInstance()->setSchema("retitle");
 
 Header::pageHeader("Title Editor");
 $op = Http::get('op');
+
+// The core's own operations, and only those. A POST that does not carry this
+// page's form token is treated as if nothing had been sent. An $op this page
+// does not implement belongs to a module -- modules render into these pages
+// through hooks and may post forms of their own, and an old one cannot carry a
+// token it has never heard of -- so it passes through untouched.
+//
+// Here rather than in each branch: a delete keys off $op with its id in the
+// query string, so blanking the body alone would not stop it, and this list is
+// the page's inventory of what changes state.
+// `add` is not listed: it is a nav link that renders the empty add form and
+// writes nothing. The write it leads to is `save`, which is listed.
+if (Forms::isUnverifiedCoreOp($op, ['delete', 'reset', 'save'])) {
+    debuglog('Rejected a state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
+
 // Every other use in this file already casts; line 215 did not.
 $id = (int) Http::get('id');
 $editarray = array(
@@ -47,14 +66,6 @@ Nav::add("Functions");
 
 switch ($op) {
     case "save":
-        if (!Forms::validateCsrf()) {
-            debuglog('Rejected a title save with an invalid CSRF token.');
-            http_response_code(400);
-            $output->output("`\$Not saved.`0`n");
-            $op = "";
-
-            break;
-        }
         $male = Http::post('male');
         $female = Http::post('female');
         $dk = Http::post('dk');
@@ -256,7 +267,6 @@ switch ($op) {
         $edit = Translator::translateInline("Edit");
         $del = Translator::translateInline("Delete");
         $delconfirm = Translator::translateInline("Are you sure you wish to delete this title?");
-        $delconfirmJs = json_encode($delconfirm, JSON_HEX_APOS | JSON_HEX_QUOT);
         $output->rawOutput("<table border=0 cellspacing=0 cellpadding=2 width='100%' align='center'>");
         // reference tag is currently unused
         // $output->rawOutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$reftag</td><td>$mtit</td><td>$ftit</td></tr>");
@@ -266,7 +276,7 @@ switch ($op) {
         while ($row = Database::fetchAssoc($result)) {
             $id = $row['titleid'];
             $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
-            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|<a href='titleedit.php?op=delete&id=$id' onClick='return confirm($delconfirmJs);'>$del</a>]</td>");
+            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|" . Forms::postButton("titleedit.php?op=delete&id=$id", $del, $delconfirm, 'linkbutton') . "]</td>");
             Nav::add("", "titleedit.php?op=edit&id=$id");
             Nav::add("", "titleedit.php?op=delete&id=$id");
             $output->rawOutput("<td>");
@@ -282,11 +292,18 @@ switch ($op) {
             $i++;
         }
         $output->rawOutput("</table>");
+        // Rewriting every player's title was a nav link, so following a crafted
+        // URL ran it -- SameSite=Lax sends the session cookie on a top-level GET
+        // navigation. It is a button now; the nav entry stays, without text, so
+        // the POST target remains navigable.
+        $reset = Translator::translateInline("Reset Users Titles");
+        $resetconfirm = Translator::translateInline("Rebuild the title of every player?");
+        $output->rawOutput("<br>" . Forms::postButton("titleedit.php?op=reset", $reset, $resetconfirm));
         //HookHandler::hook("titleedit", array());
         Nav::add("Functions");
         Nav::add("Add a Title", "titleedit.php?op=add");
         Nav::add("Refresh List", "titleedit.php");
-        Nav::add("Reset Users Titles", "titleedit.php?op=reset");
+        Nav::add("", "titleedit.php?op=reset");
         title_help();
         break;
 }
