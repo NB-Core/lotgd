@@ -211,10 +211,15 @@ class Pvp
         // This used to log the interpolated UPDATE, so the amounts were readable.
         // Since the query is parameterised it would only record the placeholder
         // template, so state what actually happened to the account instead.
+        //
+        // The UPDATE below takes the gold and experience from $badguy, so $badguy
+        // is the actor whose audit trail this belongs in and the attacker is the
+        // target. The old argument order was carried over from when the message
+        // was an SQL template and attribution could not be read out of it.
         DebugLog::add(
-            'lost gold and experience to a PvP defeat (' . (int) $badguy['creaturegold'] . ' gold, ' . (int) $lostexp . ' exp)',
-            (int) $badguy['acctid'],
-            $session['user']['acctid']
+            'lost ' . (int) $badguy['creaturegold'] . ' gold and ' . (int) $lostexp . ' exp being slain by ',
+            (int) $session['user']['acctid'],
+            (int) $badguy['acctid']
         );
         $connection->executeStatement(
             $sql,

@@ -67,13 +67,14 @@ The game keeps several logs, and which one to open depends on what you are looki
 | **PHP error log** | Technical faults, plus a copy of every security event. On Docker this is the container log (`docker compose logs web`). | Container/web server log |
 | **`logs/bootstrap.log`** | Failures too early for the game to handle them — a broken `common.php`, a cron that could not start. | `logviewer.php` |
 | **`debug` table** | Page and hook runtimes, collected only while the `debug` setting is on. | `debug.php` |
-| **`faillog` table** | Every failed login attempt, kept for `expirefaillog` days. Attempts against a privileged account and every automatic ban are also copied into the Game Log's `security` category, which is the one to watch. | — |
+| **`faillog` table** | Every failed login attempt, kept for `expirefaillog` days. Individual attempts are also written to the PHP error log; the automatic ban that follows repeated failures is copied into the Game Log's `security` category, which is the one to watch. | — |
 
 Security events appear in **both** the Game Log and the PHP error log, and both carry the same
 `diag=` correlation id, so a line in the container log can be matched to the row an administrator
-sees in the game. A few very high-frequency events — an ordinary failed login, a rate-limited async
-call — are written to the error log only, so that an unauthenticated caller cannot drive one
-database write per request.
+sees in the game. Events that an unauthenticated caller can repeat at will — an individual failed
+login, a denied or rate-limited async call — are written to the error log only, so that nobody can
+drive one database write per request. What reaches the Game Log is the durable outcome: the
+automatic ban that follows repeated failures, not each guess.
 
 > ⚠️ **`debug` mode does not publish error details.** Turning `debug` on collects runtimes and
 > nothing more. To show error messages, file paths and backtraces to visitors who are not

@@ -408,13 +408,16 @@ if ($name != "") {
                     /**
                      * The faillog table records every attempt, but nothing reads it back:
                      * there is no viewer for it, and it is purged after `expirefaillog`
-                     * days. Mirror the attempt into the security channel so an operator
-                     * sees it in the game log.
+                     * days. Mirror the attempt into the error log so an operator can see
+                     * it next to everything else the request did.
                      *
-                     * Only attempts against a privileged account are persisted to the
-                     * database. Persisting all of them would let an unauthenticated
-                     * caller drive one INSERT per guess; the error log, which is a cheap
-                     * append, still receives every attempt.
+                     * Error log only: a guess is not a durable outcome, and persisting
+                     * one would let an unauthenticated caller drive an INSERT per guess.
+                     * The automatic ban below is the outcome that gets a game log row.
+                     *
+                     * `privileged_seen` describes the IP's recent failure history rather
+                     * than this attempt: $su is true when *any* failure logged for this
+                     * address in the last day hit an account with superuser rights.
                      */
                     SecurityLog::event(
                         'Failed login attempt',
@@ -423,11 +426,11 @@ if ($name != "") {
                             'ip' => $remoteAddr,
                             'acctid' => (int) ($row['acctid'] ?? 0),
                             'recent_failures' => $c,
-                            'privileged_target' => $su,
+                            'privileged_seen' => $su,
                         ],
                         (int) ($row['acctid'] ?? 0),
                         GameLog::SEVERITY_WARNING,
-                        $su
+                        false
                     );
                     if ($c >= 10) {
                         // 5 failed attempts for superuser, 10 for regular user
@@ -453,6 +456,9 @@ if ($name != "") {
                             );
                             Database::query($sql);
                         }
+                        // The ban is the durable outcome, so this one is persisted.
+                        // `privileged_seen`: the recent failures from this address
+                        // included at least one account with superuser rights.
                         SecurityLog::event(
                             'Automatic ban issued after repeated failed logins',
                             [
@@ -460,7 +466,7 @@ if ($name != "") {
                                 'login' => $name,
                                 'recent_failures' => $c,
                                 'expires' => date('Y-m-d H:i:s', strtotime('+15 minutes')),
-                                'privileged_target' => $su,
+                                'privileged_seen' => $su,
                             ],
                             (int) ($row['acctid'] ?? 0),
                             GameLog::SEVERITY_ERROR

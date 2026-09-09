@@ -710,9 +710,11 @@ function lotgd_async_process_entrypoint(): void
             $now = microtime(true);
             $threshold = $ajax_rate_limit_seconds ?? 1.0;
             $throttled = lotgd_async_denied_request_is_throttled($now, (float) $threshold);
-            // An unauthenticated caller can repeat this request at will, so the
-            // database only takes the denials the throttle lets through. The error
-            // log, a cheap append, still takes every one of them.
+            // Error log only. An unauthenticated caller can repeat this request at
+            // will, and the throttle is no bound on that: it only suppresses bursts
+            // closer together than the rate limit, so one denial per second forever
+            // is one database row per second forever. A per-request denial is not a
+            // durable outcome; a ban would be, and this endpoint issues none.
             $diagnosticId = \Lotgd\SecurityLog::event(
                 'Async request denied by the authorization policy',
                 [
@@ -723,7 +725,7 @@ function lotgd_async_process_entrypoint(): void
                 ],
                 null,
                 \Lotgd\GameLog::SEVERITY_WARNING,
-                ! $throttled
+                false
             );
 
             if ($throttled) {

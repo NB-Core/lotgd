@@ -208,6 +208,10 @@ modules.
     Several of these were previously only in the per-character debug log or only
     in `error_log`. Nothing needs configuring; the entries simply appear in
     `gamelog.php` where the severity filter can reach them.
+  - Events an unauthenticated caller can repeat at will — an individual failed
+    login, an async authorization denial — stay in the error log only, so a
+    caller cannot drive one database row per request. The durable outcome is
+    what gets persisted: the automatic ban, not each guess.
   - Game log categories are a closed vocabulary now (`Lotgd\GameLog::CATEGORY_*`).
     `char expiration` and `char deletion failure` became `expiration`, and
     `comment expiration` became `maintenance`, with failure carried by the
