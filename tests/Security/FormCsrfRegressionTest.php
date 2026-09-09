@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Security;
 
 use Lotgd\Forms;
+use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Security\Csrf;
 use PHPUnit\Framework\TestCase;
@@ -344,6 +345,70 @@ final class FormCsrfRegressionTest extends TestCase
             $code,
             'the write must still be guarded'
         );
+    }
+
+    /**
+     * The guard is *called* the way the pages call it, not merely written.
+     *
+     * Every other test in this file reads source strings. That is why five
+     * rounds of review found breakage the suite was green through, and this is
+     * the one that would have caught the worst of it: `Http::get('op')` returns
+     * `string|false`, false when there is no `op` -- which is the default view
+     * of every one of these pages -- and twelve of them passed that straight
+     * into a `string` parameter under `declare(strict_types=1)`. An op-less
+     * request was a fatal TypeError, not a page. On `prefs.php`, which every
+     * player opens.
+     *
+     * So this one builds the request the browser sends and calls the guard with
+     * whatever `Http::get()` really hands back. An absent op must come back
+     * "not an operation this page owns" and let the default view render.
+     */
+    public function testAnOpLessRequestReachesTheDefaultViewOfEveryGuardedPage(): void
+    {
+        foreach ($this->guardedPages() as $page) {
+            self::assertSame(1, preg_match(
+                '/isUnverifiedCoreOp\(\$op, \[([^\]]*)\]/',
+                $this->code($page),
+                $m
+            ), $page . ' must carry an entry guard');
+            preg_match_all("/'([^']*)'/", $m[1], $ops);
+
+            // Exactly what the page does: an ordinary GET with no `op` at all.
+            $_GET = [];
+            $_POST = [];
+            $_SERVER['REQUEST_METHOD'] = 'GET';
+            $_SERVER['SCRIPT_NAME'] = '/' . $page;
+
+            $op = Http::get('op');
+            self::assertFalse($op, 'Http::get() returns false for an absent op');
+
+            self::assertFalse(
+                Forms::isUnverifiedCoreOp($op, $ops[1]),
+                $page . ': an op-less request must fall through to the default view'
+            );
+        }
+    }
+
+    /**
+     * And a request that does name an operation still behaves.
+     */
+    public function testANamedOperationIsStillJudgedOnItsToken(): void
+    {
+        $_GET = ['op' => 'save'];
+        $_POST = [];
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['SCRIPT_NAME'] = '/configuration.php';
+
+        $op = Http::get('op');
+        self::assertSame('save', $op);
+        self::assertTrue(
+            Forms::isUnverifiedCoreOp($op, ['save']),
+            'a tokenless POST naming a guarded op must still be refused'
+        );
+
+        Csrf::seed(Forms::csrfScope(), str_repeat('a', 64));
+        $_POST[Csrf::FORM_FIELD] = str_repeat('a', 64);
+        self::assertFalse(Forms::isUnverifiedCoreOp($op, ['save']));
     }
 
     /**

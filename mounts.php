@@ -60,8 +60,6 @@ if ($op == "xml") {
 
 SuAccess::check(SU_EDIT_MOUNTS);
 
-$csrfToken = Csrf::token(Csrf::SCOPE_MOUNT_EDITOR);
-
 if (in_array($op, ['activate', 'deactivate', 'del', 'give', 'save'], true)) {
     // Same guard as every other page, with the editor's own scope: mounts.php
     // must not accept a token it issued to a viewer of another of its views.

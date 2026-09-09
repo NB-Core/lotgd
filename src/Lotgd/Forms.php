@@ -145,11 +145,21 @@ class Forms
      * untouched. The core guards the operations it owns, named here, and the
      * list doubles as the page's inventory of what changes state.
      *
-     * @param string        $op      The operation this request asked for.
+     * `$op` is typed to match what `Http::get('op')` actually returns, which is
+     * `string|false` -- false when the parameter is absent, i.e. on the default
+     * view of every one of these pages. Twelve callers passed that straight in
+     * under `declare(strict_types=1)`, so an op-less request was a fatal
+     * TypeError rather than a page. Widening here fixes all of them at once and
+     * is the honest signature: `in_array(false, $coreOps, true)` is false, so
+     * an absent op falls through as "not an operation this page owns", which is
+     * exactly right.
+     *
+     * @param string|false  $op      The operation this request asked for, or
+     *                               false when it asked for none.
      * @param array<string> $coreOps The operations this page implements.
      * @param ?string       $scope   A narrower scope, as above.
      */
-    public static function isUnverifiedCoreOp(string $op, array $coreOps, ?string $scope = null): bool
+    public static function isUnverifiedCoreOp(string|false $op, array $coreOps, ?string $scope = null): bool
     {
         if (!in_array($op, $coreOps, true)) {
             return false;
