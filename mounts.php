@@ -226,7 +226,12 @@ if ($op == "deactivate") {
     } elseif ($subop == "module") {
         // Save modules settings
         $module = Http::get("module");
-        $post = httpallpost();
+        // This loop writes every posted key as a module preference, and the
+        // form above it carries the mount editor's token -- so until now the
+        // token was persisted as a preference named `csrf_token`, which is the
+        // exact failure Csrf::stripFrom() exists to prevent. companions.php and
+        // creatures.php already filter; this was the one that was missed.
+        $post = Csrf::stripFrom(httpallpost());
         unset($post['showFormTabIndex']);
         foreach ($post as $key => $val) {
             set_module_objpref("mounts", $id, $key, $val, $module);

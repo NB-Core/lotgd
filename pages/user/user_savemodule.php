@@ -3,9 +3,21 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Forms;
 use Lotgd\Http;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
+
+// One line at the point of writing; showForm() (or Forms::csrfField() for the
+// handwritten form) put the token there.
+if (!Forms::validateCsrf()) {
+    debuglog('Rejected a user module save with an invalid CSRF token.');
+    http_response_code(400);
+    $output->output("`$Not saved.`0`n");
+
+    return;
+}
+
 
 // save module settings.
 $userid = (int) Http::get('userid');

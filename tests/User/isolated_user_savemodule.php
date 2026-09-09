@@ -61,6 +61,14 @@ namespace {
     Database::$mockResults = [];
     Translator::enableTranslation(false);
 
+    // These pages now refuse a write without the form token. Supplying a
+    // valid one keeps each test on its own subject: without it they would
+    // return at the guard and pass while proving nothing.
+    $_SERVER['REQUEST_METHOD'] = 'POST';
+    $__csrf = str_repeat('a', 64);
+    \Lotgd\Security\Csrf::seed(\Lotgd\Forms::csrfScope(), $__csrf);
+    $_POST[\Lotgd\Security\Csrf::FORM_FIELD] = $__csrf;
+
     require LOTGD_TEST_ROOT . '/pages/user/user_savemodule.php';
 
     $conn = Database::getDoctrineConnection();

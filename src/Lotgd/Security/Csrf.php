@@ -41,6 +41,19 @@ final class Csrf
     /** Form field and JSON key carrying the token. */
     public const FIELD = 'csrf_token';
 
+    /**
+     * The field {@see \Lotgd\Forms::csrfField()} renders.
+     *
+     * Deliberately not {@see self::FIELD}. A page may render its own token and
+     * *also* contain a form built by `showForm()` -- creatures.php, mounts.php
+     * and companions.php all wrap `module_objpref_edit()`, which reaches
+     * `Forms::showForm()`, inside a form that already carries an editor token.
+     * Two inputs of the same name in one form is not an error in HTML: PHP
+     * keeps the last one, so the page's token would be silently replaced and
+     * its validation would start failing. Separate names cannot collide.
+     */
+    public const FORM_FIELD = 'form_csrf_token';
+
     /** Request header carrying the token, for callers that cannot post a field. */
     public const HEADER = 'X-LotGD-Csrf';
 
@@ -59,6 +72,27 @@ final class Csrf
     public const SCOPE_MOTD_EDIT = 'motd_edit';
     public const SCOPE_TWOFACTORAUTH = 'twofactorauth';
     public const SCOPE_CHARRESTORE = 'charrestore_restore';
+
+    /** The user editor's destructive operations (user.php). */
+    public const SCOPE_USER_EDITOR = 'user_editor';
+
+    /**
+     * A player deleting their own character (prefs.php).
+     *
+     * Deliberately its own scope rather than a shared preferences token: it is
+     * the only irreversible thing that page can do, and a token minted for
+     * saving preferences has no business authorising it.
+     */
+    public const SCOPE_SELF_DELETE = 'self_delete';
+
+    /**
+     * rawsql.php, which executes whatever it is given.
+     *
+     * Separate from every editor scope on purpose. This one is worth more than
+     * all the others put together, so it is never issued by a page that only
+     * needs to edit a creature.
+     */
+    public const SCOPE_RAW_SQL = 'raw_sql';
 
     /**
      * The async endpoint. Issued once per session when async/setup.php renders
@@ -235,13 +269,18 @@ final class Csrf
      * would write it into the extended settings table. One implementation, so
      * there is a single thing to grep for when a new such page appears.
      *
+     * Both token fields go, always: a page that hands its POST body to a
+     * writer must not persist either, and a caller naming one explicitly is
+     * asking for that field *as well*, not instead. Getting this wrong is
+     * silent -- the token becomes a row in the settings table.
+     *
      * @param array<string, mixed> $post
      *
      * @return array<string, mixed>
      */
     public static function stripFrom(array $post, string $field = self::FIELD): array
     {
-        unset($post[$field]);
+        unset($post[$field], $post[self::FIELD], $post[self::FORM_FIELD]);
 
         return $post;
     }

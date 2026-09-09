@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\Forms;
+use Lotgd\Security\Csrf;
 use Lotgd\Names;
 use Lotgd\Nav;
 use Lotgd\MySQL\Database;
@@ -11,11 +13,22 @@ use Lotgd\PasswordHelper;
 use Lotgd\Settings;
 use Lotgd\Http;
 
+// One line at the point of writing; showForm() (or Forms::csrfField() for the
+// handwritten form) put the token there.
+if (!Forms::validateCsrf()) {
+    debuglog('Rejected a user save with an invalid CSRF token.');
+    http_response_code(400);
+    $output->output("`$Not saved.`0`n");
+
+    return;
+}
+
+
 $fieldUpdates = [];
 $updates = 0;
 $output = Output::getInstance();
 $settings = Settings::getInstance();
-$post = Http::allPost();
+$post = Csrf::stripFrom(Http::allPost());
 $oldvalues = Http::post('oldvalues');
 $oldvalues = html_entity_decode(
     (string) $oldvalues,

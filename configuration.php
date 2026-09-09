@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Lotgd\MySQL\Database;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
+use Lotgd\Security\Csrf;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
@@ -51,7 +52,18 @@ switch ($type_setting) {
         switch ($op) {
             case "save":
                 include_once("lib/gamelog.php");
-                $post = httpallpost();
+                // One line, at the point of writing. showForm() emits the
+                // token; only the save branch knows when a write is about to
+                // happen, which is the moment that has to be guarded.
+                if (!Forms::validateCsrf()) {
+                    debuglog('Rejected an extended settings save with an invalid CSRF token.');
+                    http_response_code(400);
+                    $output->output("`$Settings not saved.`0`n");
+                    $op = "";
+
+                    break;
+                }
+                $post = Csrf::stripFrom(httpallpost());
                 $old = $settings_extended->getArray();
                 $current = $settings_extended->getArray();
                 foreach ($post as $key => $val) {
@@ -87,7 +99,6 @@ switch ($type_setting) {
                 }
                 $output->output("`^Extended Settings saved.`0");
                 $op = "";
-                Http::set($op, "");
                 break;
         }
         break;
@@ -95,6 +106,17 @@ switch ($type_setting) {
         switch ($op) {
             case "save":
                 include_once("lib/gamelog.php");
+                // One line, at the point of writing. showForm() emits the
+                // token; only the save branch knows when a write is about to
+                // happen, which is the moment that has to be guarded.
+                if (!Forms::validateCsrf()) {
+                    debuglog('Rejected a core settings save with an invalid CSRF token.');
+                    http_response_code(400);
+                    $output->output("`$Settings not saved.`0`n");
+                    $op = "";
+
+                    break;
+                }
                 $blockDupEmail = Http::post('blockdupemail');
                 $requireValidEmail = Http::post('requirevalidemail');
                 $requireEmail = Http::post('requireemail');
@@ -175,7 +197,7 @@ switch ($type_setting) {
                 if ($expArray !== null && $expArray != $settings->getSetting('exp-array', '100,400,1002,1912,3140,4707,6641,8985,11795,15143,19121,23840,29437,36071,43930')) {
                     DataCache::getInstance()->massinvalidate("exp_array_dk");
                 }
-                $post = httpallpost();
+                $post = Csrf::stripFrom(httpallpost());
 
                 $old = $settings->getArray();
                 $current = $settings->getArray();
@@ -212,7 +234,6 @@ switch ($type_setting) {
                 }
                 $output->output("`^Settings saved.`0");
                 $op = "";
-                Http::set($op, "");
                 break;
 
             case "testsmtp":
@@ -283,11 +304,17 @@ switch ($type_setting) {
                 if (injectmodule($module, true)) {
                     $saveRequest = Http::get('save');
                     $save = is_string($saveRequest) ? $saveRequest : '';
+                    if ($save != "" && !Forms::validateCsrf()) {
+                        debuglog('Rejected a module settings save with an invalid CSRF token.');
+                        http_response_code(400);
+                        $output->output("`$Settings not saved.`0`n");
+                        $save = "";
+                    }
                     if ($save != "") {
                         load_module_settings($module);
                         $module_settings = ModuleManager::settings();
                         $old = $module_settings[$module];
-                        $post = httpallpost();
+                        $post = Csrf::stripFrom(httpallpost());
                         $post = HookHandler::hook("validatesettings", $post, true, $module);
                         if (isset($post['validation_error'])) {
                             $post['validation_error'] =
