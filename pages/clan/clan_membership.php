@@ -25,6 +25,10 @@ function clanMembership(): void
 
     Nav::add('Clan Hall', 'clan.php');
     Nav::add('Clan Options');
+    // All three membership buttons post here, carrying their ids in the body,
+    // so this is the one URI that has to be navigable for them. It replaces the
+    // three per-row entries that registered a *destructive* GET each.
+    Nav::add('', 'clan.php?op=membership');
 
     $output->output('`i`$Clan Rank Structure:`n');
     $output->output('`2Rank >=Officer(20) can promote/demote people equal or lower than his rank.`n');
@@ -33,20 +37,26 @@ function clanMembership(): void
     $output->output('`4This is your current clan membership:`n');
 
     // Retrieve request variables
-    // Promote, demote and remove are triggered by posted fields and by the
-    // buttons rendered below, so the guard sits at the write. A module posting
-    // its own fields to clan.php sends none of these names.
+    // Promote, demote and remove are triggered by posted fields, so the guard
+    // sits at the write. A module posting its own fields to clan.php sends none
+    // of these names.
+    //
+    // Every one of these is read from the body and from nowhere else, and that
+    // is the whole point. The first version of this guard asked the body for
+    // `setrank`/`remove` while the two destructive buttons carried their ids in
+    // the *query string* -- so the guard never fired for exactly them, and
+    // clearing $_POST could not have stopped them anyway, because the ids came
+    // from the URL. Only the rank <select>, which genuinely posts, was covered.
+    // The buttons carry hidden fields now, so a forged GET carries nothing and
+    // every id here is zero.
     if (Forms::isUnverifiedRequest() && (Http::postIsset('setrank') || Http::postIsset('remove'))) {
         debuglog('Rejected a clan membership change with an invalid CSRF token.');
         http_response_code(400);
         $_POST = [];
     }
     $setrank = (int) Http::post('setrank');
-    if ($setrank === 0) {
-        $setrank = (int) Http::get('setrank');
-    }
-    $whoacctid = (int) Http::get('whoacctid');
-    $remove = (int) Http::get('remove');
+    $whoacctid = (int) Http::post('whoacctid');
+    $remove = (int) Http::post('remove');
 
     // Promotion / demotion
     if ($whoacctid > 0 && $setrank >= 0 && $setrank <= $session['user']['clanrank']) {
@@ -234,20 +244,25 @@ function clanMembership(): void
                 $conf = Translator::translateInline('Are you really sure to step down as founder? You can NEVER rise again to that rank!');
                 $output->outputNotl(
                     Forms::postButton(
-                        'clan.php?op=membership&setrank=' . clan_previousrank($ranks, $row['clanrank'])
-                            . '&whoacctid=' . $row['acctid'],
+                        'clan.php?op=membership',
                         Sanitize::sanitize($stepdown),
-                        $conf
+                        $conf,
+                        'button',
+                        null,
+                        [
+                            'setrank' => clan_previousrank($ranks, $row['clanrank']),
+                            'whoacctid' => $row['acctid'],
+                        ]
                     ) . ' | ',
                     true
                 );
-                Nav::add('', 'clan.php?op=membership&setrank=' . clan_previousrank($ranks, $row['clanrank']) . '&whoacctid=' . $row['acctid']);
             } elseif ($row['clanrank'] != CLAN_FOUNDER) {
-                $output->rawOutput("<form action='clan.php?op=membership&whoacctid={$row['acctid']}' method='post'>" . Forms::csrfField() . "<select name='setrank'>");
+                $output->rawOutput("<form action='clan.php?op=membership' method='post'>" . Forms::csrfField());
+                $output->rawOutput("<input type='hidden' name='whoacctid' value='" . (int) $row['acctid'] . "'>");
+                $output->rawOutput("<select name='setrank'>");
                 $output->rawOutput($list);
                 $output->rawOutput('</select>');
                 $output->rawOutput("<input type='submit' class='button' value='$submit'></form>");
-                Nav::add('', "clan.php?op=membership&whoacctid={$row['acctid']}");
             }
 
             if (
@@ -256,8 +271,14 @@ function clanMembership(): void
                 && $row['clanrank'] < CLAN_FOUNDER
                 && $session['user']['clanrank'] >= CLAN_ADMINISTRATIVE
             ) {
-                $output->rawOutput("[" . Forms::postButton("clan.php?op=membership&remove=" . $row['acctid'], $removeText, $confirm, 'linkbutton') . " ]");
-                Nav::add('', 'clan.php?op=membership&remove=' . $row['acctid']);
+                $output->rawOutput("[" . Forms::postButton(
+                    'clan.php?op=membership',
+                    $removeText,
+                    $confirm,
+                    'linkbutton',
+                    null,
+                    ['remove' => (int) $row['acctid']]
+                ) . " ]");
             } else {
                 $output->outputNotl('`2[ `)%s`2 ]', $removeText);
             }

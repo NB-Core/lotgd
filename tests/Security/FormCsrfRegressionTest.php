@@ -299,6 +299,54 @@ final class FormCsrfRegressionTest extends TestCase
     }
 
     /**
+     * The clan membership writes read their ids from the body, not the URL.
+     *
+     * This guard was written to look right and fired for none of the operations
+     * it existed to protect. It asked the body for `setrank`/`remove`, but the
+     * two destructive buttons carried those in the *query string* and posted
+     * only a token, so `postIsset()` was false and the guard was skipped for
+     * exactly them. Founder demotion and member removal stayed triggerable by a
+     * forged top-level GET -- the hole this whole PR is about. Only the rank
+     * `<select>`, the one path that genuinely posts, was ever covered.
+     *
+     * Clearing `$_POST` could not have saved it either: the ids were read with
+     * `Http::get()`, so the values survived the guard that was meant to erase
+     * them. Both halves had to move into the body.
+     */
+    public function testTheClanMembershipIdsComeOnlyFromTheBody(): void
+    {
+        $code = $this->code('pages/clan/clan_membership.php');
+
+        // The reads. A GET-carried id is what made the guard cosmetic.
+        foreach (['setrank', 'whoacctid', 'remove'] as $field) {
+            self::assertStringContainsString(
+                "\$" . ($field === 'setrank' ? 'setrank' : ($field === 'remove' ? 'remove' : 'whoacctid'))
+                    . " = (int) Http::post('" . $field . "');",
+                $code,
+                $field . ' must be read from the body'
+            );
+            self::assertStringNotContainsString(
+                "Http::get('" . $field . "')",
+                $code,
+                $field . ' must not fall back to the query string'
+            );
+        }
+
+        // The triggers. Every destructive one posts its ids as hidden fields,
+        // so the target URL carries no id at all.
+        self::assertStringNotContainsString('op=membership&setrank=', $code);
+        self::assertStringNotContainsString('op=membership&remove=', $code);
+        self::assertStringNotContainsString('op=membership&whoacctid=', $code);
+
+        // And the guard still stands in front of them.
+        self::assertMatchesRegularExpression(
+            '/Forms::isUnverifiedRequest\(\).*?postIsset\(\x27setrank\x27\).*?postIsset\(\x27remove\x27\)/s',
+            $code,
+            'the write must still be guarded'
+        );
+    }
+
+    /**
      * A page scope must never be passed as an explicit scope argument.
      *
      * The two paths through the guard read *different fields*. A scopeless call
