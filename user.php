@@ -42,7 +42,10 @@ $op = Http::get('op');
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['save', 'savemodule', 'special', 'del', 'delban', 'saveban'])) {
+// `del` is deliberately absent: pages/user/user_del.php guards it with
+// SCOPE_USER_EDITOR, and the button carries that token rather than the page's.
+// Listing it here would reject the scoped token before its own check ran.
+if (Forms::isUnverifiedCoreOp($op, ['save', 'savemodule', 'special', 'delban', 'saveban'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';

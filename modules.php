@@ -196,7 +196,7 @@ if ($op == "") {
         $installstr = Translator::translateInline("by %s");
         $active = Translator::translateInline("`@Active`0");
         $inactive = Translator::translateInline("`\$Inactive`0");
-        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>");
+        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>" . Forms::csrfField());
         Nav::add("", "modules.php?op=mass&cat=$catQuery");
         $installedCaption = Translator::translateInline("Installed modules table");
         $output->rawOutput("<div class='table-responsive'>");
@@ -225,17 +225,17 @@ if ($op == "") {
             $output->rawOutput("<input type='checkbox' name='module[]' value=\"{$row['modulename']}\">");
             $output->rawOutput("</td><td class='text-nowrap align-top'>[ ");
             if ($row['active']) {
-                $output->rawOutput(Forms::postButton("modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery", $deactivate, null, 'linkbutton'));
+                $output->rawOutput(Forms::formActionButton("modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery", $deactivate, null, 'linkbutton'));
                 Nav::add("", "modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery");
             } else {
-                $output->rawOutput(Forms::postButton("modules.php?op=activate&module={$row['modulename']}&cat=$catQuery", $activate, null, 'linkbutton'));
+                $output->rawOutput(Forms::formActionButton("modules.php?op=activate&module={$row['modulename']}&cat=$catQuery", $activate, null, 'linkbutton'));
                 Nav::add("", "modules.php?op=activate&module={$row['modulename']}&cat=$catQuery");
             }
-            $output->rawOutput(" |" . Forms::postButton("modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery", $uninstall, $uninstallconfirm, 'linkbutton'));
+            $output->rawOutput(" |" . Forms::formActionButton("modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery", $uninstall, $uninstallconfirm, 'linkbutton'));
             Nav::add("", "modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery");
-            $output->rawOutput(" | " . Forms::postButton("modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery", $reinstall, null, 'linkbutton'));
+            $output->rawOutput(" | " . Forms::formActionButton("modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery", $reinstall, null, 'linkbutton'));
             Nav::add("", "modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery");
-            $output->rawOutput(" | " . Forms::postButton("modules.php?op=remove&module={$row['modulename']}&cat=$catQuery", $remove, $removeconfirm, 'linkbutton'));
+            $output->rawOutput(" | " . Forms::formActionButton("modules.php?op=remove&module={$row['modulename']}&cat=$catQuery", $remove, $removeconfirm, 'linkbutton'));
             Nav::add("", "modules.php?op=remove&module={$row['modulename']}&cat=$catQuery");
 
             if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
@@ -295,7 +295,7 @@ if ($op == "") {
         $mauth = Translator::translateInline("Module Author");
         $categ = Translator::translateInline("Category");
         $fname = Translator::translateInline("Filename");
-        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>");
+        $output->rawOutput("<form action='modules.php?op=mass&cat=$catQuery' method='POST'>" . Forms::csrfField());
         Nav::add("", "modules.php?op=mass&cat=$catQuery");
         $uninstalledCaption = Translator::translateInline("Uninstalled modules table");
         $output->rawOutput("<div class='table-responsive'>");
@@ -358,7 +358,7 @@ if ($op == "") {
                 } else {
                     $output->rawOutput("<td><input type='checkbox' name='module[]' value='{$moduleinfo[$i]['shortname']}'></td>");
                     $output->rawOutput("<td class='text-nowrap align-top'>");
-                    $output->rawOutput("[ " . Forms::postButton("modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}", $install, null, 'linkbutton') . "]</td>");
+                    $output->rawOutput("[ " . Forms::formActionButton("modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}", $install, null, 'linkbutton') . "]</td>");
                     Nav::add("", "modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}");
                 }
                 $output->rawOutput("<td class='text-nowrap align-top'><span title=\"" .

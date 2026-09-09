@@ -222,6 +222,49 @@ final class EscapeAndPostButtonTest extends TestCase
     }
 
     /**
+     * An operation with its own scope must not be listed at the entry guard.
+     *
+     * The entry guard checks the *page* token. A button carrying a narrower
+     * scope sends that scope's token instead, so listing its operation at the
+     * entry made the guard reject it before its own check ever ran — account
+     * deletion and character self-deletion were both impossible, which the
+     * suite did not notice because nothing asserted the two guards agree.
+     */
+    public function testAScopedOperationIsNotAlsoGuardedAtTheEntry(): void
+    {
+        $_SERVER['SCRIPT_NAME'] = '/user.php';
+        Csrf::seed(Csrf::SCOPE_USER_EDITOR, str_repeat('a', 64));
+        $_POST = [Csrf::FIELD => str_repeat('a', 64)];
+
+        // What the delete button actually sends.
+        self::assertFalse(
+            Forms::isUnverifiedRequest(Csrf::SCOPE_USER_EDITOR),
+            'the scoped check must accept it'
+        );
+
+        // The control: an entry guard listing that op would reject it first.
+        self::assertTrue(
+            Forms::isUnverifiedCoreOp('del', ['del']),
+            'which is why the op must not be listed at the entry'
+        );
+
+        // And it is not, on either page.
+        foreach (['user.php' => 'del', 'prefs.php' => 'suicide'] as $page => $op) {
+            $code = (string) file_get_contents(dirname(__DIR__, 2) . '/' . $page);
+            self::assertSame(
+                1,
+                preg_match('/isUnverifiedCoreOp\(\$op, \[([^\]]*)\]/', $code, $m),
+                $page . ' must carry an entry guard'
+            );
+            self::assertStringNotContainsString(
+                "'" . $op . "'",
+                $m[1],
+                $page . ": '$op' has its own scoped guard and must not be listed here"
+            );
+        }
+    }
+
+    /**
      * Nothing in the tree may build one of these by hand again.
      */
     public function testNoHandWrittenConfirmSurvives(): void

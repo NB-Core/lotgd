@@ -71,6 +71,31 @@ class Forms
     }
 
     /**
+     * A submit button that redirects the form it already sits inside.
+     *
+     * {@see self::postButton()} opens a form of its own, which is right almost
+     * everywhere -- but not inside another form. `modules.php` wraps its table
+     * in a bulk-action form, and a nested form is invalid HTML: browsers close
+     * the outer one while parsing, so the row buttons would submit the mass
+     * action and the checkboxes below would detach from it.
+     *
+     * `formaction` is the HTML answer: the button submits the enclosing form,
+     * with its token and its fields, to this URL instead. Same guarantees, no
+     * nesting.
+     */
+    public static function formActionButton(
+        string $url,
+        string $label,
+        ?string $confirm = null,
+        string $class = 'button'
+    ): string {
+        return "<button type='submit' class='" . Escape::html($class) . "'"
+            . " formaction='" . Escape::html($url) . "'"
+            . ($confirm !== null ? Escape::confirmAttribute($confirm) : '')
+            . '>' . Escape::html($label) . '</button>';
+    }
+
+    /**
      * A POST arrived that does not carry this page's form token.
      *
      * The one question every state-changing page asks, at its entry, right

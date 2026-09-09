@@ -243,7 +243,7 @@ function clanMembership(): void
                 );
                 Nav::add('', 'clan.php?op=membership&setrank=' . clan_previousrank($ranks, $row['clanrank']) . '&whoacctid=' . $row['acctid']);
             } elseif ($row['clanrank'] != CLAN_FOUNDER) {
-                $output->rawOutput("<form action='clan.php?op=membership&whoacctid={$row['acctid']}' method='post'><select name='setrank'>" . Forms::csrfField());
+                $output->rawOutput("<form action='clan.php?op=membership&whoacctid={$row['acctid']}' method='post'>" . Forms::csrfField() . "<select name='setrank'>");
                 $output->rawOutput($list);
                 $output->rawOutput('</select>');
                 $output->rawOutput("<input type='submit' class='button' value='$submit'></form>");

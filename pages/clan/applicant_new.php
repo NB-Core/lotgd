@@ -18,6 +18,15 @@ use Doctrine\DBAL\ParameterType;
     $settings = Settings::getInstance();
     $charset = $settings->getSetting('charset', 'UTF-8');
     $clanShortNameLength = (int) $settings->getSetting('clanshortnamelength', 5);
+// Creating a clan writes, and it keys off `apply=1` with the names in the body
+// rather than off $op, so the guard sits here. clanform() in clan.php renders
+// the token this checks.
+if ($apply == 1 && \Lotgd\Forms::isUnverifiedRequest('form:clan.php')) {
+    debuglog('Rejected a clan application with an invalid CSRF token.');
+    http_response_code(400);
+    $apply = 0;
+    $_POST = [];
+}
 if ($apply == 1) {
     $ocn = Http::post('clanname');
     $ocs = Http::post('clanshort');

@@ -125,7 +125,9 @@ $op = Http::get('op');
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['', 'suicide', 'forcechangeemail', 'cancelemail'])) {
+// `suicide` is deliberately absent: it has its own SCOPE_SELF_DELETE guard
+// below, and the button carries that token rather than the page's.
+if (Forms::isUnverifiedCoreOp($op, ['', 'forcechangeemail', 'cancelemail'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';

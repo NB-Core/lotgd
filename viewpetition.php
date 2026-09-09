@@ -31,6 +31,18 @@ Translator::getInstance()->setSchema('petition');
 
 SuAccess::check(SU_EDIT_PETITIONS);
 
+// Before addCommentary(), not after: this page writes on a posted field rather
+// than on $op, and the comment system stores its entry as soon as it runs. A
+// guard placed further down would refuse the request after the comment had
+// already been saved, which is worse than either outcome on its own.
+$insertCommentary = (string) Http::post('insertcommentary');
+if ($insertCommentary !== '' && Forms::isUnverifiedRequest()) {
+    debuglog('Rejected a petition update with an invalid CSRF token.');
+    http_response_code(400);
+    $insertCommentary = '';
+    $_POST = [];
+}
+
 Commentary::addCommentary();
 
 SuperuserNav::render();
@@ -66,16 +78,6 @@ if ($invalidViewRequest) {
     $op = '';
 }
 $connection = Database::getDoctrineConnection();
-$insertCommentary = (string) Http::post('insertcommentary');
-// This page writes on a posted field rather than on $op, so the guard sits at
-// the write instead of the entry. Same question, asked where the core decides
-// to change something -- a module posting its own fields here is untouched.
-if ($insertCommentary !== '' && Forms::isUnverifiedRequest()) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
-    http_response_code(400);
-    $insertCommentary = '';
-    $_POST = [];
-}
 if (!empty(trim($insertCommentary)) && $id !== null) {
     /* Update the bug if someone adds comments as well */
     $connection->executeStatement(

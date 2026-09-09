@@ -21,7 +21,6 @@ use Lotgd\Settings;
 // mail ready
 use Lotgd\Output;
 use Lotgd\Security\Csrf;
-use Lotgd\Security\Escape;
 
 require_once __DIR__ . "/common.php";
 

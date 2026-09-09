@@ -74,7 +74,7 @@ function clanform()
     $output = Output::getInstance();
     $settings = Settings::getInstance();
 
-    $output->rawOutput("<form action='clan.php?op=new&apply=1' method='POST'>");
+    $output->rawOutput("<form action='clan.php?op=new&apply=1' method='POST'>" . Forms::csrfField());
     Nav::add("", "clan.php?op=new&apply=1");
     $output->output("`b`cNew Clan Application Form`c`b");
     $output->output("Clan Name: ");
