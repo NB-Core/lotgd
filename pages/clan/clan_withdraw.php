@@ -38,7 +38,7 @@ if ($session['user']['clanrank'] >= CLAN_LEADER) {
             $sql = "UPDATE " . Database::prefix("accounts") . " SET clanid=0,clanrank=" . CLAN_APPLICANT . ",clanjoindate='" . DATETIME_DATEMIN . "' WHERE clanid={$session['user']['clanid']}";
             Database::query($sql);
             $output->output("`^As you were the last member of this clan, it has been deleted.");
-            GameLog::log("Clan " . $session['user']['clanid'] . " has been deleted, last member gone", "clan");
+            GameLog::log("Clan " . $session['user']['clanid'] . " has been deleted, last member gone", GameLog::CATEGORY_CLAN);
         }
     } else {
         //we don't have to do anything special with this clan as

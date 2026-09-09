@@ -20,6 +20,7 @@ use Lotgd\Output;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Security\Csrf;
 use Lotgd\Forms;
+use Lotgd\SecurityLog;
 
 require_once __DIR__ . "/common.php";
 
@@ -64,7 +65,7 @@ if (in_array($op, ['activate', 'deactivate', 'del', 'give', 'save'], true)) {
     // Same guard as every other page, with the editor's own scope: mounts.php
     // must not accept a token it issued to a viewer of another of its views.
     if (Forms::isUnverifiedRequest(Csrf::SCOPE_MOUNT_EDITOR)) {
-        debuglog('Rejected a state change with an invalid CSRF token.');
+        SecurityLog::event('Refused a mount editor state change with an invalid CSRF token', ['page' => 'mounts.php', 'op' => $op]);
         http_response_code(400);
         $op = '';
         Http::set('op', '');
@@ -73,7 +74,7 @@ if (in_array($op, ['activate', 'deactivate', 'del', 'give', 'save'], true)) {
         $id = mountEditorPositiveInteger($postedId);
         $isNewRecord = $op === 'save' && ($postedId === 0 || $postedId === '0');
         if ($id === null && !$isNewRecord) {
-            error_log('Denied mount editor state change: invalid record identifier');
+            SecurityLog::event('Refused a mount editor state change with an invalid record identifier', ['page' => 'mounts.php', 'op' => $op]);
             $op = '';
             Http::set('op', '');
         }
@@ -118,7 +119,7 @@ if ($op == "deactivate") {
         $refundGems = mountEditorNonNegativeInteger($row['mountcostgems']);
         $refundGold = mountEditorNonNegativeInteger($row['mountcostgold']);
         if ($ownedMountId === null) {
-            error_log('Denied mount refund: stored mount identifier was invalid');
+            SecurityLog::event('Refused a mount refund: the stored mount identifier was invalid', ['page' => 'mounts.php', 'op' => $op]);
         } else {
             $connection->executeStatement(
                 "UPDATE " . Database::prefix("accounts") . " SET gems = gems + :gems, goldinbank = goldinbank + :gold, hashorse = :none WHERE hashorse = :mountId",
@@ -139,7 +140,7 @@ if ($op == "deactivate") {
     invalidatedatacache("mountdata-$id");
 } elseif ($op == "give") {
     if ($id === null) {
-        error_log('Denied mount give action: missing or invalid mount id');
+        SecurityLog::event('Refused a mount give action with a missing or invalid mount id', ['page' => 'mounts.php', 'op' => $op]);
     } else {
         $grantResult = Mounts::grantToCurrentUser($id);
         if ($grantResult === Mounts::GRANT_NOT_FOUND) {
@@ -159,7 +160,7 @@ if ($op == "deactivate") {
             reset($mount['mountbuff']);
             foreach ($mount['mountbuff'] as $key => $val) {
                 if (!is_string($key) || !is_string($val)) {
-                    error_log('Denied mount save: malformed structured buff value');
+                    SecurityLog::event('Refused a mount save with a malformed structured buff value', ['page' => 'mounts.php', 'op' => $op]);
                     goto mount_save_finished;
                 }
                 if ($val > "") {
@@ -196,7 +197,7 @@ if ($op == "deactivate") {
                     }
                 }
                 if (!$validParameters) {
-                    error_log('Denied mount save: malformed field value');
+                    SecurityLog::event('Refused a mount save with a malformed field value', ['page' => 'mounts.php', 'op' => $op]);
                     $op = $id === null ? '' : 'edit';
                     Http::set('op', $op);
                 }

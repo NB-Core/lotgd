@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\Backtrace;
+use Lotgd\BootstrapErrorHandler;
 use Lotgd\Sanitize;
 use Lotgd\Settings;
 use Lotgd\DataCache;
@@ -21,21 +22,27 @@ class ErrorHandler
      * Determine whether the current request context can view detailed errors.
      *
      * Security rationale: detailed exception data can expose file paths,
-     * internals, and stack details that help attackers. We only reveal it
-     * when an operator has explicitly enabled debug mode or when a privileged
-     * megauser is logged in.
+     * internals, and stack details that help attackers. We only reveal it to a
+     * privileged megauser, or when an operator has explicitly opted in to
+     * showing details to everyone.
+     *
+     * That opt-in is deliberately *not* the `debug` setting. `debug` turns on
+     * page/hook profiling, and its description warns about load only, so an
+     * operator switching it on to find a slow page had no reason to expect
+     * backtraces to become public at the same time. `show_error_details` says
+     * exactly what it does and defaults to off.
      */
     public static function canShowDetailedErrorToCurrentUser(): bool
     {
         global $session;
 
         $settings = Settings::hasInstance() ? Settings::getInstance() : null;
-        $debugEnabled = $settings instanceof Settings
-            ? (bool) $settings->getSetting('debug', 0)
+        $detailsArePublic = $settings instanceof Settings
+            ? (bool) $settings->getSetting('show_error_details', 0)
             : false;
 
-        // Debug mode is an explicit operator action and always permits detail.
-        if ($debugEnabled) {
+        // Publishing error detail is an explicit operator action of its own.
+        if ($detailsArePublic) {
             return true;
         }
 
@@ -125,7 +132,12 @@ class ErrorHandler
             case E_WARNING:
             case E_USER_WARNING:
                 Translator::getInstance()->setSchema('errorhandler');
-                $output->debug(sprintf('PHP Warning: "%s" in %s at %s.', $errstr, $errfile, $errline), true);
+                // Notices above are gated on SU_SHOW_PHPNOTICE; a warning carries the
+                // same file paths and must not be forced onto every visitor's page.
+                $output->debug(
+                    sprintf('PHP Warning: "%s" in %s at %s.', $errstr, $errfile, $errline),
+                    self::canShowDetailedErrorToCurrentUser()
+                );
                 Translator::getInstance()->setSchema();
                 if (isset($session['user']['superuser']) && ($session['user']['superuser'] & SU_DEBUG_OUTPUT) == SU_DEBUG_OUTPUT) {
                     $backtrace = Backtrace::show();
@@ -165,6 +177,12 @@ class ErrorHandler
 
     /**
      * Send an e-mail notification about a PHP error.
+     *
+     * The progress messages this method emits (which address is being notified,
+     * the throttle state, the cached error map) are operator plumbing: they name
+     * the game's notification addresses and its recent failure history. They go
+     * through Output::debug() *without* the force flag so they stay behind
+     * SU_DEBUG_OUTPUT, whatever triggered the notification.
      *
      * @param int   $errno     PHP error level
      * @param mixed $errstr    Error message
@@ -232,7 +250,7 @@ class ErrorHandler
             $data['firstrun'] = false;
         }
         if ($data['firstrun']) {
-            $output->debug('First run, not notifying users.', true);
+            $output->debug('First run, not notifying users.');
         } else {
             if ($doNotice) {
                 $userstr = '';
@@ -246,7 +264,7 @@ class ErrorHandler
                 $subject = sprintf('LotGD %s on %s', $label, $hostname);
                 $body = $html_text;
                 foreach ($sendto as $email) {
-                    $output->debug("Notifying $email of this error.", true);
+                    $output->debug("Notifying $email of this error.");
                     $admin = $settings->getSetting('gameadminemail', 'postmaster@localhost');
                     $from = [$admin => $admin];
                     try {
@@ -259,22 +277,21 @@ class ErrorHandler
                             $exception
                         );
                         $output->debug(
-                            'Mail notification skipped: unable to bootstrap mail transport.',
-                            true
+                            'Mail notification skipped: unable to bootstrap mail transport.'
                         );
 
                         return;
                     }
 
                     if (is_array($mailResult) && ! $mailResult['success']) {
-                        $output->debug('Mail notification failed: ' . $mailResult['error'], true);
+                        $output->debug('Mail notification failed: ' . $mailResult['error']);
                     } elseif ($mailResult === false) {
-                        $output->debug('Mail notification failed: delivery returned false.', true);
+                        $output->debug('Mail notification failed: delivery returned false.');
                     }
                 }
                 $data['errors'][$msg] = strtotime('now');
             } else {
-                $output->debug('Not notifying users for this error, it\'s only been ' . round((strtotime('now') - $data['errors'][$msg]) / 60, 2) . ' minutes.', true);
+                $output->debug('Not notifying users for this error, it\'s only been ' . round((strtotime('now') - $data['errors'][$msg]) / 60, 2) . ' minutes.');
             }
         }
         if (
@@ -283,7 +300,7 @@ class ErrorHandler
         ) {
             error_log('Unable to write datacache for error_notify');
         }
-        $output->debug($data, true);
+        $output->debug($data);
     }
 
     /**
@@ -291,22 +308,13 @@ class ErrorHandler
      */
     private static function logBootstrapFailure(string $message, \Throwable $exception): void
     {
-        $logFile = dirname(__DIR__, 2) . '/logs/bootstrap.log';
-        $logDir = dirname($logFile);
-
-        if (! is_dir($logDir)) {
-            mkdir($logDir, 0777, true);
-        }
-
-        $logEntry = sprintf(
-            "[%s] %s %s%s",
-            date('c'),
+        BootstrapErrorHandler::log(sprintf(
+            '%s %s%s%s',
             $message,
             $exception->getMessage(),
-            PHP_EOL . $exception->getTraceAsString()
-        );
-
-        error_log($logEntry . PHP_EOL, 3, $logFile);
+            PHP_EOL,
+            $exception->getTraceAsString()
+        ));
     }
 
     /**

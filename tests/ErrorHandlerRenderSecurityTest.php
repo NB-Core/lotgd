@@ -66,12 +66,40 @@ final class ErrorHandlerRenderSecurityTest extends TestCase
         $this->assertStringContainsString('secret stack', $html);
     }
 
-    public function testDebugModeShowsDetailedErrorForAnonymousUser(): void
+    /**
+     * `debug` turns on page and hook profiling and warns about load only. An
+     * operator switching it on to find a slow page must not publish backtraces
+     * to every visitor as a side effect.
+     */
+    public function testDebugModeAloneDoesNotShowDetailedErrorForAnonymousUser(): void
     {
         global $settings;
 
         $settings = new DummySettings([
             'debug' => 1,
+        ]);
+
+        ob_start();
+        ErrorHandler::renderError('Top secret exception text', '/var/www/secret.php', 42, '<pre>secret stack</pre>');
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('An unexpected error occurred. Please try again later.', $html);
+        $this->assertStringNotContainsString('Top secret exception text', $html);
+        $this->assertStringNotContainsString('/var/www/secret.php', $html);
+        $this->assertStringNotContainsString('secret stack', $html);
+    }
+
+    /**
+     * The dedicated opt-in still works, for the case it exists for: a fault
+     * nobody can log in to reproduce.
+     */
+    public function testExplicitOptInShowsDetailedErrorForAnonymousUser(): void
+    {
+        global $settings;
+
+        $settings = new DummySettings([
+            'debug' => 0,
+            'show_error_details' => 1,
         ]);
 
         ob_start();

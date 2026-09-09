@@ -240,7 +240,7 @@ namespace Lotgd\Tests\Security {
 
             self::assertTrue($foundResumeNav, 'Expected verify success to register resume navigation.');
 
-            $this->assertDebugLogContains('2FA token verification success for account 7.', '2fa_verify');
+            $this->assertSecurityLogContains('2FA token verification success');
         }
 
         public function testVerifyFailureKeepsChallengePendingForRetry(): void
@@ -259,7 +259,8 @@ namespace Lotgd\Tests\Security {
             self::assertSame(1, $GLOBALS['twofactorauth_test_prefs']['failed_attempts']);
             self::assertSame(0, (int) ($GLOBALS['twofactorauth_test_prefs']['locked_until'] ?? 0));
 
-            $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: mismatch).', '2fa_verify');
+            $this->assertSecurityLogContains('2FA token verification failure [diag=');
+            $this->assertSecurityLogContains('reason=mismatch');
         }
 
 
@@ -375,7 +376,8 @@ namespace Lotgd\Tests\Security {
             self::assertSame(5, $GLOBALS['twofactorauth_test_prefs']['failed_attempts']);
             self::assertGreaterThan(time(), (int) $GLOBALS['twofactorauth_test_prefs']['locked_until']);
 
-            $this->assertDebugLogContains('2FA token verification failure for account 7 (reason: locked).', '2fa_verify');
+            $this->assertSecurityLogContains('2FA token verification failure [diag=');
+            $this->assertSecurityLogContains('reason=locked');
         }
 
         public function testBeginPasskeyAuthReadsPendingStateFromModulePrefsOnSynchronousRoute(): void
@@ -453,34 +455,32 @@ namespace Lotgd\Tests\Security {
             self::assertSame('', $GLOBALS['twofactorauth_test_prefs']['resume_allowednavs_json']);
         }
 
-        private function assertDebugLogContains(string $expectedMessage, ?string $expectedField = null): void
+        /**
+         * Assert that a verification outcome reached the security channel.
+         *
+         * These outcomes used to be written to the per-character debug log, which
+         * is a record of what a player earned and spent. An authentication result
+         * belongs in the game log's security category instead, where an operator
+         * reviews them.
+         */
+        private function assertSecurityLogContains(string $expectedMessage): void
         {
-            self::assertNotNull(Bootstrap::$conn);
-
             $matches = array_filter(
                 Bootstrap::$conn->executeStatements,
-                static function (array $statement) use ($expectedMessage, $expectedField): bool {
-                    if (!str_contains((string) ($statement['sql'] ?? ''), 'debuglog')) {
+                static function (array $statement) use ($expectedMessage): bool {
+                    if (!str_contains((string) ($statement['sql'] ?? ''), 'gamelog')) {
                         return false;
                     }
 
-                    if (($statement['params']['message'] ?? '') !== $expectedMessage) {
+                    if (($statement['params']['category'] ?? '') !== 'security') {
                         return false;
                     }
 
-                    if ($expectedField !== null && ($statement['params']['field'] ?? '') !== $expectedField) {
-                        return false;
-                    }
-
-                    return true;
+                    return str_contains((string) ($statement['params']['message'] ?? ''), $expectedMessage);
                 }
             );
 
-            self::assertNotEmpty($matches, sprintf('Expected debug-log message not found: %s', $expectedMessage));
-
-            if ($expectedField !== null) {
-                self::assertLessThanOrEqual(20, strlen($expectedField));
-            }
+            self::assertNotEmpty($matches, sprintf('Expected security log message not found: %s', $expectedMessage));
         }
 
         /**

@@ -478,19 +478,28 @@ function get_all_tables()
             'type' => 'varchar(100)',
             'null' => '1',
             ),
+        'date' => array(
+            'name' => 'date',
+            'type' => 'datetime',
+            'default' => '1970-01-01 00:00:00',
+            ),
         'key-primary' => array(
             'name' => 'PRIMARY',
             'type' => 'primary key',
             'unique' => '1',
             'columns' => 'id',
-        'key-combikey' => array(
-            'name' => 'combikey',
+            ),
+        // A `combikey` UNIQUE index on (type, category, subcategory) used to be
+        // declared here, but it sat inside the primary key entry and was never
+        // created. It must not be revived: this table stores one row per
+        // measurement, so many rows legitimately share that triple and a unique
+        // index would reject every insert after the first.
+        'key-date' => array(
+            'name' => 'date',
             'type' => 'key',
-            'unique' => '1',
-            'columns' => 'type,category,subcategory',
+            'columns' => 'date',
             ),
         ),
-    ),
 
     'deathmessages' => array(
         'charset' => 'utf8mb4',

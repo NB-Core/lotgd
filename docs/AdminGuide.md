@@ -56,6 +56,31 @@ failures are additionally written to `logs/bootstrap.log`. In the Docker image t
 root-owned and not writable by the web user on purpose — there, bootstrap and PHP errors go to the
 container log instead, so use `docker compose logs web` (the file is denied over HTTP either way).
 
+## Where each kind of message goes
+
+The game keeps several logs, and which one to open depends on what you are looking for.
+
+| Log | What belongs in it | Where to read it |
+| --- | --- | --- |
+| **Game Log** (`gamelog` table) | What the game and its administrators did: maintenance runs, expirations, module installs, settings changes, and — under the `security` category — every refused or suspicious action. Each row carries a category and a severity (`info`, `warning`, `error`, `debug`) you can filter on. | `gamelog.php` |
+| **Debug Log** (`debuglog` table) | A single character's audit trail: gold, gems and experience earned, spent or lost. It answers "what happened to this player's account", not "what did the server refuse". | `user.php?op=debuglog` for one account |
+| **PHP error log** | Technical faults, plus a copy of every security event. On Docker this is the container log (`docker compose logs web`). | Container/web server log |
+| **`logs/bootstrap.log`** | Failures too early for the game to handle them — a broken `common.php`, a cron that could not start. | `logviewer.php` |
+| **`debug` table** | Page and hook runtimes, collected only while the `debug` setting is on. | `debug.php` |
+| **`faillog` table** | Every failed login attempt, kept for `expirefaillog` days. Individual attempts are also written to the PHP error log; the automatic ban that follows repeated failures is copied into the Game Log's `security` category, which is the one to watch. | — |
+
+Security events appear in **both** the Game Log and the PHP error log, and both carry the same
+`diag=` correlation id, so a line in the container log can be matched to the row an administrator
+sees in the game. Events that an unauthenticated caller can repeat at will — an individual failed
+login, a denied or rate-limited async call — are written to the error log only, so that nobody can
+drive one database write per request. What reaches the Game Log is the durable outcome: the
+automatic ban that follows repeated failures, not each guess.
+
+> ⚠️ **`debug` mode does not publish error details.** Turning `debug` on collects runtimes and
+> nothing more. To show error messages, file paths and backtraces to visitors who are not
+> megausers you must enable `show_error_details` separately, and you should leave it off on a live
+> server.
+
 > ⚠️ **Security reminder:** `cron.php` must never be reachable over HTTP. Depending on the
 > `register_argc_argv` setting, a web request can supply the execution bitmask through the query
 > string and start a newday or database-cleanup run without any authentication.

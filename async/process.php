@@ -22,15 +22,15 @@ global $jaxon, $ajax_rate_limit_seconds;
 /**
  * Generate a correlation id for async diagnostics and log stitching.
  *
+ * Kept as a thin wrapper so existing callers and tests keep working; the
+ * implementation now lives with the rest of the security logging so an async
+ * line and a game log row carry ids from the same source.
+ *
  * @return string Correlation identifier for request/diagnostic stitching.
  */
 function lotgd_async_correlation_id(): string
 {
-    try {
-        return bin2hex(random_bytes(8));
-    } catch (\Throwable) {
-        return uniqid('diag_', true);
-    }
+    return \Lotgd\SecurityLog::correlationId();
 }
 
 /**
@@ -707,19 +707,28 @@ function lotgd_async_process_entrypoint(): void
         $requestContext = lotgd_async_request_context();
         $authorization = lotgd_async_authorization_policy($requestContext);
         if (!($authorization['allowed'] ?? false)) {
-            $diagnosticId = lotgd_async_correlation_id();
-            error_log(sprintf(
-                'Jaxon authz denied [diag=%s handler=%s::%s status=%d reason=%s]',
-                $diagnosticId,
-                $requestContext['class'] !== '' ? $requestContext['class'] : 'unknown',
-                $requestContext['method'] !== '' ? $requestContext['method'] : 'unknown',
-                (int) ($authorization['status'] ?? 403),
-                (string) ($authorization['error'] ?? 'forbidden')
-            ));
-
             $now = microtime(true);
             $threshold = $ajax_rate_limit_seconds ?? 1.0;
-            if (lotgd_async_denied_request_is_throttled($now, (float) $threshold)) {
+            $throttled = lotgd_async_denied_request_is_throttled($now, (float) $threshold);
+            // Error log only. An unauthenticated caller can repeat this request at
+            // will, and the throttle is no bound on that: it only suppresses bursts
+            // closer together than the rate limit, so one denial per second forever
+            // is one database row per second forever. A per-request denial is not a
+            // durable outcome; a ban would be, and this endpoint issues none.
+            $diagnosticId = \Lotgd\SecurityLog::event(
+                'Async request denied by the authorization policy',
+                [
+                    'handler' => ($requestContext['class'] !== '' ? $requestContext['class'] : 'unknown')
+                        . '::' . ($requestContext['method'] !== '' ? $requestContext['method'] : 'unknown'),
+                    'status' => (int) ($authorization['status'] ?? 403),
+                    'reason' => (string) ($authorization['error'] ?? 'forbidden'),
+                ],
+                null,
+                \Lotgd\GameLog::SEVERITY_WARNING,
+                false
+            );
+
+            if ($throttled) {
                 lotgd_async_emit_error_payload(429, [
                     'status' => 'error',
                     'error' => 'rate_limited',
@@ -752,7 +761,7 @@ function lotgd_async_process_entrypoint(): void
         $threshold = $ajax_rate_limit_seconds ?? 1.0; // from async settings with fallback
 
         if (isset($_SESSION['lastrequest']) && ($now - $_SESSION['lastrequest']) < $threshold) {
-            $diagnosticId = lotgd_async_correlation_id();
+            $diagnosticId = \Lotgd\SecurityLog::correlationId();
             error_log(sprintf(
                 'Jaxon rate limit hit [diag=%s handler=%s::%s]: threshold=%s now=%s last=%s',
                 $diagnosticId,
@@ -791,18 +800,21 @@ function lotgd_async_process_entrypoint(): void
         try {
             $jaxon->processRequest();
         } catch (\Throwable $e) {
-            $diagnosticId = lotgd_async_correlation_id();
-            error_log(sprintf(
-                'Jaxon processing exception [diag=%s handler=%s::%s]: class=%s message=%s file=%s line=%d trace=%s',
-                $diagnosticId,
-                $requestContext['class'] !== '' ? $requestContext['class'] : 'unknown',
-                $requestContext['method'] !== '' ? $requestContext['method'] : 'unknown',
-                $e::class,
-                $e->getMessage(),
-                $e->getFile(),
-                $e->getLine(),
-                $e->getTraceAsString()
-            ));
+            $diagnosticId = \Lotgd\SecurityLog::event(
+                'Async handler raised an exception',
+                [
+                    'handler' => ($requestContext['class'] !== '' ? $requestContext['class'] : 'unknown')
+                        . '::' . ($requestContext['method'] !== '' ? $requestContext['method'] : 'unknown'),
+                    'type' => $e::class,
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ],
+                null,
+                \Lotgd\GameLog::SEVERITY_ERROR
+            );
+            // The trace stays out of the game log and goes to the error log only.
+            error_log(sprintf('[security] async handler trace [diag=%s] %s', $diagnosticId, $e->getTraceAsString()));
 
             $payload = [
                 'status' => 'error',
@@ -826,7 +838,7 @@ function lotgd_async_process_entrypoint(): void
         }
     } else {
         $requestContext = lotgd_async_request_context();
-        $diagnosticId = lotgd_async_correlation_id();
+        $diagnosticId = \Lotgd\SecurityLog::correlationId();
         error_log(sprintf(
             'Jaxon bad request [diag=%s handler=%s::%s]: canProcessRequest returned false',
             $diagnosticId,

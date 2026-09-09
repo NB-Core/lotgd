@@ -60,11 +60,17 @@ if (! in_array($severity, $allowedSeverities, true)) {
     $severity = '';
 }
 
+// The filters are bound, not interpolated: this page was the last place in the
+// core still escaping a value into an SQL string by hand, and the category comes
+// straight from the query string. GameLogFilterBindingRegressionTest holds the
+// line, both on the statements this page issues and on the source itself.
+$filterParams = [];
+
 if ($category !== '') {
     $encodedCategory = urlencode($category);
     $cat = "&cat=$encodedCategory";
-    $sqlcat = "AND " . Database::prefix("gamelog") . ".category = '" . addslashes($category) . "'";
-
+    $sqlcat = "AND " . Database::prefix("gamelog") . ".category = :category";
+    $filterParams['category'] = $category;
 } else {
     $cat = '';
     $sqlcat = '';
@@ -72,7 +78,8 @@ if ($category !== '') {
 
 if ($severity !== '') {
     $sev = '&severity=' . urlencode($severity);
-    $sqlseverity = "AND " . Database::prefix("gamelog") . ".severity = '" . addslashes($severity) . "'";
+    $sqlseverity = "AND " . Database::prefix("gamelog") . ".severity = :severity";
+    $filterParams['severity'] = $severity;
 } else {
     $sev = '';
     $sqlseverity = '';
@@ -82,11 +89,10 @@ $asc_desc = ($sortorder === 0 ? 'DESC' : 'ASC');
 
 $sqlsort = ' ORDER BY ' . $sortby . ' ' . $asc_desc;
 
-$sql = "SELECT count(logid) AS c FROM " . Database::prefix("gamelog") . " WHERE 1 $sqlcat $sqlseverity";
-$result = Database::query($sql);
-$row = Database::fetchAssoc($result);
-$max = $row['c'];
+$connection = Database::getDoctrineConnection();
 
+$countSql = "SELECT count(logid) AS c FROM " . Database::prefix("gamelog") . " WHERE 1 $sqlcat $sqlseverity";
+$max = (int) $connection->fetchOne($countSql, $filterParams);
 
 $sql = "SELECT " . Database::prefix("gamelog") . ".*, " . Database::prefix("accounts") . ".name AS name FROM " . Database::prefix("gamelog") . " LEFT JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("gamelog") . ".who = " . Database::prefix("accounts") . ".acctid WHERE 1 $sqlcat $sqlseverity $sqlsort LIMIT $start,$step";
 $next = $start + $step;
@@ -110,7 +116,7 @@ foreach ($allowedSeverities as $severityOption) {
     $label = ucfirst($severityOption);
     Nav::add("Severity: $label", "gamelog.php?start=0$cat&severity=" . urlencode($severityOption) . "$sortParams");
 }
-$result = Database::query($sql);
+$rows = $connection->fetchAllAssociative($sql, $filterParams);
 $odate = "";
 $categories = array();
 $severityColors = [
@@ -121,7 +127,7 @@ $severityColors = [
 ];
 
 $i = 0;
-while ($row = Database::fetchAssoc($result)) {
+foreach ($rows as $row) {
     $dom = date("D, M d", strtotime($row['date']));
     if ($odate != $dom) {
         $output->outputNotl("`n`b`@%s`0`b`n", $dom);

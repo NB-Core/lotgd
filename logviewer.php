@@ -9,6 +9,7 @@ use Lotgd\Nav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
+use Lotgd\Installer\InstallerLogger;
 
 
 use Lotgd\Output;
@@ -28,20 +29,38 @@ SuperuserNav::render();
 $logDir = __DIR__ . '/logs';
 $param = Http::get('file');
 $requested = $param !== false ? basename($param) : '';
+
+// Label => absolute path. Building the map first keeps the basename() allow-list
+// intact while letting logs that live outside logs/ appear here too.
 $files = [];
 if (is_dir($logDir)) {
-    $files = array_values(array_filter(scandir($logDir), static function ($file) use ($logDir) {
-        return is_file($logDir . '/' . $file) && substr($file, -4) === '.log';
-    }));
+    foreach (scandir($logDir) ?: [] as $file) {
+        if (is_file($logDir . '/' . $file) && substr($file, -4) === '.log') {
+            $files[$file] = $logDir . '/' . $file;
+        }
+    }
 }
 
+// The installer writes to errors/install.log, or to LOTGD_STATE_PATH when the
+// deployment sets one, so it never showed up in this list even though it is the
+// log an operator most wants after a failed install or upgrade. The class check
+// keeps this working on installs that delete install/ after setup.
+if (class_exists(InstallerLogger::class)) {
+    $installLog = InstallerLogger::getLogFilePath();
+    if (is_file($installLog) && !array_key_exists(basename($installLog), $files)) {
+        $files[basename($installLog)] = $installLog;
+    }
+}
+
+ksort($files);
+
 Nav::add('Logs');
-foreach ($files as $file) {
+foreach (array_keys($files) as $file) {
     Nav::add($file, "logviewer.php?file=" . rawurlencode($file));
 }
 
-if ($requested && in_array($requested, $files, true)) {
-    $content = file_get_contents($logDir . '/' . $requested);
+if ($requested !== '' && array_key_exists($requested, $files)) {
+    $content = (string) file_get_contents($files[$requested]);
     $output->rawOutput('<pre>');
     $output->rawOutput(htmlentities($content));
     $output->rawOutput('</pre>');

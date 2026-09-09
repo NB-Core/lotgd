@@ -30,7 +30,10 @@ class DebugLog
         global $session;
 
         if ($user === false) {
-            $user = $session['user']['acctid'];
+            // Without the fallback an unauthenticated caller raised "Undefined array
+            // key", which the error handler then reported -- a logger that produces
+            // the errors it logs. GameLog has had this guard all along.
+            $user = (int) ($session['user']['acctid'] ?? 0);
         }
         $corevalue = $value;
         $id = 0;
@@ -38,8 +41,12 @@ class DebugLog
         $table = Database::prefix('debuglog');
 
         if ($field !== false && $value !== false && $consolidate) {
+            // ORDER BY: rows written with $consolidate = false leave several rows for
+            // the same actor and field on the same day, and without an order the row
+            // this picks up to extend is whichever one the server happens to return.
             $row = $conn->fetchAssociative(
-                "SELECT id, value, message FROM {$table} WHERE actor = :actor AND field = :field AND date > :after",
+                "SELECT id, value, message FROM {$table} WHERE actor = :actor AND field = :field AND date > :after"
+                . " ORDER BY id DESC LIMIT 1",
                 [
                     'actor' => $user,
                     'field' => $field,

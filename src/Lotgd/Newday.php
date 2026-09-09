@@ -45,7 +45,7 @@ class Newday
         $time = round(microtime(true) - $start, 2);
         GameLog::log(
             'Optimized tables: ' . join(', ', $tables) . " in $time seconds.",
-            'maintenance',
+            GameLog::CATEGORY_MAINTENANCE,
             false,
             $session['user']['acctid'] ?? 0
         );
@@ -65,7 +65,7 @@ class Newday
         );
         GameLog::log(
             'Deleted ' . $affectedRows . ' records from ' . Database::prefix('referers') . " older than $timestamp.",
-            'maintenance',
+            GameLog::CATEGORY_MAINTENANCE,
             false,
             $session['user']['acctid'] ?? 0
         );
@@ -97,17 +97,17 @@ class Newday
             GameLog::log(
                 'Moved ' . $movedToArchive . ' from ' . Database::prefix('debuglog') . ' to ' . Database::prefix('debuglog_archive')
                 . " older than $moveCutoff. Purged $expiredArchiveRows archived rows older than $purgeCutoff.",
-                'maintenance',
+                GameLog::CATEGORY_MAINTENANCE,
                 false,
                 $session['user']['acctid'] ?? 0
             );
         } catch (\Exception $e) {
             GameLog::log(
-                'ERROR, problems with moving the debuglog to the archive: ' . $e->getMessage(),
-                'maintenance',
+                'Problems with moving the debuglog to the archive: ' . $e->getMessage(),
+                GameLog::CATEGORY_MAINTENANCE,
                 false,
                 $session['user']['acctid'] ?? 0,
-                'error'
+                GameLog::SEVERITY_ERROR
             );
         }
 
@@ -119,7 +119,7 @@ class Newday
         );
         GameLog::log(
             'Deleted ' . $affectedRows . ' records from ' . Database::prefix('mail') . " older than $timestamp.",
-            'maintenance',
+            GameLog::CATEGORY_MAINTENANCE,
             false,
             $session['user']['acctid'] ?? 0
         );
@@ -134,7 +134,7 @@ class Newday
             );
             GameLog::log(
                 'Deleted ' . $affectedRows . ' records from ' . Database::prefix('news') . " older than $timestamp.",
-                'comment expiration',
+                GameLog::CATEGORY_MAINTENANCE,
                 false,
                 $session['user']['acctid'] ?? 0
             );
@@ -149,7 +149,7 @@ class Newday
             );
             GameLog::log(
                 'Cleaned up ' . Database::prefix('gamelog') . ' table removing ' . $affectedRows . " older than $timestamp.",
-                'maintenance',
+                GameLog::CATEGORY_MAINTENANCE,
                 false,
                 $session['user']['acctid'] ?? 0
             );
@@ -164,7 +164,7 @@ class Newday
             );
             GameLog::log(
                 'Deleted ' . $affectedRows . ' records from ' . Database::prefix('commentary') . " older than $timestamp.",
-                'comment expiration',
+                GameLog::CATEGORY_MAINTENANCE,
                 false,
                 $session['user']['acctid'] ?? 0
             );
@@ -179,7 +179,7 @@ class Newday
             );
             GameLog::log(
                 'Deleted ' . $affectedRows . ' records from ' . Database::prefix('moderatedcomments') . " older than $timestamp.",
-                'comment expiration',
+                GameLog::CATEGORY_MAINTENANCE,
                 false,
                 $session['user']['acctid'] ?? 0
             );
@@ -194,7 +194,25 @@ class Newday
             );
             GameLog::log(
                 'Deleted ' . $affectedRows . ' records from ' . Database::prefix('faillog') . " older than $timestamp.",
-                'maintenance',
+                GameLog::CATEGORY_MAINTENANCE,
+                false,
+                $session['user']['acctid'] ?? 0
+            );
+        }
+
+        // DEBUG mode writes two rows per page view plus one per module hook. It
+        // was the only log table with no retention at all, so a forgotten debug
+        // session grew it without bound.
+        if ((int) $settings->getSetting('expiredebug', 7) > 0) {
+            $timestamp = self::calculateExpirationTimestamp($settings->getSetting('expiredebug', 7) . ' days');
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('debug') . ' WHERE date < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            GameLog::log(
+                'Deleted ' . $affectedRows . ' records from ' . Database::prefix('debug') . " older than $timestamp.",
+                GameLog::CATEGORY_MAINTENANCE,
                 false,
                 $session['user']['acctid'] ?? 0
             );

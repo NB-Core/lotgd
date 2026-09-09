@@ -36,7 +36,7 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
             eval('namespace Lotgd; class PlayerFunctions { public static function charCleanup(int $id, int $type): bool { return false; } }');
         }
         if (! class_exists('Lotgd\\GameLog', false)) {
-            eval('namespace Lotgd; class GameLog { public static function log(string $m, string $c, bool $f = false, ?int $a = null, string $s = "info"): void {} }');
+            eval('namespace Lotgd; class GameLog { const SEVERITY_INFO = "info"; const SEVERITY_WARNING = "warning"; const SEVERITY_ERROR = "error"; const SEVERITY_DEBUG = "debug"; const CATEGORY_GENERAL = "general"; const CATEGORY_SECURITY = "security"; const CATEGORY_MAINTENANCE = "maintenance"; const CATEGORY_EXPIRATION = "expiration"; const CATEGORY_MODULES = "modules"; const CATEGORY_USERS = "user management"; const CATEGORY_SETTINGS = "settings"; const CATEGORY_CLAN = "clan"; const CATEGORY_BATTLE = "battle"; const CATEGORY_CACHE = "cache"; public static function log(string $m, string $c, bool $f = false, ?int $a = null, string $s = "info"): void {} }');
         }
 
         Database::$mockResults = [
@@ -156,7 +156,15 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
 
         include __DIR__ . '/../pages/user/user_del.php';
 
-        $this->assertSame([], CoreDatabase::getDoctrineConnection()->queries);
+        // The refusal is now recorded in the security channel, so the log insert is
+        // the one statement a refused deletion is allowed to make. Nothing may reach
+        // the account itself.
+        foreach (CoreDatabase::getDoctrineConnection()->queries as $query) {
+            $this->assertStringNotContainsString('accounts', $query);
+        }
+        foreach (CoreDatabase::getDoctrineConnection()->executeStatements as $statement) {
+            $this->assertStringContainsString('gamelog', is_array($statement) ? ($statement['sql'] ?? '') : $statement);
+        }
         $this->assertFalse($GLOBALS['cleanup_called'], 'charCleanup must not run');
         $this->assertSame(400, http_response_code());
         $this->assertNotSame([], $output->log);

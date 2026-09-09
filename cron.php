@@ -24,15 +24,12 @@ if (!defined('CRON_TEST')) {
     try {
         require_once __DIR__ . '/common.php';
     } catch (\Throwable $e) {
-        $message = sprintf(
-            '[%s] Cron common.php failure: %s in %s on line %d%s',
-            date('c'),
+        BootstrapErrorHandler::log(sprintf(
+            'Cron common.php failure: %s in %s on line %d',
             $e->getMessage(),
             $e->getFile(),
-            $e->getLine(),
-            PHP_EOL
-        );
-        error_log($message, 3, __DIR__ . '/logs/bootstrap.log');
+            $e->getLine()
+        ));
 
         if (! Settings::hasInstance()) {
             exit(1);

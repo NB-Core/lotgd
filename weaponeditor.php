@@ -14,6 +14,7 @@ use Lotgd\Page\Header;
 use Lotgd\SuAccess;
 use Lotgd\Translator;
 use Lotgd\Security\Csrf;
+use Lotgd\SecurityLog;
 
 require_once __DIR__ . '/common.php';
 
@@ -73,7 +74,7 @@ if ($op === 'edit' || $op === 'add') {
             ['weaponId' => ParameterType::INTEGER]
         )->fetchAssociative();
         if ($row === false) {
-            debuglog('Rejected weapon editor lookup with an invalid or unknown weapon ID.');
+            SecurityLog::event('Refused weapon editor lookup with an invalid or unknown weapon ID', ['page' => 'weaponeditor.php', 'op' => $op]);
             http_response_code(400);
             $op = '';
         }
@@ -93,12 +94,12 @@ if ($op === 'edit' || $op === 'add') {
     }
 } elseif ($op === 'del' || $op === 'save') {
     if (Forms::isUnverifiedRequest(Csrf::SCOPE_WEAPON_EDITOR)) {
-        debuglog('Rejected weapon editor state change with an invalid CSRF token.');
+        SecurityLog::event('Refused weapon editor state change with an invalid CSRF token', ['page' => 'weaponeditor.php', 'op' => $op]);
         http_response_code(400);
     } elseif ($op === 'del') {
         $id = weaponEditorInteger(Http::post('id'), 1, PHP_INT_MAX);
         if ($id === null) {
-            debuglog('Rejected weapon deletion with an invalid weapon ID.');
+            SecurityLog::event('Refused weapon deletion with an invalid weapon ID', ['page' => 'weaponeditor.php', 'op' => $op]);
             http_response_code(400);
         } else {
             $connection->executeStatement(
@@ -112,7 +113,7 @@ if ($op === 'edit' || $op === 'add') {
         $damage = weaponEditorInteger(Http::post('damage'), 1, count($values));
         $weaponname = Http::post('weaponname');
         if ($weaponid === null || $damage === null || !is_string($weaponname) || $weaponname === '') {
-            debuglog('Rejected weapon save with malformed editor fields.');
+            SecurityLog::event('Refused weapon save with malformed editor fields', ['page' => 'weaponeditor.php', 'op' => $op]);
             http_response_code(400);
         } else {
             $params = ['level' => $weaponlevel, 'damage' => $damage, 'name' => $weaponname, 'value' => $values[$damage]];

@@ -18,6 +18,7 @@ use Lotgd\Output;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Security\Csrf;
 use Lotgd\Forms;
+use Lotgd\SecurityLog;
 
 // addnews ready
 // mail ready
@@ -46,15 +47,15 @@ $rawId = Http::postIsset('id') ? Http::post('id') : Http::get('id');
 $id = companionEditorPositiveInteger($rawId);
 $stateChangingOperations = ['deactivate', 'activate', 'del', 'take', 'save'];
 if (in_array($op, $stateChangingOperations, true) && !companionEditorValidPostRequest()) {
-    error_log(sprintf('Denied companion editor action: op=%s user=%d', $op, (int) ($session['user']['acctid'] ?? 0)));
+    SecurityLog::event('Refused a companion editor state change with an invalid CSRF token', ['page' => 'companions.php', 'op' => $op]);
     $output->output('`$The requested companion action was rejected.`0');
     $op = '';
 } elseif (in_array($op, ['deactivate', 'activate', 'del', 'take'], true) && $id === null) {
-    error_log(sprintf('Rejected companion editor action with invalid id: op=%s user=%d', $op, (int) ($session['user']['acctid'] ?? 0)));
+    SecurityLog::event('Refused a companion editor action with an invalid id', ['page' => 'companions.php', 'op' => $op]);
     $output->output('`$The requested companion identifier was invalid.`0');
     $op = '';
 } elseif ($op === 'save' && $rawId !== null && $rawId !== '' && $id === null) {
-    error_log(sprintf('Rejected companion save with invalid id from user=%d', (int) ($session['user']['acctid'] ?? 0)));
+    SecurityLog::event('Refused a companion save with an invalid id', ['page' => 'companions.php', 'op' => $op]);
     $output->output('`$The requested companion identifier was invalid.`0');
     $op = '';
 }
@@ -138,7 +139,7 @@ if ($op == "deactivate" && $id !== null) {
             }
             $normalized = companionEditorNormalizeFields($companion);
             if ($normalized === null) {
-                error_log(sprintf('Rejected malformed companion fields from user=%d', (int) ($session['user']['acctid'] ?? 0)));
+                SecurityLog::event('Refused a companion save with malformed fields', ['page' => 'companions.php', 'op' => $op]);
                 $output->output('`$Companion not saved: invalid fields.`0`n`n');
             } elseif ($id !== null) {
                 $assignments = array_map(static fn (string $column): string => "$column = :$column", array_keys($normalized['params']));
@@ -166,7 +167,7 @@ if ($op == "deactivate" && $id !== null) {
                 $output->output("`^Companion `\$not`^ saved.`0`n`n");
             }
         } else {
-            error_log(sprintf('Rejected array-shaped or missing companion payload from user=%d', (int) ($session['user']['acctid'] ?? 0)));
+            SecurityLog::event('Refused an array-shaped or missing companion payload', ['page' => 'companions.php', 'op' => $op]);
         }
     } elseif ($subop == "module") {
         // Save modules settings

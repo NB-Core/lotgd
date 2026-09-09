@@ -147,25 +147,25 @@ class ExpireChars
             if ($error) {
                 GameLog::log(
                     'Failed to delete account ' . $row['acctid'] . ': ' . $error->getMessage(),
-                    'char deletion failure',
+                    GameLog::CATEGORY_EXPIRATION,
                     false,
                     $session['user']['acctid'] ?? 0,
-                    'error'
+                    GameLog::SEVERITY_ERROR
                 );
             } elseif ($cleanupPerformed) {
                 GameLog::log(
                     sprintf('Deleted account %d (%s)', $row['acctid'], $row['login']),
-                    'char expiration',
+                    GameLog::CATEGORY_EXPIRATION,
                     false,
                     $session['user']['acctid'] ?? 0
                 );
             } else {
                 GameLog::log(
                     'Cleanup skipped for account ' . (int) $row['acctid'] . ' (prevented by hook)',
-                    'char expiration',
+                    GameLog::CATEGORY_EXPIRATION,
                     false,
                     $session['user']['acctid'] ?? 0,
-                    'warning'
+                    GameLog::SEVERITY_WARNING
                 );
             }
         }
@@ -263,7 +263,7 @@ class ExpireChars
 
         GameLog::log(
             'Deleted ' . $acctCount . " accounts:\n$msg",
-            'char expiration',
+            GameLog::CATEGORY_EXPIRATION,
             false,
             $session['user']['acctid'] ?? 0
         );

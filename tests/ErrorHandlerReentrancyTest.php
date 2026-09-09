@@ -18,8 +18,9 @@ namespace Lotgd\Tests {
 
             $settings = new DummySettings([
                 // Reentrancy fallback output is only shown when detailed error
-                // display is permitted for the current context.
-                'debug' => 1,
+                // display is permitted for the current context. That is the
+                // explicit opt-in now, not the profiling switch.
+                'show_error_details' => 1,
                 'notify_on_warn' => 0,
                 'usedatacache' => 0,
             ]);

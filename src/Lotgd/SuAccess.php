@@ -18,6 +18,8 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\AddNews;
 use Lotgd\DebugLog;
+use Lotgd\GameLog;
+use Lotgd\SecurityLog;
 use Doctrine\DBAL\ParameterType;
 
 class SuAccess
@@ -60,6 +62,23 @@ class SuAccess
         $output->output("%s`\$, Overlord of Death`) appears before you in a vision, seizing your mind with his, and wordlessly telling you that he finds no favor with you.`n`n", Settings::getInstance()->getSetting('deathoverlord', '`$Ramius'));
         AddNews::add("`&%s was smitten down for attempting to defile the gods (they tried to hack superuser pages).", $session['user']['name']);
         DebugLog::add("Lost {$session['user']['gold']} and " . ($session['user']['experience'] * 0.25) . " experience trying to hack superuser pages.");
+        // The debuglog entry above is the character's own audit trail: it records
+        // what the player lost, not what they attempted. The attempt itself is a
+        // security outcome and belongs where an administrator reviews them,
+        // together with the page that was targeted.
+        SecurityLog::event(
+            'Superuser page access denied',
+            [
+                'required' => $level,
+                'held' => (int) ($session['user']['superuser'] ?? 0),
+                'uri' => (string) ($_SERVER['REQUEST_URI'] ?? ''),
+                'referer' => (string) ($_SERVER['HTTP_REFERER'] ?? ''),
+                'ip' => (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+                'name' => (string) ($session['user']['name'] ?? ''),
+            ],
+            (int) ($session['user']['acctid'] ?? 0),
+            GameLog::SEVERITY_WARNING
+        );
         $session['user']['hitpoints'] = 0;
         $session['user']['alive'] = 0;
         $session['user']['soulpoints'] = 0;

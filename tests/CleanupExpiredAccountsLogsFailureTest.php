@@ -36,7 +36,7 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
         }
 
         if (! class_exists('Lotgd\\GameLog', false)) {
-            eval('namespace Lotgd; class GameLog { public static array $entries = []; public static function log(string $m, string $c, bool $f = false, ?int $a = null, string $s = "info"): void { self::$entries[] = [$c, $m, $s]; } }');
+            eval('namespace Lotgd; class GameLog { const SEVERITY_INFO = "info"; const SEVERITY_WARNING = "warning"; const SEVERITY_ERROR = "error"; const SEVERITY_DEBUG = "debug"; const CATEGORY_GENERAL = "general"; const CATEGORY_SECURITY = "security"; const CATEGORY_MAINTENANCE = "maintenance"; const CATEGORY_EXPIRATION = "expiration"; const CATEGORY_MODULES = "modules"; const CATEGORY_USERS = "user management"; const CATEGORY_SETTINGS = "settings"; const CATEGORY_CLAN = "clan"; const CATEGORY_BATTLE = "battle"; const CATEGORY_CACHE = "cache"; public static array $entries = []; public static function log(string $m, string $c, bool $f = false, ?int $a = null, string $s = "info"): void { self::$entries[] = [$c, $m, $s]; } }');
         } else {
             \Lotgd\GameLog::$entries = [];
         }
@@ -54,7 +54,8 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
         ExpireChars::cleanupExpiredAccountsForTests();
 
         $this->assertSame([
-            ['char deletion failure', 'Failed to delete account 1: deletion failed', 'error'],
+            // One category for account expiration; the failure is carried by the severity.
+            ['expiration', 'Failed to delete account 1: deletion failed', 'error'],
         ], \Lotgd\GameLog::$entries);
 
         $queries = CoreDatabase::getDoctrineConnection()->queries;
@@ -72,7 +73,7 @@ final class CleanupExpiredAccountsLogsFailureTest extends TestCase
 
         ExpireChars::cleanupExpiredAccountsForTests();
 
-        $this->assertSame('char expiration', \Lotgd\GameLog::$entries[0][0] ?? null);
+        $this->assertSame('expiration', \Lotgd\GameLog::$entries[0][0] ?? null);
         $this->assertSame('Deleted account 1 (test)', \Lotgd\GameLog::$entries[0][1] ?? null);
         $this->assertSame('info', \Lotgd\GameLog::$entries[0][2] ?? null);
         $this->assertCount(2, \Lotgd\GameLog::$entries);
