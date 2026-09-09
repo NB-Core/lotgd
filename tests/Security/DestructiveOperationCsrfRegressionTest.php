@@ -102,6 +102,46 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
         self::assertStringContainsString('WHERE acctid = :acctid', $source);
     }
 
+    /**
+     * The self-delete button's texts are escaped for where they land.
+     *
+     * Both come from Translator::translateInline(), which reads the
+     * translations table -- written under SU_IS_TRANSLATOR, so they are not
+     * constants. They went raw into a single-quoted attribute and into a
+     * double-quoted confirm() argument, so an apostrophe closed the attribute
+     * and a double quote closed the JS string. On a page every player opens.
+     *
+     * The first assertions are the control: they show the break-out is real,
+     * so the ones after them mean something.
+     */
+    public function testTheSelfDeleteConfirmCannotBreakOut(): void
+    {
+        $hostile = 'x");alert(document.cookie);//';
+        $apostrophe = "Charakter l'oeschen";
+
+        // What the old code produced.
+        self::assertStringContainsString(
+            '");alert(',
+            'onClick=\'return confirm("' . $hostile . '");\'',
+            'the raw form really did break out of the confirm() argument'
+        );
+        self::assertSame(2, substr_count("value='" . $apostrophe . "'", "'") - 1);
+
+        // What it produces now.
+        $confJs = json_encode($hostile, JSON_HEX_APOS | JSON_HEX_QUOT);
+        self::assertIsString($confJs);
+        self::assertStringNotContainsString('");alert(', $confJs);
+        self::assertStringNotContainsString('"', substr($confJs, 1, -1), 'no bare quote may survive');
+        self::assertStringNotContainsString("'", htmlspecialchars($apostrophe, ENT_QUOTES, 'UTF-8'));
+
+        // And that the page actually uses it.
+        $source = $this->source('prefs.php');
+        self::assertStringContainsString('JSON_HEX_APOS | JSON_HEX_QUOT', $source);
+        self::assertStringContainsString('confirm($confJs)', $source);
+        self::assertStringNotContainsString('confirm(\\"$conf\\")', $source);
+        self::assertStringNotContainsString("value='\$deltext'", $source);
+    }
+
     public function testRawSqlAndRawPhpRefuseToRunWithoutAToken(): void
     {
         $source = $this->source('rawsql.php');

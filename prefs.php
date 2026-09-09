@@ -601,8 +601,16 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_SELF_DELETE));
         $deltext = Translator::translateInline('Delete Character');
         $conf = Translator::translateInline('Are you sure you wish to PERMANENTLY delete your character?');
+        // Both strings come from the translations table, which SU_IS_TRANSLATOR
+        // writes -- so they are not constants, and they landed raw in an
+        // attribute and inside a JS string literal. An apostrophe closed the
+        // attribute; a double quote closed the confirm() argument. json_encode
+        // with the two HEX flags quotes the value itself and escapes both, the
+        // same way this is done in user_.php and Motd.php.
+        $deltextHtml = htmlspecialchars($deltext, ENT_QUOTES, 'UTF-8');
+        $confJs = json_encode($conf, JSON_HEX_APOS | JSON_HEX_QUOT);
         $output->rawOutput("<table class='noborder' width='100%'><tr><td width='100%'></td><td style='background-color:#FF00FF' align='right'>");
-        $output->rawOutput("<input type='submit' class='button' value='$deltext' onClick='return confirm(\"$conf\");'>");
+        $output->rawOutput("<input type='submit' class='button' value='$deltextHtml' onClick='return confirm($confJs);'>");
         $output->rawOutput("</td></tr></table>");
         $output->rawOutput("</form><br>");
         Nav::add("", "prefs.php?op=suicide");
