@@ -52,6 +52,22 @@ final class FormCsrfRegressionTest extends TestCase
         return $out;
     }
 
+    /**
+     * The pages that carry an entry guard. This list is what "everywhere"
+     * means: a new state-changing page without a guard fails the test below.
+     *
+     * @return list<string>
+     */
+    private function guardedPages(): array
+    {
+        return [
+            'badword.php', 'bans.php', 'configuration.php', 'deathmessages.php',
+            'donators.php', 'mail.php', 'masters.php', 'moderate.php', 'modules.php',
+            'prefs.php', 'taunt.php', 'titleedit.php', 'translatortool.php',
+            'untranslated.php', 'user.php',
+        ];
+    }
+
     private function render(bool $nosave = false, bool $tabbed = false): string
     {
         if ($tabbed) {
@@ -196,14 +212,7 @@ final class FormCsrfRegressionTest extends TestCase
      */
     public function testEveryStateChangingPageGuardsItsOwnOperations(): void
     {
-        $pages = [
-            'badword.php', 'bans.php', 'configuration.php', 'deathmessages.php',
-            'donators.php', 'mail.php', 'masters.php', 'moderate.php', 'modules.php',
-            'prefs.php', 'taunt.php', 'titleedit.php', 'translatortool.php',
-            'untranslated.php', 'user.php',
-        ];
-
-        foreach ($pages as $page) {
+        foreach ($this->guardedPages() as $page) {
             $code = $this->code($page);
             self::assertSame(
                 1,
@@ -232,6 +241,14 @@ final class FormCsrfRegressionTest extends TestCase
             'pages/clan/clan_motd.php',
             'pages/clan/clan_membership.php',
             'pages/clan/detail.php',
+            // The preference save has no $op of its own: `op=save` and a plain
+            // view fall into the same branch and everything is written out of
+            // the posted body, so listing an op could not have guarded it.
+            'prefs.php',
+            // op=audit is the review view; the write under it is subop=undelete.
+            'moderate.php',
+            // op=list is the browsing view; the write under it is mode=save.
+            'untranslated.php',
         ] as $page) {
             self::assertStringContainsString(
                 'Forms::isUnverifiedRequest()',
@@ -239,6 +256,123 @@ final class FormCsrfRegressionTest extends TestCase
                 $page . ' must guard its write'
             );
         }
+    }
+
+    /**
+     * The preference save, which had fallen through the sweep entirely.
+     *
+     * prefs.php has no `op=save` branch: `op=save` and an ordinary page view
+     * enter the same `else`, and every write below runs out of the posted body.
+     * The entry guard listed `''` for that reason, which got it backwards in
+     * both directions at once -- `save` was not listed, so the save itself was
+     * left with no CSRF check at all after the inline one was removed, while
+     * `''` matched every ordinary GET view of the page and answered it 400.
+     *
+     * So the question is asked where the body is taken. The write is already
+     * gated on `count($post)`, so an emptied body is the page's own way of
+     * saying "nothing was posted".
+     */
+    public function testThePreferenceSaveIsGuardedAtTheBodyItWrites(): void
+    {
+        $code = $this->code('prefs.php');
+
+        self::assertStringContainsString(
+            '$post = Forms::isUnverifiedRequest() ? [] : Csrf::stripFrom(Http::allPost());',
+            $code,
+            'the body a tokenless POST carries must never reach the write'
+        );
+        // The write really is gated on the body being non-empty, which is what
+        // makes emptying it sufficient.
+        self::assertStringContainsString('if (count($post) == 0) {', $code);
+
+        self::assertSame(1, preg_match('/isUnverifiedCoreOp\(\$op, \[([^\]]*)\]/', $code, $m));
+        // Listing the empty op answered 400 on every ordinary page view.
+        self::assertStringNotContainsString("''", $m[1], 'a page view is not a state change');
+        // And the two email buttons are real POST forms, so they carry a token.
+        foreach (['forcechangeemail', 'cancelemail'] as $emailOp) {
+            self::assertStringContainsString(
+                "prefs.php?op=" . $emailOp . "' method='POST'>\" . Forms::csrfField()",
+                $code,
+                $emailOp . ' posts, so its form must carry the token'
+            );
+        }
+    }
+
+    /**
+     * No guarded operation may also be a link somebody can click.
+     *
+     * This is the shape of the mistake the guard itself created. Once a listed
+     * op required a verified POST -- which is the whole point, and what 15cb88c
+     * restored -- every listed op that was actually a *view* started answering
+     * 400. Five did: `titleedit.php?op=add` and `?op=reset`,
+     * `configuration.php?op=testsmtp`, `moderate.php?op=audit`,
+     * `untranslated.php?op=list`, plus `donators.php?op=add1`, which is reached
+     * by a nav link from two other pages and which nothing in the manual pass
+     * caught -- this check did.
+     *
+     * A `Nav::add()` with link text is a clickable GET, so an op that is both
+     * listed and linked is either a broken view or a destructive link. Neither
+     * may exist: the view comes off the list, the destructive link becomes a
+     * `Forms::postButton()`. The allowlist-only form, `Nav::add('', $url)`, is
+     * how a POST target stays navigable and is deliberately not matched.
+     */
+    public function testNoGuardedOperationIsAlsoAClickableLink(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $lists = [];
+        foreach ($this->guardedPages() as $page) {
+            self::assertSame(1, preg_match(
+                '/isUnverifiedCoreOp\(\$op, \[([^\]]*)\]/',
+                $this->code($page),
+                $m
+            ), $page . ' must carry an entry guard');
+            preg_match_all("/'([^']*)'/", $m[1], $ops);
+            $lists[$page] = array_filter($ops[1], static fn (string $op): bool => $op !== '');
+        }
+
+        $found = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root));
+        foreach ($it as $file) {
+            $path = $file->getPathname();
+            if (!str_ends_with($path, '.php')) {
+                continue;
+            }
+            if (str_contains($path, '/vendor/') || str_contains($path, '/tests/')) {
+                continue;
+            }
+
+            $code = (string) file_get_contents($path);
+            // Nav::add("text", "page.php?op=…") -- a non-empty first argument.
+            $pattern = '/(?:Nav|Navigation)::add\(\s*(["\'])((?:(?!\1).)+)\1\s*,\s*(["\'])([^"\']*?)\3/';
+            if (!preg_match_all($pattern, $code, $matches, PREG_SET_ORDER)) {
+                continue;
+            }
+
+            foreach ($matches as $match) {
+                $url = $match[4];
+                foreach ($lists as $page => $ops) {
+                    foreach ($ops as $op) {
+                        $needle = $page . '?op=' . $op;
+                        if (!str_starts_with($url, $needle)) {
+                            continue;
+                        }
+                        // Only a whole op, so `op=add` does not match `op=add1`.
+                        if (strlen($url) !== strlen($needle) && $url[strlen($needle)] !== '&') {
+                            continue;
+                        }
+                        $found[] = substr($path, strlen($root) + 1)
+                            . ': Nav::add("' . $match[2] . '", "' . $url . '")';
+                    }
+                }
+            }
+        }
+
+        self::assertSame(
+            [],
+            array_values(array_unique($found)),
+            "a guarded op must not also be a clickable GET link:\n"
+                . implode("\n", array_unique($found))
+        );
     }
 
     /**

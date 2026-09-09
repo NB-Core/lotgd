@@ -125,9 +125,13 @@ $op = Http::get('op');
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-// `suicide` is deliberately absent: it has its own SCOPE_SELF_DELETE guard
-// below, and the button carries that token rather than the page's.
-if (Forms::isUnverifiedCoreOp($op, ['', 'forcechangeemail', 'cancelemail'])) {
+//
+// Two of this page's writes are deliberately absent. `suicide` has its own
+// SCOPE_SELF_DELETE guard below and the button carries that token rather than
+// the page's. The preference save has no $op of its own to list: `op=save` and
+// a plain view fall into the same branch and the write is driven by the posted
+// body, so it is guarded where that body is taken, further down.
+if (Forms::isUnverifiedCoreOp($op, ['forcechangeemail', 'cancelemail'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
@@ -226,7 +230,13 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         Http::postSet('showFormTabIndex', $showFormTabIndex);
     }
 
-    $post = Csrf::stripFrom(Http::allPost());
+    // The preference save is body-driven, not $op-driven: `op=save` and an
+    // ordinary page view enter this same branch, and everything below writes
+    // out of $post rather than switching on $op. So the question is asked here,
+    // where the body is taken, and an unverified one is treated as if nothing
+    // had been posted -- `if (count($post) == 0)` below already means "nothing
+    // to write". A GET carries no body either way, so browsing is untouched.
+    $post = Forms::isUnverifiedRequest() ? [] : Csrf::stripFrom(Http::allPost());
     //strip unnecessary values
     unset($post['oldvalues']);
     unset($post['showFormTabIndex']);
@@ -581,7 +591,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
                 // display the direct link to change it.
                 $changeemail = Translator::translateInline('Force your email address NOW');
                 $output->output("`n`qTime is up, you can now accept the change via this button:`n`n");
-                $output->rawOutput("<form action='prefs.php?op=forcechangeemail' method='POST'><input type='submit' class='button' value='$changeemail'></form><br>");
+                $output->rawOutput("<form action='prefs.php?op=forcechangeemail' method='POST'>" . Forms::csrfField() . "<input type='submit' class='button' value='$changeemail'></form><br>");
                 Nav::add("", "prefs.php?op=forcechangeemail");
             }
         } else {
@@ -589,7 +599,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         }
         $cancelemail = Translator::translateInline('Cancel email change request');
         $output->output("`\$Cancel the request with the following button:`n`n");
-        $output->rawOutput("<form action='prefs.php?op=cancelemail' method='POST'><input type='submit' class='button' value='$cancelemail'></form><br>");
+        $output->rawOutput("<form action='prefs.php?op=cancelemail' method='POST'>" . Forms::csrfField() . "<input type='submit' class='button' value='$cancelemail'></form><br>");
         Nav::add("", "prefs.php?op=cancelemail");
     }
 

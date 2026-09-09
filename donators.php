@@ -118,7 +118,11 @@ $op = Http::get('op');
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['add1', 'add2'])) {
+// `add1` is not listed: it is the search view, reached both by its own form
+// and by the "Add donation points" nav links on user.php and viewpetition.php,
+// and it writes nothing -- it lists candidates as buttons. The write those
+// buttons lead to is `add2`, which is listed.
+if (Forms::isUnverifiedCoreOp($op, ['add2'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';

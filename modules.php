@@ -13,7 +13,6 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Sanitize;
-use Lotgd\Security\Escape;
 use Lotgd\Forms;
 
 // addnews ready

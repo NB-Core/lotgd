@@ -45,7 +45,7 @@ final class MotdEditingCsrfRegressionTest extends TestCase
         // Every such button in the tree renders through one helper now, so what
         // this asserts is that the call is made with the editing scope -- the
         // POST method, the token field and the confirmation are the helper's
-        // business, covered behaviourally in FormPostButtonTest.
+        // business, covered behaviourally in EscapeAndPostButtonTest.
         self::assertStringContainsString(
             'Forms::postButton("motd.php?op=del&id=$id", $del, $conf, \'motd-del\', Csrf::SCOPE_MOTD_EDIT)',
             $source

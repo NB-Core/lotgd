@@ -50,7 +50,11 @@ $op = Http::get('op');
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['list', 'step2'])) {
+// `list` is not listed. It is the browsing view -- the namespace nav link,
+// the `method='get'` filter form and every edit link go through it -- and a
+// view is not a state change. Its one write, `mode=save`, arrives as a POST
+// from the form below and is guarded there.
+if (Forms::isUnverifiedCoreOp($op, ['step2'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';

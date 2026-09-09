@@ -41,7 +41,9 @@ $op = Http::get('op');
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['add', 'delete', 'reset', 'save'])) {
+// `add` is not listed: it is a nav link that renders the empty add form and
+// writes nothing. The write it leads to is `save`, which is listed.
+if (Forms::isUnverifiedCoreOp($op, ['delete', 'reset', 'save'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
@@ -290,11 +292,18 @@ switch ($op) {
             $i++;
         }
         $output->rawOutput("</table>");
+        // Rewriting every player's title was a nav link, so following a crafted
+        // URL ran it -- SameSite=Lax sends the session cookie on a top-level GET
+        // navigation. It is a button now; the nav entry stays, without text, so
+        // the POST target remains navigable.
+        $reset = Translator::translateInline("Reset Users Titles");
+        $resetconfirm = Translator::translateInline("Rebuild the title of every player?");
+        $output->rawOutput("<br>" . Forms::postButton("titleedit.php?op=reset", $reset, $resetconfirm));
         //HookHandler::hook("titleedit", array());
         Nav::add("Functions");
         Nav::add("Add a Title", "titleedit.php?op=add");
         Nav::add("Refresh List", "titleedit.php");
-        Nav::add("Reset Users Titles", "titleedit.php?op=reset");
+        Nav::add("", "titleedit.php?op=reset");
         title_help();
         break;
 }

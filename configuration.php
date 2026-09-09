@@ -51,7 +51,10 @@ $op = is_string($opRequest) ? $opRequest : '';
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['save', 'testsmtp'])) {
+// `testsmtp` is not listed: it is reached only by a nav link, so it has
+// never been a token-carrying POST, and it writes nothing -- it sends one
+// test mail to the address the admin just configured.
+if (Forms::isUnverifiedCoreOp($op, ['save'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';

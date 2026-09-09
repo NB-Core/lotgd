@@ -65,7 +65,10 @@ $op = Http::get("op");
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['audit', 'commentdelete'])) {
+// `audit` is not listed: it is the review view, reached by a nav link per
+// moderator. The write underneath it is `subop=undelete`, which arrives as a
+// POST from the form on that view and is guarded there.
+if (Forms::isUnverifiedCoreOp($op, ['commentdelete'])) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
@@ -256,6 +259,13 @@ if ($op == "") {
     }
 } elseif ($op == "audit") {
     $subop = Http::get("subop");
+    // op=audit is also the review view, so it cannot be guarded as a whole:
+    // the write is subop=undelete, which arrives as a POST from the form below.
+    if ($subop == "undelete" && Forms::isUnverifiedRequest()) {
+        debuglog('Rejected a comment undeletion with an invalid CSRF token.');
+        http_response_code(400);
+        $subop = '';
+    }
     if ($subop == "undelete") {
         $unkeys = Http::post("mod");
         if ($unkeys && is_array($unkeys)) {

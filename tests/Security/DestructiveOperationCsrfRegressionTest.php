@@ -54,7 +54,7 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
 
         // Rendered through the shared helper with the user editor's scope; the
         // POST method, token field and confirmation are the helper's, covered
-        // behaviourally in FormPostButtonTest.
+        // behaviourally in EscapeAndPostButtonTest.
         self::assertStringContainsString('Forms::postButton(', $source);
         self::assertStringContainsString('Csrf::SCOPE_USER_EDITOR', $source);
         // The bare anchor is what made a crafted URL enough.
