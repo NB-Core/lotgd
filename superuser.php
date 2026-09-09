@@ -188,6 +188,9 @@ if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
 if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
                     Nav::add('L?View Log Files', 'logviewer.php');
 }
+if ($session['user']['superuser'] & SU_MEGAUSER) {
+    Nav::add('Y?Diagnostics', 'diagnostics.php');
+}
 
 Nav::add("Module Configurations");
 

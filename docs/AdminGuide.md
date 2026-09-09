@@ -67,7 +67,10 @@ The game keeps several logs, and which one to open depends on what you are looki
 | **PHP error log** | Technical faults, plus a copy of every security event. On Docker this is the container log (`docker compose logs web`). | Container/web server log |
 | **`logs/bootstrap.log`** | Failures too early for the game to handle them — a broken `common.php`, a cron that could not start. | `logviewer.php` |
 | **`debug` table** | Page and hook runtimes, collected only while the `debug` setting is on. | `debug.php` |
-| **`faillog` table** | Every failed login attempt, kept for `expirefaillog` days. Individual attempts are also written to the PHP error log; the automatic ban that follows repeated failures is copied into the Game Log's `security` category, which is the one to watch. | — |
+| **`faillog` table** | Every failed login attempt, kept for `expirefaillog` days. Individual attempts are also written to the PHP error log; the automatic ban that follows repeated failures is copied into the Game Log's `security` category, which is the one to watch. | `diagnostics.php` |
+
+All of the above, for a chosen time window, are also pulled together on one screen by
+**`diagnostics.php`** — see below.
 
 Security events appear in **both** the Game Log and the PHP error log, and both carry the same
 `diag=` correlation id, so a line in the container log can be matched to the row an administrator
@@ -80,6 +83,38 @@ automatic ban that follows repeated failures, not each guess.
 > nothing more. To show error messages, file paths and backtraces to visitors who are not
 > megausers you must enable `show_error_details` separately, and you should leave it off on a live
 > server.
+
+## The diagnostics page
+
+`diagnostics.php`, reachable from the Superuser Grotto under **Diagnostics**, answers "is
+everything still running?" on one screen. It requires `SU_MEGAUSER` — stricter than the other
+operational pages, because it puts their contents together with IP addresses and environment
+detail in one place.
+
+It is strictly read-only: it changes nothing, offers no buttons, and does not refresh itself. Pick
+a time window from the navigation (one hour up to thirty days, twenty-four hours by default) and
+the page shows:
+
+- a **runtime snapshot** — game and schema version and whether they agree, PHP and database
+  versions, missing PHP extensions, how many players are online, when the last new day and the
+  last maintenance run happened, the configured retention for each log, and whether `debug` mode
+  or `show_error_details` is switched on;
+- a **timeline** merging the events worth noticing across sources: security events, anything
+  logged as a warning or an error, and failed logins;
+- **collapsible sections** per source with the detail — game log, failed logins, the character
+  audit trail (read from both `debuglog` and `debuglog_archive`, because the new day routine moves
+  the live table into the archive), and the collected runtimes.
+
+Two things it deliberately does **not** show:
+
+- **The submitted form data of a failed login.** The `faillog` table stores the whole POST body,
+  which contains the password that was tried. That column is never read.
+- **The PHP error log itself.** In the Docker image `error_log` points at `/dev/stderr`, which is
+  write-only, so nothing in PHP can read it back. The page names the destination and tells you
+  where to look instead. This is why the async diagnostics (`Jaxon csrf`, rate-limit and
+  bad-request lines) and individual failed-login records do not appear there: use
+  `docker compose logs web`. Failed logins are still visible on the page through the `faillog`
+  table.
 
 > ⚠️ **Security reminder:** `cron.php` must never be reachable over HTTP. Depending on the
 > `register_argc_argv` setting, a web request can supply the execution bitmask through the query
