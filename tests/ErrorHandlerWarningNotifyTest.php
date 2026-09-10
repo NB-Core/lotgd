@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\ErrorHandler;
+use Lotgd\Output;
 use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\Tests\Stubs\PHPMailer;
 use PHPUnit\Framework\TestCase;
@@ -42,10 +43,14 @@ final class ErrorHandlerWarningNotifyTest extends TestCase
                 return $data;
             }
         };
+
+        // PHPUnit's global backup does not reset static singleton state.
+        Output::getInstance()->resetOutput();
     }
 
     protected function tearDown(): void
     {
+        Output::getInstance()->resetOutput();
         error_reporting($this->originalErrorReporting);
     }
 
