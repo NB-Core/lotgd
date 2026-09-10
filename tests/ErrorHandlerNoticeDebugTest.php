@@ -11,10 +11,13 @@ use PHPUnit\Framework\TestCase;
 
 final class ErrorHandlerNoticeDebugTest extends TestCase
 {
+    private int $originalErrorReporting;
+
     protected function setUp(): void
     {
         global $settings, $session, $output;
 
+        $this->originalErrorReporting = error_reporting(E_ALL);
         $settings = new DummySettings([
             'show_notices' => 1,
         ]);
@@ -35,6 +38,7 @@ final class ErrorHandlerNoticeDebugTest extends TestCase
 
     protected function tearDown(): void
     {
+        error_reporting($this->originalErrorReporting);
         unset($GLOBALS['settings'], $GLOBALS['session'], $GLOBALS['output']);
     }
 

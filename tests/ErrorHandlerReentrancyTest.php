@@ -11,11 +11,13 @@ namespace Lotgd\Tests {
     final class ErrorHandlerReentrancyTest extends TestCase
     {
         private $originalOutput;
+        private int $originalErrorReporting;
 
         protected function setUp(): void
         {
             global $settings;
 
+            $this->originalErrorReporting = error_reporting(E_ALL);
             $settings = new DummySettings([
                 // Reentrancy fallback output is only shown when detailed error
                 // display is permitted for the current context. That is the
@@ -38,6 +40,7 @@ namespace Lotgd\Tests {
 
         protected function tearDown(): void
         {
+            error_reporting($this->originalErrorReporting);
             Output::setInstance($this->originalOutput);
             unset($GLOBALS['settings']);
         }
