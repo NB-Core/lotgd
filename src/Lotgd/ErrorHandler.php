@@ -105,8 +105,10 @@ class ErrorHandler
         global $session;
         static $inErrorHandler = 0;
 
-        if (! error_reporting()) {
-            return; // @ operator used
+        // Modern PHP may retain a nonzero restricted mask inside an @-suppressed operation,
+        // so suppression must be checked against the severity currently being handled.
+        if ((error_reporting() & $errno) === 0) {
+            return;
         }
         $settings = Settings::hasInstance() ? Settings::getInstance() : null;
         $output   = Output::getInstance();
