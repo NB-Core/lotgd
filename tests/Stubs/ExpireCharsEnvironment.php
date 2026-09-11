@@ -119,9 +119,49 @@ final class ExpireCharsEnvironment
                 STUB);
         }
 
+        // The class_exists() guards above are "is one of these already here",
+        // and the real Lotgd\GameLog and Lotgd\PlayerFunctions answer yes
+        // without carrying any of the recording properties below. A test
+        // process that had reached the production classes first -- today
+        // nothing does, but a bootstrap change is all it would take -- would
+        // fatal here on an undeclared static property. Say plainly what went
+        // wrong instead, because the alternative is a stack trace pointing at
+        // a stub file rather than at the cause.
+        self::assertStubIsInstalled(\Lotgd\GameLog::class, 'entries');
+        self::assertStubIsInstalled(\Lotgd\PlayerFunctions::class, 'cleanupSucceeds');
+
         \Lotgd\GameLog::$entries = [];
         \Lotgd\PlayerFunctions::$cleanupSucceeds = true;
         \Lotgd\PlayerFunctions::$cleanupFailsFor = [];
         \Lotgd\PlayerFunctions::$cleanupCalled = false;
+    }
+
+    /**
+     * Fail loudly if the production class got in first.
+     *
+     * The class_exists() guards above ask "is one of these already here", and
+     * the real Lotgd\\GameLog and Lotgd\\PlayerFunctions answer yes while
+     * carrying none of the recording properties the resets touch. Writing to
+     * one then fatals with "Access to undeclared static property", pointing at
+     * this file rather than at the cause. Nothing autoloads them ahead of the
+     * stubs today, but a bootstrap change is all it would take.
+     *
+     * @param class-string $class
+     */
+    private static function assertStubIsInstalled(string $class, string $property): void
+    {
+        if (property_exists($class, $property)) {
+            return;
+        }
+
+        $file = (new \ReflectionClass($class))->getFileName();
+
+        throw new \LogicException(sprintf(
+            '%s was already loaded from %s before the stub could be installed. '
+            . 'ExpireChars tests must run in their own process, and nothing may '
+            . 'autoload the production class first.',
+            $class,
+            $file === false ? 'an unknown location' : $file
+        ));
     }
 }

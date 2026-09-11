@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  * about ExpireChars rather than this page and now lives with the rest of that
  * subject in ExpireChars/CleanupExpiredAccountsTest.
  *
- * Each case include()s the page at test scope, so each needs its own process.
+ * Each case includes the page at test scope, so each needs its own process.
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
