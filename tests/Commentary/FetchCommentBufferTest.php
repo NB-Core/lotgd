@@ -7,7 +7,7 @@ namespace Lotgd\Tests\Commentary;
 use Lotgd\Commentary;
 use Lotgd\DataCache;
 use Lotgd\Settings;
-use Lotgd\Tests\Stubs\CacheDummySettings;
+use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
@@ -32,7 +32,7 @@ final class FetchCommentBufferTest extends TestCase
         $this->cacheDir = sys_get_temp_dir() . '/lotgd_commentary_cache_' . uniqid();
         mkdir($this->cacheDir, 0700, true);
         DataCache::resetState();
-        $GLOBALS['settings'] = new CacheDummySettings([
+        $GLOBALS['settings'] = new DummySettings([
             'datacachepath' => $this->cacheDir,
             'usedatacache'  => 1,
         ]);

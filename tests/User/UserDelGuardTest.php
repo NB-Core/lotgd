@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests;
+namespace Lotgd\Tests\User;
 
 use Lotgd\MySQL\Database as CoreDatabase;
 use Lotgd\Security\Csrf;
@@ -10,12 +10,18 @@ use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
+ * pages/user/user_del.php deletes a character, so what matters is every path
+ * on which it must not.
+ *
+ * Split out of CharCleanupFailurePreventsDeletionTest, whose first case was
+ * about ExpireChars rather than this page and now lives with the rest of that
+ * subject in ExpireChars/CleanupExpiredAccountsTest.
+ *
+ * Each case includes the page at test scope, so each needs its own process.
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
-final class CharCleanupFailurePreventsDeletionTest extends TestCase
+final class UserDelGuardTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -27,31 +33,6 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
         $connection->executeStatementResults = [];
     }
 
-    public function testExpireCharsDoesNotDeleteOnCleanupFailure(): void
-    {
-        if (! class_exists('Lotgd\\Settings', false)) {
-            eval('namespace Lotgd; class Settings { public function __construct(string $t = "settings_extended"){} public static function getInstance(): self { return new self(); } public function getSetting(string $n, mixed $d = null): mixed { return $d; } public function saveSetting(string $n, mixed $v): void {} }');
-        }
-        if (! class_exists('Lotgd\\PlayerFunctions', false)) {
-            eval('namespace Lotgd; class PlayerFunctions { public static function charCleanup(int $id, int $type): bool { return false; } }');
-        }
-        if (! class_exists('Lotgd\\GameLog', false)) {
-            eval('namespace Lotgd; class GameLog { const SEVERITY_INFO = "info"; const SEVERITY_WARNING = "warning"; const SEVERITY_ERROR = "error"; const SEVERITY_DEBUG = "debug"; const CATEGORY_GENERAL = "general"; const CATEGORY_SECURITY = "security"; const CATEGORY_MAINTENANCE = "maintenance"; const CATEGORY_EXPIRATION = "expiration"; const CATEGORY_MODULES = "modules"; const CATEGORY_USERS = "user management"; const CATEGORY_SETTINGS = "settings"; const CATEGORY_CLAN = "clan"; const CATEGORY_BATTLE = "battle"; const CATEGORY_CACHE = "cache"; public static function log(string $m, string $c, bool $f = false, ?int $a = null, string $s = "info"): void {} }');
-        }
-
-        Database::$mockResults = [
-            [["acctid" => 1, "login" => "test", "dragonkills" => 0, "level" => 1]],
-        ];
-
-        \Lotgd\ExpireChars::cleanupExpiredAccountsForTests();
-
-        $queries = CoreDatabase::getDoctrineConnection()->queries;
-        foreach ($queries as $query) {
-            $this->assertStringNotContainsString('DELETE FROM accounts', $query);
-        }
-        $this->assertContains('ROLLBACK', $queries);
-        $this->assertNotContains('COMMIT', $queries);
-    }
 
     /**
      * Stubs shared by the user_del.php cases below.
@@ -105,7 +86,7 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
         global $session, $userid, $output;
         $this->prepareUserDel(true);
 
-        include __DIR__ . '/../pages/user/user_del.php';
+        include __DIR__ . '/../../pages/user/user_del.php';
 
         $queries = CoreDatabase::getDoctrineConnection()->queries;
         $this->assertCount(1, $queries, 'only the lookup may run');
@@ -134,7 +115,7 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
             [["name" => "Admin", "superuser" => 1]],
         ];
 
-        include __DIR__ . '/../pages/user/user_del.php';
+        include __DIR__ . '/../../pages/user/user_del.php';
 
         $this->assertFalse($GLOBALS['cleanup_called'], 'nothing may be stripped before the guard passes');
         $this->assertSame([], CoreDatabase::getDoctrineConnection()->executeStatements);
@@ -154,7 +135,7 @@ final class CharCleanupFailurePreventsDeletionTest extends TestCase
         global $session, $userid, $output;
         $this->prepareUserDel(false);
 
-        include __DIR__ . '/../pages/user/user_del.php';
+        include __DIR__ . '/../../pages/user/user_del.php';
 
         // The refusal is now recorded in the security channel, so the log insert is
         // the one statement a refused deletion is allowed to make. Nothing may reach

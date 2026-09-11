@@ -6,7 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\Output;
 use Lotgd\Sanitize;
-use Lotgd\Tests\Stubs\DummySettingsSanitize;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
 final class SanitizeExtraTest extends TestCase
@@ -15,7 +15,7 @@ final class SanitizeExtraTest extends TestCase
     {
         global $settings;
         Output::setInstance(new Output());
-        $settings = new DummySettingsSanitize(['charset' => 'UTF-8']);
+        $settings = new DummySettings(['charset' => 'UTF-8']);
     }
 
     protected function tearDown(): void

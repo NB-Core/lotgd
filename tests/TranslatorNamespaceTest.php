@@ -7,7 +7,7 @@ namespace Lotgd\Tests;
 use Lotgd\Translator;
 use Lotgd\Sanitize;
 use Lotgd\DataCache;
-use Lotgd\Tests\Stubs\CacheDummySettings;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -26,7 +26,7 @@ final class TranslatorNamespaceTest extends TestCase
     {
         $this->cacheDir = sys_get_temp_dir() . '/lotgd_cache_' . uniqid();
         mkdir($this->cacheDir, 0700, true);
-        $GLOBALS['settings'] = new CacheDummySettings([
+        $GLOBALS['settings'] = new DummySettings([
             'datacachepath' => $this->cacheDir,
             'usedatacache'  => 1,
         ]);

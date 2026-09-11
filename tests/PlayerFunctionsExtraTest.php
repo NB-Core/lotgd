@@ -6,7 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\DataCache;
 use Lotgd\PlayerFunctions;
-use Lotgd\Tests\Stubs\DummySettingsExtra;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
 final class PlayerFunctionsExtraTest extends TestCase
@@ -18,7 +18,7 @@ final class PlayerFunctionsExtraTest extends TestCase
         global $settings, $session;
         $this->cacheDir = sys_get_temp_dir() . '/lotgd_cache_' . uniqid();
         mkdir($this->cacheDir, 0700, true);
-        $settings = new DummySettingsExtra([
+        $settings = new DummySettings([
             'exp-array'     => '50,100,150',
             'usedatacache'  => 1,
             'datacachepath' => $this->cacheDir,

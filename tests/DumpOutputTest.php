@@ -6,14 +6,14 @@ namespace Lotgd\Tests;
 
 use Lotgd\DumpItem;
 use Lotgd\OutputArray;
-use Lotgd\Tests\Stubs\DumpDummySettings;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
 final class DumpOutputTest extends TestCase
 {
     protected function setUp(): void
     {
-        $GLOBALS['settings'] = new DumpDummySettings(['charset' => 'UTF-8']);
+        $GLOBALS['settings'] = new DummySettings(['charset' => 'UTF-8']);
     }
 
     protected function tearDown(): void
