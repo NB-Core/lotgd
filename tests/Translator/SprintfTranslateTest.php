@@ -14,12 +14,18 @@ use PHPUnit\Framework\TestCase;
 /**
  * sprintfTranslate() formats strings whose placeholders come from a translation
  * file and whose arguments come from the calling page. The two can disagree --
- * a translator adds a placeholder, a caller drops an argument -- and plain
- * sprintf() answers that with a warning and, historically, a broken page. The
- * contract is that it pads or drops silently instead.
+ * a translator adds a placeholder, a caller drops an argument -- and under
+ * PHP 8 plain vsprintf() answers that by throwing a ValueError, which
+ * historically meant a broken page. The contract here is that it pads or drops
+ * silently instead.
  *
- * Every case therefore checks the result *and* that nothing was raised, which
- * is why each one runs through the warning recorder below.
+ * Every case therefore checks the result *and* that nothing was raised on the
+ * way, which is why each one runs through the recorder below. The recorder
+ * takes E_ALL on purpose: this code path raises nothing of its own -- it never
+ * calls trigger_error() -- so anything that does show up comes from PHP itself
+ * and would be E_WARNING, never E_USER_WARNING. A recorder scoped to the latter
+ * listens for a class of message that cannot occur here, which makes the
+ * assertion read as a guarantee while proving nothing.
  *
  * Runs in its own process: this class define()s process-global constants, and a
  * constant cannot be undefined. Without isolation the first test to run here
@@ -57,7 +63,7 @@ final class SprintfTranslateTest extends TestCase
             $warnings[] = [$errno, $errstr];
 
             return true;
-        }, E_USER_WARNING);
+        }, E_ALL);
 
         try {
             $result = Translator::sprintfTranslate($format, ...$args);
@@ -66,7 +72,7 @@ final class SprintfTranslateTest extends TestCase
         }
 
         self::assertSame($expected, $result);
-        self::assertSame([], $warnings, 'sprintfTranslate() must not raise on a format/argument mismatch');
+        self::assertSame([], $warnings, 'sprintfTranslate() must not raise anything on a format/argument mismatch');
     }
 
     /**
