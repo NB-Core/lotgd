@@ -6,6 +6,7 @@ use Lotgd\SuAccess;
 use Lotgd\Substitute;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Http;
+use Lotgd\Security\RequestValue;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
@@ -51,9 +52,9 @@ if (Forms::isUnverifiedCoreOp($op, ['del', 'save'])) {
 }
 
 $deathmessageidRequest = Http::get('deathmessageid');
-$deathmessageid = deathmessages_normalize_optional_int($deathmessageidRequest);
+$deathmessageid = RequestValue::optionalPositiveInt($deathmessageidRequest);
 $deathmessageidParam = $deathmessageid === null ? '' : (string) $deathmessageid;
-$commentaryPage = deathmessages_normalize_optional_int(Http::get('c'));
+$commentaryPage = RequestValue::optionalPositiveInt(Http::get('c'));
 switch ($op) {
     case "edit":
         Nav::add("Deathmessages");
@@ -115,7 +116,7 @@ switch ($op) {
         Http::set("op", "");
         break;
     case "save":
-        $deathmessage = deathmessages_normalize_text(Http::post('deathmessage'));
+        $deathmessage = RequestValue::text(Http::post('deathmessage'));
         $forest = (int) Http::post('forest');
         $graveyard = (int) Http::post('graveyard');
         $taunt = (int) Http::post('taunt');
@@ -163,54 +164,7 @@ switch ($op) {
         break;
 }
 
-/**
- * Normalise request values expected to be optional integer identifiers.
- *
- * Lotgd\Http now exposes raw request payloads, so we must explicitly narrow
- * values such as c/deathmessageid before building navigation URLs.
- */
-function deathmessages_normalize_optional_int(mixed $value): ?int
-{
-    if ($value === '' || $value === null || is_array($value)) {
-        return null;
-    }
 
-    if (! is_scalar($value)) {
-        return null;
-    }
-
-    // Only accept positive integer values represented as digits-only strings.
-    $valueString = (string) $value;
-
-    if ($valueString === '' || ! ctype_digit($valueString)) {
-        return null;
-    }
-
-    $intValue = (int) $valueString;
-
-    if ($intValue <= 0) {
-        return null;
-    }
-
-    return $intValue;
-}
-
-/**
- * Normalise request values to a safe string payload for DBAL string binding.
- */
-function deathmessages_normalize_text(mixed $value): string
-{
-    // Preserve legacy coercion behavior while rejecting array/object payloads.
-    if ($value === false || $value === null || is_array($value)) {
-        return '';
-    }
-
-    if (is_string($value)) {
-        return $value;
-    }
-
-    return is_scalar($value) ? (string) $value : '';
-}
 if ($op == "") {
     $output->output("`i`\$Note: These messages are NEWS messages the user will trigger when he/she dies in the forest or graveyard.`0`i`n`n");
     $sql = "SELECT * FROM " . Database::prefix("deathmessages");
