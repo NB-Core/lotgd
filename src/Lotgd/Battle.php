@@ -98,6 +98,10 @@ class Battle
      * therefore scaled by the side that lands the hit, not by the side that
      * swings.
      *
+     * Physical resistance applies only to a blow that lands. It used to be
+     * subtracted on the riposte branches too, where the figure is negative, so
+     * it made a counter-blow harder rather than softer.
+     *
      * The loop re-rolls while both figures are zero, so that a round always
      * produces something, and gives up after fifty fruitless exchanges the way
      * the companion roll does -- two combatants who can neither hit nor be hit
@@ -146,7 +150,7 @@ class Battle
                 if ($creaturedmg < 0) {
                     $creaturedmg = (int) ($creaturedmg / 2);
                     $creaturedmg = round($context->badguyDmgMod * $creaturedmg, 0);
-                    $creaturedmg = min(0, round($creaturedmg - $badguy['physicalresistance']));
+                    $creaturedmg = min(0, round($creaturedmg));
                 }
                 if ($creaturedmg > 0) {
                     $creaturedmg = round($context->dmgMod * $creaturedmg, 0);
@@ -163,7 +167,7 @@ class Battle
                 if ($selfdmg < 0) {
                     $selfdmg = (int) ($selfdmg / 2);
                     $selfdmg = round($selfdmg * $context->dmgMod, 0);
-                    $selfdmg = min(0, round($selfdmg - $self->resistance, 0));
+                    $selfdmg = min(0, round($selfdmg, 0));
                 }
                 if ($selfdmg > 0) {
                     $selfdmg = round($selfdmg * $context->badguyDmgMod, 0);

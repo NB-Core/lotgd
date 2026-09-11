@@ -175,15 +175,22 @@ final class PlayerDamageTest extends TestCase
     }
 
     /**
-     * Pinned because it surprises, not because it is obviously right: on the
-     * riposte branches the subtraction runs on a negative number, so resistance
-     * makes a counter-blow *harder* instead of softening it.
+     * Resistance has no say over a riposte, on either side of the exchange.
      *
-     * This is long-standing behaviour on both sides of the exchange and is
-     * asserted as it stands. If it is meant to read the other way it is a
-     * production bug, and this test is where it would be re-stated.
+     * It used to: the subtraction ran on a negative figure, so a combatant's
+     * own resistance made their own counter-blow *harder*. Measured over 50000
+     * rounds, a creature with 10 physical resistance riposted for 10.93 where
+     * one with none riposted for 1.45 -- so a resistant creature absorbed more
+     * and hit back seven times harder for it.
+     *
+     * Damping instead of amplifying was tried and rejected: a riposte is
+     * already halved and therefore small, so any meaningful resistance floors
+     * it at zero and the mechanic disappears. Dropping the term leaves the
+     * riposte at the halved margin times its modifier, independent of
+     * resistance, while resistance keeps doing its real job on a blow that
+     * lands.
      */
-    public function testResistanceMakesARiposteHarderRatherThanSofter(): void
+    public function testResistanceDoesNotTouchARiposte(): void
     {
         $badguy = self::badguy();
         $unresisted = $this->roll($badguy, [5], [12.0, 4.0, 9.0, 3.0]);
@@ -193,7 +200,12 @@ final class PlayerDamageTest extends TestCase
         $badguy = self::badguy();
         $resisted = $this->roll($badguy, [5], [12.0, 4.0, 9.0, 3.0], null, self::player(resistance: 4.0));
 
-        self::assertSame(-7.0, $resisted->selfDamage, 'the player resistance is added to their own counter-blow');
+        self::assertSame(-3.0, $resisted->selfDamage, 'the player resistance changes nothing');
+
+        $badguy = self::badguy(resistance: 4);
+        $creatureRiposte = $this->roll($badguy, [5], [3.0, 15.0, 9.0, 3.0]);
+
+        self::assertSame(-6.0, $creatureRiposte->creatureDamage, 'and neither does the creature resistance');
     }
 
     /**

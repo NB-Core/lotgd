@@ -322,6 +322,40 @@ modules.
 
 ## 7. Breaking Changes
 
+- **Physical resistance no longer applies to a riposte, which changes combat
+  balance.** A riposte is the counter-blow a combatant lands when their
+  opponent's attack falls short. Until now, the *attacking* side's own physical
+  resistance was subtracted from the riposte figure — and because that figure is
+  negative, subtracting made the counter-blow **harder** instead of softer, on
+  both sides of the exchange.
+
+  Measured over 50,000 rounds against a creature with 15 attack and 12 defence,
+  with a player carrying 5 physical resistance:
+
+  | Creature resistance | Creature's riposte, before | after |
+  |---|---|---|
+  | 0 | 1.45 | 1.46 |
+  | 3 | 3.95 | 1.47 |
+  | 10 | **10.93** | 1.48 |
+
+  A resistant creature absorbed more *and* hit back seven times harder for it.
+  The player's own riposte drops likewise, from an average 6.6 to 2.0, because
+  their resistance of 5 was being added to every counter-blow they landed.
+
+  **What changes for players:** high-resistance creatures become noticeably less
+  dangerous, and players with high resistance lose the riposte bonus they were
+  silently getting. Resistance still works exactly as before on a blow that
+  lands — that half was never wrong, and the player's average landed hit is
+  unchanged (7.70 → 7.63 at creature resistance 0, 4.71 → 4.67 at 10).
+
+  Damping instead of amplifying was tried and rejected: a riposte is already
+  halved and therefore small, so subtracting any meaningful resistance floors it
+  at zero and the mechanic disappears entirely. Dropping the term leaves the
+  riposte at the halved margin times its damage modifier.
+
+  Nothing to do on upgrade; no setting controls it. Listed here because your
+  players will feel it.
+
 - **The core's own state-changing operations now require a CSRF token, and
   every destructive trigger is a button rather than a link.**
   - A module or bookmark that links to a *core* state-changing operation stops
