@@ -217,6 +217,64 @@ final class LegacyRollDamageTest extends TestCase
         self::assertGreaterThan(0, $ripostes('pvp'), 'undivided, it ripostes essentially every round');
     }
 
+    /**
+     * A round that never happens leaves the globals as the last real round left
+     * them, rather than clearing them.
+     *
+     * This is the half of the adapter contract that is easiest to break by
+     * accident, and it was: the first version of this refactor published the
+     * roll unconditionally, so a call against a downed creature reset $atk to
+     * zero where it used to keep its value. battle.php:603 hands $atk to
+     * reportPowerMove() on every round, so the difference reaches the player as
+     * a power-move message that either does or does not appear.
+     */
+    public function testANonFightLeavesTheGlobalsWhereTheyWere(): void
+    {
+        global $atk, $creatureattack;
+
+        $alive = self::badguy();
+        Battle::rollDamage($alive);
+
+        $atkAfterFight = $atk;
+        $creatureAttackAfterFight = $creatureattack;
+
+        self::assertNotNull($atkAfterFight, 'precondition: the first round set them');
+
+        $dead = self::badguy();
+        $dead['creaturehealth'] = 0;
+        $dead['creatureattack'] = 999;
+        Battle::rollDamage($dead);
+
+        self::assertSame($atkAfterFight, $atk, 'the stale attack roll survives');
+        self::assertSame($creatureAttackAfterFight, $creatureattack, 'and so does the creature attack');
+    }
+
+    /**
+     * The companion adapter carries the same contract.
+     */
+    public function testANonFightLeavesTheGlobalsWhereTheyWereForCompanionsToo(): void
+    {
+        global $atk, $creatureattack;
+
+        $companion = ['attack' => 14, 'defense' => 9, 'hitpoints' => 30];
+
+        $alive = self::badguy();
+        Battle::rollCompanionDamage($alive, $companion);
+
+        $atkAfterFight = $atk;
+        $creatureAttackAfterFight = $creatureattack;
+
+        self::assertNotNull($atkAfterFight, 'precondition: the first round set them');
+
+        $dead = self::badguy();
+        $dead['creaturehealth'] = 0;
+        $dead['creatureattack'] = 999;
+        Battle::rollCompanionDamage($dead, $companion);
+
+        self::assertSame($atkAfterFight, $atk);
+        self::assertSame($creatureAttackAfterFight, $creatureattack);
+    }
+
     public function testAMissingCreatureResistanceIsFilledIn(): void
     {
         $badguy = self::badguy();

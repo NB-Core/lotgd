@@ -77,8 +77,16 @@ class Battle
         // $atk carries the attack *roll* onwards to reportPowerMove()
         // (battle.php:603). $creatureattack has no reader left anywhere in the
         // codebase but is still published, because a module may have one.
-        $atk = $roll->attackRoll;
-        $creatureattack = $roll->creatureAttack;
+        // Only when an exchange actually happened. A call against a creature
+        // that is already down left these globals alone before the refactor,
+        // and battle.php:603 reads $atk on every round -- a stale value there
+        // is pre-existing behaviour, a zeroed one would not be.
+        if ($roll->attackRoll !== null) {
+            $atk = $roll->attackRoll;
+        }
+        if ($roll->creatureAttack !== null) {
+            $creatureattack = $roll->creatureAttack;
+        }
 
         return [
             'creaturedmg' => $roll->creatureDamage,
@@ -114,8 +122,8 @@ class Battle
     ): DamageRoll {
         $creaturedmg = 0;
         $selfdmg     = 0;
-        $patkroll    = 0;
-        $creatureattack = 0;
+        $patkroll    = null;
+        $creatureattack = null;
 
         if ($badguy['creaturehealth'] > 0 && $self->hitpoints > 0) {
             if ($context->isPvp) {
@@ -1086,8 +1094,12 @@ class Battle
             new SystemRandomSource(),
         );
 
-        $atk = $roll->attackRoll;
-        $creatureattack = $roll->creatureAttack;
+        if ($roll->attackRoll !== null) {
+            $atk = $roll->attackRoll;
+        }
+        if ($roll->creatureAttack !== null) {
+            $creatureattack = $roll->creatureAttack;
+        }
 
         return ['creaturedmg' => $roll->creatureDamage, 'selfdmg' => $roll->selfDamage];
     }
@@ -1118,8 +1130,8 @@ class Battle
     ): DamageRoll {
         $creaturedmg = 0;
         $selfdmg     = 0;
-        $patkroll    = 0;
-        $creatureattack = 0;
+        $patkroll    = null;
+        $creatureattack = null;
 
         if ($badguy['creaturehealth'] > 0 && $companion->hitpoints > 0) {
             if ($context->isPvp) {

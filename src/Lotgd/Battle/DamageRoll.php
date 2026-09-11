@@ -14,14 +14,20 @@ namespace Lotgd\Battle;
  * distinction matters because battle.php feeds this value to
  * Battle::reportPowerMove(), which compares it against the score to decide
  * whether the blow was a power move.
+ *
+ * Both attackRoll and creatureAttack are null when no exchange took place --
+ * one side was already down, so nothing was rolled. That is not the same as
+ * rolling a zero, and the difference is visible: the legacy globals $atk and
+ * $creatureattack keep their previous values across such a call rather than
+ * being reset, and battle.php reads $atk on every round.
  */
 final readonly class DamageRoll
 {
     public function __construct(
         public int|float $creatureDamage,
         public int|float $selfDamage,
-        public int|float $attackRoll,
-        public int|float $creatureAttack,
+        public int|float|null $attackRoll,
+        public int|float|null $creatureAttack,
     ) {
     }
 }

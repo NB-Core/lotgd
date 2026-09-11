@@ -369,6 +369,32 @@ final class PlayerDamageTest extends TestCase
     }
 
     /**
+     * When no exchange takes place, the two reported rolls are null rather than
+     * zero -- "nothing was rolled", not "a zero was rolled".
+     *
+     * The distinction is not cosmetic. rollDamage() publishes these into the
+     * legacy globals $atk and $creatureattack, and before this refactor a call
+     * that never entered the guard left both untouched, so they kept whatever
+     * the previous round put there. battle.php:603 reads $atk on every round
+     * and feeds it to reportPowerMove(), so zeroing it would be a behaviour
+     * change. LegacyRollDamageTest asserts the other half of this.
+     */
+    public function testNoExchangeReportsNoRollRatherThanAZeroRoll(): void
+    {
+        $badguy = ['creaturehealth' => 0, 'creatureattack' => 12, 'creaturedefense' => 8];
+        $none = $this->roll($badguy, [], []);
+
+        self::assertNull($none->attackRoll, 'no attack was rolled');
+        self::assertNull($none->creatureAttack, 'and no creature attack was computed');
+
+        $badguy = self::badguy();
+        $fought = $this->roll($badguy, [5], [12.0, 4.0, 9.0, 3.0]);
+
+        self::assertNotNull($fought->attackRoll, 'control: a real exchange reports both');
+        self::assertNotNull($fought->creatureAttack);
+    }
+
+    /**
      * A creature arriving without a resistance gets one, because the subtraction
      * below would otherwise raise an undefined-key warning on every blow.
      */
