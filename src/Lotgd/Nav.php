@@ -944,6 +944,37 @@ class Nav
     }
 
     /**
+     * Reset every piece of navigation state (primarily for tests).
+     *
+     * clearNav() is the request-time helper: it empties the allowed list and
+     * the rendered buffer, which is all a page needs. It leaves the sections
+     * accumulated by add(), the current sub-section, the schema and the block
+     * lists standing, because within one request those are still wanted.
+     *
+     * Between tests they are not. add() collects into $sections until
+     * buildNavs() flushes them, so a test that adds navigation and never builds
+     * hands its entries to whatever runs next; a leftover block list is worse,
+     * because it makes later links vanish rather than appear, and a test
+     * asserting absence would still pass. $blockednavs goes back to its
+     * declared shape rather than an empty array -- the four keys are part of
+     * the contract, not contents.
+     */
+    public static function resetState(): void
+    {
+        self::clearNav();
+        self::$sections = [];
+        self::$currentSubSection = null;
+        self::$navschema = [];
+        self::$block_new_navs = false;
+        self::$blockednavs = [
+            'blockpartial' => [],
+            'blockfull' => [],
+            'unblockpartial' => [],
+            'unblockfull' => [],
+        ];
+    }
+
+    /**
      * Sort navigation entries alphabetically.
      *
      * @param string $sectionOrder Order for section headlines (asc, desc or off)

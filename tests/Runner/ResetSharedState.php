@@ -45,6 +45,6 @@ final class ResetSharedState implements PreparationStartedSubscriber
         Output::setInstance(new Output());
         Mail::resetSettings();
         Modules::resetState();
-        Nav::clearNav();
+        Nav::resetState();
     }
 }

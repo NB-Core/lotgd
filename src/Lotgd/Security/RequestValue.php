@@ -59,6 +59,23 @@ final class RequestValue
     }
 
     /**
+     * Did the request carry a value here at all?
+     *
+     * optionalPositiveInt() answers "is this a usable id", and returns null for
+     * both "none was sent" and "one was sent but is unusable". A caller that
+     * inserts when there is no id and updates when there is one needs those
+     * two apart, or a malformed id silently becomes a new row. Ask this first
+     * on the raw request value, before normalising it.
+     *
+     * Http::get() and Http::post() report an absent key as false, and an empty
+     * field arrives as ''; neither is a value someone supplied.
+     */
+    public static function isPresent(mixed $value): bool
+    {
+        return $value !== null && $value !== false && $value !== '';
+    }
+
+    /**
      * A string payload safe to bind as ParameterType::STRING.
      *
      * Preserves the legacy coercion of scalars so existing pages keep behaving

@@ -53,6 +53,10 @@ if (Forms::isUnverifiedCoreOp($op, ['del', 'save'])) {
 
 $tauntidRequest = Http::get('tauntid');
 $tauntid = RequestValue::optionalPositiveInt($tauntidRequest);
+// An id the request supplied but that is not usable is not the same as no id
+// at all. Saving keys off "no id" to mean "insert a new one", so collapsing the
+// two would turn a malformed edit link into a spurious row.
+$tauntidRejected = $tauntid === null && RequestValue::isPresent($tauntidRequest);
 $tauntidParam = $tauntid === null ? '' : (string) $tauntid;
 $commentaryPage = RequestValue::optionalPositiveInt(Http::get('c'));
 if ($op == "edit") {
@@ -105,6 +109,10 @@ if ($op == "edit") {
         $op = "";
         Http::set("op", "");
     }
+} elseif ($op == "save" && $tauntidRejected) {
+    $output->output("`\$The taunt id in that link is not valid, so nothing was saved.`0`n");
+    $op = "";
+    Http::set("op", "");
 } elseif ($op == "save") {
     $taunt = RequestValue::text(Http::post('taunt'));
     if ($tauntid !== null) {

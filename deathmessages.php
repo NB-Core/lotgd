@@ -53,6 +53,10 @@ if (Forms::isUnverifiedCoreOp($op, ['del', 'save'])) {
 
 $deathmessageidRequest = Http::get('deathmessageid');
 $deathmessageid = RequestValue::optionalPositiveInt($deathmessageidRequest);
+// An id the request supplied but that is not usable is not the same as no id
+// at all. Saving keys off "no id" to mean "insert a new one", so collapsing the
+// two would turn a malformed edit link into a spurious row.
+$deathmessageidRejected = $deathmessageid === null && RequestValue::isPresent($deathmessageidRequest);
 $deathmessageidParam = $deathmessageid === null ? '' : (string) $deathmessageid;
 $commentaryPage = RequestValue::optionalPositiveInt(Http::get('c'));
 switch ($op) {
@@ -116,6 +120,12 @@ switch ($op) {
         Http::set("op", "");
         break;
     case "save":
+        if ($deathmessageidRejected) {
+            $output->output("`\$The death message id in that link is not valid, so nothing was saved.`0`n");
+            $op = "";
+            Http::set("op", "");
+            break;
+        }
         $deathmessage = RequestValue::text(Http::post('deathmessage'));
         $forest = (int) Http::post('forest');
         $graveyard = (int) Http::post('graveyard');

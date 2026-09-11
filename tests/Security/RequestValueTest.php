@@ -65,6 +65,47 @@ final class RequestValueTest extends TestCase
         ];
     }
 
+    /**
+     * The pair of questions a caller actually has.
+     *
+     * optionalPositiveInt() returns null both for "nothing was sent" and for
+     * "something was sent that is not an id". The editors insert a new row when
+     * there is no id and update when there is one, so a caller that cannot tell
+     * those apart turns a malformed edit link into a spurious row -- which is
+     * exactly what the overflow case below used to do before isPresent()
+     * existed, because the cast saturated to PHP_INT_MAX and took the update
+     * path instead.
+     */
+    #[DataProvider('presenceProvider')]
+    public function testPresenceIsSeparateFromValidity(mixed $value, bool $present, bool $valid): void
+    {
+        self::assertSame($present, RequestValue::isPresent($value), 'isPresent()');
+        self::assertSame($valid, RequestValue::optionalPositiveInt($value) !== null, 'optionalPositiveInt()');
+    }
+
+    /**
+     * @return array<string, array{0: mixed, 1: bool, 2: bool}>
+     */
+    public static function presenceProvider(): array
+    {
+        return [
+            //                                      present, valid
+            'absent (Http::get returns false)' => [false, false, false],
+            'empty field' => ['', false, false],
+            'null' => [null, false, false],
+
+            'a real id' => ['17', true, true],
+
+            // Present but unusable: the page must refuse, not insert.
+            'overflowing digit string' => [PHP_INT_MAX . '0', true, false],
+            'zero' => ['0', true, false],
+            'negative' => ['-1', true, false],
+            'digits with a suffix' => ['17foo', true, false],
+            'injection attempt' => ["1' OR 1=1 --", true, false],
+            'array' => [['17'], true, false],
+        ];
+    }
+
     #[DataProvider('textProvider')]
     public function testText(mixed $value, string $expected): void
     {
