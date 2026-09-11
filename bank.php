@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
+use Lotgd\Bank;
+use Lotgd\Bank\Balance;
+use Lotgd\Bank\TransferLimits;
+use Lotgd\Bank\TransferRefusal;
+use Lotgd\Bank\WithdrawOutcome;
 use Lotgd\DateTime;
 use Lotgd\Http;
 use Lotgd\Mail;
@@ -142,47 +148,78 @@ if ($op == "") {
     $toPost = Http::post('to');
     $to = is_string($toPost) ? $toPost : '';
     $output->output("`6`bTransfer Completion`b`n");
-    if ($session['user']['gold'] + $session['user']['goldinbank'] < $amt) {
-        $output->output("`@Elessa`6 stands up to her full, but still diminutive height and glares at you, \"`@How can you transfer `^%s`@ gold when you only possess `^%s`@?`6\"", number_format($amt, 0, $point, $sep), number_format($session['user']['gold'] + $session['user']['goldinbank'], 0, $point, $sep));
-    } else {
+
+    // The lookup stays here because it is a query, not arithmetic; everything
+    // that decides whether the money may move lives in Lotgd\Bank, including
+    // the order the rules are applied in.
+    $row = null;
+    if ($session['user']['gold'] + $session['user']['goldinbank'] >= $amt) {
         $result = $playerSearch->findExactLogin(
             $to,
             ['acctid', 'login', 'name', 'level', 'transferredtoday', 'locked']
         );
         $row = $result[0] ?? null;
-        if ($row && empty($row['locked'])) {
-            $maxout = $session['user']['level'] * $settings->getSetting("maxtransferout", 25);
-            $maxtfer = $row['level'] * $settings->getSetting("transferperlevel", 25);
-            if ($session['user']['amountouttoday'] + $amt > $maxout) {
-                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; you are not allowed to transfer more than `^%s`@ gold total per day.`6\"", $maxout);
-            } elseif ($maxtfer < $amt) {
-                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; `&%s`@ may only receive up to `^%s`@ gold per day.`6\"", $row['name'], $maxtfer);
-            } elseif ($row['transferredtoday'] >= $settings->getSetting("transferreceive", 3)) {
+    }
+
+    $transfer = Bank::transfer(
+        new Balance(
+            (int) $session['user']['gold'],
+            (int) $session['user']['goldinbank'],
+            (int) $session['user']['level'],
+            (int) $session['user']['amountouttoday']
+        ),
+        (int) $session['user']['acctid'],
+        $row,
+        $amt,
+        new TransferLimits(
+            (int) $settings->getSetting("maxtransferout", 25),
+            (int) $settings->getSetting("transferperlevel", 25),
+            (int) $settings->getSetting("transferreceive", 3)
+        )
+    );
+
+    if ($transfer->accepted()) {
+        debuglog("transferred $amt gold to", $row['acctid']);
+        $session['user']['gold'] = $transfer->sender->gold;
+        $session['user']['goldinbank'] = $transfer->sender->goldInBank;
+        $session['user']['amountouttoday'] = $transfer->sender->amountOutToday;
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('accounts')
+            . ' SET goldinbank = goldinbank + :amount, transferredtoday = transferredtoday + 1'
+            . ' WHERE acctid = :acctid',
+            ['amount' => $amt, 'acctid' => (int) $row['acctid']],
+            ['amount' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+        );
+        $output->output("`@Elessa`6 smiles, \"`@The transfer has been completed!`6\"");
+        $subj = array("`^You have received a money transfer!`0");
+        $body = array("`&%s`6 has transferred `^%s`6 gold to your bank account!",$session['user']['name'],$amt);
+        Mail::systemMail($row['acctid'], $subj, $body);
+    } else {
+        switch ($transfer->refusal) {
+            case TransferRefusal::NotEnoughMoney:
+                $output->output("`@Elessa`6 stands up to her full, but still diminutive height and glares at you, \"`@How can you transfer `^%s`@ gold when you only possess `^%s`@?`6\"", number_format($amt, 0, $point, $sep), number_format($session['user']['gold'] + $session['user']['goldinbank'], 0, $point, $sep));
+                break;
+            case TransferRefusal::SenderDailyLimit:
+                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; you are not allowed to transfer more than `^%s`@ gold total per day.`6\"", $transfer->senderDailyLimit);
+                break;
+            case TransferRefusal::RecipientPerTransferLimit:
+                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; `&%s`@ may only receive up to `^%s`@ gold per day.`6\"", $row['name'], $transfer->recipientPerTransferLimit);
+                break;
+            case TransferRefusal::RecipientDailyCount:
                 $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; `&%s`@ has received too many transfers today, you will have to wait until tomorrow.`6\"", $row['name']);
-            } elseif ($amt < (int)$session['user']['level']) {
+                break;
+            case TransferRefusal::BelowMinimum:
                 $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; you might want to send a worthwhile transfer, at least as much as your level.`6\"");
-            } elseif ($row['acctid'] == $session['user']['acctid']) {
+                break;
+            case TransferRefusal::SelfTransfer:
                 $output->output("`@Elessa`6 glares at you, her eyes flashing dangerously, \"`@You may not transfer money to yourself!  That makes no sense!`6\"");
-            } else {
-                debuglog("transferred $amt gold to", $row['acctid']);
-                $session['user']['gold'] -= $amt;
-                if ($session['user']['gold'] < 0) {
-                    //withdraw in case they don't have enough on hand.
-                    $session['user']['goldinbank'] += $session['user']['gold'];
-                    $session['user']['gold'] = 0;
-                }
-                $session['user']['amountouttoday'] += $amt;
-                $sql = "UPDATE " . Database::prefix("accounts") . " SET goldinbank=goldinbank+$amt,transferredtoday=transferredtoday+1 WHERE acctid='{$row['acctid']}'";
-                Database::query($sql);
-                $output->output("`@Elessa`6 smiles, \"`@The transfer has been completed!`6\"");
-                $subj = array("`^You have received a money transfer!`0");
-                $body = array("`&%s`6 has transferred `^%s`6 gold to your bank account!",$session['user']['name'],$amt);
-                Mail::systemMail($row['acctid'], $subj, $body);
-            }
-        } elseif ($row && ! empty($row['locked'])) {
-            $output->output("`@Elessa`6 gently closes her ledger, \"`@I'm sorry, but `&%s`@'s account is currently locked. I cannot complete that transfer.`6\"", $row['name']);
-        } else {
-            $output->output("`@Elessa`6 looks up from her ledger with a bit of surprise on her face, \"`@I'm terribly sorry, but I seem to have run into an accounting error, would you please try telling me what you wish to transfer again?`6\"");
+                break;
+            case TransferRefusal::RecipientLocked:
+                $output->output("`@Elessa`6 gently closes her ledger, \"`@I'm sorry, but `&%s`@'s account is currently locked. I cannot complete that transfer.`6\"", $row['name']);
+                break;
+            default:
+                $output->output("`@Elessa`6 looks up from her ledger with a bit of surprise on her face, \"`@I'm terribly sorry, but I seem to have run into an accounting error, would you please try telling me what you wish to transfer again?`6\"");
+                break;
         }
     }
 } elseif ($op == "deposit") {
@@ -204,19 +241,22 @@ if ($op == "") {
 } elseif ($op == "depositfinish") {
     $amountPost = Http::post('amount');
     $amount = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
-    if ($amount == 0) {
-        $amount = $session['user']['gold'];
-    }
     $notenough = Translator::translateInline("`\$ERROR: Not enough gold in hand to deposit.`n`n`^You plunk your `&%s`^ gold on the counter and declare that you would like to deposit all `&%s`^ gold of it.`n`n`@Elessa`6 stares blandly at you for a few seconds until you become self conscious and recount your money, realizing your mistake.");
     $depositdebt = Translator::translateInline("`@Elessa`6 records your deposit of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a debt of `\$%s`@ gold to the bank and `^%s`@ gold in hand.`6\"");
     $depositbalance = Translator::translateInline("`@Elessa`6 records your deposit of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a balance of `^%s`@ gold in the bank and `^%s`@ gold in hand.`6\"");
-    if ($amount > $session['user']['gold']) {
-        $output->outputNotl($notenough, number_format($session['user']['gold'], 0, $point, $sep), number_format($amount, 0, $point, $sep));
+
+    $deposit = Bank::deposit(
+        new Balance((int) $session['user']['gold'], (int) $session['user']['goldinbank']),
+        $amount
+    );
+
+    if (!$deposit->accepted) {
+        $output->outputNotl($notenough, number_format($session['user']['gold'], 0, $point, $sep), number_format($deposit->amount, 0, $point, $sep));
     } else {
-        debuglog("deposited " . $amount . " gold in the bank");
-        $session['user']['goldinbank'] += $amount;
-        $session['user']['gold'] -= $amount;
-        $output->outputNotl($session['user']['goldinbank'] >= 0 ? $depositbalance : $depositdebt, number_format($amount, 0, $point, $sep), $session['user']['name'], number_format(abs($session['user']['goldinbank']), 0, $point, $sep), number_format($session['user']['gold'], 0, $point, $sep));
+        debuglog("deposited " . $deposit->amount . " gold in the bank");
+        $session['user']['goldinbank'] = $deposit->balance->goldInBank;
+        $session['user']['gold'] = $deposit->balance->gold;
+        $output->outputNotl($session['user']['goldinbank'] >= 0 ? $depositbalance : $depositdebt, number_format($deposit->amount, 0, $point, $sep), $session['user']['name'], number_format(abs($session['user']['goldinbank']), 0, $point, $sep), number_format($session['user']['gold'], 0, $point, $sep));
     }
 } elseif ($op == "borrow") {
     $maxborrow = $session['user']['level'] * $settings->getSetting("borrowperlevel", 20);
@@ -246,54 +286,52 @@ if ($op == "") {
 } elseif ($op == "withdrawfinish") {
     $amountPost = Http::post('amount');
     $amount = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
-    if ($amount == 0) {
-        $amount = abs($session['user']['goldinbank']);
-    }
     $borrowPost = Http::post('borrow');
     $borrow = is_string($borrowPost) ? $borrowPost : '';
-    if ($amount > $session['user']['goldinbank'] && $borrow === "") {
-        $output->output("`\$ERROR: Not enough gold in the bank to withdraw.`^`n`n");
-        $output->output("`6Having been informed that you have `^%s`6 gold in your account, you declare that you would like to withdraw all `^%s`6 of it.`n`n", number_format($session['user']['goldinbank'], 0, $point, $sep), number_format($amount, 0, $point, $sep));
-        $output->output("`@Elessa`6 looks at you for a few moments without blinking, then advises you to take basic arithmetic.  You realize your folly and think you should try again.");
-    } elseif ($amount > $session['user']['goldinbank']) {
-        $lefttoborrow = $amount;
-        $didwithdraw = 0;
-        $maxborrow = $session['user']['level'] * $settings->getSetting("borrowperlevel", 20);
-        if ($lefttoborrow <= $session['user']['goldinbank'] + $maxborrow) {
-            if ($session['user']['goldinbank'] > 0) {
-                $output->output("`6You withdraw your remaining `^%s`6 gold.", number_format($session['user']['goldinbank'], 0, $point, $sep));
-                $lefttoborrow -= $session['user']['goldinbank'];
-                $session['user']['gold'] += $session['user']['goldinbank'];
-                $session['user']['goldinbank'] = 0;
-                debuglog("withdrew $amount gold from the bank");
-                $didwithdraw = 1;
-            }
-            if ($lefttoborrow - $session['user']['goldinbank'] > $maxborrow) {
-                if ($didwithdraw) {
-                    $output->output("`6Additionally, you ask to borrow `^%s`6 gold.", number_format($leftoborrow, 0, $point, $sep));
-                } else {
-                    $output->output("`6You ask to borrow `^%s`6 gold.", number_format($lefttoborrow, 0, $point, $sep));
-                }
-                $output->output("`@Elessa`6 looks up your account and informs you that you may only borrow up to `^%s`6 gold.", number_format($maxborrow, 0, $point, $sep));
+
+    $withdrawal = Bank::withdraw(
+        new Balance(
+            (int) $session['user']['gold'],
+            (int) $session['user']['goldinbank'],
+            (int) $session['user']['level']
+        ),
+        $amount,
+        $borrow !== "",
+        (int) $settings->getSetting("borrowperlevel", 20)
+    );
+
+    switch ($withdrawal->outcome) {
+        case WithdrawOutcome::NotEnoughInBank:
+            $output->output("`\$ERROR: Not enough gold in the bank to withdraw.`^`n`n");
+            $output->output("`6Having been informed that you have `^%s`6 gold in your account, you declare that you would like to withdraw all `^%s`6 of it.`n`n", number_format($session['user']['goldinbank'], 0, $point, $sep), number_format($withdrawal->requested, 0, $point, $sep));
+            $output->output("`@Elessa`6 looks at you for a few moments without blinking, then advises you to take basic arithmetic.  You realize your folly and think you should try again.");
+            break;
+
+        case WithdrawOutcome::OverBorrowingLimit:
+            $output->output("`6Considering the `^%s`6 gold in your account, you ask to borrow `^%s`6. `@Elessa`6 peers through her ledger, runs a few calculations and then informs you that, at your level, you may only borrow up to a total of `^%s`6 gold.", number_format($session['user']['goldinbank'], 0, $point, $sep), number_format($withdrawal->requested - $session['user']['goldinbank'], 0, $point, $sep), number_format($withdrawal->borrowingLimit, 0, $point, $sep));
+            break;
+
+        case WithdrawOutcome::Withdrawn:
+            $session['user']['goldinbank'] = $withdrawal->balance->goldInBank;
+            $session['user']['gold'] = $withdrawal->balance->gold;
+            debuglog("withdrew " . $withdrawal->withdrawn . " gold from the bank");
+            $output->output("`@Elessa`6 records your withdrawal of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a balance of `^%s`@ gold in the bank and `^%s`@ gold in hand.`6\"", number_format($withdrawal->withdrawn, 0, $point, $sep), $session['user']['name'], number_format(abs($session['user']['goldinbank']), 0, $point, $sep), number_format($session['user']['gold'], 0, $point, $sep));
+            break;
+
+        case WithdrawOutcome::WithdrawnAndBorrowed:
+        case WithdrawOutcome::Borrowed:
+            if ($withdrawal->withdrawn > 0) {
+                $output->output("`6You withdraw your remaining `^%s`6 gold.", number_format($withdrawal->withdrawn, 0, $point, $sep));
+                debuglog("withdrew " . $withdrawal->requested . " gold from the bank");
+                $output->output("`6Additionally, you borrow `^%s`6 gold.", number_format($withdrawal->borrowed, 0, $point, $sep));
             } else {
-                if ($didwithdraw) {
-                    $output->output("`6Additionally, you borrow `^%s`6 gold.", number_format($lefttoborrow, 0, $point, $sep));
-                } else {
-                    $output->output("`6You borrow `^%s`6 gold.", number_format($lefttoborrow, 0, $point, $sep));
-                }
-                $session['user']['goldinbank'] -= $lefttoborrow;
-                $session['user']['gold'] += $lefttoborrow;
-                debuglog("borrows $lefttoborrow gold from the bank");
-                $output->output("`@Elessa`6 records your withdrawal of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a debt of `\$%s`@ gold to the bank and `^%s`@ gold in hand.`6\"", number_format($amount, 0, $point, $sep), $session['user']['name'], number_format(abs($session['user']['goldinbank']), 0, $point, $sep), number_format($session['user']['gold'], 0, $point, $sep));
+                $output->output("`6You borrow `^%s`6 gold.", number_format($withdrawal->borrowed, 0, $point, $sep));
             }
-        } else {
-            $output->output("`6Considering the `^%s`6 gold in your account, you ask to borrow `^%s`6. `@Elessa`6 peers through her ledger, runs a few calculations and then informs you that, at your level, you may only borrow up to a total of `^%s`6 gold.", number_format($session['user']['goldinbank'], 0, $point, $sep), number_format($lefttoborrow - $session['user']['goldinbank'], 0, $point, $sep), number_format($maxborrow, 0, $point, $sep));
-        }
-    } else {
-        $session['user']['goldinbank'] -= $amount;
-        $session['user']['gold'] += $amount;
-        debuglog("withdrew $amount gold from the bank");
-        $output->output("`@Elessa`6 records your withdrawal of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a balance of `^%s`@ gold in the bank and `^%s`@ gold in hand.`6\"", number_format($amount, 0, $point, $sep), $session['user']['name'], number_format(abs($session['user']['goldinbank']), 0, $point, $sep), number_format($session['user']['gold'], 0, $point, $sep));
+            $session['user']['goldinbank'] = $withdrawal->balance->goldInBank;
+            $session['user']['gold'] = $withdrawal->balance->gold;
+            debuglog("borrows " . $withdrawal->borrowed . " gold from the bank");
+            $output->output("`@Elessa`6 records your withdrawal of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a debt of `\$%s`@ gold to the bank and `^%s`@ gold in hand.`6\"", number_format($withdrawal->requested, 0, $point, $sep), $session['user']['name'], number_format(abs($session['user']['goldinbank']), 0, $point, $sep), number_format($session['user']['gold'], 0, $point, $sep));
+            break;
     }
 }
 VillageNav::render();
