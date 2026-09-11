@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests {
     use Lotgd\ErrorHandler;
+    use Lotgd\Settings;
     use Lotgd\Tests\Stubs\PHPMailer;
     use PHPUnit\Framework\TestCase;
 
@@ -43,8 +44,22 @@ namespace Lotgd\Tests {
             };
         }
 
-        public function testExceptionBeforeSettingsSendsNotification(): void
+        /**
+         * An exception thrown before the Settings singleton exists must be
+         * handled, not amplified.
+         *
+         * ErrorHandler::errorNotify() bails out when Settings::hasInstance() is
+         * false (see the guard at the top of that method): there is nowhere to
+         * read notify_address from yet, and bootstrapping Settings from inside
+         * an error handler is how a single failure turns into a loop. So the
+         * contract here is that handling stays quiet and does not throw --
+         * notification is covered by ErrorHandlerExceptionNotifyTest, which
+         * supplies a real Settings instance.
+         */
+        public function testExceptionBeforeSettingsIsHandledWithoutNotifying(): void
         {
+            $this->assertFalse(Settings::hasInstance());
+
             try {
                 strlen([]);
             } catch (\TypeError $e) {
@@ -53,7 +68,7 @@ namespace Lotgd\Tests {
                 ob_end_clean();
             }
 
-            $this->assertSame(1, $GLOBALS['mail_sent_count']);
+            $this->assertSame(0, $GLOBALS['mail_sent_count']);
         }
     }
 }

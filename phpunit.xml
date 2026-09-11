@@ -7,6 +7,9 @@
             <directory suffix="Test.php">tests</directory>
         </testsuite>
     </testsuites>
+    <extensions>
+        <bootstrap class="Lotgd\Tests\Runner\SharedStateExtension"/>
+    </extensions>
     <php>
         <env name="LOTGD_DATA_DIR" value="/tmp/lotgd_install_test"/>
     </php>

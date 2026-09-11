@@ -6,6 +6,14 @@ namespace Lotgd\Tests;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Runs in its own process: this class define()s process-global constants, and a
+ * constant cannot be undefined. Without isolation the first test to run here
+ * decides them for every test that follows, which is one of the two reasons the
+ * suite used to pass only in alphabetical order.
+ */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
 final class HomeCookieWarningTest extends TestCase
 {
     /**

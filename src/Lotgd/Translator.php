@@ -32,6 +32,29 @@ class Translator
         return new self();
     }
 
+    /**
+     * Reset the per-request translation state for tests.
+     *
+     * The cached table, the namespace stack and the enabled flag are static and
+     * would otherwise outlive the test that set them up. Mirrors
+     * DataCache::resetState().
+     *
+     * The language and schema are deliberately left alone: they are decided
+     * once by translatorSetup(), which guards itself with the
+     * TRANSLATOR_IS_SET_UP constant. A constant cannot be undefined, so
+     * clearing them here would leave every later test with a translator that
+     * has no language and no way to acquire one.
+     */
+    public static function resetState(): void
+    {
+        self::$translation_table = [];
+        self::$translatorbuttons = [];
+        self::$seentlbuttons = [];
+        self::$translation_is_enabled = true;
+        self::$translation_namespace_stack = [];
+        self::$translation_namespace = '';
+    }
+
     public function getLanguage(): string
     {
         return self::$language;

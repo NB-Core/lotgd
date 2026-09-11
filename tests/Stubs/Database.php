@@ -507,6 +507,40 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         {
             self::$instance = $instance;
         }
+
+        /**
+         * Restore every shared field to its declared initial value.
+         *
+         * This stub replaces the production Database class for the whole run, so
+         * its statics are process-global: without a reset between tests, whatever
+         * one test queues up in $mockResults or $collation_rows is still there for
+         * the next one. That is what made the suite pass only in alphabetical
+         * order. LotgdTestCase calls this before and after every test; keeping the
+         * list here means there is one place to extend when a field is added.
+         */
+        public static function reset(): void
+        {
+            self::$settings_table          = [];
+            self::$settings_extended_table = [];
+            self::$onlineCounter           = 0;
+            self::$affected_rows           = 0;
+            self::$lastSql                 = '';
+            self::$lastCacheName           = '';
+            self::$describe_rows           = [];
+            self::$keys_rows               = [];
+            self::$full_columns_rows       = [];
+            self::$table_status_rows       = [];
+            self::$collation_rows          = [];
+            self::$tableExists             = true;
+            self::$queryCacheResults       = [];
+            self::$tablePrefix             = '';
+            self::$mockResults             = [];
+            self::$last_error              = '';
+            self::$alterFail               = false;
+            self::$queries                 = [];
+            self::$instance                = null;
+            self::resetDoctrineConnection();
+        }
     }
 
     $productionClass = 'Lotgd\\MySQL\\Database';
