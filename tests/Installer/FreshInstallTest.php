@@ -41,10 +41,16 @@ final class FreshInstallTest extends TestCase
         );
 
         exec($cmd, $out, $ret);
-        if ($ret !== 0) {
-            self::markTestSkipped('Installer failed to run');
-        }
 
+        // Not markTestSkipped: the installer runs against the auto-prepended
+        // DbMysqli stub and needs no database of its own, so a non-zero exit is
+        // the installer being broken -- which is the one thing this test exists
+        // to catch. Skipping on it turned that into a green run.
+        $this->assertSame(
+            0,
+            $ret,
+            "Installer exited with {$ret}:\n" . implode("\n", $out)
+        );
         $this->assertFileExists(__DIR__ . '/../../dbconnect.php');
     }
 }

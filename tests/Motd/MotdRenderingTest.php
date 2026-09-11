@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Lotgd\Tests;
+namespace Lotgd\Tests\Motd;
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Motd;
@@ -10,7 +10,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Output;
 use PHPUnit\Framework\TestCase;
 
-final class AMotdTest extends TestCase
+final class MotdRenderingTest extends TestCase
 {
     protected function setUp(): void
     {

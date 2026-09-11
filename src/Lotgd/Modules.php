@@ -45,6 +45,23 @@ class Modules
     }
 
     /**
+     * Reset all per-request module state (primarily for tests).
+     *
+     * Injection results, hook queries, preloads and the block lists are all
+     * static and all scoped to a single request in production. Resetting only
+     * the injection map left the other five to carry over between tests.
+     */
+    public static function resetState(): void
+    {
+        self::resetInjectedModules();
+        self::$modulehookQueries = [];
+        self::$modulePreload = [];
+        self::$blockedModules = [];
+        self::$unblockedModules = [];
+        self::$blockAllModules = false;
+    }
+
+    /**
      * Replace injected module tracking (primarily for tests).
      *
      * @param array<int,array<string,bool>> $modules
