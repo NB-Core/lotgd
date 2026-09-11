@@ -515,8 +515,9 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
          * its statics are process-global: without a reset between tests, whatever
          * one test queues up in $mockResults or $collation_rows is still there for
          * the next one. That is what made the suite pass only in alphabetical
-         * order. LotgdTestCase calls this before and after every test; keeping the
-         * list here means there is one place to extend when a field is added.
+         * order. {@see \Lotgd\Tests\Runner\ResetSharedState} calls this before
+         * each test; keeping the list here means there is one place to extend
+         * when a field is added.
          */
         public static function reset(): void
         {
