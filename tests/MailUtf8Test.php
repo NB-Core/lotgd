@@ -9,7 +9,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Sanitize;
 use Lotgd\Tests\Stubs\DoctrineBootstrap;
 use Lotgd\Tests\Stubs\DoctrineConnection;
-use Lotgd\Tests\Stubs\MailDummySettings;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
 final class MailUtf8Test extends TestCase
@@ -30,7 +30,7 @@ final class MailUtf8Test extends TestCase
             'notificationmailsubject' => '{subject}',
             'notificationmailtext' => '{body}',
         ];
-        $GLOBALS['settings'] = new MailDummySettings($GLOBALS['settings_array']);
+        $GLOBALS['settings'] = new DummySettings($GLOBALS['settings_array']);
         $GLOBALS['session'] = ['user' => ['acctid' => 1, 'prefs' => []]];
         $GLOBALS['forms_output'] = '';
         $_POST = [];

@@ -9,7 +9,7 @@ use Lotgd\Mail;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DoctrineConnection;
-use Lotgd\Tests\Stubs\MailDummySettings;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
 final class SystemMailTest extends TestCase
@@ -41,7 +41,7 @@ final class SystemMailTest extends TestCase
             'notificationmailtext' => '{body}',
         ];
 
-        $settings = new MailDummySettings($GLOBALS['settings_array']);
+        $settings = new DummySettings($GLOBALS['settings_array']);
         Settings::setInstance($settings);
         $GLOBALS['settings'] = $settings;
 

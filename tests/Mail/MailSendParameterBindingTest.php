@@ -14,7 +14,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\DoctrineBootstrap;
 use Lotgd\Tests\Stubs\DoctrineConnection;
-use Lotgd\Tests\Stubs\MailDummySettings;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 use function Lotgd\Tests\Mail\Fixture\mailSend as fixtureMailSend;
 
@@ -49,7 +49,7 @@ final class MailSendParameterBindingTest extends TestCase
 
         Database::setPrefix('');
 
-        $settings = new MailDummySettings([
+        $settings = new DummySettings([
             'mailsizelimit' => 1024,
             'charset' => 'UTF-8',
             'inboxlimit' => 50,

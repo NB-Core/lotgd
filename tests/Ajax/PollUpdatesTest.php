@@ -6,7 +6,7 @@ use Jaxon\Response\Response;
 use Lotgd\Async\Handler\Commentary;
 use Lotgd\Async\Handler\Timeout;
 use Lotgd\Tests\Stubs\Database;
-use Lotgd\Tests\Stubs\MailDummySettings;
+use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\Settings;
 use PHPUnit\Framework\TestCase;
 
@@ -36,7 +36,7 @@ class PollUpdatesTest extends TestCase
         Timeout::getInstance()->setStartTimeoutShowSeconds(300);
         Timeout::getInstance()->setNeverTimeoutIfBrowserOpen(false);
 
-        Settings::setInstance(new MailDummySettings(['LOGINTIMEOUT' => 360]));
+        Settings::setInstance(new DummySettings(['LOGINTIMEOUT' => 360]));
         $output = new class {
             public function appoencode($data, bool $priv = false)
             {

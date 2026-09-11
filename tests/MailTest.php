@@ -7,7 +7,7 @@ namespace Lotgd\Tests;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Mail;
 use Lotgd\Tests\Stubs\Database;
-use Lotgd\Tests\Stubs\MailDummySettings;
+use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\Tests\Stubs\PHPMailer;
 use Lotgd\Tests\Stubs\DoctrineConnection;
 use Lotgd\Settings;
@@ -41,7 +41,7 @@ final class MailTest extends TestCase
             'notificationmailsubject' => '{subject}',
             'notificationmailtext' => '{body}',
         ];
-        $settings = new MailDummySettings($GLOBALS['settings_array']);
+        $settings = new DummySettings($GLOBALS['settings_array']);
         Settings::setInstance($settings);
         $GLOBALS['settings'] = $settings;
         Mail::resetSettings();
@@ -114,7 +114,7 @@ final class MailTest extends TestCase
     public function testInboxCountAndFull(): void
     {
         $GLOBALS['settings_array']['inboxlimit'] = 3;
-        $settings = new MailDummySettings($GLOBALS['settings_array']);
+        $settings = new DummySettings($GLOBALS['settings_array']);
         Settings::setInstance($settings);
         $GLOBALS['settings'] = $settings;
         $GLOBALS['mail_table'] = [

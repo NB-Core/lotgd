@@ -6,7 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\ServerFunctions;
 use Lotgd\MySQL\Database as CoreDatabase;
-use Lotgd\Tests\Stubs\ServerDummySettings;
+use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\Tests\Stubs\Database;
 use PHPUnit\Framework\TestCase;
 
@@ -182,7 +182,7 @@ final class ServerFunctionsTest extends TestCase
 
     public function testIsTheServerFull(): void
     {
-        $settings = new ServerDummySettings([
+        $settings = new DummySettings([
             'OnlineCountLast' => 0,
             'maxonline' => 5,
             'LOGINTIMEOUT' => 900,
