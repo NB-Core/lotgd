@@ -249,6 +249,25 @@ final class CompanionDamageTest extends TestCase
     }
 
     /**
+     * As with the player roll: no exchange means no roll to report, which is
+     * what keeps rollCompanionDamage() from clearing the legacy globals.
+     */
+    public function testNoExchangeReportsNoRollRatherThanAZeroRoll(): void
+    {
+        $badguy = ['creaturehealth' => 0, 'creatureattack' => 12, 'creaturedefense' => 8];
+        $none = $this->roll($badguy, [], []);
+
+        self::assertNull($none->attackRoll);
+        self::assertNull($none->creatureAttack);
+
+        $badguy = self::badguy();
+        $fought = $this->roll($badguy, [5], [12.0, 4.0, 9.0, 3.0]);
+
+        self::assertNotNull($fought->attackRoll, 'control: a real exchange reports both');
+        self::assertNotNull($fought->creatureAttack);
+    }
+
+    /**
      * Unlike the player roll, this one does not reach into the creature array --
      * a missing physicalresistance is left missing, because nothing here reads
      * it.
