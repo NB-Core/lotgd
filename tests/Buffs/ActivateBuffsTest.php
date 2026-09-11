@@ -177,9 +177,10 @@ final class ActivateBuffsTest extends TestCase
      */
     public function testTheTagDoesNotGateTheModifiers(): void
     {
+        // The second activate() replaces the whole 'blessing' entry, so the
+        // 'used' marker the first run set is gone and the two calls do not
+        // interfere. No fixture reset is needed between them.
         $onOffense = $this->activate(['blessing' => ['atkmod' => 2.0]], 'offense');
-
-        $this->setUp();
         $onDefense = $this->activate(['blessing' => ['atkmod' => 2.0]], 'defense');
 
         self::assertSame(2.0, $onOffense['atkmod']);
