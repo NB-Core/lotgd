@@ -158,7 +158,7 @@ class Battle
                 if ($creaturedmg < 0) {
                     $creaturedmg = (int) ($creaturedmg / 2);
                     $creaturedmg = round($context->badguyDmgMod * $creaturedmg, 0);
-                    $creaturedmg = min(0, round($creaturedmg));
+                    $creaturedmg = min(0, $creaturedmg);
                 }
                 if ($creaturedmg > 0) {
                     $creaturedmg = round($context->dmgMod * $creaturedmg, 0);
@@ -175,15 +175,17 @@ class Battle
                 if ($selfdmg < 0) {
                     $selfdmg = (int) ($selfdmg / 2);
                     $selfdmg = round($selfdmg * $context->dmgMod, 0);
-                    $selfdmg = min(0, round($selfdmg, 0));
+                    $selfdmg = min(0, $selfdmg);
                 }
                 if ($selfdmg > 0) {
                     $selfdmg = round($selfdmg * $context->badguyDmgMod, 0);
                     $selfdmg = max(0, round($selfdmg - $self->resistance, 0));
                 }
                 $bad_check++;
-                if ($bad_check > 50) {
-                    //we're getting nowhere
+                if ($bad_check > 50 && $creaturedmg == 0 && $selfdmg == 0) {
+                    // We're getting nowhere. Only when this exchange produced
+                    // nothing either -- a fiftieth roll that finally landed is
+                    // the result, not something to discard.
                     $selfdmg = 0;
                     $creaturedmg = 1;
                 }
@@ -1185,10 +1187,10 @@ class Battle
                     $selfdmg = round($selfdmg * $context->badguyDmgMod, 0);
                 }
                 $bad_check++;
-                if ($bad_check > 50) {
-                            //we're getting nowhere
-                            $selfdmg = 0;
-                            $creaturedmg = 1;
+                if ($bad_check > 50 && $creaturedmg == 0 && $selfdmg == 0) {
+                    // We're getting nowhere. Same guard as the player roll.
+                    $selfdmg = 0;
+                    $creaturedmg = 1;
                 }
             }
         } else {

@@ -16,6 +16,8 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ### Fixed
 
+- Stop the combat re-roll loop discarding a blow that finally lands. Both damage rolls give up after fifty fruitless exchanges and award a flat single point, and the check fired on the count alone — so an exchange that produced real damage on the fiftieth try had it thrown away. Reproduced before changing anything: 49 empty exchanges followed by one rolling 8 and 6 returned 1 and 0. The fallback now also requires that the exchange produced nothing. Long-standing on the companion side; the player side inherited it in the same release.
+
 - Give the player's damage roll the escape hatch its companion counterpart already had. `computePlayerDamage()` re-rolls while both damage figures are zero so that a round always produces something, and had no way out of that loop; `computeCompanionDamage()` gives up after fifty fruitless exchanges. Reaching it needs two combatants who can neither hit nor be hit — a creature with no attack and no defence — so no real fight gets near it and no balance moves, but the failure mode was a hung request rather than a wrong number, and nothing stopped a module from building such a creature.
 
 ### Tests

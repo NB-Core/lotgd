@@ -195,6 +195,31 @@ final class CompanionDamageTest extends TestCase
     }
 
     /**
+     * The fiftieth exchange is not thrown away if it finally lands.
+     *
+     * The escape hatch used to fire on the count alone, so an exchange that
+     * produced real damage on the fiftieth try had it replaced by the flat
+     * one-point consolation. Reported by Codex on #1527 and reproduced before
+     * changing anything: with 49 empty exchanges followed by one rolling 8 and
+     * 6, the old code returned 1 and 0.
+     */
+    public function testDamageFromTheFiftiethExchangeIsKept(): void
+    {
+        $ints = array_fill(0, 50, 5);
+        $bells = [];
+        for ($i = 0; $i < 49; $i++) {
+            array_push($bells, 5.0, 5.0, 5.0, 5.0);
+        }
+        array_push($bells, 12.0, 4.0, 3.0, 9.0);
+
+        $badguy = self::badguy();
+        $roll = $this->roll($badguy, $ints, $bells);
+
+        self::assertSame(8.0, $roll->creatureDamage, 'the blow that finally landed');
+        self::assertSame(6.0, $roll->selfDamage, 'and the one that came back');
+    }
+
+    /**
      * God mode reaches the companions too, with both signs forced.
      */
     public function testInvulnerabilityForcesTheSignsBothWays(): void
