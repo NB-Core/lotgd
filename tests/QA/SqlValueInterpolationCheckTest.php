@@ -152,6 +152,7 @@ final class SqlValueInterpolationCheckTest extends TestCase
     {
         $violations = $this->analyse('$sql = "SELECT * FROM t WHERE id = \'$id\'";');
 
+        self::assertCount(1, $violations, 'the control must produce exactly one finding to be a control at all');
         self::assertSame(2, $violations[0]['line']);
     }
 
