@@ -108,7 +108,7 @@ final class VictoryTest extends TestCase
      * cap is the only thing standing between PvP and a money press: creaturegold
      * comes from the fight setup, not from the defender's current purse.
      */
-    public function testTheprizeIsCappedAtTheGoldTheDefenderActuallyHas(): void
+    public function testThePrizeIsCappedAtTheGoldTheDefenderActuallyHas(): void
     {
         global $session;
 

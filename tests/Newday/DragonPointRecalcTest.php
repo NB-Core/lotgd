@@ -75,7 +75,10 @@ final class DragonPointRecalcTest extends TestCase
     /**
      * Post a spend and run the recalculation.
      *
-     * @param array<string, string> $spend
+     * Keyed by array-key rather than string: the section-title entries in the
+     * label list carry integer keys, and a field naming one is posted as such.
+     *
+     * @param array<array-key, string> $spend
      */
     private function spend(array $spend, int $dkills, int &$dp): void
     {
@@ -184,13 +187,20 @@ final class DragonPointRecalcTest extends TestCase
     /**
      * The section titles in the label list are not spendable types, and a post
      * naming one must not become a point.
+     *
+     * The field to post is the numeric 0, not the label text. The title entries
+     * are written into the array without an explicit key, so they get the next
+     * integer -- and dragonPointRecalc() reads the POST by key, via
+     * Http::post($type). Posting 'General Stuff,title' would name a field the
+     * method never looks at, which would leave the assertions below passing for
+     * the wrong reason.
      */
     public function testPostingAgainstASectionTitleIsIgnored(): void
     {
         global $session;
 
         $dp = 0;
-        $this->spend(['hp' => '2', 'General Stuff,title' => '5'], dkills: 2, dp: $dp);
+        $this->spend(['hp' => '2', 0 => '5'], dkills: 2, dp: $dp);
 
         self::assertSame(2, $dp, 'only the two hitpoint points count');
         self::assertSame(110, $session['user']['maxhitpoints']);
