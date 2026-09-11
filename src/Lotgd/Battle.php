@@ -99,9 +99,9 @@ class Battle
      * swings.
      *
      * The loop re-rolls while both figures are zero, so that a round always
-     * produces something. Unlike its companion counterpart it has no escape
-     * hatch: two combatants who can neither hit nor be hit will spin here. That
-     * is pre-existing behaviour and is left alone rather than quietly changed.
+     * produces something, and gives up after fifty fruitless exchanges the way
+     * the companion roll does -- two combatants who can neither hit nor be hit
+     * would otherwise spin here forever.
      *
      * @param array $badguy Enemy data (modified in place -- a missing
      *                      physicalresistance is filled in with 0)
@@ -134,6 +134,7 @@ class Battle
                 $badguy['physicalresistance'] = 0;
             }
 
+            $bad_check = 1;
             while ($creaturedmg == 0 && $selfdmg == 0) {
                 $atk = $self->attack * $context->atkMod;
                 if ($random->int(1, 20) == 1 && !$context->isPvp) {
@@ -167,6 +168,12 @@ class Battle
                 if ($selfdmg > 0) {
                     $selfdmg = round($selfdmg * $context->badguyDmgMod, 0);
                     $selfdmg = max(0, round($selfdmg - $self->resistance, 0));
+                }
+                $bad_check++;
+                if ($bad_check > 50) {
+                    //we're getting nowhere
+                    $selfdmg = 0;
+                    $creaturedmg = 1;
                 }
             }
         }

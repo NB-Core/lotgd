@@ -314,6 +314,32 @@ final class PlayerDamageTest extends TestCase
     }
 
     /**
+     * Fifty exchanges in which neither side can gain a margin end with the
+     * player awarded a single point of damage, rather than the loop spinning
+     * forever.
+     *
+     * The safeguard was missing here while the companion roll has always had
+     * it. Reaching it needs two combatants who can neither hit nor be hit, so
+     * no real fight gets near it -- but nothing stopped a module from building
+     * one, and the failure mode was a hung request rather than a wrong number.
+     *
+     * Scripted with exactly fifty crit draws and two hundred rolls, so the
+     * drained assertion pins the count as well as the outcome.
+     */
+    public function testFiftyFruitlessExchangesEndInASinglePointOfDamage(): void
+    {
+        $badguy = self::badguy();
+        $roll = $this->roll(
+            $badguy,
+            array_fill(0, 50, 5),
+            array_fill(0, 200, 5.0)
+        );
+
+        self::assertSame(1, $roll->creatureDamage, 'the player is given the point');
+        self::assertSame(0, $roll->selfDamage, 'and takes nothing');
+    }
+
+    /**
      * The attack roll is reported, not the attack score.
      *
      * battle.php:603 hands this value to Battle::reportPowerMove(), which
