@@ -22,9 +22,10 @@ use PHPUnit\Framework\TestCase;
  * Every case therefore checks the result *and* that nothing was raised on the
  * way, which is why each one runs through the recorder below. The recorder
  * takes E_ALL on purpose: this code path raises nothing of its own -- it never
- * calls trigger_error() -- so anything that does show up comes from PHP itself
- * and would be E_WARNING, never E_USER_WARNING. A recorder scoped to the latter
- * listens for a class of message that cannot occur here, which makes the
+ * calls trigger_error() -- so whatever does show up comes from PHP, at
+ * whichever level PHP chooses, and the point is to hear all of them rather
+ * than to predict which. A recorder scoped to E_USER_WARNING, as this one was,
+ * listens for the one level this path cannot produce, which makes the
  * assertion read as a guarantee while proving nothing.
  *
  * Runs in its own process: this class define()s process-global constants, and a
@@ -58,9 +59,9 @@ final class SprintfTranslateTest extends TestCase
     #[DataProvider('formatProvider')]
     public function testFormatsWithoutRaisingAnything(string $format, array $args, string $expected): void
     {
-        $warnings = [];
-        set_error_handler(static function (int $errno, string $errstr) use (&$warnings): bool {
-            $warnings[] = [$errno, $errstr];
+        $raised = [];
+        set_error_handler(static function (int $errno, string $errstr) use (&$raised): bool {
+            $raised[] = [$errno, $errstr];
 
             return true;
         }, E_ALL);
@@ -72,7 +73,7 @@ final class SprintfTranslateTest extends TestCase
         }
 
         self::assertSame($expected, $result);
-        self::assertSame([], $warnings, 'sprintfTranslate() must not raise anything on a format/argument mismatch');
+        self::assertSame([], $raised, 'sprintfTranslate() must not raise anything on a format/argument mismatch');
     }
 
     /**
