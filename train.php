@@ -253,6 +253,13 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
                 foreach ($companions as $name => $companion) {
                     $newcompanions[$name] = PlayerFunctions::levelUpCompanion($companion);
                 }
+                // Kept, rather than computed and dropped. $newcompanions was
+                // written and never read, so this whole block -- and the
+                // companionslevelup setting that guards it -- did nothing at
+                // all. Serialising into the session is how mercenarycamp.php
+                // and healer.php persist the same array.
+                $companions = $newcompanions;
+                $session['user']['companions'] = serialize($companions);
             }
 
             DataCache::getInstance()->invalidatedatacache("list.php-warsonline");

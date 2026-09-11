@@ -322,6 +322,39 @@ modules.
 
 ## 7. Breaking Changes
 
+- **Companions now actually gain levels, which they never did before.** The
+  `companionslevelup` setting has existed and defaulted to on, and the code
+  behind it computed each companion's new attack, defence and maximum hitpoints
+  correctly — and then threw the result away. `train.php` built the updated list
+  in `$newcompanions` and never assigned it back or serialised it into the
+  session, so the whole block was a no-op for every release it has shipped in.
+
+  It is kept now. A companion is already scaled by the player's level when it is
+  hired (`companions.php`, `mercenarycamp.php`); this is what keeps that current
+  as the player climbs, rather than leaving the companion frozen at hire-time
+  strength.
+
+  Measured over a climb from level 3 to 15:
+
+  | Companion | hired at level 3 | after the climb |
+  |---|---|---|
+  | light scout (1/1/3 per level) | atk 5, def 4, hp 20 | atk 17, def 16, hp 56 |
+  | hired blade (2/2/5 per level) | atk 10, def 8, hp 40 | atk 34, def 32, hp 100 |
+  | war beast (3/1/8 per level) | atk 14, def 6, hp 60 | atk 50, def 18, hp 156 |
+
+  Roughly **+240% to +260% attack** over a full climb, where before every figure
+  stayed at the left-hand column. A companion is also healed to its new maximum
+  on each master defeat.
+
+  **To keep the old behaviour**, set `companionslevelup` to `0`. That switch now
+  does what its name says in both positions.
+
+  Two defects in the same block are fixed with it, because they only became
+  observable once the result was kept: the healing step tested for an `attack`
+  key and then read `maxhitpoints`, so a non-fighting companion was never healed
+  and a fighting one without a maximum had its hitpoints set to `null` with an
+  undefined-key warning.
+
 - **The core's own state-changing operations now require a CSRF token, and
   every destructive trigger is a button rather than a link.**
   - A module or bookmark that links to a *core* state-changing operation stops

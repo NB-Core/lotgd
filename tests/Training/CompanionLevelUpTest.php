@@ -92,18 +92,15 @@ final class CompanionLevelUpTest extends TestCase
     }
 
     /**
-     * Pinned as a bug rather than as intended behaviour.
+     * A companion is healed if it has a maximum, whether or not it fights.
      *
-     * The healing step tests for 'attack' and then assigns from
-     * 'maxhitpoints'. Almost certainly a slip, and it cuts both ways: a
-     * non-fighting companion that has hitpoints is never healed, and a
-     * fighting companion that has none gets a warning and a null.
-     *
-     * Reproduced rather than repaired here, because correcting it would change
-     * behaviour and this extraction deliberately changes none. These two cases
-     * are where it would be restated.
+     * The healing step used to test 'attack' and then assign from
+     * 'maxhitpoints', so a non-fighting companion carrying hitpoints was never
+     * healed. That was invisible while train.php discarded the result; it
+     * became real when the write-back landed, so it is corrected rather than
+     * pinned.
      */
-    public function testANonFightingCompanionIsNotHealed(): void
+    public function testANonFightingCompanionIsHealedToo(): void
     {
         $after = PlayerFunctions::levelUpCompanion([
             'name' => 'Songbird',
@@ -112,19 +109,21 @@ final class CompanionLevelUpTest extends TestCase
             'hitpoints' => 3,
         ]);
 
-        self::assertSame(22, $after['maxhitpoints'], 'the maximum does grow');
-        self::assertSame(3, $after['hitpoints'], 'but the healing never runs, because there is no attack key');
+        self::assertSame(22, $after['maxhitpoints'], 'the maximum grows');
+        self::assertSame(22, $after['hitpoints'], 'and the healing follows it, with no attack key in sight');
     }
 
     /**
-     * The other half of the same slip.
+     * A fighting companion with no maximum is left alone rather than having its
+     * hitpoints cleared.
      *
-     * The warning is captured rather than suppressed. An `@` in front of the
-     * call would hide any *other* warning the method grew as well, so a future
-     * regression would slip past this case unnoticed -- and the warning is part
-     * of what is being pinned here, so it is asserted rather than silenced.
+     * The other half of the same slip: the old condition ran the healing for
+     * anything that could fight, and then read a key that was not there --
+     * an undefined-key warning, and hitpoints set to null. The warning is
+     * asserted absent rather than merely unobserved, with a scoped handler, so
+     * that a future regression reintroducing it fails here.
      */
-    public function testAFightingCompanionWithoutAMaximumGetsANullInstead(): void
+    public function testAFightingCompanionWithoutAMaximumIsLeftAlone(): void
     {
         $companion = ['name' => 'Wisp', 'attack' => 4, 'attackperlevel' => 1, 'hitpoints' => 7];
 
@@ -143,14 +142,8 @@ final class CompanionLevelUpTest extends TestCase
         }
 
         self::assertSame(5, $after['attack'], 'the attack still grows');
-        self::assertNull($after['hitpoints'], 'and the hitpoints are cleared by the missing maximum');
-
-        self::assertCount(1, $raised, 'exactly one warning, so a second one cannot hide here');
-        self::assertStringContainsString(
-            'maxhitpoints',
-            $raised[0],
-            'and it is the undefined-key warning this case exists to pin'
-        );
+        self::assertSame(7, $after['hitpoints'], 'and the hitpoints are untouched rather than cleared');
+        self::assertSame([], $raised, 'with no warning raised at all');
     }
 
     /**
@@ -166,6 +159,37 @@ final class CompanionLevelUpTest extends TestCase
         PlayerFunctions::levelUpCompanion($before);
 
         self::assertSame($untouched, $before);
+    }
+
+    /**
+     * The level-up is kept rather than computed and dropped.
+     *
+     * `$newcompanions` was built and never read -- not assigned back, not
+     * serialised into the session -- so this block, and the
+     * `companionslevelup` setting guarding it, did nothing at all for as long
+     * as they have existed. Reported by Copilot on #1529 and confirmed against
+     * `origin/master` before changing anything.
+     *
+     * Checked against the source rather than by executing the page, because
+     * train.php is a top-level script needing a session, a database and a
+     * rendered header before it reaches this block. The arithmetic above is
+     * covered by executing cases; this one guards the wiring, which is the part
+     * that was broken.
+     */
+    public function testTrainPhpKeepsTheLevelledCompanions(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/train.php');
+
+        self::assertStringContainsString(
+            '$companions = $newcompanions;',
+            $source,
+            'the levelled list replaces the old one'
+        );
+        self::assertStringContainsString(
+            "\$session['user']['companions'] = serialize(\$companions);",
+            $source,
+            'and is persisted the way mercenarycamp.php and healer.php persist it'
+        );
     }
 
     /**

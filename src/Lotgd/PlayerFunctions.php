@@ -618,17 +618,15 @@ class PlayerFunctions
             }
         }
 
-        // Healed to the new maximum -- and the condition really does test
-        // 'attack' while the assignment reads 'maxhitpoints'. Almost certainly
-        // a slip, with two consequences: a fighting companion carrying no
-        // maxhitpoints raises an undefined-key warning and has its hitpoints
-        // set to null, and a non-fighting companion that does carry one is
-        // never healed at all.
+        // Healed to the new maximum, for any companion that has one.
         //
-        // Reproduced rather than repaired, because correcting it would change
-        // behaviour and this extraction deliberately changes none. The tests
-        // pin both halves and name it; fixing it is a decision of its own.
-        if (isset($companion['attack'])) {
+        // This used to test 'attack' and then assign from 'maxhitpoints', which
+        // cut both ways: a non-fighting companion carrying hitpoints was never
+        // healed, and a fighting one carrying no maximum raised an
+        // undefined-key warning and had its hitpoints set to null. Neither was
+        // observable while the level-up result was discarded; both became real
+        // the moment train.php started keeping it.
+        if (isset($companion['maxhitpoints'])) {
             $companion['hitpoints'] = $companion['maxhitpoints'];
         }
 
