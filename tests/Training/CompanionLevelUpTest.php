@@ -118,15 +118,39 @@ final class CompanionLevelUpTest extends TestCase
 
     /**
      * The other half of the same slip.
+     *
+     * The warning is captured rather than suppressed. An `@` in front of the
+     * call would hide any *other* warning the method grew as well, so a future
+     * regression would slip past this case unnoticed -- and the warning is part
+     * of what is being pinned here, so it is asserted rather than silenced.
      */
     public function testAFightingCompanionWithoutAMaximumGetsANullInstead(): void
     {
         $companion = ['name' => 'Wisp', 'attack' => 4, 'attackperlevel' => 1, 'hitpoints' => 7];
 
-        $after = @PlayerFunctions::levelUpCompanion($companion);
+        /** @var list<string> $raised */
+        $raised = [];
+        set_error_handler(static function (int $severity, string $message) use (&$raised): bool {
+            $raised[] = $message;
+
+            return true;
+        }, E_WARNING);
+
+        try {
+            $after = PlayerFunctions::levelUpCompanion($companion);
+        } finally {
+            restore_error_handler();
+        }
 
         self::assertSame(5, $after['attack'], 'the attack still grows');
         self::assertNull($after['hitpoints'], 'and the hitpoints are cleared by the missing maximum');
+
+        self::assertCount(1, $raised, 'exactly one warning, so a second one cannot hide here');
+        self::assertStringContainsString(
+            'maxhitpoints',
+            $raised[0],
+            'and it is the undefined-key warning this case exists to pin'
+        );
     }
 
     /**
