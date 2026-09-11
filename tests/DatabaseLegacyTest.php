@@ -6,6 +6,7 @@ namespace Lotgd\Tests;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Tests\Stubs\DbMysqli;
+use Lotgd\Tests\Stubs\EmptyResult;
 use PHPUnit\Framework\TestCase;
 
 final class DatabaseLegacyTest extends TestCase
@@ -26,6 +27,19 @@ final class DatabaseLegacyTest extends TestCase
         $mysqli = Database::getInstance();
 
         $this->assertSame(['SELECT 1'], $mysqli->queries);
-        $this->assertSame('mysql_result', $result);
+        $this->assertInstanceOf(EmptyResult::class, $result);
+    }
+
+    /**
+     * Callers do query() -> fetchAssoc() -> freeResult(); whatever query()
+     * hands back has to survive that, or the stub reports success on a value
+     * the production Database could never return.
+     */
+    public function testQueryResultIsAcceptedByTheRestOfTheApi(): void
+    {
+        $result = Database::query('SELECT 1');
+
+        $this->assertFalse(Database::fetchAssoc($result));
+        $this->assertTrue(Database::freeResult($result));
     }
 }

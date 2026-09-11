@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\PageParts;
+use Lotgd\Settings;
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
@@ -25,6 +26,7 @@ final class AssembleMailLinkTest extends TestCase
     {
         global $session, $settings;
         unset($session, $settings);
+        Settings::setInstance(null);
         Database::$queryCacheResults = [];
         if (is_file($this->backupFile)) {
             if (is_file($this->asyncFile)) {
@@ -39,6 +41,7 @@ final class AssembleMailLinkTest extends TestCase
         global $session, $settings;
         $session = ['user' => ['acctid' => 1, 'loggedin' => true, 'prefs' => []]];
         $settings = new DummySettings(['ajax' => 0]);
+        Settings::setInstance($settings);
         Database::$queryCacheResults['mail-1'] = [['seencount' => 0, 'notseen' => 0]];
         [$header] = PageParts::assembleMailLink('{mail}', '');
         $this->assertStringContainsString("<a href='mail.php'", $header);
@@ -50,6 +53,7 @@ final class AssembleMailLinkTest extends TestCase
         global $session, $settings;
         $session = ['user' => ['acctid' => 1, 'loggedin' => true, 'prefs' => ['ajax' => 1]]];
         $settings = new DummySettings(['ajax' => 1]);
+        Settings::setInstance($settings);
         Database::$queryCacheResults['mail-1'] = [['seencount' => 0, 'notseen' => 0]];
         if (file_exists($this->asyncFile)) {
             rename($this->asyncFile, $this->backupFile);

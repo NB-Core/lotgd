@@ -6,6 +6,7 @@ use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Substitute;
 use Lotgd\Http;
+use Lotgd\Security\RequestValue;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Nav;
@@ -51,9 +52,13 @@ if (Forms::isUnverifiedCoreOp($op, ['del', 'save'])) {
 }
 
 $tauntidRequest = Http::get('tauntid');
-$tauntid = taunt_normalize_optional_int($tauntidRequest);
+$tauntid = RequestValue::optionalPositiveInt($tauntidRequest);
+// An id the request supplied but that is not usable is not the same as no id
+// at all. Saving keys off "no id" to mean "insert a new one", so collapsing the
+// two would turn a malformed edit link into a spurious row.
+$tauntidRejected = $tauntid === null && RequestValue::isPresent($tauntidRequest);
 $tauntidParam = $tauntid === null ? '' : (string) $tauntid;
-$commentaryPage = taunt_normalize_optional_int(Http::get('c'));
+$commentaryPage = RequestValue::optionalPositiveInt(Http::get('c'));
 if ($op == "edit") {
     Nav::add("Taunts");
     Nav::add("Return to the taunt editor", "taunt.php");
@@ -104,8 +109,12 @@ if ($op == "edit") {
         $op = "";
         Http::set("op", "");
     }
+} elseif ($op == "save" && $tauntidRejected) {
+    $output->output("`\$The taunt id in that link is not valid, so nothing was saved.`0`n");
+    $op = "";
+    Http::set("op", "");
 } elseif ($op == "save") {
-    $taunt = taunt_normalize_text(Http::post('taunt'));
+    $taunt = RequestValue::text(Http::post('taunt'));
     if ($tauntid !== null) {
         $connection->executeStatement(
             "UPDATE " . Database::prefix("taunts") . " SET taunt = :taunt, editor = :editor WHERE tauntid = :tauntid",
@@ -169,56 +178,5 @@ if ($op == "") {
     Nav::add("Add a new taunt", "taunt.php?op=edit");
 }
 
-/**
- * Normalise request values expected to be optional integer identifiers.
- *
- * Lotgd\Http now exposes raw request payloads, so we must explicitly narrow
- * values such as c/tauntid before building navigation URLs.
- */
-function taunt_normalize_optional_int(mixed $value): ?int
-{
-    if ($value === '' || $value === null || is_array($value)) {
-        return null;
-    }
 
-    if (! is_scalar($value)) {
-        return null;
-    }
-
-    // Accept only unsigned integer identifiers (> 0, digits only).
-    if (is_int($value)) {
-        return $value > 0 ? $value : null;
-    }
-
-    if (is_string($value)) {
-        // Reject non-digit strings (e.g. "17foo", "-5", "abc").
-        if (! ctype_digit($value)) {
-            return null;
-        }
-
-        $intValue = (int) $value;
-
-        return $intValue > 0 ? $intValue : null;
-    }
-
-    // Reject other scalar types such as bool and float.
-    return null;
-}
-
-/**
- * Normalise request values to a safe string payload for DBAL string binding.
- */
-function taunt_normalize_text(mixed $value): string
-{
-    // Preserve legacy coercion behavior while rejecting array/object payloads.
-    if ($value === false || $value === null || is_array($value)) {
-        return '';
-    }
-
-    if (is_string($value)) {
-        return $value;
-    }
-
-    return is_scalar($value) ? (string) $value : '';
-}
 Footer::pageFooter();

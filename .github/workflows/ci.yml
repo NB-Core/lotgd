@@ -49,6 +49,13 @@ jobs:
           find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Run tests
         run: composer test
+      - name: Run tests in a randomised order
+        # The suite used to pass only in the order PHPUnit walks the files in:
+        # reversed, it produced 28 failures. Shared statics and test-defined
+        # constants are what caused that, and both come back silently unless
+        # something keeps checking. The seed is printed on failure so a bad
+        # order can be replayed with --random-order-seed.
+        run: composer test -- --order-by=random
 
   sql-guard:
     runs-on: ubuntu-latest

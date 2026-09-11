@@ -7,8 +7,17 @@ namespace Lotgd\Tests;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\Database;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Runs in its own process: this class define()s process-global constants, and a
+ * constant cannot be undefined. Without isolation the first test to run here
+ * decides them for every test that follows, which is one of the two reasons the
+ * suite used to pass only in alphabetical order.
+ */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
 final class UserSetupBanTest extends TestCase
 {
     protected function setUp(): void
@@ -22,8 +31,15 @@ final class UserSetupBanTest extends TestCase
 
         require_once __DIR__ . '/bootstrap.php';
 
-        Settings::setInstance(null);
-        unset($GLOBALS['settings']);
+        // This test renders the ban form; it is not about translation. Leaving
+        // translation on would make the page load its namespace table from the
+        // database on first use, and those queries consume entries from the
+        // shared Database::$mockResults queue that the rows below rely on --
+        // which made the test depend on some earlier test having warmed the
+        // translator's static cache first.
+        $settings = new DummySettings(['enabletranslation' => false]);
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
 
         if (! defined('DB_NODB')) {
             define('DB_NODB', true);

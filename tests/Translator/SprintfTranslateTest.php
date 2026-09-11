@@ -4,10 +4,30 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Translator;
 
-use Lotgd\Translator;
 use Lotgd\Tests\Stubs\DummySettings;
+use Lotgd\Translator;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * sprintfTranslate() formats strings whose placeholders come from a translation
+ * file and whose arguments come from the calling page. The two can disagree --
+ * a translator adds a placeholder, a caller drops an argument -- and plain
+ * sprintf() answers that with a warning and, historically, a broken page. The
+ * contract is that it pads or drops silently instead.
+ *
+ * Every case therefore checks the result *and* that nothing was raised, which
+ * is why each one runs through the warning recorder below.
+ *
+ * Runs in its own process: this class define()s process-global constants, and a
+ * constant cannot be undefined. Without isolation the first test to run here
+ * decides them for every test that follows, which is one of the two reasons the
+ * suite used to pass only in alphabetical order.
+ */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState(false)]
 final class SprintfTranslateTest extends TestCase
 {
     protected function setUp(): void
@@ -26,54 +46,43 @@ final class SprintfTranslateTest extends TestCase
         unset($GLOBALS['settings'], $GLOBALS['session'], $GLOBALS['REQUEST_URI'], $GLOBALS['language']);
     }
 
-    public function testNoArgumentPadsEmptyString(): void
+    /**
+     * @param array<int, mixed> $args
+     */
+    #[DataProvider('formatProvider')]
+    public function testFormatsWithoutRaisingAnything(string $format, array $args, string $expected): void
     {
         $warnings = [];
-        set_error_handler(function (int $errno, string $errstr) use (&$warnings): bool {
+        set_error_handler(static function (int $errno, string $errstr) use (&$warnings): bool {
             $warnings[] = [$errno, $errstr];
+
             return true;
         }, E_USER_WARNING);
-        $result = Translator::sprintfTranslate('Value: %s');
-        restore_error_handler();
-        $this->assertSame('Value: ', $result);
-        $this->assertSame([], $warnings);
+
+        try {
+            $result = Translator::sprintfTranslate($format, ...$args);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame($expected, $result);
+        self::assertSame([], $warnings, 'sprintfTranslate() must not raise on a format/argument mismatch');
     }
 
-    public function testSupportsPositionWidthAndLiteralPercent(): void
+    /**
+     * @return array<string, array{0: string, 1: array<int, mixed>, 2: string}>
+     */
+    public static function formatProvider(): array
     {
-        $result = Translator::sprintfTranslate('Progress: %1$s %2$02d%%', 'Done', 3);
-        $this->assertSame('Progress: Done 03%', $result);
-    }
-
-    public function testNonSequentialPositionWithMissingArgumentPads(): void
-    {
-        $warnings = [];
-        set_error_handler(function (int $errno, string $errstr) use (&$warnings): bool {
-            $warnings[] = [$errno, $errstr];
-            return true;
-        }, E_USER_WARNING);
-        $result = Translator::sprintfTranslate('%1$s %3$s', 'First');
-        restore_error_handler();
-        $this->assertSame('First ', $result);
-        $this->assertSame([], $warnings);
-    }
-
-    public function testNonSequentialPositionWithMissingArgumentPadsWithPrefix(): void
-    {
-        $warnings = [];
-        set_error_handler(function (int $errno, string $errstr) use (&$warnings): bool {
-            $warnings[] = [$errno, $errstr];
-            return true;
-        }, E_USER_WARNING);
-        $result = Translator::sprintfTranslate('Value: %1$s %3$s', 'foo');
-        restore_error_handler();
-        $this->assertSame('Value: foo ', $result);
-        $this->assertSame([], $warnings);
-    }
-
-    public function testStrayPercentDoesNotCrash(): void
-    {
-        $result = Translator::sprintfTranslate('Value with stray % sign');
-        $this->assertSame('Value with stray % sign', $result);
+        return [
+            'arguments match the placeholders' => ['Hello %s', ['World'], 'Hello World'],
+            'no argument at all pads empty' => ['Value: %s', [], 'Value: '],
+            'missing argument pads empty' => ['Value: %s %s', ['First'], 'Value: First '],
+            'extra arguments are dropped' => ['Values: %s and %s', ['First', 'Second', 'Third'], 'Values: First and Second'],
+            'position, width and literal percent' => ['Progress: %1$s %2$02d%%', ['Done', 3], 'Progress: Done 03%'],
+            'non-sequential position, missing argument' => ['%1$s %3$s', ['First'], 'First '],
+            'non-sequential position with a prefix' => ['Value: %1$s %3$s', ['foo'], 'Value: foo '],
+            'a stray percent is left alone' => ['Value with stray % sign', [], 'Value with stray % sign'],
+        ];
     }
 }

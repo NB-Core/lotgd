@@ -53,7 +53,14 @@ namespace Lotgd\MySQL {
         public function query(string $sql)
         {
             $this->queries[] = $sql;
-            return 'mysql_result';
+
+            // A result handle, not a sentinel string: whatever this returns is
+            // handed straight back to callers, who gate on it and then pass it
+            // to fetchAssoc() and freeResult(). Both of those -- here and in
+            // production -- accept arrays and result objects only, so returning
+            // a string made the stub emit a value the real Database can never
+            // produce.
+            return new \Lotgd\Tests\Stubs\EmptyResult();
         }
 
         public function fetchAssoc($result): array

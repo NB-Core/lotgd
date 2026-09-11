@@ -748,8 +748,14 @@ class PageParts
                 $setupFile = __DIR__ . '/../../async/setup.php';
                 if (file_exists($setupFile)) {
                     set_error_handler(fn () => true, E_USER_WARNING);
-                    require_once $setupFile;
-                    restore_error_handler();
+                    try {
+                        require_once $setupFile;
+                    } finally {
+                        // Without the finally, anything thrown while loading the
+                        // setup file leaves this handler installed for the rest
+                        // of the request, silently swallowing later warnings.
+                        restore_error_handler();
+                    }
                 }
                 $asyncFile = __DIR__ . '/../../async/maillink.php';
                 if (file_exists($asyncFile)) {
