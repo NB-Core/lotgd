@@ -26,7 +26,15 @@ enum TransferRefusal
     /** The sender has already sent their daily allowance. */
     case SenderDailyLimit;
 
-    /** More than the recipient may receive in a day, by their level. */
+    /**
+     * More than the recipient may receive in one transfer, by their level.
+     *
+     * Per transfer, not per day -- the daily ceiling is the separate count in
+     * RecipientDailyCount, so a recipient may take several transfers of this
+     * size. The player-facing message in bank.php still says "per day"; that
+     * wording is older than this enum and changing it would orphan its
+     * translation.
+     */
     case RecipientPerTransferLimit;
 
     /** The recipient has already taken as many transfers as they may today. */

@@ -9,6 +9,7 @@ use Lotgd\Bank\TransferLimits;
 use Lotgd\Bank\TransferRefusal;
 use Lotgd\Bank\WithdrawOutcome;
 use Lotgd\DateTime;
+use Lotgd\Forms;
 use Lotgd\Http;
 use Lotgd\Mail;
 use Lotgd\MySQL\Database;
@@ -40,6 +41,17 @@ $opRequest = Http::get('op');
 $op = is_string($opRequest) ? $opRequest : '';
 $point = $settings->getSetting('moneydecimalpoint', ".");
 $sep = $settings->getSetting('moneythousandssep', ",");
+
+// Every operation that moves money, guarded once at the entry rather than per
+// branch -- the next branch somebody adds is the one a per-branch check gets
+// forgotten in. transfer2 is only a preview, but it carries the amount and
+// recipient forward into transfer3, so it is on the list too.
+if (Forms::isUnverifiedCoreOp($op, ['transfer2', 'transfer3', 'depositfinish', 'withdrawfinish'])) {
+    debuglog('Rejected a bank state change with an invalid CSRF token.');
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
 if ($op == "") {
     DateTime::checkDay();
     $output->output("`6As you approach the pair of impressive carved rock crystal doors, they part to allow you entrance into the bank.");
@@ -67,7 +79,7 @@ if ($op == "") {
         }
         $output->outputNotl("`n");
         $preview = Translator::translateInline("Preview Transfer");
-        $output->rawOutput("<form action='bank.php?op=transfer2' method='POST'>");
+        $output->rawOutput("<form action='bank.php?op=transfer2' method='POST'>" . Forms::csrfField());
         $output->output("Transfer how much: ");
         $output->rawOutput("<input name='amount' id='amount' width='5'>");
         $output->outputNotl("`n");
@@ -91,13 +103,13 @@ if ($op == "") {
         static fn(array $candidate): bool => empty($candidate['locked'])
     ));
     $amountPost = Http::post('amount');
-    $amt = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
+    $amt = Bank::postedAmount($amountPost);
     $matchCount = count($matches);
     $charset = $settings->getSetting("charset", "UTF-8");
     if ($matchCount === 1) {
         $row = $matches[0];
         $msg = Translator::translateInline("Complete Transfer");
-        $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>");
+        $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>" . Forms::csrfField());
         $output->output(
             "`6Transfer `^%s`6 gold to `&%s`6.",
             number_format($amt, 0, $point, $sep),
@@ -113,7 +125,7 @@ if ($op == "") {
     } elseif ($matchCount >= 100) {
         $output->output("`@Elessa`6 looks at you disdainfully and coldly, but politely, suggests you try narrowing down the field of who you want to send money to just a little bit!`n`n");
         $msg = Translator::translateInline("Preview Transfer");
-        $output->rawOutput("<form action='bank.php?op=transfer2' method='POST'>");
+        $output->rawOutput("<form action='bank.php?op=transfer2' method='POST'>" . Forms::csrfField());
         $output->output("Transfer how much: ");
         $output->rawOutput("<input name='amount' id='amount' width='5' value='$amt'><br>");
         $output->output("To: ");
@@ -123,7 +135,7 @@ if ($op == "") {
         $output->rawOutput("<script language='javascript'>document.getElementById('amount').focus();</script>", true);
         Nav::add("", "bank.php?op=transfer2");
     } elseif ($matchCount > 1) {
-        $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>");
+        $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>" . Forms::csrfField());
         $output->rawOutput("<label for='bank_to'>");
         $output->output(
             "`6Transfer `^%s`6 gold to ",
@@ -144,7 +156,7 @@ if ($op == "") {
     }
 } elseif ($op == "transfer3") {
     $amountPost = Http::post('amount');
-    $amt = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
+    $amt = Bank::postedAmount($amountPost);
     $toPost = Http::post('to');
     $to = is_string($toPost) ? $toPost : '';
     $output->output("`6`bTransfer Completion`b`n");
@@ -224,7 +236,7 @@ if ($op == "") {
     }
 } elseif ($op == "deposit") {
     $output->output("`0");
-    $output->rawOutput("<form action='bank.php?op=depositfinish' method='POST'>");
+    $output->rawOutput("<form action='bank.php?op=depositfinish' method='POST'>" . Forms::csrfField());
     $balance = Translator::translateInline("`@Elessa`6 says, \"`@You have a balance of `^%s`@ gold in the bank.`6\"`n");
     $debt = Translator::translateInline("`@Elessa`6 says, \"`@You have a `\$debt`@ of `^%s`@ gold to the bank.`6\"`n");
     $output->outputNotl($session['user']['goldinbank'] >= 0 ? $balance : $debt, number_format(abs($session['user']['goldinbank']), 0, $point, $sep));
@@ -240,7 +252,7 @@ if ($op == "") {
     Nav::add("", "bank.php?op=depositfinish");
 } elseif ($op == "depositfinish") {
     $amountPost = Http::post('amount');
-    $amount = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
+    $amount = Bank::postedAmount($amountPost);
     $notenough = Translator::translateInline("`\$ERROR: Not enough gold in hand to deposit.`n`n`^You plunk your `&%s`^ gold on the counter and declare that you would like to deposit all `&%s`^ gold of it.`n`n`@Elessa`6 stares blandly at you for a few seconds until you become self conscious and recount your money, realizing your mistake.");
     $depositdebt = Translator::translateInline("`@Elessa`6 records your deposit of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a debt of `\$%s`@ gold to the bank and `^%s`@ gold in hand.`6\"");
     $depositbalance = Translator::translateInline("`@Elessa`6 records your deposit of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a balance of `^%s`@ gold in the bank and `^%s`@ gold in hand.`6\"");
@@ -263,7 +275,7 @@ if ($op == "") {
     $borrow = Translator::translateInline("Borrow");
     $balance = Translator::translateInline("`@Elessa`6 scans through her ledger, \"`@You have a balance of `^%s`@ gold in the bank.`6\"`n");
     $debt = Translator::translateInline("`@Elessa`6 scans through her ledger, \"`@You have a `\$debt`@ of `^%s`@ gold to the bank.`6\"`n");
-    $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>");
+    $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>" . Forms::csrfField());
     $output->outputNotl($session['user']['goldinbank'] >= 0 ? $balance : $debt, number_format(abs($session['user']['goldinbank']), 0, $point, $sep));
     $output->output("`6\"`@How much would you like to borrow `&%s`@?  At your level, you may borrow up to a total of `^%s`@ from the bank.`6\"`n`n", $session['user']['name'], $maxborrow);
     $output->rawOutput(" <input id='input' name='amount' width=5 > <input type='hidden' name='borrow' value='x'><input type='submit' class='button' value='$borrow'>");
@@ -275,7 +287,7 @@ if ($op == "") {
     $withdraw = Translator::translateInline("Withdraw");
     $balance = Translator::translateInline("`@Elessa`6 scans through her ledger, \"`@You have a balance of `^%s`@ gold in the bank.`6\"`n");
     $debt = Translator::translateInline("`@Elessa`6 scans through her ledger, \"`@You have a `\$debt`@ of `^%s`@ gold in the bank.`6\"`n");
-    $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>");
+    $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>" . Forms::csrfField());
     $output->outputNotl($session['user']['goldinbank'] >= 0 ? $balance : $debt, number_format(abs($session['user']['goldinbank']), 0, $point, $sep));
     $output->output("`6\"`@How much would you like to withdraw `&%s`@?`6\"`n`n", $session['user']['name']);
     $output->rawOutput("<input id='input' name='amount' width=5 > <input type='submit' class='button' value='$withdraw'>");
@@ -285,7 +297,7 @@ if ($op == "") {
     Nav::add("", "bank.php?op=withdrawfinish");
 } elseif ($op == "withdrawfinish") {
     $amountPost = Http::post('amount');
-    $amount = abs(is_numeric($amountPost) ? (int)$amountPost : 0);
+    $amount = Bank::postedAmount($amountPost);
     $borrowPost = Http::post('borrow');
     $borrow = is_string($borrowPost) ? $borrowPost : '';
 

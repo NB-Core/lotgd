@@ -29,6 +29,32 @@ use Lotgd\Bank\WithdrawResult;
 class Bank
 {
     /**
+     * Read a posted amount as a non-negative integer.
+     *
+     * The three pages used to write `abs(is_numeric($v) ? (int) $v : 0)` each
+     * for themselves. That was harmless while the value only flowed into
+     * comparisons and string interpolation, and stopped being harmless the
+     * moment these methods took a typed `int`: `abs(PHP_INT_MIN)` is a float,
+     * because the positive counterpart does not fit, and a float against an
+     * `int` parameter is a TypeError under strict_types. `amount=-9223372036854775808`
+     * is a perfectly postable string, so that was a crash a player could ask
+     * for.
+     *
+     * Saturating at PHP_INT_MAX keeps the old outcome: a figure that large was
+     * refused for exceeding the balance before, and still is.
+     */
+    public static function postedAmount(mixed $value): int
+    {
+        if (!is_numeric($value)) {
+            return 0;
+        }
+
+        $amount = (int) $value;
+
+        return $amount === PHP_INT_MIN ? PHP_INT_MAX : abs($amount);
+    }
+
+    /**
      * Move gold from one account to another.
      *
      * The order of the checks is behaviour, not bookkeeping. The cover check

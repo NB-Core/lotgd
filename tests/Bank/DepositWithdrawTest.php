@@ -27,6 +27,55 @@ final class DepositWithdrawTest extends TestCase
 {
     private const BORROW_PER_LEVEL = 20;
 
+    /**
+     * A posted amount becomes a non-negative integer, and the one input that
+     * used to crash no longer does.
+     *
+     * `abs(PHP_INT_MIN)` is a float, because the positive counterpart does not
+     * fit in an int -- and a float against these methods' `int` parameters is a
+     * TypeError under strict_types. `amount=-9223372036854775808` is a
+     * perfectly postable string, so it was a crash a player could ask for.
+     * Reported by Codex on #1528.
+     */
+    #[DataProvider('postedAmountProvider')]
+    public function testAPostedAmountBecomesANonNegativeInteger(mixed $posted, int $expected): void
+    {
+        self::assertSame($expected, Bank::postedAmount($posted));
+    }
+
+    /**
+     * @return array<string, array{0: mixed, 1: int}>
+     */
+    public static function postedAmountProvider(): array
+    {
+        return [
+            'a plain figure' => ['250', 250],
+            'a negative is taken as its magnitude' => ['-250', 250],
+            'a decimal is truncated' => ['12.9', 12],
+            'nothing at all' => ['', 0],
+            'not a number' => ['all of it', 0],
+            'missing' => [null, 0],
+            'an array' => [['1'], 0],
+            'the integer minimum saturates rather than throwing' => ['-9223372036854775808', PHP_INT_MAX],
+            'the integer maximum survives' => ['9223372036854775807', PHP_INT_MAX],
+        ];
+    }
+
+    /**
+     * And the saturated figure still reaches a refusal rather than an exception
+     * -- which is what it did before these methods were typed.
+     */
+    public function testTheSaturatedAmountIsRefusedRatherThanThrowing(): void
+    {
+        $amount = Bank::postedAmount('-9223372036854775808');
+
+        $deposit = Bank::deposit(new Balance(gold: 100, goldInBank: 0), $amount);
+        self::assertFalse($deposit->accepted, 'far more than the purse holds');
+
+        $withdrawal = Bank::withdraw(new Balance(gold: 0, goldInBank: 100, level: 10), $amount, false, self::BORROW_PER_LEVEL);
+        self::assertSame(WithdrawOutcome::NotEnoughInBank, $withdrawal->outcome);
+    }
+
     public function testADepositMovesCashIntoTheBalance(): void
     {
         $result = Bank::deposit(new Balance(gold: 500, goldInBank: 100), 200);
