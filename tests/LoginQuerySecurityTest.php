@@ -26,7 +26,9 @@ use PHPUnit\Framework\TestCase;
  *   - "if ($c >= 10)" guarded the automatic ban and said nothing about what
  *     the counter counts. That rule is Lotgd\Security\LoginFailureTally now,
  *     with the boundary asserted from both sides and the doubled weight for a
- *     superuser failure asserted at all, which the string never was.
+ *     superuser failure asserted at all, which the string never was. What that
+ *     string did do, weakly, was witness that the page still consults the
+ *     rule; the structural check below replaces that properly.
  *   - "PasswordHelper::verify(" and "hash_equals(" name behaviour that
  *     tests/PasswordHelperTest.php already exercises by running it.
  *   - The query spellings, the catch clauses and the comment guarded nothing
@@ -146,6 +148,175 @@ final class LoginQuerySecurityTest extends TestCase
         }
 
         return null;
+    }
+
+    /**
+     * The ban is still issued from inside the branch the tally decides.
+     *
+     * Reported by Codex on this PR, and correct: moving the rule into
+     * LoginFailureTally left it tested in isolation and unwitnessed in place.
+     * Proved before fixing -- replacing the guard with `if (false)` disables
+     * the game's only automatic ban and the whole suite stays green.
+     *
+     * Asked from the token stream rather than as a substring search, because
+     * the useful question is structural: the ban INSERT must lie *inside* the
+     * block warrantsBan() guards. That fails when the guard is deleted, when
+     * the condition is replaced, and when the INSERT is lifted out of the
+     * branch -- none of which a search for "warrantsBan" would notice.
+     */
+    public function testTheBanIsIssuedInsideTheBranchTheTallyGuards(): void
+    {
+        $tokens = token_get_all($this->readLoginScript());
+
+        $guardIndex = null;
+        foreach ($tokens as $index => $token) {
+            if (is_array($token) && $token[0] === T_STRING && $token[1] === 'warrantsBan') {
+                $guardIndex = $index;
+                break;
+            }
+        }
+
+        self::assertNotNull(
+            $guardIndex,
+            'login.php must still ask LoginFailureTally whether this address earns a ban'
+        );
+
+        // And it must weigh the rows it actually read back. Naming the call is
+        // not enough: handing it a literal empty array leaves every assertion
+        // about the call site true while the ban can never fire again.
+        $weighed = self::argumentOf($tokens, 'fromRecentFailures');
+        self::assertNotNull($weighed, 'the tally must be given the failure rows');
+        self::assertTrue(
+            self::isAssignedFromAQuery($tokens, $weighed),
+            "login.php weighs $weighed, which is never assigned from a database read"
+        );
+
+        [$blockStart, $blockEnd] = self::blockGuardedFrom($tokens, $guardIndex);
+        self::assertNotNull($blockEnd, 'the warrantsBan() call must open a block');
+
+        $guarded = '';
+        for ($index = $blockStart; $index <= $blockEnd; $index++) {
+            $token = $tokens[$index];
+            $guarded .= is_array($token) ? $token[1] : $token;
+        }
+
+        self::assertStringContainsString('INSERT INTO', $guarded, 'the ban is written inside the branch');
+        self::assertStringContainsString('bans', $guarded, 'and it is written to the bans table');
+    }
+
+    /**
+     * The single variable passed to $method, or null if it is not one variable.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private static function argumentOf(array $tokens, string $method): ?string
+    {
+        $count = count($tokens);
+        for ($index = 0; $index < $count; $index++) {
+            $token = $tokens[$index];
+            if (!is_array($token) || $token[0] !== T_STRING || $token[1] !== $method) {
+                continue;
+            }
+
+            $argument = null;
+            for ($cursor = $index + 1; $cursor < $count; $cursor++) {
+                $inner = $tokens[$cursor];
+                if (is_array($inner) && $inner[0] === T_WHITESPACE) {
+                    continue;
+                }
+                if ($inner === '(') {
+                    continue;
+                }
+                if ($inner === ')') {
+                    return $argument;
+                }
+                if (is_array($inner) && $inner[0] === T_VARIABLE && $argument === null) {
+                    $argument = $inner[1];
+                    continue;
+                }
+
+                // A literal, a call, a second argument -- not a plain variable.
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Is $variable ever assigned from something that reads the database?
+     *
+     * Deliberately loose about *which* read: the point is that the value being
+     * weighed comes from a query rather than from a literal, which is the
+     * difference between a live guard and a decorative one.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private static function isAssignedFromAQuery(array $tokens, string $variable): bool
+    {
+        $readers = ['fetchAllAssociative', 'fetchAssoc', 'fetchAssociative', 'executeQuery', 'query'];
+        $count = count($tokens);
+
+        for ($index = 0; $index < $count; $index++) {
+            $token = $tokens[$index];
+            if (!is_array($token) || $token[0] !== T_VARIABLE || $token[1] !== $variable) {
+                continue;
+            }
+
+            // Look ahead over the assignment, to the end of the statement.
+            $sawAssignment = false;
+            for ($cursor = $index + 1; $cursor < $count; $cursor++) {
+                $inner = $tokens[$cursor];
+                if ($inner === ';') {
+                    break;
+                }
+                if ($inner === '=') {
+                    $sawAssignment = true;
+                    continue;
+                }
+                if (!$sawAssignment) {
+                    continue;
+                }
+                if (is_array($inner) && $inner[0] === T_STRING && in_array($inner[1], $readers, true)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The token range of the block opened after $fromIndex, by brace depth.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     *
+     * @return array{0: int, 1: int|null}
+     */
+    private static function blockGuardedFrom(array $tokens, int $fromIndex): array
+    {
+        $count = count($tokens);
+        $depth = 0;
+        $start = null;
+
+        for ($index = $fromIndex; $index < $count; $index++) {
+            $token = $tokens[$index];
+            if ($token === '{') {
+                if ($start === null) {
+                    $start = $index;
+                }
+                $depth++;
+                continue;
+            }
+            if ($token === '}') {
+                $depth--;
+                if ($depth === 0 && $start !== null) {
+                    return [$start, $index];
+                }
+            }
+        }
+
+        return [$start ?? $fromIndex, null];
     }
 
     /**
