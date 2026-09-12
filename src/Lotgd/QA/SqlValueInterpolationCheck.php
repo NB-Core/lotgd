@@ -32,6 +32,15 @@ final class SqlValueInterpolationCheck
         'lib',
         'pages',
         'async',
+        // Production PHP the audit used to miss entirely. Codex pointed at
+        // install/lib/Installer.php on #1534 while reviewing the CI-mode
+        // scope, and it was right about more than the mode: these four hold
+        // 77 files that no full-tree run had ever read. One of them has a
+        // finding, and it is that same line.
+        'install',
+        'modules',
+        'migrations',
+        'scripts',
     ];
 
     /**
@@ -46,6 +55,14 @@ final class SqlValueInterpolationCheck
      * Keywords that make a string literal look like SQL rather than markup.
      */
     private const SQL_PATTERN = '/\b(SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|REPLACE\s+INTO|WHERE|VALUES|SET|HAVING|ORDER\s+BY|LIMIT|OFFSET)\b/i';
+
+    /**
+     * A whole statement rather than a keyword that might be prose or markup.
+     *
+     * `<select name='…'>` matches SQL_PATTERN; nothing here. That is the
+     * difference that lets a query keep its markup and still be recognised.
+     */
+    private const STATEMENT_PATTERN = '/\b(SELECT\b[\s\S]*?\bFROM\b|INSERT\s+INTO\b|UPDATE\b[\s\S]*?\bSET\b|DELETE\s+FROM\b|REPLACE\s+INTO\b)/i';
 
     /**
      * A slot sits in value position when the text before it ends with a
@@ -66,6 +83,18 @@ final class SqlValueInterpolationCheck
      * exists to catch.
      */
     private const SAFE_EXPRESSION_PATTERN = '/^\s*\(\s*(int|integer|float|double)\s*\)|^\s*(intval|floatval|count|abs)\s*\(/i';
+
+    /**
+     * Expressions that read straight from the request.
+     *
+     * Used only by the concatenation pass. Interpolation reports any variable
+     * in value position, because by the time a value is in a variable its
+     * provenance is gone; a concatenated slot is usually a call, and a call
+     * says where it got its value. Keeping the concatenation rule to these
+     * names is what makes it safe to run in CI -- see the note on
+     * collectConcatenationViolations().
+     */
+    private const REQUEST_SOURCE_PATTERN = '/\b(Http::(get|post)|httpget|httppost)\s*\(|\$_(GET|POST|REQUEST|COOKIE|SERVER)\b/i';
 
     /**
      * @param list<string>|null $relativePaths Restrict the scan to these files.
@@ -130,7 +159,7 @@ final class SqlValueInterpolationCheck
                 if ($normalized === '' || !str_ends_with($normalized, '.php')) {
                     continue;
                 }
-                if ($this->isWhitelistedPath($normalized)) {
+                if ($this->isWhitelistedPath($normalized) || !$this->isInScanScope($normalized)) {
                     continue;
                 }
                 $files[] = $normalized;
@@ -171,6 +200,43 @@ final class SqlValueInterpolationCheck
     private function isWhitelistedPath(string $relativePath): bool
     {
         return in_array($relativePath, self::ALLOWED_PATHS, true);
+    }
+
+    /**
+     * Directories whose PHP is fixture rather than production.
+     *
+     * The only thing --changed-since needs to skip. An earlier version of
+     * this method inverted the question and kept only the audit roots, which
+     * quietly dropped 77 production files -- install/, modules/, migrations/
+     * and scripts/ are all outside SCAN_ROOTS, and install/lib/Installer.php
+     * builds a query from a posted username. Reported by Codex on #1534:
+     * narrowing CI to match the audit was the wrong direction to make the two
+     * agree, and it is the same mistake as replacing a guard instead of
+     * adding beside it.
+     *
+     * @var list<string>
+     */
+    private const FIXTURE_ROOTS = [
+        'tests',
+    ];
+
+    /**
+     * Is this a file whose findings should be able to fail CI?
+     *
+     * Everything except the fixture roots. Tests are excluded because they
+     * hold the forbidden shapes deliberately -- this checker's own cases are
+     * the clearest example -- and because the full-tree audit never reads
+     * them, so a finding there can never be worked off.
+     */
+    private function isInScanScope(string $relativePath): bool
+    {
+        foreach (self::FIXTURE_ROOTS as $root) {
+            if (str_starts_with($relativePath, $root . '/')) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -231,7 +297,299 @@ final class SqlValueInterpolationCheck
             }
         }
 
+        foreach ($this->collectConcatenationViolations($tokens, $tokenCount, $relativePath) as $violation) {
+            $violations[] = $violation;
+        }
+
         return $violations;
+    }
+
+    /**
+     * Request values joined into a query with `.` rather than interpolated.
+     *
+     * The interpolation pass above reads variables *inside* a string literal.
+     * A value concatenated around one is a separate token entirely, so
+     *
+     *     "DELETE FROM news WHERE newsid='" . Http::get('newsid') . "'"
+     *
+     * was invisible to it -- a gap found while auditing the tests that had
+     * been guarding this shape by searching login.php and superuser.php for
+     * its exact spelling.
+     *
+     * Deliberately narrower than the interpolation rule: the expression must
+     * *name* a request source. That was measured rather than assumed. Asking
+     * only "is this in value position" over the whole tree turns every
+     * `Nav::add("page.php?x=" . $v)` into a finding, because a URL query
+     * string has an `=` before its slot too; the assembled text is put
+     * through looksLikeSql() for exactly that reason, and the one candidate
+     * in the tree today is such a URL and is correctly passed over. With both
+     * gates the tree reports nothing, so the rule needs no baseline.
+     *
+     * The limit is worth stating plainly rather than discovering later: a
+     * request value assigned to a variable first, and that variable
+     * concatenated, is not reported here. The interpolation pass catches it
+     * when the variable is interpolated; concatenated, it is still a gap.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     *
+     * @return list<array{file: string, line: int, expression: string, context: string}>
+     */
+    private function collectConcatenationViolations(array $tokens, int $tokenCount, string $relativePath): array
+    {
+        $violations = [];
+
+        for ($index = 0; $index < $tokenCount; $index++) {
+            $token = $tokens[$index];
+            if (!is_array($token) || $token[0] !== T_CONSTANT_ENCAPSED_STRING) {
+                continue;
+            }
+
+            $dotIndex = $this->skipTrivia($tokens, $index + 1, $tokenCount);
+            if (($tokens[$dotIndex] ?? null) !== '.') {
+                continue;
+            }
+
+            [$expression, $afterIndex, $line] = $this->readConcatenatedExpression($tokens, $dotIndex + 1, $tokenCount);
+            if ($expression === '' || preg_match(self::REQUEST_SOURCE_PATTERN, $expression) !== 1) {
+                continue;
+            }
+            if (preg_match(self::SAFE_EXPRESSION_PATTERN, $expression) === 1) {
+                continue;
+            }
+
+            // A whole statement, not merely a SQL keyword. The interpolation
+            // pass can afford the weaker test because it also requires value
+            // position; this pass drops that (a request value has no safe
+            // position) and so has to be stricter about what counts as a
+            // query. Without it, "Your password is set to '" . Http::get('p')
+            // is a finding, because "set" is a keyword and there is no
+            // operator in front of the quote to rule it out. That one is mine:
+            // the measurement behind dropping the position tests covered the
+            // tree as it stands, which says nothing about prose someone
+            // writes tomorrow.
+            [$literals, $slotOffset] = $this->statementLiterals($tokens, $index, $tokenCount);
+            if (preg_match(self::STATEMENT_PATTERN, $literals) !== 1) {
+                continue;
+            }
+
+            // No position test here, unlike the interpolation pass above, and
+            // the difference is deliberate. There, a slot after FROM or INTO
+            // is usually Database::prefix() and interpolating a table name is
+            // normal, so identifiers are passed over and only value position
+            // is reported. Here the expression has already been established
+            // to read straight from the request, and a request value has no
+            // business anywhere in a statement -- `"ORDER BY " . Http::get()`
+            // and `"SELECT " . Http::get()` are injections as surely as one
+            // inside quotes. Measured before relaxing it: with the position
+            // tests and without, the tree reports the same 118 findings, so
+            // the stricter reading costs nothing and covers more.
+            // The marker goes where the value lands, in the same {0} shape the
+            // interpolation pass uses. Appending it at the end instead --
+            // which is what the first version did -- reported the tail of the
+            // statement, identically for every value in it, so two findings
+            // on one statement were indistinguishable. Copilot noticed the
+            // stray NUL that came with it; trim() was swallowing the byte, so
+            // the visible defect was the useless context rather than the
+            // character.
+            $marked = substr($literals, 0, $slotOffset) . "\x000\x00" . substr($literals, $slotOffset);
+            $violations[] = [
+                'file' => $relativePath,
+                'line' => $line,
+                'expression' => trim($expression),
+                'context' => $this->summarizeContext($marked, $slotOffset),
+            ];
+        }
+
+        return $violations;
+    }
+
+    /**
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function skipTrivia(array $tokens, int $index, int $tokenCount): int
+    {
+        while (
+            $index < $tokenCount
+            && is_array($tokens[$index])
+            && in_array($tokens[$index][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)
+        ) {
+            $index++;
+        }
+
+        return $index;
+    }
+
+    /**
+     * The concatenated expression starting at $index, to the next top-level `.`.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     *
+     * @return array{0: string, 1: int, 2: int}
+     */
+    private function readConcatenatedExpression(array $tokens, int $index, int $tokenCount): array
+    {
+        $expression = '';
+        $depth = 0;
+        $line = 0;
+
+        for (; $index < $tokenCount; $index++) {
+            $token = $tokens[$index];
+            $text = is_array($token) ? $token[1] : $token;
+
+            if ($line === 0 && is_array($token) && !in_array($token[0], [T_WHITESPACE, T_COMMENT], true)) {
+                $line = (int) $token[2];
+            }
+
+            if ($text === '(' || $text === '[') {
+                $depth++;
+            } elseif ($text === ')' || $text === ']') {
+                if ($depth === 0) {
+                    break;
+                }
+                $depth--;
+            } elseif ($depth === 0 && in_array($text, ['.', ';', ','], true)) {
+                break;
+            }
+
+            $expression .= $text;
+        }
+
+        return [trim($expression), $index, $line];
+    }
+
+    /**
+     * Every string literal in the statement the token at $index belongs to.
+     *
+     * Scoped to the statement rather than to the run of literals adjacent to
+     * the slot, and that distinction is load-bearing. Walking only outward
+     * from the slot stops at the first token that is not a literal, so in
+     *
+     *     "SELECT * FROM t WHERE a = '" . Http::get('a')
+     *         . "' AND b = '" . Http::get('b') . "'"
+     *
+     * the second slot sees only "' AND b = '" and "'", neither of which
+     * carries a keyword -- the statement was reported once and its second
+     * injected value passed unnoticed. Found by a mutation that would not
+     * die: disabling the outward walk changed nothing, because no case
+     * needed it.
+     *
+     * Returns the assembled text and the offset within it where the slot
+     * sits, so the report can mark the place the value lands rather than
+     * showing the same statement for every value in it.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     *
+     * @return array{0: string, 1: int}
+     */
+    private function statementLiterals(array $tokens, int $index, int $tokenCount): array
+    {
+        $start = $index;
+        $depth = 0;
+        for ($cursor = $index; $cursor >= 0; $cursor--) {
+            $token = $tokens[$cursor];
+            $text = is_array($token) ? $token[1] : $token;
+
+            if ($text === ')' || $text === ']') {
+                $depth++;
+            } elseif ($text === '(' || $text === '[') {
+                if ($depth === 0) {
+                    break;
+                }
+                $depth--;
+            } elseif ($depth === 0 && in_array($text, [';', '{', '}'], true)) {
+                break;
+            } elseif (is_array($token) && $token[0] === T_OPEN_TAG) {
+                break;
+            }
+
+            $start = $cursor;
+        }
+
+        $literals = '';
+        $slotOffset = 0;
+        $depth = 0;
+        for ($cursor = $start; $cursor < $tokenCount; $cursor++) {
+            $token = $tokens[$cursor];
+            $text = is_array($token) ? $token[1] : $token;
+
+            if ($text === '(' || $text === '[') {
+                $depth++;
+            } elseif ($text === ')' || $text === ']') {
+                if ($depth === 0) {
+                    break;
+                }
+                $depth--;
+            } elseif ($depth === 0 && $text === ';') {
+                break;
+            }
+
+            // Only literals that take part in the concatenation. Every string
+            // in the statement would also pull in the arguments of the calls
+            // inside it -- Http::get('a') contributes an "a" that lands in
+            // the middle of the assembled query, which showed up as
+            // "a = '{0}a'" in a report and would let an argument carrying SQL
+            // words decide the gate.
+            if (
+                is_array($token)
+                && $token[0] === T_CONSTANT_ENCAPSED_STRING
+                && $this->joinsAConcatenation($tokens, $cursor, $tokenCount)
+            ) {
+                $literals .= $this->unquote($token[1]);
+            }
+
+            // The value is concatenated directly after the literal at $index.
+            if ($cursor === $index) {
+                $slotOffset = strlen($literals);
+            }
+        }
+
+        return [$literals, $slotOffset];
+    }
+
+    /**
+     * Is this string token joined to its neighbours by `.`?
+     *
+     * Distinguishes a fragment of the query from a call argument that happens
+     * to be a string. Http::get('a') sits between `(` and `)`, so its 'a'
+     * contributes nothing; "SELECT * FROM t WHERE a = '" is followed by `.`,
+     * so it does.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function joinsAConcatenation(array $tokens, int $index, int $tokenCount): bool
+    {
+        for ($cursor = $index + 1; $cursor < $tokenCount; $cursor++) {
+            $token = $tokens[$cursor];
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+            if ($token === '.') {
+                return true;
+            }
+            break;
+        }
+
+        for ($cursor = $index - 1; $cursor >= 0; $cursor--) {
+            $token = $tokens[$cursor];
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            return $token === '.';
+        }
+
+        return false;
+    }
+
+    private function unquote(string $literal): string
+    {
+        if (strlen($literal) < 2) {
+            return $literal;
+        }
+
+        $quote = $literal[0];
+
+        return ($quote === '"' || $quote === "'") ? substr($literal, 1, -1) : $literal;
     }
 
     /**
@@ -240,10 +598,21 @@ final class SqlValueInterpolationCheck
      */
     private function looksLikeSql(string $text): bool
     {
+        // A whole statement is unmistakable even when it carries markup: a
+        // query that stores formatted content has tags in its VALUES, and
+        // rejecting it because of them left request values concatenated into
+        // exactly that kind of INSERT unreported. Reported by Codex on #1534;
+        // the interpolation pass had the same blind spot, so this fixes both.
+        if (preg_match(self::STATEMENT_PATTERN, $text) === 1) {
+            return true;
+        }
+
         if (preg_match(self::SQL_PATTERN, $text) !== 1) {
             return false;
         }
 
+        // A bare keyword is a weak signal -- "<select name=…>" is the case
+        // this veto exists for -- so markup still rules it out.
         return preg_match('/<\s*\/?\s*[a-z][a-z0-9]*(\s|>|\/)/i', $text) !== 1;
     }
 
