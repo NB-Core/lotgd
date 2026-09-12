@@ -19,6 +19,7 @@ use Lotgd\Redirect;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
 use Lotgd\PasswordHelper;
+use Lotgd\Security\LoginFailureTally;
 use Lotgd\Security\RuntimeHardening;
 use Lotgd\SecurityLog;
 use Lotgd\GameLog;
@@ -394,15 +395,14 @@ if ($name != "") {
                         $rows2 = [];
                     }
 
-                    $c = 0;
+                    // The ban decision is weighed in LoginFailureTally, which
+                    // can be exercised on its own; the alert text is built
+                    // here because it is presentation.
+                    $tally = LoginFailureTally::fromRecentFailures($rows2);
+                    $c = $tally->weight;
+                    $su = $tally->privilegedSeen;
                     $alert = "";
-                    $su = false;
                     foreach ($rows2 as $row2) {
-                        if ($row2['superuser'] > 0) {
-                            $c += 1;
-                            $su = true;
-                        }
-                        $c += 1;
                         $alert .= "`3{$row2['date']}`7: Failed attempt from `&{$row2['ip']}`7 [`3{$row2['id']}`7] to log on to `^{$row2['login']}`7 ({$row2['name']}`7)`n";
                     }
                     /**
@@ -432,7 +432,7 @@ if ($name != "") {
                         GameLog::SEVERITY_WARNING,
                         false
                     );
-                    if ($c >= 10) {
+                    if ($tally->warrantsBan()) {
                         // 5 failed attempts for superuser, 10 for regular user
                         $banmessage = Translator::translateInline("Automatic System Ban: Too many failed login attempts.");
                         if ($useDoctrine) {
