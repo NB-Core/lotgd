@@ -187,7 +187,10 @@ final class SqlAddslashesUsageCheck
             }
 
             $lineNumber = (int) $token[2];
-            if (!$this->isSqlContext($lines, $lineNumber)) {
+            if (
+                !$this->buildsSqlStatement($tokens, $index)
+                && !$this->isSqlContext($lines, $lineNumber)
+            ) {
                 continue;
             }
 
@@ -234,6 +237,7 @@ final class SqlAddslashesUsageCheck
         }
 
         $lineText = strtolower($lines[$lineNumber - 1] ?? '');
+
         if (
             $this->containsSqlSinkMarker($window)
             && (
@@ -301,6 +305,160 @@ final class SqlAddslashesUsageCheck
     {
         $keywordsPattern = '/\b(' . implode('|', self::SQL_KEYWORDS) . ')\b/';
         return preg_match($keywordsPattern, $text) === 1;
+    }
+
+    /**
+     * Is this addslashes() call being concatenated into a SQL statement?
+     *
+     * Answered from the token stream rather than the line text, and that is the
+     * whole point. {@see self::isSqlContext()} reads the surrounding lines and
+     * needs a sink -- `$sql`, `Database::query`, `executeQuery(`,
+     * `executeStatement(` -- within six lines above and twelve below, so a
+     * helper that builds a query and hands it back is invisible to it: the
+     * execution is at the caller, usually in another file.
+     *
+     *     return "SELECT * FROM t WHERE n = '" . addslashes($n) . "'";
+     *
+     * A line-based test for that shape was tried first and was wrong twice
+     * over. It could not see a statement whose opening quote sits on an earlier
+     * line, which is how most multi-line SQL here is written; and it treated
+     * any quote on the line as a string delimiter, so prose reporting
+     *
+     *     $msg = "Choose 'delete' to remove " . addslashes($n);
+     *
+     * as a query because of the apostrophes around the word. Tokens settle
+     * both: a string literal is one token whatever lines it spans, and the
+     * quotes inside it are content rather than delimiters.
+     */
+    private function buildsSqlStatement(array $tokens, int $index): bool
+    {
+        $fragments = $this->concatenatedStringFragments($tokens, $index);
+
+        return $fragments !== '' && $this->fragmentsOpenSqlStatement($fragments);
+    }
+
+    /**
+     * The string literals this call is joined to by `.`, in source order.
+     *
+     * Walks outward from the addslashes() call in both directions for as long
+     * as the expression continues to be a concatenation, collecting literal
+     * text and ignoring everything else. Walking backwards matters as much as
+     * forwards: the statement that identifies a query is almost always the
+     * fragment *before* the escaped value.
+     *
+     * @param list<array<int, int|string>|string> $tokens
+     */
+    private function concatenatedStringFragments(array $tokens, int $index): string
+    {
+        $before = [];
+        for ($cursor = $index - 1; $cursor >= 0; $cursor--) {
+            $token = $tokens[$cursor];
+            if (is_array($token) && $token[0] === T_WHITESPACE) {
+                continue;
+            }
+            if ($token === '.') {
+                continue;
+            }
+            if (is_array($token) && $this->isStringFragment($token[0])) {
+                array_unshift($before, $this->literalText($token));
+                continue;
+            }
+            // Anything else ends the concatenation -- an assignment, a return,
+            // an opening bracket, another call.
+            break;
+        }
+
+        $after = [];
+        for ($cursor = $this->endOfCall($tokens, $index) + 1; $cursor < count($tokens); $cursor++) {
+            $token = $tokens[$cursor];
+            if (is_array($token) && $token[0] === T_WHITESPACE) {
+                continue;
+            }
+            if ($token === '.') {
+                continue;
+            }
+            if (is_array($token) && $this->isStringFragment($token[0])) {
+                $after[] = $this->literalText($token);
+                continue;
+            }
+            break;
+        }
+
+        return implode('', $before) . ' ' . implode('', $after);
+    }
+
+    /**
+     * A token that carries literal string text.
+     *
+     * T_CONSTANT_ENCAPSED_STRING is a whole single- or double-quoted string
+     * with no interpolation; T_ENCAPSED_AND_WHITESPACE is the literal run
+     * between interpolations inside one that has them, and inside a heredoc.
+     */
+    private function isStringFragment(int $tokenType): bool
+    {
+        return $tokenType === T_CONSTANT_ENCAPSED_STRING
+            || $tokenType === T_ENCAPSED_AND_WHITESPACE;
+    }
+
+    /**
+     * @param array<int, int|string> $token
+     */
+    private function literalText(array $token): string
+    {
+        $text = (string) $token[1];
+
+        if ($token[0] === T_CONSTANT_ENCAPSED_STRING && $text !== '') {
+            $quote = $text[0];
+            if ($quote === '"' || $quote === "'") {
+                $text = substr($text, 1, -1);
+            }
+        }
+
+        return $text;
+    }
+
+    /**
+     * The index of the closing parenthesis of the call starting at $index.
+     *
+     * Counted by depth rather than found by the next ')', because the escaped
+     * expression can carry calls of its own.
+     *
+     * @param list<array<int, int|string>|string> $tokens
+     */
+    private function endOfCall(array $tokens, int $index): int
+    {
+        $count = count($tokens);
+        $depth = 0;
+        for ($cursor = $index; $cursor < $count; $cursor++) {
+            if ($tokens[$cursor] === '(') {
+                $depth++;
+                continue;
+            }
+            if ($tokens[$cursor] === ')') {
+                $depth--;
+                if ($depth === 0) {
+                    return $cursor;
+                }
+            }
+        }
+
+        return $count - 1;
+    }
+
+    /**
+     * Does the assembled literal text open a SQL statement?
+     *
+     * Anchored at the start on purpose. "Contains a SQL keyword" was the first
+     * version of this test and reported prose that merely mentions select, set
+     * or delete -- two false positives out of four probes. A query string
+     * begins with its verb; a sentence begins with a word of its own.
+     */
+    private function fragmentsOpenSqlStatement(string $fragments): bool
+    {
+        return preg_match(
+            '/^\s*(select|insert|update|delete|replace)\b/i',
+            ltrim($fragments)
+        ) === 1;
     }
 
     private function containsSqlSinkMarker(string $text): bool
