@@ -97,6 +97,65 @@ final class SqlValueInterpolationCheckTest extends TestCase
         self::assertCount(1, $violations);
     }
 
+    /**
+     * A finding is reported on the line the interpolated value sits on, not on
+     * the line the string opened.
+     *
+     * This is not cosmetic. --changed-since is what runs in CI, and it keeps
+     * only findings whose line the diff marked as added. Most SQL in this
+     * codebase is written as a multi-line executeStatement() call, so an
+     * interpolation reintroduced into the query argument leaves the opening
+     * line untouched -- and a finding attributed to that opening line was
+     * silently filtered out as "not added by this change".
+     *
+     * Measured when this was found: 42 of the tree's 120 findings pointed at
+     * the wrong line, every one of them a case CI would have waved through.
+     */
+    public function testAFindingIsReportedOnTheLineOfTheInterpolatedValue(): void
+    {
+        $violations = $this->analyse(
+            '$rows = $conn->executeStatement(' . "\n"
+            . '    "DELETE FROM {$table} WHERE id = \'$id\'"' . "\n"
+            . ');'
+        );
+
+        self::assertCount(1, $violations);
+        self::assertSame(
+            3,
+            $violations[0]['line'],
+            'line 2 opens the call, line 3 carries the query -- and line 3 is what the diff marks as added'
+        );
+    }
+
+    /**
+     * The same for a curly-brace interpolation, which the reader handles on a
+     * different branch.
+     */
+    public function testACurlyInterpolationIsReportedOnItsOwnLineToo(): void
+    {
+        $violations = $this->analyse(
+            '$rows = $conn->executeStatement(' . "\n"
+            . '    "UPDATE t SET a = 1' . "\n"
+            . '     WHERE id = \'{$row[\'id\']}\'"' . "\n"
+            . ');'
+        );
+
+        self::assertCount(1, $violations);
+        self::assertSame(4, $violations[0]['line'], 'the third line of the statement');
+    }
+
+    /**
+     * A single-line statement is unaffected, which is the control: the fix must
+     * not shift findings that were already right.
+     */
+    public function testASingleLineStatementKeepsItsLine(): void
+    {
+        $violations = $this->analyse('$sql = "SELECT * FROM t WHERE id = \'$id\'";');
+
+        self::assertCount(1, $violations, 'the control must produce exactly one finding to be a control at all');
+        self::assertSame(2, $violations[0]['line']);
+    }
+
     public function testScanCanBeRestrictedToGivenFiles(): void
     {
         $root = $this->createFixtureRoot();

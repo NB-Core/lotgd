@@ -194,7 +194,7 @@ final class SqlValueInterpolationCheck
                 continue;
             }
 
-            [$text, $slots, $line, $endIndex] = $parsed;
+            [$text, $slots, $line, $endIndex, $slotLines] = $parsed;
             $index = $endIndex;
 
             if ($slots === [] || !$this->looksLikeSql($text)) {
@@ -224,7 +224,7 @@ final class SqlValueInterpolationCheck
 
                 $violations[] = [
                     'file' => $relativePath,
-                    'line' => $line,
+                    'line' => $slotLines[$position] ?? $line,
                     'expression' => trim($expression),
                     'context' => $this->summarizeContext($text, $offset),
                 ];
@@ -253,7 +253,15 @@ final class SqlValueInterpolationCheck
      *
      * @param list<array{0: int, 1: string, 2: int}|string> $tokens
      *
-     * @return array{0: string, 1: list<string>, 2: int, 3: int}|null
+     * The line is recorded per slot rather than once for the string. A
+     * multi-line statement interpolates on the line the expression sits on, and
+     * that is the line --changed-since matches against: attributing every slot
+     * to where the string opened meant a value added on a continuation line of
+     * an otherwise untouched call was filtered out as "not added by this
+     * change", which is the common shape for this codebase's executeStatement()
+     * calls.
+     *
+     * @return array{0: string, 1: list<string>, 2: int, 3: int, 4: list<int>}|null
      */
     private function readInterpolatedString(array $tokens, int $index, int $tokenCount): ?array
     {
@@ -275,6 +283,7 @@ final class SqlValueInterpolationCheck
 
         $text = '';
         $slots = [];
+        $slotLines = [];
         $cursor = $index + 1;
 
         for (; $cursor < $tokenCount; $cursor++) {
@@ -291,9 +300,11 @@ final class SqlValueInterpolationCheck
 
             if (is_array($current) && $current[0] === T_VARIABLE) {
                 $expression = $current[1];
+                $slotLine = (int) $current[2];
                 $cursor = $this->consumeVariableSuffix($tokens, $cursor + 1, $tokenCount, $expression) - 1;
                 $text .= "\x00" . count($slots) . "\x00";
                 $slots[] = $expression;
+                $slotLines[] = $slotLine;
                 continue;
             }
 
@@ -302,6 +313,7 @@ final class SqlValueInterpolationCheck
                 || (is_array($current) && in_array($current[0], [T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES], true))
             ) {
                 $expression = '';
+                $slotLine = is_array($current) ? (int) $current[2] : 0;
                 $depth = 1;
                 $cursor++;
                 while ($cursor < $tokenCount && $depth > 0) {
@@ -319,13 +331,14 @@ final class SqlValueInterpolationCheck
                 }
                 $text .= "\x00" . count($slots) . "\x00";
                 $slots[] = $expression;
+                $slotLines[] = $slotLine > 0 ? $slotLine : $line;
                 continue;
             }
 
             $text .= is_array($current) ? ($current[1] ?? '') : (string) $current;
         }
 
-        return [$text, $slots, $line, $cursor];
+        return [$text, $slots, $line, $cursor, $slotLines];
     }
 
     /**
