@@ -135,17 +135,72 @@ PHP
         $violations = (new SqlAddslashesUsageCheck())->collectViolations($root);
 
         self::assertCount(1, $violations);
+        self::assertStringContainsString('src/example.php:4:', $violations[0]);
+    }
+
+    /**
+     * A statement whose opening quote sits on an earlier line than the escaped
+     * value, which is how most multi-line SQL in this codebase is written.
+     *
+     * The line-based version of this rule could not see it: only the physical
+     * line carrying addslashes() was inspected, and the SELECT is above it. It
+     * is the shape the gap was supposed to be closed for, so it is asserted
+     * rather than assumed.
+     */
+    public function testCheckerFlagsAReturnedStatementSpanningLines(): void
+    {
+        $root = $this->createFixtureRoot();
+        file_put_contents(
+            $root . '/pages/example.php',
+            "<?php
+function build(\$n)
+{
+    return \"SELECT * FROM t
+            WHERE n = '\" . addslashes(\$n) . \"'\";
+}
+"
+        );
+
+        $violations = (new SqlAddslashesUsageCheck())->collectViolations($root);
+
+        self::assertCount(1, $violations);
+        self::assertStringContainsString('pages/example.php:5:', $violations[0], 'reported where the escaping happens');
+    }
+
+    /**
+     * A statement that does not open with one of the five verbs is still caught
+     * where a sink is in reach.
+     *
+     * Reported by Codex on #1532: the first version of this change replaced the
+     * keyword test in the sink branch instead of adding beside it, so a common
+     * table expression handed straight to Database::query() matched neither
+     * branch. That was a regression in an existing guard, and this case is
+     * where it would show again.
+     */
+    public function testCheckerFlagsAStatementThatDoesNotOpenWithAVerbAtASink(): void
+    {
+        $root = $this->createFixtureRoot();
+        file_put_contents(
+            $root . '/pages/example.php',
+            "<?php
+\Lotgd\MySQL\Database::query(\"WITH rows AS (SELECT 1) SELECT * FROM rows WHERE n = '\" . addslashes(\$n) . \"'\");
+"
+        );
+
+        self::assertCount(1, (new SqlAddslashesUsageCheck())->collectViolations($root));
     }
 
     /**
      * Prose is not a query, and this is where the sink-free rule has to earn
      * its keep.
      *
-     * Both of these contain a SQL keyword; neither builds a query. An earlier
-     * version of the rule asked only whether a keyword appeared anywhere on the
-     * line and reported both -- two false positives out of four probe cases.
-     * The rule now asks whether a quote is followed straight away by a
-     * statement keyword, which the prose lines are not.
+     * Each row contains a SQL keyword; none builds a query. Two earlier
+     * versions of the rule got these wrong in different ways. The first asked
+     * only whether a keyword appeared anywhere on the line and reported the
+     * first two. The second asked whether any quote on the line was followed by
+     * a keyword, and reported the third: the apostrophes around the quoted word
+     * looked like string delimiters. Reading the string as a token settles it,
+     * because those apostrophes are content.
      *
      * @param non-empty-string $body
      */
@@ -176,6 +231,9 @@ PHP
             ],
             'a sentence containing delete' => [
                 '$msg = "Really delete \'" . addslashes($name) . "\' from your roster?";',
+            ],
+            'a sentence that quotes a keyword' => [
+                '$msg = "Choose \'delete\' to remove " . addslashes($name);',
             ],
         ];
     }
