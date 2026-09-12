@@ -234,11 +234,28 @@ final class SqlAddslashesUsageCheck
         }
 
         $lineText = strtolower($lines[$lineNumber - 1] ?? '');
+
+        /**
+         * A line that opens a SQL statement *and* calls addslashes() is
+         * building a query, wherever that query is later run. Asked without a
+         * sink marker on purpose: requiring one nearby meant a helper of the
+         * shape
+         *
+         *     return "SELECT * FROM t WHERE n = '" . addslashes($n) . "'";
+         *
+         * went unreported, because the execution happens at the caller and
+         * often in another file. That is not a hypothetical shape -- it is the
+         * one I accidentally wrote while probing this checker, and watching it
+         * pass is what turned it up.
+         */
+        if ($this->lineOpensSqlStatement($lineText)) {
+            return true;
+        }
+
         if (
             $this->containsSqlSinkMarker($window)
             && (
-                $this->containsSqlKeywords($lineText)
-                || str_contains($lineText, '$sql')
+                str_contains($lineText, '$sql')
                 || $this->hasDirectNearbySqlLine($lines, $lineNumber)
             )
         ) {
@@ -301,6 +318,28 @@ final class SqlAddslashesUsageCheck
     {
         $keywordsPattern = '/\b(' . implode('|', self::SQL_KEYWORDS) . ')\b/';
         return preg_match($keywordsPattern, $text) === 1;
+    }
+
+    /**
+     * Does this line open a quoted SQL statement?
+     *
+     * A quote followed straight away by SELECT, INSERT, UPDATE, DELETE or
+     * REPLACE. Deliberately narrower than {@see self::containsSqlKeywords()},
+     * which asks only whether a keyword appears anywhere: on a line that is
+     * building a query without a sink in sight, that is not enough to tell a
+     * query from a sentence. Both of these contain "select", and only the
+     * second is a finding:
+     *
+     *     $msg = "Please select '" . addslashes($name) . "' from the list";
+     *     $sql = "SELECT * FROM t WHERE n = '" . addslashes($name) . "'";
+     *
+     * The first quote in the prose line is followed by "Please", so it does not
+     * match. Measured before this was tightened: the looser test reported two
+     * of four probe cases wrongly.
+     */
+    private function lineOpensSqlStatement(string $lineText): bool
+    {
+        return preg_match('/[\'"]\s*(select|insert|update|delete|replace)\b/', $lineText) === 1;
     }
 
     private function containsSqlSinkMarker(string $text): bool
