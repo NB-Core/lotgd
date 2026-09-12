@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\ParameterType;
+use Lotgd\CreateString;
 use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
@@ -253,6 +254,17 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
                 foreach ($companions as $name => $companion) {
                     $newcompanions[$name] = PlayerFunctions::levelUpCompanion($companion);
                 }
+                // Kept, rather than computed and dropped. $newcompanions was
+                // written and never read, so this whole block -- and the
+                // companionslevelup setting that guards it -- did nothing at
+                // all.
+                //
+                // Only the global is updated here. Persisting at this point
+                // would freeze the suspension that suspendCompanions() set
+                // above, because unsuspendCompanions() further down writes the
+                // global and nothing else. The session is written once after
+                // that call instead.
+                $companions = $newcompanions;
             }
 
             DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
@@ -306,6 +318,14 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
         if ($victory || $defeat) {
             Battle::unsuspendBuffs('allowintrain', "`&You now feel free to make use of your buffs again!`0`n");
             Battle::unsuspendCompanions("allowintrain");
+            // After the unsuspension, not before it. suspendCompanions() runs
+            // on every training fight and unsuspendCompanions() writes only the
+            // global, so anything persisted earlier in the request carries
+            // suspended = true into the player's next battle. This is the point
+            // where the array is what they will actually fight with -- and it
+            // is the only write, so the level-up above reaches the session
+            // through it.
+            $session['user']['companions'] = CreateString::run($companions);
         }
     }
 } else {
