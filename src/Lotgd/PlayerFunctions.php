@@ -567,4 +567,71 @@ class PlayerFunctions
         }
         return ($gender == SEX_MALE) ? $row['male'] : $row['female'];
     }
+
+    /**
+     * The reward for beating your master.
+     *
+     * Five permanent gains and, optionally, a reset of the seen-master flag so
+     * the next master can be fought on the same day. train.php had all of it
+     * inline between output lines, which is why none of it was ever tested --
+     * and it is not reversible.
+     *
+     * The user array is taken and returned rather than mutated in place, so a
+     * caller cannot half-apply it.
+     *
+     * @param array<string, mixed> $user
+     * @return array<string, mixed>
+     */
+    public static function levelUp(array $user, bool $mayFightAnotherMasterToday = true): array
+    {
+        $user['level'] = (int) $user['level'] + 1;
+        $user['maxhitpoints'] = (int) $user['maxhitpoints'] + 10;
+        $user['soulpoints'] = (int) $user['soulpoints'] + 5;
+        $user['attack'] = (int) $user['attack'] + 1;
+        $user['defense'] = (int) $user['defense'] + 1;
+
+        if ($mayFightAnotherMasterToday) {
+            $user['seenmaster'] = 0;
+        }
+
+        return $user;
+    }
+
+    /**
+     * A companion's share of the level-up.
+     *
+     * One level per page load, so the per-level figures are simply added --
+     * nothing is multiplied or recomputed from the player's level.
+     *
+     * Each stat grows only if the companion has it: a companion without an
+     * 'attack' key is one that does not fight, and inventing the key here
+     * would give it a weapon it was never meant to have.
+     *
+     * @param array<string, mixed> $companion
+     * @return array<string, mixed>
+     */
+    public static function levelUpCompanion(array $companion): array
+    {
+        foreach (['attack', 'defense', 'maxhitpoints'] as $stat) {
+            if (isset($companion[$stat])) {
+                $companion[$stat] += $companion[$stat . 'perlevel'] ?? 0;
+            }
+        }
+
+        // Healed to the new maximum -- and the condition really does test
+        // 'attack' while the assignment reads 'maxhitpoints'. Almost certainly
+        // a slip, with two consequences: a fighting companion carrying no
+        // maxhitpoints raises an undefined-key warning and has its hitpoints
+        // set to null, and a non-fighting companion that does carry one is
+        // never healed at all.
+        //
+        // Reproduced rather than repaired, because correcting it would change
+        // behaviour and this extraction deliberately changes none. The tests
+        // pin both halves and name it; fixing it is a decision of its own.
+        if (isset($companion['attack'])) {
+            $companion['hitpoints'] = $companion['maxhitpoints'];
+        }
+
+        return $companion;
+    }
 }
