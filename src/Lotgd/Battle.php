@@ -106,10 +106,14 @@ class Battle
      * therefore scaled by the side that lands the hit, not by the side that
      * swings.
      *
+     * Physical resistance applies only to a blow that lands. It used to be
+     * subtracted on the riposte branches too, where the figure is negative, so
+     * it made a counter-blow harder rather than softer.
+     *
      * The loop re-rolls while both figures are zero, so that a round always
-     * produces something. Unlike its companion counterpart it has no escape
-     * hatch: two combatants who can neither hit nor be hit will spin here. That
-     * is pre-existing behaviour and is left alone rather than quietly changed.
+     * produces something, and gives up after fifty fruitless exchanges the way
+     * the companion roll does -- two combatants who can neither hit nor be hit
+     * would otherwise spin here forever.
      *
      * @param array $badguy Enemy data (modified in place -- a missing
      *                      physicalresistance is filled in with 0)
@@ -142,6 +146,7 @@ class Battle
                 $badguy['physicalresistance'] = 0;
             }
 
+            $bad_check = 1;
             while ($creaturedmg == 0 && $selfdmg == 0) {
                 $atk = $self->attack * $context->atkMod;
                 if ($random->int(1, 20) == 1 && !$context->isPvp) {
@@ -153,7 +158,7 @@ class Battle
                 if ($creaturedmg < 0) {
                     $creaturedmg = (int) ($creaturedmg / 2);
                     $creaturedmg = round($context->badguyDmgMod * $creaturedmg, 0);
-                    $creaturedmg = min(0, round($creaturedmg - $badguy['physicalresistance']));
+                    $creaturedmg = min(0, $creaturedmg);
                 }
                 if ($creaturedmg > 0) {
                     $creaturedmg = round($context->dmgMod * $creaturedmg, 0);
@@ -170,11 +175,19 @@ class Battle
                 if ($selfdmg < 0) {
                     $selfdmg = (int) ($selfdmg / 2);
                     $selfdmg = round($selfdmg * $context->dmgMod, 0);
-                    $selfdmg = min(0, round($selfdmg - $self->resistance, 0));
+                    $selfdmg = min(0, $selfdmg);
                 }
                 if ($selfdmg > 0) {
                     $selfdmg = round($selfdmg * $context->badguyDmgMod, 0);
                     $selfdmg = max(0, round($selfdmg - $self->resistance, 0));
+                }
+                $bad_check++;
+                if ($bad_check > 50 && $creaturedmg == 0 && $selfdmg == 0) {
+                    // We're getting nowhere. Only when this exchange produced
+                    // nothing either -- a fiftieth roll that finally landed is
+                    // the result, not something to discard.
+                    $selfdmg = 0;
+                    $creaturedmg = 1;
                 }
             }
         }
@@ -1174,10 +1187,10 @@ class Battle
                     $selfdmg = round($selfdmg * $context->badguyDmgMod, 0);
                 }
                 $bad_check++;
-                if ($bad_check > 50) {
-                            //we're getting nowhere
-                            $selfdmg = 0;
-                            $creaturedmg = 1;
+                if ($bad_check > 50 && $creaturedmg == 0 && $selfdmg == 0) {
+                    // We're getting nowhere. Same guard as the player roll.
+                    $selfdmg = 0;
+                    $creaturedmg = 1;
                 }
             }
         } else {

@@ -175,15 +175,22 @@ final class PlayerDamageTest extends TestCase
     }
 
     /**
-     * Pinned because it surprises, not because it is obviously right: on the
-     * riposte branches the subtraction runs on a negative number, so resistance
-     * makes a counter-blow *harder* instead of softening it.
+     * Resistance has no say over a riposte, on either side of the exchange.
      *
-     * This is long-standing behaviour on both sides of the exchange and is
-     * asserted as it stands. If it is meant to read the other way it is a
-     * production bug, and this test is where it would be re-stated.
+     * It used to: the subtraction ran on a negative figure, so a combatant's
+     * own resistance made their own counter-blow *harder*. Measured over 50000
+     * rounds, a creature with 10 physical resistance riposted for 10.93 where
+     * one with none riposted for 1.45 -- so a resistant creature absorbed more
+     * and hit back seven times harder for it.
+     *
+     * Damping instead of amplifying was tried and rejected: a riposte is
+     * already halved and therefore small, so any meaningful resistance floors
+     * it at zero and the mechanic disappears. Dropping the term leaves the
+     * riposte at the halved margin times its modifier, independent of
+     * resistance, while resistance keeps doing its real job on a blow that
+     * lands.
      */
-    public function testResistanceMakesARiposteHarderRatherThanSofter(): void
+    public function testResistanceDoesNotTouchARiposte(): void
     {
         $badguy = self::badguy();
         $unresisted = $this->roll($badguy, [5], [12.0, 4.0, 9.0, 3.0]);
@@ -193,7 +200,12 @@ final class PlayerDamageTest extends TestCase
         $badguy = self::badguy();
         $resisted = $this->roll($badguy, [5], [12.0, 4.0, 9.0, 3.0], null, self::player(resistance: 4.0));
 
-        self::assertSame(-7.0, $resisted->selfDamage, 'the player resistance is added to their own counter-blow');
+        self::assertSame(-3.0, $resisted->selfDamage, 'the player resistance changes nothing');
+
+        $badguy = self::badguy(resistance: 4);
+        $creatureRiposte = $this->roll($badguy, [5], [3.0, 15.0, 9.0, 3.0]);
+
+        self::assertSame(-6.0, $creatureRiposte->creatureDamage, 'and neither does the creature resistance');
     }
 
     /**
@@ -311,6 +323,57 @@ final class PlayerDamageTest extends TestCase
 
         self::assertSame(8.0, $roll->creatureDamage, 'the second exchange is the one that counts');
         self::assertSame(-3.0, $roll->selfDamage);
+    }
+
+    /**
+     * Fifty exchanges in which neither side can gain a margin end with the
+     * player awarded a single point of damage, rather than the loop spinning
+     * forever.
+     *
+     * The safeguard was missing here while the companion roll has always had
+     * it. Reaching it needs two combatants who can neither hit nor be hit, so
+     * no real fight gets near it -- but nothing stopped a module from building
+     * one, and the failure mode was a hung request rather than a wrong number.
+     *
+     * Scripted with exactly fifty crit draws and two hundred rolls, so the
+     * drained assertion pins the count as well as the outcome.
+     */
+    public function testFiftyFruitlessExchangesEndInASinglePointOfDamage(): void
+    {
+        $badguy = self::badguy();
+        $roll = $this->roll(
+            $badguy,
+            array_fill(0, 50, 5),
+            array_fill(0, 200, 5.0)
+        );
+
+        self::assertSame(1, $roll->creatureDamage, 'the player is given the point');
+        self::assertSame(0, $roll->selfDamage, 'and takes nothing');
+    }
+
+    /**
+     * The fiftieth exchange is not thrown away if it finally lands.
+     *
+     * The escape hatch used to fire on the count alone, so an exchange that
+     * produced real damage on the fiftieth try had it replaced by the flat
+     * one-point consolation. Reported by Codex on #1527 and reproduced before
+     * changing anything: with 49 empty exchanges followed by one rolling 8 and
+     * 6, the old code returned 1 and 0.
+     */
+    public function testDamageFromTheFiftiethExchangeIsKept(): void
+    {
+        $ints = array_fill(0, 50, 5);
+        $bells = [];
+        for ($i = 0; $i < 49; $i++) {
+            array_push($bells, 5.0, 5.0, 5.0, 5.0);
+        }
+        array_push($bells, 12.0, 4.0, 3.0, 9.0);
+
+        $badguy = self::badguy();
+        $roll = $this->roll($badguy, $ints, $bells);
+
+        self::assertSame(8.0, $roll->creatureDamage, 'the blow that finally landed');
+        self::assertSame(6.0, $roll->selfDamage, 'and the one that came back');
     }
 
     /**
