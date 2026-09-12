@@ -176,16 +176,22 @@ final class SqlValueInterpolationCheckTest extends TestCase
     }
 
     /**
-     * A named file outside the scanned roots is skipped, as it is in a full scan.
+     * A named test file is skipped; production PHP anywhere is not.
      *
-     * --changed-since hands this method whatever .php files the diff touched,
-     * and it used to accept all of them -- so a file the audit mode never
-     * reads could still fail CI. Tests are the obvious case, and this
-     * checker's own fixtures are the obvious case within that: they contain
-     * the forbidden shapes deliberately. Found when the concatenation rule
-     * turned two of them into findings on their own test file.
+     * --changed-since hands this method whatever .php files the diff touched.
+     * It used to accept all of them, so this checker's own fixtures -- which
+     * hold the forbidden shapes on purpose -- became CI failures the moment
+     * the concatenation rule could see them.
+     *
+     * The first fix inverted the question and kept only the audit roots,
+     * which silently dropped 77 production files: install/, modules/,
+     * migrations/ and scripts/ are all outside them, and
+     * install/lib/Installer.php builds a query from a posted username.
+     * Codex caught that on #1534. Narrowing CI to match the audit was the
+     * wrong direction; the audit was widened to match CI instead, and only
+     * fixtures are skipped.
      */
-    public function testAFileOutsideTheScannedRootsIsSkippedEvenWhenNamed(): void
+    public function testTestFixturesAreSkippedButProductionCodeAnywhereIsNot(): void
     {
         $root = $this->createFixtureRoot();
         mkdir($root . '/tests/QA', 0777, true);
@@ -198,12 +204,20 @@ final class SqlValueInterpolationCheckTest extends TestCase
         self::assertSame(
             [],
             $checker->collectViolations($root, ['tests/QA/FixtureTest.php']),
-            'the audit mode never reads this file, so the CI mode must not either'
+            'a fixture holds the forbidden shapes on purpose'
         );
         self::assertCount(
             1,
             $checker->collectViolations($root, ['pages/probe.php']),
             'the identical body under a scanned root is still reported'
+        );
+
+        mkdir($root . '/install/lib', 0777, true);
+        file_put_contents($root . '/install/lib/Installer.php', "<?php\n" . $body . "\n");
+        self::assertCount(
+            1,
+            $checker->collectViolations($root, ['install/lib/Installer.php']),
+            'production PHP outside the historical audit roots is production PHP'
         );
     }
 
@@ -337,7 +351,51 @@ final class SqlValueInterpolationCheckTest extends TestCase
             'a value that is bound rather than concatenated' => [
                 '$conn->executeQuery("SELECT * FROM t WHERE id = :id", [\'id\' => Http::get(\'id\')]);',
             ],
+
+            // Prose, and mine to answer for. The concatenation pass drops the
+            // value-position test that keeps these out of the interpolation
+            // pass, so it has to require a whole statement instead of a
+            // keyword -- "set" and "values" are ordinary English.
+            'a sentence containing set' => [
+                '$msg = "Your password is set to \'" . Http::get(\'p\') . "\'";',
+            ],
+            'a sentence containing values' => [
+                '$msg = "Choose between the values \'" . Http::get(\'v\') . "\' and none";',
+            ],
+            'a sentence containing where' => [
+                '$msg = "We could not find where \'" . Http::get(\'n\') . "\' went";',
+            ],
         ];
+    }
+
+    /**
+     * A query keeps its markup and is still recognised.
+     *
+     * looksLikeSql() vetoed any text containing a tag, so an INSERT that
+     * stores formatted content hid a concatenated request value behind its
+     * own <p>. Reported by Codex on #1534; the veto is for a bare keyword
+     * inside markup -- "<select name=…>" -- and a whole statement no longer
+     * needs it.
+     */
+    public function testAQueryThatStoresMarkupIsStillSeen(): void
+    {
+        $violations = $this->analyse(
+            '$sql = "INSERT INTO comments (body) VALUES (\'<p>" . Http::post(\'body\') . "</p>\')";'
+        );
+
+        self::assertCount(1, $violations);
+        self::assertSame("Http::post('body')", $violations[0]['expression']);
+    }
+
+    /**
+     * The same for an interpolated value, which had the identical blind spot.
+     */
+    public function testAnInterpolatedValueInsideAMarkupBearingQueryIsSeen(): void
+    {
+        self::assertCount(
+            1,
+            $this->analyse('$sql = "INSERT INTO comments (body) VALUES (\'<p>$body</p>\')";')
+        );
     }
 
     /**

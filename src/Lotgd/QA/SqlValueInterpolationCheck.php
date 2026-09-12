@@ -32,6 +32,15 @@ final class SqlValueInterpolationCheck
         'lib',
         'pages',
         'async',
+        // Production PHP the audit used to miss entirely. Codex pointed at
+        // install/lib/Installer.php on #1534 while reviewing the CI-mode
+        // scope, and it was right about more than the mode: these four hold
+        // 77 files that no full-tree run had ever read. One of them has a
+        // finding, and it is that same line.
+        'install',
+        'modules',
+        'migrations',
+        'scripts',
     ];
 
     /**
@@ -46,6 +55,14 @@ final class SqlValueInterpolationCheck
      * Keywords that make a string literal look like SQL rather than markup.
      */
     private const SQL_PATTERN = '/\b(SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|REPLACE\s+INTO|WHERE|VALUES|SET|HAVING|ORDER\s+BY|LIMIT|OFFSET)\b/i';
+
+    /**
+     * A whole statement rather than a keyword that might be prose or markup.
+     *
+     * `<select name='…'>` matches SQL_PATTERN; nothing here. That is the
+     * difference that lets a query keep its markup and still be recognised.
+     */
+    private const STATEMENT_PATTERN = '/\b(SELECT\b[\s\S]*?\bFROM\b|INSERT\s+INTO\b|UPDATE\b[\s\S]*?\bSET\b|DELETE\s+FROM\b|REPLACE\s+INTO\b)/i';
 
     /**
      * A slot sits in value position when the text before it ends with a
@@ -186,28 +203,40 @@ final class SqlValueInterpolationCheck
     }
 
     /**
-     * Is this a file the full-tree scan would look at?
+     * Directories whose PHP is fixture rather than production.
      *
-     * --changed-since used to accept any .php path the diff named, so it
-     * scanned files the audit mode never reads -- tests above all. The two
-     * modes disagreeing is a trap rather than extra coverage: a finding that
-     * the audit will not report should not be able to fail CI either, and the
-     * first file to fall into it was this checker's own test fixtures, which
-     * contain the bad shapes on purpose.
+     * The only thing --changed-since needs to skip. An earlier version of
+     * this method inverted the question and kept only the audit roots, which
+     * quietly dropped 77 production files -- install/, modules/, migrations/
+     * and scripts/ are all outside SCAN_ROOTS, and install/lib/Installer.php
+     * builds a query from a posted username. Reported by Codex on #1534:
+     * narrowing CI to match the audit was the wrong direction to make the two
+     * agree, and it is the same mistake as replacing a guard instead of
+     * adding beside it.
+     *
+     * @var list<string>
+     */
+    private const FIXTURE_ROOTS = [
+        'tests',
+    ];
+
+    /**
+     * Is this a file whose findings should be able to fail CI?
+     *
+     * Everything except the fixture roots. Tests are excluded because they
+     * hold the forbidden shapes deliberately -- this checker's own cases are
+     * the clearest example -- and because the full-tree audit never reads
+     * them, so a finding there can never be worked off.
      */
     private function isInScanScope(string $relativePath): bool
     {
-        if (!str_contains($relativePath, '/')) {
-            return true; // a root-level entry point
-        }
-
-        foreach (self::SCAN_ROOTS as $root) {
+        foreach (self::FIXTURE_ROOTS as $root) {
             if (str_starts_with($relativePath, $root . '/')) {
-                return true;
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -328,7 +357,17 @@ final class SqlValueInterpolationCheck
                 continue;
             }
 
-            if (!$this->looksLikeSql($this->statementLiterals($tokens, $index, $tokenCount))) {
+            // A whole statement, not merely a SQL keyword. The interpolation
+            // pass can afford the weaker test because it also requires value
+            // position; this pass drops that (a request value has no safe
+            // position) and so has to be stricter about what counts as a
+            // query. Without it, "Your password is set to '" . Http::get('p')
+            // is a finding, because "set" is a keyword and there is no
+            // operator in front of the quote to rule it out. That one is mine:
+            // the measurement behind dropping the position tests covered the
+            // tree as it stands, which says nothing about prose someone
+            // writes tomorrow.
+            if (preg_match(self::STATEMENT_PATTERN, $this->statementLiterals($tokens, $index, $tokenCount)) !== 1) {
                 continue;
             }
 
@@ -493,10 +532,21 @@ final class SqlValueInterpolationCheck
      */
     private function looksLikeSql(string $text): bool
     {
+        // A whole statement is unmistakable even when it carries markup: a
+        // query that stores formatted content has tags in its VALUES, and
+        // rejecting it because of them left request values concatenated into
+        // exactly that kind of INSERT unreported. Reported by Codex on #1534;
+        // the interpolation pass had the same blind spot, so this fixes both.
+        if (preg_match(self::STATEMENT_PATTERN, $text) === 1) {
+            return true;
+        }
+
         if (preg_match(self::SQL_PATTERN, $text) !== 1) {
             return false;
         }
 
+        // A bare keyword is a weak signal -- "<select name=…>" is the case
+        // this veto exists for -- so markup still rules it out.
         return preg_match('/<\s*\/?\s*[a-z][a-z0-9]*(\s|>|\/)/i', $text) !== 1;
     }
 
