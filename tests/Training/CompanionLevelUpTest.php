@@ -175,6 +175,11 @@ final class CompanionLevelUpTest extends TestCase
      * rendered header before it reaches this block. The arithmetic above is
      * covered by executing cases; this one guards the wiring, which is the part
      * that was broken.
+     *
+     * Only the global assignment is asserted here. *When* the session is
+     * written turned out to matter on its own -- persisting beside this block
+     * freezes the fight's companion suspension -- so that half lives in
+     * CompanionSuspensionPersistenceTest, next to the cases that show why.
      */
     public function testTrainPhpKeepsTheLevelledCompanions(): void
     {
@@ -184,11 +189,6 @@ final class CompanionLevelUpTest extends TestCase
             '$companions = $newcompanions;',
             $source,
             'the levelled list replaces the old one'
-        );
-        self::assertStringContainsString(
-            "\$session['user']['companions'] = serialize(\$companions);",
-            $source,
-            'and is persisted the way mercenarycamp.php and healer.php persist it'
         );
     }
 
