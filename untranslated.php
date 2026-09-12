@@ -123,7 +123,7 @@ if ($op == "list") {
                     'namespace' => ParameterType::STRING,
                 ]
             );
-            invalidatedatacache(untranslated_translation_cache_key((string) $namespace, (string) $language));
+            invalidatedatacache(Translator::translationCacheKey((string) $namespace, (string) $language));
         }
     }
 
@@ -232,7 +232,7 @@ if ($op == "list") {
                     'namespace' => ParameterType::STRING,
                 ]
             );
-            invalidatedatacache(untranslated_translation_cache_key((string) $namespace, (string) $language));
+            invalidatedatacache(Translator::translationCacheKey((string) $namespace, (string) $language));
         }
     }
 
@@ -285,21 +285,3 @@ Nav::add("N?Translate by Namespace", "untranslated.php?op=list");
 Nav::add("Navigation");
 SuperuserNav::render();
 Footer::pageFooter();
-
-/**
- * Build the cache key used by translation loading/invalidation.
- *
- * Translator::translateLoadNamespace() hashes namespaces longer than
- * Sanitize::URI_MAX_LENGTH before writing cache entries. We mirror the same
- * rule here so invalidation always targets the exact key previously used.
- */
-function untranslated_translation_cache_key(string $namespace, string $language): string
-{
-    // Keep cache-key generation behavior aligned with Translator.
-    $cacheNamespace = $namespace;
-    if (strlen($cacheNamespace) > Sanitize::URI_MAX_LENGTH) {
-        $cacheNamespace = sha1($cacheNamespace);
-    }
-
-    return 'translations-' . $cacheNamespace . '-' . $language;
-}

@@ -116,7 +116,47 @@ class Translator
 
         self::getInstance()->setLanguage($language);
 
-        define('LANGUAGE', preg_replace('/[^a-z]/i', '', $language));
+        define('LANGUAGE', self::normalizeLanguageCode($language));
+    }
+
+    /**
+     * Strip a language preference down to letters.
+     *
+     * LANGUAGE is concatenated into queries rather than bound -- a language
+     * cannot be a parameter everywhere it is used -- so the defence is that
+     * the value cannot carry a quote by the time it becomes a constant. The
+     * value is user-controlled: it comes from the account's preference, or
+     * failing that from the `language` cookie.
+     *
+     * A method rather than an expression inside the define() so it can be
+     * exercised. define() cannot be undone, and the test bootstrap already
+     * fixes LANGUAGE, so the rule was unreachable from a test while it lived
+     * at the call site.
+     */
+    public static function normalizeLanguageCode(string $language): string
+    {
+        return (string) preg_replace('/[^a-z]/i', '', $language);
+    }
+
+    /**
+     * The data-cache key a namespace's translations are stored under.
+     *
+     * Writing and invalidating have to agree on this exactly, or an edit
+     * leaves the stale table in the cache for ten minutes and the editor sees
+     * no change. They used to agree by being written twice -- once here and
+     * once as untranslated_translation_cache_key() in untranslated.php, whose
+     * own comment said "keep cache-key generation behavior aligned with
+     * Translator". The test that covered it read both files and asserted the
+     * two spellings matched, which freezes the duplication rather than
+     * removing it: two copies that must not drift are one function.
+     */
+    public static function translationCacheKey(string $namespace, string $language): string
+    {
+        if (strlen($namespace) > Sanitize::URI_MAX_LENGTH) {
+            $namespace = sha1($namespace);
+        }
+
+        return 'translations-' . $namespace . '-' . $language;
     }
 
     /**
@@ -475,11 +515,7 @@ class Translator
 
         try {
             if ($settings instanceof Settings && $settings->getSetting('cachetranslations', 1)) {
-                $cacheNamespace = $namespace;
-                if (strlen($cacheNamespace) > Sanitize::URI_MAX_LENGTH) {
-                    $cacheNamespace = sha1($cacheNamespace);
-                }
-                $cacheKey = 'translations-' . $cacheNamespace . '-' . $language;
+                $cacheKey = self::translationCacheKey($namespace, (string) $language);
                 \Lotgd\MySQL\Database::$lastCacheName = $cacheKey;
                 $cache = DataCache::getInstance();
                 $data  = $cache->datacache($cacheKey, 600);
