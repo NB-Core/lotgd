@@ -322,6 +322,73 @@ modules.
 
 ## 7. Breaking Changes
 
+- **Companions now actually gain levels, which they never did before.** The
+  `companionslevelup` setting has existed and defaulted to on, and the code
+  behind it computed each companion's new attack, defence and maximum hitpoints
+  correctly — and then threw the result away. `train.php` built the updated list
+  in `$newcompanions` and never assigned it back or serialised it into the
+  session, so the whole block was a no-op for every release it has shipped in.
+
+  It is kept now. A companion is already scaled by the player's level when it is
+  hired (`companions.php`, `mercenarycamp.php`); this is what keeps that current
+  as the player climbs, rather than leaving the companion frozen at hire-time
+  strength.
+
+  Measured over a climb from level 3 to 15:
+
+  | Companion | hired at level 3 | after the climb |
+  |---|---|---|
+  | light scout (1/1/3 per level) | atk 5, def 4, hp 20 | atk 17, def 16, hp 56 |
+  | hired blade (2/2/5 per level) | atk 10, def 8, hp 40 | atk 34, def 32, hp 100 |
+  | war beast (3/1/8 per level) | atk 14, def 6, hp 60 | atk 50, def 18, hp 156 |
+
+  Roughly **+240% to +260% attack** over a full climb, where before every figure
+  stayed at the left-hand column. A companion is also healed to its new maximum
+  on each master defeat.
+
+  **To keep the old behaviour**, set `companionslevelup` to `0`. That switch now
+  does what its name says in both positions.
+
+  Two defects in the same block are fixed with it, because they only became
+  observable once the result was kept: the healing step tested for an `attack`
+  key and then read `maxhitpoints`, so a non-fighting companion was never healed
+  and a fighting one without a maximum had its hitpoints set to `null` with an
+  undefined-key warning.
+
+- **Physical resistance no longer applies to a riposte, which changes combat
+  balance.** A riposte is the counter-blow a combatant lands when their
+  opponent's attack falls short. Until now, the *attacking* side's own physical
+  resistance was subtracted from the riposte figure — and because that figure is
+  negative, subtracting made the counter-blow **harder** instead of softer, on
+  both sides of the exchange.
+
+  Measured over 50,000 rounds against a creature with 15 attack and 12 defence,
+  with a player carrying 5 physical resistance:
+
+  | Creature resistance | Creature's riposte, before | after |
+  |---|---|---|
+  | 0 | 1.45 | 1.46 |
+  | 3 | 3.95 | 1.47 |
+  | 10 | **10.93** | 1.48 |
+
+  A resistant creature absorbed more *and* hit back seven times harder for it.
+  The player's own riposte drops likewise, from an average 6.6 to 2.0, because
+  their resistance of 5 was being added to every counter-blow they landed.
+
+  **What changes for players:** high-resistance creatures become noticeably less
+  dangerous, and players with high resistance lose the riposte bonus they were
+  silently getting. Resistance still works exactly as before on a blow that
+  lands — that half was never wrong, and the player's average landed hit is
+  unchanged (7.70 → 7.63 at creature resistance 0, 4.71 → 4.67 at 10).
+
+  Damping instead of amplifying was tried and rejected: a riposte is already
+  halved and therefore small, so subtracting any meaningful resistance floors it
+  at zero and the mechanic disappears entirely. Dropping the term leaves the
+  riposte at the halved margin times its damage modifier.
+
+  Nothing to do on upgrade; no setting controls it. Listed here because your
+  players will feel it.
+
 - **The core's own state-changing operations now require a CSRF token, and
   every destructive trigger is a button rather than a link.**
   - A module or bookmark that links to a *core* state-changing operation stops

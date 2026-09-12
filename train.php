@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
+use Lotgd\CreateString;
 use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
@@ -213,14 +215,9 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
             $output->outputNotl("`0`b`n");
             $output->output("`b`\$You have defeated %s!`0`b`n", $badguy['creaturename']);
 
-            $session['user']['level']++;
-            $session['user']['maxhitpoints'] += 10;
-            $session['user']['soulpoints'] += 5;
-            $session['user']['attack']++;
-            $session['user']['defense']++;
-            // Fix the multimaster bug
-            if ((int) $settings->getSetting('multimaster', 1) === 1) {
-                $session['user']['seenmaster'] = 0;
+            $multimaster = (int) $settings->getSetting('multimaster', 1) === 1;
+            $session['user'] = PlayerFunctions::levelUp($session['user'], $multimaster);
+            if ($multimaster) {
                 debuglog("Defeated master, setting seenmaster to 0");
             }
             $output->output("`#You advance to level `^%s`#!`n", $session['user']['level']);
@@ -233,8 +230,15 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
                 $output->output("None in the land are mightier than you!`n");
             }
             if ($session['user']['referer'] > 0 && ($session['user']['level'] >= (int) $settings->getSetting('referminlevel', 4) || $session['user']['dragonkills'] > 0) && $session['user']['refererawarded'] < 1) {
-                $sql = "UPDATE " . Database::prefix("accounts") . " SET donation=donation+" . (int) $settings->getSetting('refereraward', 25) . " WHERE acctid={$session['user']['referer']}";
-                Database::query($sql);
+                Database::getDoctrineConnection()->executeStatement(
+                    'UPDATE ' . Database::prefix('accounts')
+                    . ' SET donation = donation + :award WHERE acctid = :acctid',
+                    [
+                        'award' => (int) $settings->getSetting('refereraward', 25),
+                        'acctid' => (int) $session['user']['referer'],
+                    ],
+                    ['award' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+                );
                 $session['user']['refererawarded'] = 1;
                 $subj = array("`%One of your referrals advanced!`0");
                 $body = array("`&%s`# has advanced to level `^%s`#, and so you have earned `^%s`# points!", $session['user']['name'], $session['user']['level'], $settings->getSetting('refereraward', 25));
@@ -248,20 +252,19 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
             if ((bool) $settings->getSetting('companionslevelup', 1)) {
                 $newcompanions = $companions;
                 foreach ($companions as $name => $companion) {
-                    if (isset($companion['attack'])) {
-                        $companion['attack'] = $companion['attack'] + (isset($companion['attackperlevel']) ? $companion['attackperlevel'] : 0);
-                    }
-                    if (isset($companion['defense'])) {
-                        $companion['defense'] = $companion['defense'] + (isset($companion['defenseperlevel']) ? $companion['defenseperlevel'] : 0);
-                    }
-                    if (isset($companion['maxhitpoints'])) {
-                        $companion['maxhitpoints'] = $companion['maxhitpoints'] + (isset($companion['maxhitpointsperlevel']) ? $companion['maxhitpointsperlevel'] : 0);
-                    }
-                    if (isset($companion['attack'])) {
-                        $companion['hitpoints'] = $companion['maxhitpoints'];
-                    }
-                    $newcompanions[$name] = $companion;
+                    $newcompanions[$name] = PlayerFunctions::levelUpCompanion($companion);
                 }
+                // Kept, rather than computed and dropped. $newcompanions was
+                // written and never read, so this whole block -- and the
+                // companionslevelup setting that guards it -- did nothing at
+                // all.
+                //
+                // Only the global is updated here. Persisting at this point
+                // would freeze the suspension that suspendCompanions() set
+                // above, because unsuspendCompanions() further down writes the
+                // global and nothing else. The session is written once after
+                // that call instead.
+                $companions = $newcompanions;
             }
 
             DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
@@ -315,6 +318,14 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
         if ($victory || $defeat) {
             Battle::unsuspendBuffs('allowintrain', "`&You now feel free to make use of your buffs again!`0`n");
             Battle::unsuspendCompanions("allowintrain");
+            // After the unsuspension, not before it. suspendCompanions() runs
+            // on every training fight and unsuspendCompanions() writes only the
+            // global, so anything persisted earlier in the request carries
+            // suspended = true into the player's next battle. This is the point
+            // where the array is what they will actually fight with -- and it
+            // is the only write, so the level-up above reaches the session
+            // through it.
+            $session['user']['companions'] = CreateString::run($companions);
         }
     }
 } else {
