@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
@@ -213,14 +214,9 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
             $output->outputNotl("`0`b`n");
             $output->output("`b`\$You have defeated %s!`0`b`n", $badguy['creaturename']);
 
-            $session['user']['level']++;
-            $session['user']['maxhitpoints'] += 10;
-            $session['user']['soulpoints'] += 5;
-            $session['user']['attack']++;
-            $session['user']['defense']++;
-            // Fix the multimaster bug
-            if ((int) $settings->getSetting('multimaster', 1) === 1) {
-                $session['user']['seenmaster'] = 0;
+            $multimaster = (int) $settings->getSetting('multimaster', 1) === 1;
+            $session['user'] = PlayerFunctions::levelUp($session['user'], $multimaster);
+            if ($multimaster) {
                 debuglog("Defeated master, setting seenmaster to 0");
             }
             $output->output("`#You advance to level `^%s`#!`n", $session['user']['level']);
@@ -233,8 +229,15 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
                 $output->output("None in the land are mightier than you!`n");
             }
             if ($session['user']['referer'] > 0 && ($session['user']['level'] >= (int) $settings->getSetting('referminlevel', 4) || $session['user']['dragonkills'] > 0) && $session['user']['refererawarded'] < 1) {
-                $sql = "UPDATE " . Database::prefix("accounts") . " SET donation=donation+" . (int) $settings->getSetting('refereraward', 25) . " WHERE acctid={$session['user']['referer']}";
-                Database::query($sql);
+                Database::getDoctrineConnection()->executeStatement(
+                    'UPDATE ' . Database::prefix('accounts')
+                    . ' SET donation = donation + :award WHERE acctid = :acctid',
+                    [
+                        'award' => (int) $settings->getSetting('refereraward', 25),
+                        'acctid' => (int) $session['user']['referer'],
+                    ],
+                    ['award' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+                );
                 $session['user']['refererawarded'] = 1;
                 $subj = array("`%One of your referrals advanced!`0");
                 $body = array("`&%s`# has advanced to level `^%s`#, and so you have earned `^%s`# points!", $session['user']['name'], $session['user']['level'], $settings->getSetting('refereraward', 25));
@@ -248,19 +251,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
             if ((bool) $settings->getSetting('companionslevelup', 1)) {
                 $newcompanions = $companions;
                 foreach ($companions as $name => $companion) {
-                    if (isset($companion['attack'])) {
-                        $companion['attack'] = $companion['attack'] + (isset($companion['attackperlevel']) ? $companion['attackperlevel'] : 0);
-                    }
-                    if (isset($companion['defense'])) {
-                        $companion['defense'] = $companion['defense'] + (isset($companion['defenseperlevel']) ? $companion['defenseperlevel'] : 0);
-                    }
-                    if (isset($companion['maxhitpoints'])) {
-                        $companion['maxhitpoints'] = $companion['maxhitpoints'] + (isset($companion['maxhitpointsperlevel']) ? $companion['maxhitpointsperlevel'] : 0);
-                    }
-                    if (isset($companion['attack'])) {
-                        $companion['hitpoints'] = $companion['maxhitpoints'];
-                    }
-                    $newcompanions[$name] = $companion;
+                    $newcompanions[$name] = PlayerFunctions::levelUpCompanion($companion);
                 }
             }
 

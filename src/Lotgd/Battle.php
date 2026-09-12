@@ -8,7 +8,11 @@ use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
 use Lotgd\FightBar;
-use Lotgd\BellRand;
+use Lotgd\Battle\CombatContext;
+use Lotgd\Battle\Combatant;
+use Lotgd\Battle\DamageRoll;
+use Lotgd\Battle\RandomSource;
+use Lotgd\Battle\SystemRandomSource;
 use Lotgd\Substitute;
 use Lotgd\Util\ScriptName;
 use Lotgd\Modules\HookHandler;
@@ -24,84 +28,177 @@ class Battle
     /**
      * Calculate damage for a combat round.
      *
+     * Legacy entry point, kept byte-compatible for lib/battle-skills.php and the
+     * modules that call it: same signature, same return shape, and the same
+     * globals read and written. All it does now is collect those globals and
+     * hand them to computePlayerDamage().
+     *
      * @param array $badguy Enemy data (modified in place)
      *
-     * @return array{creaturedmg:int,selfdmg:int}
+     * @return array{creaturedmg:int|float,selfdmg:int|float}
      */
     public static function rollDamage(array &$badguy): array
     {
         global $session, $creatureattack, $creatureatkmod, $adjustment;
         global $creaturedefmod, $defmod, $atkmod, $buffset, $atk, $def, $options;
+
+        $settings = Settings::getInstance();
+
+        // The three player stats are read once here rather than once per
+        // iteration as before. They are pure functions of $session['user'] and
+        // the loop never writes to $session, so the value cannot change between
+        // rounds of the re-roll -- the arithmetic is unchanged.
+        $self = new Combatant(
+            attack: PlayerFunctions::getPlayerAttack(),
+            defense: PlayerFunctions::getPlayerDefense(),
+            hitpoints: (float) $session['user']['hitpoints'],
+            resistance: (float) (int) PlayerFunctions::getPlayerPhysicalResistance(),
+        );
+
+        $roll = self::computePlayerDamage(
+            $badguy,
+            $self,
+            new CombatContext(
+                isPvp: ($options['type'] ?? null) == 'pvp',
+                adjustment: (float) $adjustment,
+                creatureAtkMod: (float) $creatureatkmod,
+                creatureDefMod: (float) $creaturedefmod,
+                atkMod: (float) $atkmod,
+                defMod: (float) $defmod,
+                dmgMod: (float) $buffset['dmgmod'],
+                badguyDmgMod: (float) $buffset['badguydmgmod'],
+                invulnerable: (bool) $buffset['invulnerable'],
+                powerAttackChance: (int) $settings->getSetting('forestpowerattackchance', 10),
+                powerAttackMulti: (float) $settings->getSetting('forestpowerattackmulti', 3),
+            ),
+            new SystemRandomSource(),
+        );
+
+        // $atk carries the attack *roll* onwards to reportPowerMove()
+        // (battle.php:603). $creatureattack has no reader left anywhere in the
+        // codebase but is still published, because a module may have one.
+        // Only when an exchange actually happened. A call against a creature
+        // that is already down left these globals alone before the refactor,
+        // and battle.php:603 reads $atk on every round -- a stale value there
+        // is pre-existing behaviour, a zeroed one would not be.
+        if ($roll->attackRoll !== null) {
+            $atk = $roll->attackRoll;
+        }
+        if ($roll->creatureAttack !== null) {
+            $creatureattack = $roll->creatureAttack;
+        }
+
+        return [
+            'creaturedmg' => $roll->creatureDamage,
+            'selfdmg' => $roll->selfDamage,
+        ];
+    }
+
+    /**
+     * The player's half of a combat round, with nothing read from global scope.
+     *
+     * Both damage figures are signed: a negative creature damage is a riposte
+     * the player takes, a negative self damage is one the creature takes.
+     *
+     * Note the crossed modifiers -- the least obvious thing in here. On the
+     * player's blow a hit scales with dmgMod and a riposte with badguyDmgMod;
+     * on the creature's blow it is the other way round. Both sides are
+     * therefore scaled by the side that lands the hit, not by the side that
+     * swings.
+     *
+     * Physical resistance applies only to a blow that lands. It used to be
+     * subtracted on the riposte branches too, where the figure is negative, so
+     * it made a counter-blow harder rather than softer.
+     *
+     * The loop re-rolls while both figures are zero, so that a round always
+     * produces something, and gives up after fifty fruitless exchanges the way
+     * the companion roll does -- two combatants who can neither hit nor be hit
+     * would otherwise spin here forever.
+     *
+     * @param array $badguy Enemy data (modified in place -- a missing
+     *                      physicalresistance is filled in with 0)
+     */
+    public static function computePlayerDamage(
+        array &$badguy,
+        Combatant $self,
+        CombatContext $context,
+        RandomSource $random
+    ): DamageRoll {
         $creaturedmg = 0;
         $selfdmg     = 0;
+        $patkroll    = null;
+        $creatureattack = null;
 
-        if ($badguy['creaturehealth'] > 0 && $session['user']['hitpoints'] > 0) {
-            if ($options['type'] == 'pvp') {
+        if ($badguy['creaturehealth'] > 0 && $self->hitpoints > 0) {
+            if ($context->isPvp) {
                 $adjustedcreaturedefense = $badguy['creaturedefense'];
             } else {
                 $adjustedcreaturedefense = (
-                    $creaturedefmod * $badguy['creaturedefense'] /
-                    ($adjustment * $adjustment)
+                    $context->creatureDefMod * $badguy['creaturedefense'] /
+                    ($context->adjustment * $context->adjustment)
                 );
             }
 
-            $creatureattack = $badguy['creatureattack'] * $creatureatkmod;
-            $adjustedselfdefense = (PlayerFunctions::getPlayerDefense() * $adjustment * $defmod);
+            $creatureattack = $badguy['creatureattack'] * $context->creatureAtkMod;
+            $adjustedselfdefense = ($self->defense * $context->adjustment * $context->defMod);
 
             if (!isset($badguy['physicalresistance'])) {
                 $badguy['physicalresistance'] = 0;
             }
-            $settings = Settings::getInstance();
-            $powerattack = (int) $settings->getSetting('forestpowerattackchance', 10);
-            $powerattackmulti = (float) $settings->getSetting('forestpowerattackmulti', 3);
 
+            $bad_check = 1;
             while ($creaturedmg == 0 && $selfdmg == 0) {
-                $atk = PlayerFunctions::getPlayerAttack() * $atkmod;
-                if (random_int(1, 20) == 1 && $options['type'] != 'pvp') {
+                $atk = $self->attack * $context->atkMod;
+                if ($random->int(1, 20) == 1 && !$context->isPvp) {
                     $atk *= 2;
                 }
-                $patkroll = BellRand::generate(0, $atk);
-                $atk = $patkroll;
-                $catkroll = BellRand::generate(0, $adjustedcreaturedefense);
+                $patkroll = $random->bell(0, $atk);
+                $catkroll = $random->bell(0, $adjustedcreaturedefense);
                 $creaturedmg = 0 - (int) ($catkroll - $patkroll);
                 if ($creaturedmg < 0) {
                     $creaturedmg = (int) ($creaturedmg / 2);
-                    $creaturedmg = round($buffset['badguydmgmod'] * $creaturedmg, 0);
-                    $creaturedmg = min(0, round($creaturedmg - $badguy['physicalresistance']));
+                    $creaturedmg = round($context->badguyDmgMod * $creaturedmg, 0);
+                    $creaturedmg = min(0, $creaturedmg);
                 }
                 if ($creaturedmg > 0) {
-                    $creaturedmg = round($buffset['dmgmod'] * $creaturedmg, 0);
+                    $creaturedmg = round($context->dmgMod * $creaturedmg, 0);
                     $creaturedmg = max(0, round($creaturedmg - $badguy['physicalresistance']));
                 }
-                $pdefroll = BellRand::generate(0, $adjustedselfdefense);
-                $catkroll = BellRand::generate(0, $creatureattack);
-                if ($powerattack != 0 && $options['type'] != 'pvp') {
-                    if (random_int(1, $powerattack) == 1) {
-                        $catkroll *= $powerattackmulti;
+                $pdefroll = $random->bell(0, $adjustedselfdefense);
+                $catkroll = $random->bell(0, $creatureattack);
+                if ($context->powerAttackChance != 0 && !$context->isPvp) {
+                    if ($random->int(1, $context->powerAttackChance) == 1) {
+                        $catkroll *= $context->powerAttackMulti;
                     }
                 }
                 $selfdmg = 0 - (int) ($pdefroll - $catkroll);
                 if ($selfdmg < 0) {
                     $selfdmg = (int) ($selfdmg / 2);
-                    $selfdmg = round($selfdmg * $buffset['dmgmod'], 0);
-                    $selfdmg = min(0, round($selfdmg - ((int) PlayerFunctions::getPlayerPhysicalResistance()), 0));
+                    $selfdmg = round($selfdmg * $context->dmgMod, 0);
+                    $selfdmg = min(0, $selfdmg);
                 }
                 if ($selfdmg > 0) {
-                    $selfdmg = round($selfdmg * $buffset['badguydmgmod'], 0);
-                    $selfdmg = max(0, round($selfdmg - ((int) PlayerFunctions::getPlayerPhysicalResistance()), 0));
+                    $selfdmg = round($selfdmg * $context->badguyDmgMod, 0);
+                    $selfdmg = max(0, round($selfdmg - $self->resistance, 0));
+                }
+                $bad_check++;
+                if ($bad_check > 50 && $creaturedmg == 0 && $selfdmg == 0) {
+                    // We're getting nowhere. Only when this exchange produced
+                    // nothing either -- a fiftieth roll that finally landed is
+                    // the result, not something to discard.
+                    $selfdmg = 0;
+                    $creaturedmg = 1;
                 }
             }
         }
 
-        if ($buffset['invulnerable']) {
+        // Handle god mode's invulnerability
+        if ($context->invulnerable) {
             $creaturedmg = abs($creaturedmg);
             $selfdmg = -abs($selfdmg);
         }
 
-        return [
-            'creaturedmg' => $creaturedmg,
-            'selfdmg' => $selfdmg,
-        ];
+        return new DamageRoll($creaturedmg, $selfdmg, $patkroll, $creatureattack);
     }
 
     public static function reportPowerMove(int $crit, int $dmg)
@@ -977,6 +1074,9 @@ class Battle
 /**
  * Based upon the companion's stats damage values are calculated.
  *
+ * Legacy entry point, kept signature- and shape-compatible; the arithmetic
+ * lives in computeCompanionDamage().
+ *
  * @param array $companion
  * @return array
  */
@@ -986,78 +1086,111 @@ class Battle
         global $creatureattack, $creatureatkmod, $adjustment, $options;
         global $creaturedefmod, $compdefmod, $compatkmod, $buffset, $atk, $def;
 
+        $roll = self::computeCompanionDamage(
+            $badguy,
+            new Combatant(
+                attack: (float) $companion['attack'],
+                defense: (float) $companion['defense'],
+                hitpoints: (float) $companion['hitpoints'],
+            ),
+            new CombatContext(
+                isPvp: ($options['type'] ?? null) == 'pvp',
+                adjustment: (float) $adjustment,
+                creatureAtkMod: (float) $creatureatkmod,
+                creatureDefMod: (float) $creaturedefmod,
+                compAtkMod: (float) $compatkmod,
+                compDefMod: (float) $compdefmod,
+                badguyDmgMod: (float) $buffset['badguydmgmod'],
+                compDmgMod: (float) $buffset['compdmgmod'],
+                invulnerable: (bool) $buffset['invulnerable'],
+            ),
+            new SystemRandomSource(),
+        );
+
+        if ($roll->attackRoll !== null) {
+            $atk = $roll->attackRoll;
+        }
+        if ($roll->creatureAttack !== null) {
+            $creatureattack = $roll->creatureAttack;
+        }
+
+        return ['creaturedmg' => $roll->creatureDamage, 'selfdmg' => $roll->selfDamage];
+    }
+
+    /**
+     * A companion's half of a combat round, with nothing read from global scope.
+     *
+     * Four things separate this from computePlayerDamage(), and each is a rule
+     * of its own rather than an oversight:
+     *
+     *  - a critical hit triples the attack score here and doubles it there;
+     *  - there is no power attack, so the creature never gets a bonus swing;
+     *  - physical resistance does not apply on either side;
+     *  - the companion's own blows scale with compDmgMod, not dmgMod.
+     *
+     * It also has the escape hatch its player counterpart lacks: after fifty
+     * fruitless re-rolls it awards a single point of damage and stops, rather
+     * than spinning forever on two combatants who cannot touch each other.
+     *
+     * $badguy is taken by reference to match the legacy signature; unlike the
+     * player roll, nothing here writes to it.
+     */
+    public static function computeCompanionDamage(
+        array &$badguy,
+        Combatant $companion,
+        CombatContext $context,
+        RandomSource $random
+    ): DamageRoll {
         $creaturedmg = 0;
         $selfdmg     = 0;
+        $patkroll    = null;
+        $creatureattack = null;
 
-        if ($badguy['creaturehealth'] > 0 && $companion['hitpoints'] > 0) {
-            if ($options['type'] == 'pvp') {
+        if ($badguy['creaturehealth'] > 0 && $companion->hitpoints > 0) {
+            if ($context->isPvp) {
                 $adjustedcreaturedefense = $badguy['creaturedefense'];
             } else {
                 $adjustedcreaturedefense =
-                ($creaturedefmod * $badguy['creaturedefense'] /
-                 ($adjustment * $adjustment));
+                ($context->creatureDefMod * $badguy['creaturedefense'] /
+                 ($context->adjustment * $context->adjustment));
             }
 
-            $creatureattack = $badguy['creatureattack'] * $creatureatkmod;
-            $adjustedselfdefense = ($companion['defense'] * $adjustment * $compdefmod);
+            $creatureattack = $badguy['creatureattack'] * $context->creatureAtkMod;
+            $adjustedselfdefense = ($companion->defense * $context->adjustment * $context->compDefMod);
 
-            /*
-            debug("Base creature defense: " . $badguy['creaturedefense']);
-            debug("Creature defense mod: $creaturedefmod");
-            debug("Adjustment: $adjustment");
-            debug("Adjusted creature defense: $adjustedcreaturedefense");
-            debug("Adjusted creature attack: $creatureattack");
-            debug("Adjusted self defense: $adjustedselfdefense");
-            */
             $bad_check = 1;
             while ($creaturedmg == 0 && $selfdmg == 0) {
-                $atk = $companion['attack'] * $compatkmod;
-                if (random_int(1, 20) == 1 && $options['type'] != "pvp") {
+                $atk = $companion->attack * $context->compAtkMod;
+                if ($random->int(1, 20) == 1 && !$context->isPvp) {
                     $atk *= 3;
                 }
-                /*
-                debug("Attack score: $atk");
-                */
 
-                $patkroll = BellRand::generate(0, $atk);
-                /*
-                debug("Player Attack roll: $patkroll");
-                */
-
-                // Set up for crit detection
-                $atk = $patkroll;
-                $catkroll = BellRand::generate(0, $adjustedcreaturedefense);
-                /*
-                debug("Creature defense roll: $catkroll");
-                */
+                $patkroll = $random->bell(0, $atk);
+                $catkroll = $random->bell(0, $adjustedcreaturedefense);
 
                 $creaturedmg = 0 - (int)($catkroll - $patkroll);
                 if ($creaturedmg < 0) {
                     $creaturedmg = (int)($creaturedmg / 2);
-                    $creaturedmg = round($buffset['badguydmgmod'] * $creaturedmg, 0);
+                    $creaturedmg = round($context->badguyDmgMod * $creaturedmg, 0);
                 }
                 if ($creaturedmg > 0) {
-                    $creaturedmg = round($buffset['compdmgmod'] * $creaturedmg, 0);
+                    $creaturedmg = round($context->compDmgMod * $creaturedmg, 0);
                 }
-                $pdefroll = BellRand::generate(0, $adjustedselfdefense);
-                $catkroll = BellRand::generate(0, $creatureattack);
-                /*
-                   debug("Creature attack roll: $catkroll");
-                   debug("Player defense roll: $pdefroll");
-                 */
+                $pdefroll = $random->bell(0, $adjustedselfdefense);
+                $catkroll = $random->bell(0, $creatureattack);
                 $selfdmg = 0 - (int)($pdefroll - $catkroll);
                 if ($selfdmg < 0) {
                     $selfdmg = (int)($selfdmg / 2);
-                    $selfdmg = round($selfdmg * $buffset['compdmgmod'], 0);
+                    $selfdmg = round($selfdmg * $context->compDmgMod, 0);
                 }
                 if ($selfdmg > 0) {
-                    $selfdmg = round($selfdmg * $buffset['badguydmgmod'], 0);
+                    $selfdmg = round($selfdmg * $context->badguyDmgMod, 0);
                 }
                 $bad_check++;
-                if ($bad_check > 50) {
-                            //we're getting nowhere
-                            $selfdmg = 0;
-                            $creaturedmg = 1;
+                if ($bad_check > 50 && $creaturedmg == 0 && $selfdmg == 0) {
+                    // We're getting nowhere. Same guard as the player roll.
+                    $selfdmg = 0;
+                    $creaturedmg = 1;
                 }
             }
         } else {
@@ -1066,12 +1199,12 @@ class Battle
         }
 
         // Handle god mode's invulnerability
-        if ($buffset['invulnerable']) {
+        if ($context->invulnerable) {
             $creaturedmg = abs($creaturedmg);
             $selfdmg     = -abs($selfdmg);
         }
 
-        return ['creaturedmg' => $creaturedmg, 'selfdmg' => $selfdmg];
+        return new DamageRoll($creaturedmg, $selfdmg, $patkroll, $creatureattack);
     }
 
 /**
