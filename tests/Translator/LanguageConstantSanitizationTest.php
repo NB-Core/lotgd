@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 final class LanguageConstantSanitizationTest extends TestCase
 {
     /**
-     * @param non-empty-string $preference
+     * @param string $preference
      */
     #[DataProvider('provideLanguagePreferences')]
     public function testALanguagePreferenceIsReducedToLetters(string $preference, string $expected): void

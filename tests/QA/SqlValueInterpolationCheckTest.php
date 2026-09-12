@@ -399,6 +399,62 @@ final class SqlValueInterpolationCheckTest extends TestCase
     }
 
     /**
+     * Each finding's context marks where its own value lands.
+     *
+     * The first version appended the marker after the assembled text, so two
+     * values in one statement produced byte-identical contexts and neither
+     * said where it went -- useless exactly when there is more than one thing
+     * to look at. Copilot spotted the stray NUL that came with it; trim() was
+     * swallowing the byte, so the visible defect was the context rather than
+     * the character.
+     */
+    public function testEachFindingMarksItsOwnPositionInTheStatement(): void
+    {
+        $violations = $this->analyse(
+            '$sql = "SELECT * FROM t WHERE a = \'" . Http::get(\'a\')'
+            . ' . "\' AND b = \'" . Http::get(\'b\') . "\'";'
+        );
+
+        self::assertCount(2, $violations);
+        self::assertSame("SELECT * FROM t WHERE a = '{0}' AND b = ''", $violations[0]['context']);
+        self::assertSame("SELECT * FROM t WHERE a = '' AND b = '{0}'", $violations[1]['context']);
+
+        foreach ($violations as $violation) {
+            self::assertStringNotContainsString("\x00", $violation['context'], 'no raw NUL reaches a report');
+        }
+    }
+
+    /**
+     * A call argument is not part of the query it sits in.
+     *
+     * Collecting every string in the statement also collects the arguments of
+     * the calls inside it, so Http::get('a') contributed an "a" in the middle
+     * of the assembled query. Cosmetic in that example and not in general: an
+     * argument carrying SQL words would help decide whether the statement
+     * counts as a query at all.
+     */
+    public function testACallArgumentDoesNotBecomePartOfTheQuery(): void
+    {
+        $violations = $this->analyse(
+            '$sql = "SELECT * FROM t WHERE a = \'" . Http::get(\'select from where\') . "\'";'
+        );
+
+        self::assertCount(1, $violations);
+        self::assertSame("SELECT * FROM t WHERE a = '{0}'", $violations[0]['context']);
+    }
+
+    /**
+     * And the argument alone cannot make a non-query look like one.
+     */
+    public function testAnArgumentCarryingSqlWordsDoesNotCreateAFinding(): void
+    {
+        self::assertSame(
+            [],
+            $this->analyse('$label = "Pick one: " . Http::get(\'select * from accounts where x\') . " please";')
+        );
+    }
+
+    /**
      * @return list<array{file: string, line: int, expression: string, context: string}>
      */
     private function analyse(string $body): array

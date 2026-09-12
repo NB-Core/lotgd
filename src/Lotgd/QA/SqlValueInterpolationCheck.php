@@ -367,7 +367,8 @@ final class SqlValueInterpolationCheck
             // the measurement behind dropping the position tests covered the
             // tree as it stands, which says nothing about prose someone
             // writes tomorrow.
-            if (preg_match(self::STATEMENT_PATTERN, $this->statementLiterals($tokens, $index, $tokenCount)) !== 1) {
+            [$literals, $slotOffset] = $this->statementLiterals($tokens, $index, $tokenCount);
+            if (preg_match(self::STATEMENT_PATTERN, $literals) !== 1) {
                 continue;
             }
 
@@ -382,12 +383,20 @@ final class SqlValueInterpolationCheck
             // inside quotes. Measured before relaxing it: with the position
             // tests and without, the tree reports the same 118 findings, so
             // the stricter reading costs nothing and covers more.
-            $literals = $this->statementLiterals($tokens, $index, $tokenCount);
+            // The marker goes where the value lands, in the same {0} shape the
+            // interpolation pass uses. Appending it at the end instead --
+            // which is what the first version did -- reported the tail of the
+            // statement, identically for every value in it, so two findings
+            // on one statement were indistinguishable. Copilot noticed the
+            // stray NUL that came with it; trim() was swallowing the byte, so
+            // the visible defect was the useless context rather than the
+            // character.
+            $marked = substr($literals, 0, $slotOffset) . "\x000\x00" . substr($literals, $slotOffset);
             $violations[] = [
                 'file' => $relativePath,
                 'line' => $line,
                 'expression' => trim($expression),
-                'context' => $this->summarizeContext($literals . "\x00", strlen($literals)),
+                'context' => $this->summarizeContext($marked, $slotOffset),
             ];
         }
 
@@ -464,9 +473,15 @@ final class SqlValueInterpolationCheck
      * die: disabling the outward walk changed nothing, because no case
      * needed it.
      *
+     * Returns the assembled text and the offset within it where the slot
+     * sits, so the report can mark the place the value lands rather than
+     * showing the same statement for every value in it.
+     *
      * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     *
+     * @return array{0: string, 1: int}
      */
-    private function statementLiterals(array $tokens, int $index, int $tokenCount): string
+    private function statementLiterals(array $tokens, int $index, int $tokenCount): array
     {
         $start = $index;
         $depth = 0;
@@ -491,6 +506,7 @@ final class SqlValueInterpolationCheck
         }
 
         $literals = '';
+        $slotOffset = 0;
         $depth = 0;
         for ($cursor = $start; $cursor < $tokenCount; $cursor++) {
             $token = $tokens[$cursor];
@@ -507,12 +523,62 @@ final class SqlValueInterpolationCheck
                 break;
             }
 
-            if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
+            // Only literals that take part in the concatenation. Every string
+            // in the statement would also pull in the arguments of the calls
+            // inside it -- Http::get('a') contributes an "a" that lands in
+            // the middle of the assembled query, which showed up as
+            // "a = '{0}a'" in a report and would let an argument carrying SQL
+            // words decide the gate.
+            if (
+                is_array($token)
+                && $token[0] === T_CONSTANT_ENCAPSED_STRING
+                && $this->joinsAConcatenation($tokens, $cursor, $tokenCount)
+            ) {
                 $literals .= $this->unquote($token[1]);
+            }
+
+            // The value is concatenated directly after the literal at $index.
+            if ($cursor === $index) {
+                $slotOffset = strlen($literals);
             }
         }
 
-        return $literals;
+        return [$literals, $slotOffset];
+    }
+
+    /**
+     * Is this string token joined to its neighbours by `.`?
+     *
+     * Distinguishes a fragment of the query from a call argument that happens
+     * to be a string. Http::get('a') sits between `(` and `)`, so its 'a'
+     * contributes nothing; "SELECT * FROM t WHERE a = '" is followed by `.`,
+     * so it does.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function joinsAConcatenation(array $tokens, int $index, int $tokenCount): bool
+    {
+        for ($cursor = $index + 1; $cursor < $tokenCount; $cursor++) {
+            $token = $tokens[$cursor];
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+            if ($token === '.') {
+                return true;
+            }
+            break;
+        }
+
+        for ($cursor = $index - 1; $cursor >= 0; $cursor--) {
+            $token = $tokens[$cursor];
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            return $token === '.';
+        }
+
+        return false;
     }
 
     private function unquote(string $literal): string
