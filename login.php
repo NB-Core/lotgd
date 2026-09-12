@@ -505,7 +505,7 @@ if ($name != "") {
                                 Mail::systemMail($row2['acctid'], $subj, $msg, 0, $noemail);
                             }//end for
                         }//end if($su)
-                    }//end if($c>=10)
+                    }//end if($tally->warrantsBan())
                 }//end while
             }//end if (Database::numRows)
             Redirect::redirect("index.php");

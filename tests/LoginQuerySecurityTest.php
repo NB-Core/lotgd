@@ -331,17 +331,71 @@ final class LoginQuerySecurityTest extends TestCase
      */
     public function testADatabaseErrorIsNeverShownToTheVisitor(): void
     {
-        $source = $this->readLoginScript();
+        foreach (self::statementsCalling($this->readLoginScript(), 'getMessage') as $statement) {
+            foreach (self::VISITOR_FACING as $sink) {
+                self::assertStringNotContainsString(
+                    $sink,
+                    $statement,
+                    "an exception message reaches the visitor through $sink: " . trim($statement)
+                );
+            }
+        }
 
-        self::assertStringNotContainsString(
-            '$exception->getMessage()',
-            $source,
-            'the login page must not render or echo what the database said'
-        );
         self::assertStringContainsString(
             '`4Error, your login was incorrect`0',
-            $source,
+            $this->readLoginScript(),
             'a failure says the same thing whether the account exists or not'
         );
+    }
+
+    /**
+     * Ways text reaches the person at the browser, as login.php spells them.
+     *
+     * @var list<string>
+     */
+    private const VISITOR_FACING = [
+        "\$session['message']",
+        'echo ',
+        'print ',
+        '->output(',
+        '->outputNotl(',
+        'appoencode(',
+    ];
+
+    /**
+     * The text of each statement that calls $method.
+     *
+     * A statement rather than the whole file, because the rule is about where
+     * the message *goes*. Forbidding the call outright -- which is what the
+     * first version of this did -- also forbids handing it to debuglog(), and
+     * a test that fails on server-side logging is a test people route around.
+     * Reported by Copilot on this PR.
+     *
+     * @return list<string>
+     */
+    private static function statementsCalling(string $source, string $method): array
+    {
+        $statements = [];
+        $current = '';
+
+        foreach (token_get_all($source) as $token) {
+            $text = is_array($token) ? $token[1] : $token;
+
+            if ($text === ';' || $text === '{' || $text === '}') {
+                if (str_contains($current, $method)) {
+                    $statements[] = $current;
+                }
+                $current = '';
+                continue;
+            }
+
+            $current .= $text;
+        }
+
+        if (str_contains($current, $method)) {
+            $statements[] = $current;
+        }
+
+        return $statements;
     }
 }
