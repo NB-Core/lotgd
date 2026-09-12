@@ -68,6 +68,18 @@ final class SqlValueInterpolationCheck
     private const SAFE_EXPRESSION_PATTERN = '/^\s*\(\s*(int|integer|float|double)\s*\)|^\s*(intval|floatval|count|abs)\s*\(/i';
 
     /**
+     * Expressions that read straight from the request.
+     *
+     * Used only by the concatenation pass. Interpolation reports any variable
+     * in value position, because by the time a value is in a variable its
+     * provenance is gone; a concatenated slot is usually a call, and a call
+     * says where it got its value. Keeping the concatenation rule to these
+     * names is what makes it safe to run in CI -- see the note on
+     * collectConcatenationViolations().
+     */
+    private const REQUEST_SOURCE_PATTERN = '/\b(Http::(get|post)|httpget|httppost)\s*\(|\$_(GET|POST|REQUEST|COOKIE|SERVER)\b/i';
+
+    /**
      * @param list<string>|null $relativePaths Restrict the scan to these files.
      *
      * @return list<array{file: string, line: int, expression: string, context: string}>
@@ -130,7 +142,7 @@ final class SqlValueInterpolationCheck
                 if ($normalized === '' || !str_ends_with($normalized, '.php')) {
                     continue;
                 }
-                if ($this->isWhitelistedPath($normalized)) {
+                if ($this->isWhitelistedPath($normalized) || !$this->isInScanScope($normalized)) {
                     continue;
                 }
                 $files[] = $normalized;
@@ -171,6 +183,31 @@ final class SqlValueInterpolationCheck
     private function isWhitelistedPath(string $relativePath): bool
     {
         return in_array($relativePath, self::ALLOWED_PATHS, true);
+    }
+
+    /**
+     * Is this a file the full-tree scan would look at?
+     *
+     * --changed-since used to accept any .php path the diff named, so it
+     * scanned files the audit mode never reads -- tests above all. The two
+     * modes disagreeing is a trap rather than extra coverage: a finding that
+     * the audit will not report should not be able to fail CI either, and the
+     * first file to fall into it was this checker's own test fixtures, which
+     * contain the bad shapes on purpose.
+     */
+    private function isInScanScope(string $relativePath): bool
+    {
+        if (!str_contains($relativePath, '/')) {
+            return true; // a root-level entry point
+        }
+
+        foreach (self::SCAN_ROOTS as $root) {
+            if (str_starts_with($relativePath, $root . '/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -231,7 +268,223 @@ final class SqlValueInterpolationCheck
             }
         }
 
+        foreach ($this->collectConcatenationViolations($tokens, $tokenCount, $relativePath) as $violation) {
+            $violations[] = $violation;
+        }
+
         return $violations;
+    }
+
+    /**
+     * Request values joined into a query with `.` rather than interpolated.
+     *
+     * The interpolation pass above reads variables *inside* a string literal.
+     * A value concatenated around one is a separate token entirely, so
+     *
+     *     "DELETE FROM news WHERE newsid='" . Http::get('newsid') . "'"
+     *
+     * was invisible to it -- a gap found while auditing the tests that had
+     * been guarding this shape by searching login.php and superuser.php for
+     * its exact spelling.
+     *
+     * Deliberately narrower than the interpolation rule: the expression must
+     * *name* a request source. That was measured rather than assumed. Asking
+     * only "is this in value position" over the whole tree turns every
+     * `Nav::add("page.php?x=" . $v)` into a finding, because a URL query
+     * string has an `=` before its slot too; the assembled text is put
+     * through looksLikeSql() for exactly that reason, and the one candidate
+     * in the tree today is such a URL and is correctly passed over. With both
+     * gates the tree reports nothing, so the rule needs no baseline.
+     *
+     * The limit is worth stating plainly rather than discovering later: a
+     * request value assigned to a variable first, and that variable
+     * concatenated, is not reported here. The interpolation pass catches it
+     * when the variable is interpolated; concatenated, it is still a gap.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     *
+     * @return list<array{file: string, line: int, expression: string, context: string}>
+     */
+    private function collectConcatenationViolations(array $tokens, int $tokenCount, string $relativePath): array
+    {
+        $violations = [];
+
+        for ($index = 0; $index < $tokenCount; $index++) {
+            $token = $tokens[$index];
+            if (!is_array($token) || $token[0] !== T_CONSTANT_ENCAPSED_STRING) {
+                continue;
+            }
+
+            $dotIndex = $this->skipTrivia($tokens, $index + 1, $tokenCount);
+            if (($tokens[$dotIndex] ?? null) !== '.') {
+                continue;
+            }
+
+            [$expression, $afterIndex, $line] = $this->readConcatenatedExpression($tokens, $dotIndex + 1, $tokenCount);
+            if ($expression === '' || preg_match(self::REQUEST_SOURCE_PATTERN, $expression) !== 1) {
+                continue;
+            }
+            if (preg_match(self::SAFE_EXPRESSION_PATTERN, $expression) === 1) {
+                continue;
+            }
+
+            if (!$this->looksLikeSql($this->statementLiterals($tokens, $index, $tokenCount))) {
+                continue;
+            }
+
+            // No position test here, unlike the interpolation pass above, and
+            // the difference is deliberate. There, a slot after FROM or INTO
+            // is usually Database::prefix() and interpolating a table name is
+            // normal, so identifiers are passed over and only value position
+            // is reported. Here the expression has already been established
+            // to read straight from the request, and a request value has no
+            // business anywhere in a statement -- `"ORDER BY " . Http::get()`
+            // and `"SELECT " . Http::get()` are injections as surely as one
+            // inside quotes. Measured before relaxing it: with the position
+            // tests and without, the tree reports the same 118 findings, so
+            // the stricter reading costs nothing and covers more.
+            $literals = $this->statementLiterals($tokens, $index, $tokenCount);
+            $violations[] = [
+                'file' => $relativePath,
+                'line' => $line,
+                'expression' => trim($expression),
+                'context' => $this->summarizeContext($literals . "\x00", strlen($literals)),
+            ];
+        }
+
+        return $violations;
+    }
+
+    /**
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function skipTrivia(array $tokens, int $index, int $tokenCount): int
+    {
+        while (
+            $index < $tokenCount
+            && is_array($tokens[$index])
+            && in_array($tokens[$index][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)
+        ) {
+            $index++;
+        }
+
+        return $index;
+    }
+
+    /**
+     * The concatenated expression starting at $index, to the next top-level `.`.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     *
+     * @return array{0: string, 1: int, 2: int}
+     */
+    private function readConcatenatedExpression(array $tokens, int $index, int $tokenCount): array
+    {
+        $expression = '';
+        $depth = 0;
+        $line = 0;
+
+        for (; $index < $tokenCount; $index++) {
+            $token = $tokens[$index];
+            $text = is_array($token) ? $token[1] : $token;
+
+            if ($line === 0 && is_array($token) && !in_array($token[0], [T_WHITESPACE, T_COMMENT], true)) {
+                $line = (int) $token[2];
+            }
+
+            if ($text === '(' || $text === '[') {
+                $depth++;
+            } elseif ($text === ')' || $text === ']') {
+                if ($depth === 0) {
+                    break;
+                }
+                $depth--;
+            } elseif ($depth === 0 && in_array($text, ['.', ';', ','], true)) {
+                break;
+            }
+
+            $expression .= $text;
+        }
+
+        return [trim($expression), $index, $line];
+    }
+
+    /**
+     * Every string literal in the statement the token at $index belongs to.
+     *
+     * Scoped to the statement rather than to the run of literals adjacent to
+     * the slot, and that distinction is load-bearing. Walking only outward
+     * from the slot stops at the first token that is not a literal, so in
+     *
+     *     "SELECT * FROM t WHERE a = '" . Http::get('a')
+     *         . "' AND b = '" . Http::get('b') . "'"
+     *
+     * the second slot sees only "' AND b = '" and "'", neither of which
+     * carries a keyword -- the statement was reported once and its second
+     * injected value passed unnoticed. Found by a mutation that would not
+     * die: disabling the outward walk changed nothing, because no case
+     * needed it.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function statementLiterals(array $tokens, int $index, int $tokenCount): string
+    {
+        $start = $index;
+        $depth = 0;
+        for ($cursor = $index; $cursor >= 0; $cursor--) {
+            $token = $tokens[$cursor];
+            $text = is_array($token) ? $token[1] : $token;
+
+            if ($text === ')' || $text === ']') {
+                $depth++;
+            } elseif ($text === '(' || $text === '[') {
+                if ($depth === 0) {
+                    break;
+                }
+                $depth--;
+            } elseif ($depth === 0 && in_array($text, [';', '{', '}'], true)) {
+                break;
+            } elseif (is_array($token) && $token[0] === T_OPEN_TAG) {
+                break;
+            }
+
+            $start = $cursor;
+        }
+
+        $literals = '';
+        $depth = 0;
+        for ($cursor = $start; $cursor < $tokenCount; $cursor++) {
+            $token = $tokens[$cursor];
+            $text = is_array($token) ? $token[1] : $token;
+
+            if ($text === '(' || $text === '[') {
+                $depth++;
+            } elseif ($text === ')' || $text === ']') {
+                if ($depth === 0) {
+                    break;
+                }
+                $depth--;
+            } elseif ($depth === 0 && $text === ';') {
+                break;
+            }
+
+            if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
+                $literals .= $this->unquote($token[1]);
+            }
+        }
+
+        return $literals;
+    }
+
+    private function unquote(string $literal): string
+    {
+        if (strlen($literal) < 2) {
+            return $literal;
+        }
+
+        $quote = $literal[0];
+
+        return ($quote === '"' || $quote === "'") ? substr($literal, 1, -1) : $literal;
     }
 
     /**

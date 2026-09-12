@@ -176,6 +176,171 @@ final class SqlValueInterpolationCheckTest extends TestCase
     }
 
     /**
+     * A named file outside the scanned roots is skipped, as it is in a full scan.
+     *
+     * --changed-since hands this method whatever .php files the diff touched,
+     * and it used to accept all of them -- so a file the audit mode never
+     * reads could still fail CI. Tests are the obvious case, and this
+     * checker's own fixtures are the obvious case within that: they contain
+     * the forbidden shapes deliberately. Found when the concatenation rule
+     * turned two of them into findings on their own test file.
+     */
+    public function testAFileOutsideTheScannedRootsIsSkippedEvenWhenNamed(): void
+    {
+        $root = $this->createFixtureRoot();
+        mkdir($root . '/tests/QA', 0777, true);
+        $body = '$sql = "SELECT * FROM t WHERE a = \'" . Http::get(\'a\') . "\'";';
+        file_put_contents($root . '/tests/QA/FixtureTest.php', "<?php\n" . $body . "\n");
+        file_put_contents($root . '/pages/probe.php', "<?php\n" . $body . "\n");
+
+        $checker = new SqlValueInterpolationCheck();
+
+        self::assertSame(
+            [],
+            $checker->collectViolations($root, ['tests/QA/FixtureTest.php']),
+            'the audit mode never reads this file, so the CI mode must not either'
+        );
+        self::assertCount(
+            1,
+            $checker->collectViolations($root, ['pages/probe.php']),
+            'the identical body under a scanned root is still reported'
+        );
+    }
+
+    /**
+     * A request value joined into a query with `.` instead of interpolated.
+     *
+     * The reader that finds interpolations walks the tokens *inside* a string
+     * literal, so a value concatenated around one is a different token
+     * entirely and was invisible to it. The gap turned up while auditing the
+     * tests that had been guarding this exact shape by searching login.php
+     * and superuser.php for its spelling.
+     *
+     * @param non-empty-string $body
+     */
+    #[DataProvider('provideFlaggedConcatenations')]
+    public function testFlagsRequestValuesConcatenatedIntoAQuery(string $body): void
+    {
+        $violations = $this->analyse($body);
+
+        self::assertCount(1, $violations, 'expected exactly one finding for: ' . $body);
+        self::assertSame('pages/probe.php', $violations[0]['file']);
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public static function provideFlaggedConcatenations(): array
+    {
+        return [
+            'the shape a grep test used to guard' => [
+                '$sql = "DELETE FROM news WHERE newsid=\'" . Http::get(\'newsid\') . "\'";',
+            ],
+            'straight from the superglobal' => [
+                '$rows = $conn->executeQuery("SELECT * FROM t WHERE name = \'" . $_GET[\'n\'] . "\'");',
+            ],
+            'through the legacy wrapper, which escapes but does not bind' => [
+                '$sql = "SELECT * FROM t WHERE name = \'" . httpget(\'n\') . "\'";',
+            ],
+            'a posted value in an IN list' => [
+                '$sql = "SELECT * FROM t WHERE id IN (" . Http::post(\'ids\') . ")";',
+            ],
+            // Tokens do not care about lines, so the fragments are the same
+            // whether the statement is written on one line or five.
+            'spread over several lines' => [
+                "\$sql = \"UPDATE accounts\n    SET name = '\"\n    . Http::post('name')\n    . \"'\n    WHERE acctid = 1\";",
+            ],
+
+            // Not in value position, and reported anyway. The interpolation
+            // pass passes over identifiers because interpolating a table name
+            // is normal; a value read straight from the request is not, in
+            // any position. Sorting and column lists are where this shape
+            // actually shows up.
+            'an ORDER BY taken from the request' => [
+                '$sql = "SELECT * FROM t ORDER BY " . Http::get(\'sort\');',
+            ],
+            'a column list taken from the request' => [
+                '$sql = "SELECT " . Http::get(\'cols\') . " FROM accounts WHERE acctid = 1";',
+            ],
+            'a table name taken from the request' => [
+                '$sql = "SELECT * FROM " . Http::get(\'t\') . " WHERE acctid = 1";',
+            ],
+
+            // The keyword sits in an earlier fragment than the one the slot
+            // touches, so finding it needs the whole statement rather than
+            // the literals next to the slot.
+            'the keyword is in an earlier fragment' => [
+                '$sql = "SELECT name FROM accounts WHERE login = " . "\'" . Http::get(\'n\') . "\'";',
+            ],
+        ];
+    }
+
+    /**
+     * Both request values in one statement are reported, not just the first.
+     *
+     * The second slot's neighbouring fragments are "' AND b = '" and "'",
+     * neither of which carries a keyword, so a rule that assembles only the
+     * literals adjacent to the slot sees no query there and passes it over.
+     * That is what the first version of this did, and it took a mutation
+     * that refused to die to show it: disabling the outward walk changed no
+     * result, because nothing exercised the case it existed for.
+     */
+    public function testEveryRequestValueInOneStatementIsReported(): void
+    {
+        $violations = $this->analyse(
+            '$sql = "SELECT * FROM t WHERE a = \'" . Http::get(\'a\')' . "\n"
+            . '    . "\' AND b = \'" . Http::get(\'b\') . "\'";'
+        );
+
+        self::assertCount(2, $violations, 'the second injected value is not a free pass');
+        self::assertSame("Http::get('a')", $violations[0]['expression']);
+        self::assertSame("Http::get('b')", $violations[1]['expression']);
+    }
+
+    /**
+     * Shapes the concatenation rule must stay silent on.
+     *
+     * The first row is not hypothetical: it is the only candidate the rule
+     * found in the whole tree when it was first measured, and reporting it
+     * would have been a false positive in `composer static`. A URL query
+     * string puts an `=` before its slot exactly as a WHERE clause does,
+     * which is why the assembled text has to be put through looksLikeSql()
+     * rather than the surrounding file.
+     *
+     * @param non-empty-string $body
+     */
+    #[DataProvider('provideUnflaggedConcatenations')]
+    public function testIgnoresConcatenationsThatDoNotBuildAQuery(string $body): void
+    {
+        self::assertSame([], $this->analyse($body), 'not a query: ' . $body);
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public static function provideUnflaggedConcatenations(): array
+    {
+        return [
+            'a URL query string, the tree\'s only candidate' => [
+                'Nav::add("viewpetition.php?page=" . Http::get(\'page\'));',
+            ],
+            'a URL in a file that also contains SQL' => [
+                '$sql = "SELECT * FROM t WHERE a = 1";' . "\n"
+                . 'Nav::add("user.php?op=" . Http::get(\'op\'));',
+            ],
+            'an integer cast is a complete defence' => [
+                '$sql = "SELECT * FROM t WHERE id = " . (int) Http::get(\'id\');',
+            ],
+            'markup that happens to contain a keyword' => [
+                '$html = "<select name=\'" . Http::get(\'f\') . "\'>";',
+            ],
+            'a value that is bound rather than concatenated' => [
+                '$conn->executeQuery("SELECT * FROM t WHERE id = :id", [\'id\' => Http::get(\'id\')]);',
+            ],
+        ];
+    }
+
+    /**
      * @return list<array{file: string, line: int, expression: string, context: string}>
      */
     private function analyse(string $body): array
