@@ -110,7 +110,22 @@ final class SourceFlow
             }
             if (
                 is_array($token)
-                && in_array($token[0], [T_FUNCTION, T_FN, T_OBJECT_OPERATOR, T_DOUBLE_COLON, T_NEW], true)
+                && in_array(
+                    $token[0],
+                    [
+                        T_FUNCTION,
+                        T_FN,
+                        T_OBJECT_OPERATOR,
+                        // `$o?->rawurlencode(...)` is a method call too, and
+                        // its own token type -- the fourth time in this audit
+                        // a token-level rule of mine covered one spelling and
+                        // not its sibling.
+                        T_NULLSAFE_OBJECT_OPERATOR,
+                        T_DOUBLE_COLON,
+                        T_NEW,
+                    ],
+                    true
+                )
             ) {
                 return false;
             }
