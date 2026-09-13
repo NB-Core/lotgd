@@ -452,7 +452,13 @@ class Buffs
                 if ($hptoregen == 0) {
                     $msg = (isset($buff['effectnodmgmsg']) ? $buff['effectnodmgmsg'] : Translator::translateInline('No damage, hosé'));
                 } else {
-                    $msg = (isset($buff['effectgmsg']) ? $buff['effectmsg'] : Translator::translateInline('Tons of damage, hosé'));
+                    // effectgmsg, with a stray g, was tested here while
+                    // effectmsg was the key printed and the key every module
+                    // sets -- so a regen buff carrying a correctly spelled
+                    // message fell through to this placeholder. Nothing in the
+                    // tree ever set effectgmsg, which is why it went unnoticed:
+                    // the wrong branch was the only branch.
+                    $msg = (isset($buff['effectmsg']) ? $buff['effectmsg'] : Translator::translateInline('Tons of damage, hosé'));
                 }
 
                 if (is_array($msg)) {
@@ -471,7 +477,7 @@ class Buffs
                             $unset = false;
                             if (
                                 $companion['hitpoints'] < $companion['maxhitpoints'] &&
-                                ($companion['hitpoints'] > 0 || ($companion['cannotdie'] == true && $auraeffect > 0))
+                                ($companion['hitpoints'] > 0 || (($companion['cannotdie'] ?? false) == true && $auraeffect > 0))
                             ) {
                                 $hptoregen = min($auraeffect, $companion['maxhitpoints'] - $companion['hitpoints']);
                                 $companions[$name]['hitpoints'] += $hptoregen;
