@@ -45,9 +45,66 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
          */
         public static array $queries = [];
 
+        /** Written by setCharset(), read back by tests that assert on it. */
+        public static string $charset = 'utf8mb4';
+
+        /** @var array<string,mixed> Answers getInfo(). */
+        public static array $dbinfo = [];
+
+        /** What getServerVersion() reports; a plausible default, overridable. */
+        public static string $serverVersion = '8.0.0';
+
         public static function connect(string $host, string $user, string $pass): bool
         {
             return self::getInstance()->connect($host, $user, $pass);
+        }
+
+        /**
+         * The four methods below close a drift between this double and the
+         * class it doubles.
+         *
+         * `Lotgd\MySQL\Database` grew setCharset(), pconnect(), getInfo(),
+         * getQueryCount() and getServerVersion(); this stub aliases itself over
+         * that class for the whole suite and had none of them. Nothing noticed,
+         * because no test had ever run a code path that reaches them -- and the
+         * first one that did (the page harness in tests/Security/PageCsrf) got
+         * "Call to undefined method" from inside common.php, which surfaces as
+         * a rendered error page rather than a test failure.
+         *
+         * A double that is missing part of its subject's surface is a trap for
+         * whoever writes the next test, so the gap is closed rather than worked
+         * around: each mirrors the real signature and answers from state this
+         * class already keeps.
+         */
+        public static function setCharset(string $charset): bool
+        {
+            self::$charset = $charset;
+
+            return true;
+        }
+
+        public static function pconnect(string $host, string $user, string $pass): bool
+        {
+            return self::connect($host, $user, $pass);
+        }
+
+        public static function getInfo(string $key, mixed $default = null): mixed
+        {
+            return self::$dbinfo[$key] ?? $default;
+        }
+
+        /**
+         * Counted from the log this class already keeps, so a test that asserts
+         * on it and a test that asserts on $queries cannot disagree.
+         */
+        public static function getQueryCount(): int
+        {
+            return count(self::$queries);
+        }
+
+        public static function getServerVersion(): string
+        {
+            return self::$serverVersion;
         }
 
         public static function selectDb(string $dbname): bool
@@ -523,6 +580,9 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         {
             self::$settings_table          = [];
             self::$settings_extended_table = [];
+            self::$charset                 = 'utf8mb4';
+            self::$dbinfo                  = [];
+            self::$serverVersion           = '8.0.0';
             self::$onlineCounter           = 0;
             self::$affected_rows           = 0;
             self::$lastSql                 = '';
