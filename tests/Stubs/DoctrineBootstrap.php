@@ -110,6 +110,29 @@ class DoctrineConnection
         $this->executeQueryTypes[] = $types;
 
         $accountsTable = Database::prefix('accounts');
+
+        // The whole account row, which is what common.php reads on every
+        // request: ForcedNavigation::doForcedNav() replaces $session['user']
+        // with it before any page body runs. Without this the harness in
+        // tests/Security/PageCsrf could seed a session all it liked and the
+        // bootstrap would overwrite it with nothing, decide the account had
+        // disappeared, and redirect -- so the page under test never ran and a
+        // "nothing happened" assertion would have been about the redirect.
+        // Reads the same $accounts_table global the narrower handlers below do,
+        // and answers ONLY when that global actually holds the account. An
+        // earlier version returned an empty result otherwise, which broke
+        // SessionHardeningDoctrineBindingTest: that test supplies its row
+        // through the generic queue instead, so intercepting the query and
+        // answering "no such account" turned its subject into a redirect.
+        // Falling through leaves every existing caller exactly as it was.
+        if (preg_match('/SELECT\s+\*\s+FROM\s+' . preg_quote($accountsTable, '/') . '\s+WHERE\s+acctid\s*=\s*:acctid/i', $sql)) {
+            global $accounts_table;
+            $acctid = (int) ($params['acctid'] ?? 0);
+            if (is_array($accounts_table) && isset($accounts_table[$acctid])) {
+                return $this->makeResult([$accounts_table[$acctid]]);
+            }
+        }
+
         if (preg_match("/SELECT\s+prefs,emailaddress\s+FROM\s+" . preg_quote($accountsTable, '/') . "\s+WHERE\s+acctid=\'?([0-9]+)\'?/i", $sql, $matches)) {
             global $accounts_table;
             $acctid = (int) $matches[1];
