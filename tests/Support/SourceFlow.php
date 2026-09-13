@@ -138,6 +138,26 @@ final class SourceFlow
                     break;
                 }
 
+                if (is_array($inner)) {
+                    // A comment is not code, and the content of a string is
+                    // not code either. Both were being concatenated into the
+                    // expression, so a caller asking whether it "passes
+                    // through" a guard was satisfied by the guard's name in a
+                    // `/* in_array */` comment or in `?: 'array_key_exists'`.
+                    // Copilot caught that on #1535, and it is the sharper
+                    // version of the point: this class exists because a
+                    // comment satisfies a substring search, and it had the
+                    // same hole. Literals keep their quotes so the failure
+                    // message still reads like the statement it came from.
+                    if (in_array($inner[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                        continue;
+                    }
+                    if ($inner[0] === T_CONSTANT_ENCAPSED_STRING) {
+                        $expression .= substr($text, 0, 1) . substr($text, -1);
+                        continue;
+                    }
+                }
+
                 $expression .= $text;
             }
 
