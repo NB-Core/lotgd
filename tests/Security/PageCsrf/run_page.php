@@ -124,6 +124,18 @@ $GLOBALS['accounts_table'] = [
     ] + $account,
 ];
 
+// Opened here only so the seeded data lands in the session store, then closed
+// again before common.php opens it for real.
+//
+// Leaving it open worked, but common.php's RuntimeHardening then calls
+// session_set_cookie_params() on an already-active session, which is a warning
+// -- and the bootstrap error handler appends every warning to logs/bootstrap.log.
+// tests/CronCommonExceptionTest deletes that same file, runs a subprocess, and
+// asserts the file exists with its own marker in it, so this harness was putting
+// dozens of lines per suite run into a file another test owns exclusively.
+// Closing the session here removes the warning at its source rather than muting
+// it: common.php's own session_start() reopens the same session id and reads
+// the seeded data straight back.
 session_start();
 $_SESSION['session'] = [
     'loggedin' => true,
@@ -145,6 +157,9 @@ if (($spec['token'] ?? null) !== null) {
     $_POST[\Lotgd\Security\Csrf::FORM_FIELD] = $token;
     $_POST[\Lotgd\Security\Csrf::FIELD] = $token;
 }
+
+// Everything seeded; hand the session back so common.php can open it itself.
+session_write_close();
 
 register_shutdown_function(static function (): void {
     // Whether the process is ending because the page finished or because it

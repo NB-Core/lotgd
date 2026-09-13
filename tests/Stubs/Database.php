@@ -60,7 +60,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
         }
 
         /**
-         * The four methods below close a drift between this double and the
+         * The five methods below close a drift between this double and the
          * class it doubles.
          *
          * `Lotgd\MySQL\Database` grew setCharset(), pconnect(), getInfo(),
