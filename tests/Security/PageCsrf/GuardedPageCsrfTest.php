@@ -55,7 +55,7 @@ final class GuardedPageCsrfTest extends TestCase
 {
     /**
      * One row per guarded operation: the page, the privilege it demands, the
-     * request, and the table that request writes to.
+     * request, and the statement that request issues.
      *
      * The deleting operation is chosen wherever a page has one. A delete needs
      * nothing but a query string, so the row states the whole request, and a
@@ -115,16 +115,17 @@ final class GuardedPageCsrfTest extends TestCase
             // string, so the body path is exercised at all.
             //
             // It does not, however, witness the guard's `$_POST = []`, and no
-            // row here does -- measured, not assumed: removing that line from
-            // moderate.php leaves all 27 cases green, because the dispatch is
-            // `if ($op == "commentdelete")` and blanking $op alone already
-            // stops it. modules.php is the nearest candidate, since its POST
-            // buttons set $op after the guard has run, but they only apply when
-            // $op is already 'mass', which the guard has blanked too. So on
-            // these pages the body-blanking is defence in depth over a door
-            // that is already shut, and this suite does not prove it. Said
-            // plainly rather than claimed by a row that would not fail without
-            // it.
+            // row here does. Measured across every one of them rather than
+            // inferred from a couple: removing that line from each of the
+            // eleven pages in turn leaves all 33 cases green, eleven times
+            // over. Every dispatch in this table is `if ($op == ...)`, so
+            // blanking $op has already shut the door; modules.php is the
+            // nearest thing to an exception, since its POST buttons set $op
+            // after the guard has run, but they only apply when $op is already
+            // 'mass', which the guard has blanked too. So the body-blanking
+            // here is defence in depth over a door that is already shut, and
+            // this suite does not prove it. Said plainly rather than claimed by
+            // a row that would not fail without it.
             'moderate.php deletes a comment' => [
                 'moderate.php', SU_EDIT_COMMENTS, ['op' => 'commentdelete'],
                 ['comment' => ['7' => '1'], 'delete' => 'Delete'], 'DELETE FROM commentary',
