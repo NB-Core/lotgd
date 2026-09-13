@@ -25,21 +25,31 @@ final class PageOutcome
     }
 
     /**
-     * Statements that write to $table, ignoring the bootstrap's own traffic.
+     * The statements that carry $signature.
      *
-     * Every request updates the online counter and the session row whatever it
-     * is doing, so "did anything get written" is always yes. The question worth
-     * asking is whether *this page's* table was touched.
+     * A signature -- "DELETE FROM masters", "UPDATE accounts SET donation" --
+     * rather than a table name, because a table name is not specific enough for
+     * half of these pages. Every request updates the online counter in
+     * `settings` and the player's row in `accounts` whatever it is doing, so
+     * "did anything write to accounts" is yes even for a request that was
+     * refused; a row watching that table would pass in both directions and say
+     * nothing. Naming the statement the operation actually issues keeps every
+     * row answerable the same way, and makes the row read as what the page does.
+     *
+     * Whitespace is normalised first: these queries are assembled from
+     * concatenated fragments and span lines, so the text between two words is
+     * not reliably a single space.
      *
      * @return list<string>
      */
-    public function writesTo(string $table): array
+    public function statementsContaining(string $signature): array
     {
-        $pattern = '/\b(INSERT\s+INTO|UPDATE|DELETE\s+FROM|REPLACE\s+INTO)\s+`?' . preg_quote($table, '/') . '`?\b/i';
+        $normalise = static fn (string $text): string => (string) preg_replace('/\s+/', ' ', $text);
+        $needle = $normalise($signature);
 
         return array_values(array_filter(
             $this->statements,
-            static fn (string $statement): bool => preg_match($pattern, $statement) === 1
+            static fn (string $statement): bool => stripos($normalise($statement), $needle) !== false
         ));
     }
 }
