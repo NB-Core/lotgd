@@ -393,6 +393,57 @@ final class ActivateBuffsRegenTest extends TestCase
     }
 
     /**
+     * A companion that cannot die is brought back up by a healing aura.
+     *
+     * The positive half of the same clause, and it had none. Codex found
+     * that: with only the case above, the whole
+     * `|| (cannotdie && $auraeffect > 0)` alternative can be deleted and all
+     * twenty other cases stay green -- while companions that cannot die are
+     * never healed again once they reach zero, which is the one thing the
+     * flag exists to allow. Reproduced before fixing: the deletion left
+     * 33 tests and 64 assertions passing.
+     *
+     * The shape of that miss is worth naming, because it is the third time in
+     * this audit: I tested a guard by the case that exercises its *default*
+     * and never by the case that needs its exception. A guard is two claims,
+     * and only one of them was written down.
+     */
+    public function testACompanionThatCannotDieIsHealedBackUpFromZero(): void
+    {
+        global $companions;
+
+        $companions = [
+            'wisp' => ['name' => 'Wisp', 'hitpoints' => 0, 'maxhitpoints' => 100, 'cannotdie' => true],
+        ];
+
+        $this->activate(['regen' => 12, 'aura' => true, 'auramsg' => '{companion} recovers {damage}.']);
+
+        self::assertSame(4, $companions['wisp']['hitpoints'], 'a third of 12, applied from zero');
+        self::assertStringContainsString('Wisp recovers 4.', Output::getInstance()->getRawOutput());
+    }
+
+    /**
+     * But a damaging aura does not go on hitting it.
+     *
+     * The other half of that same alternative, the `$auraeffect > 0`. Without
+     * it, a downed companion that cannot die is a permanent target: it can
+     * never leave the party and its hitpoints would fall without limit.
+     */
+    public function testACompanionThatCannotDieIsNotDamagedFurtherWhileDown(): void
+    {
+        global $companions;
+
+        $companions = [
+            'wisp' => ['name' => 'Wisp', 'hitpoints' => 0, 'maxhitpoints' => 100, 'cannotdie' => true],
+        ];
+
+        $this->activate(['regen' => -12, 'aura' => true, 'auramsg' => '{companion} suffers {damage}.']);
+
+        self::assertSame(0, $companions['wisp']['hitpoints']);
+        self::assertStringNotContainsString('Wisp suffers', Output::getInstance()->getRawOutput());
+    }
+
+    /**
      * A negative aura damages companions, and the game keeps them.
      *
      * Documenting what the code does, not what it reads as if it does. Below
