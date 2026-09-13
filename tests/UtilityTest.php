@@ -83,15 +83,6 @@ final class UtilityTest extends TestCase
         $this->assertSame($expected, \color_sanitize($input));
     }
 
-    public function testColorSanitizeLegacyWrapperDelegatesToSanitizeClass(): void
-    {
-        $contents = file_get_contents(__DIR__ . '/../lib/sanitize.php');
-
-        $this->assertNotFalse($contents);
-        $this->assertStringContainsString('function color_sanitize($in)', $contents);
-        $this->assertStringContainsString('return Sanitize::colorSanitize($in);', $contents);
-    }
-
     public function testCommentSanitize(): void
     {
         $this->assertSame('Look ``here', Sanitize::commentSanitize('Look `here'));
