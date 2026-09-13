@@ -192,9 +192,30 @@ final class PageRunner
                 continue;
             }
             $link = $farm . '/' . $entry;
-            if (!file_exists($link) && !is_link($link) && !symlink($root . '/' . $entry, $link)) {
+            // The trailing is_link() closes the same race the mkdir above
+            // does, and it is here because the mkdir had it and this did not:
+            // between the check and the call another process can create the
+            // link, symlink() then fails with EEXIST, and a run that was
+            // perfectly fine fails. Guarding one of a pair and not the other
+            // is the shape of mistake this audit has hit repeatedly.
+            // Reported by Copilot.
+            if (!file_exists($link) && !is_link($link) && !symlink($root . '/' . $entry, $link) && !is_link($link)) {
                 Assert::fail("The page harness could not link $entry into its working directory");
             }
+        }
+
+        // The farm is reused between runs, so a stray installer.php in it --
+        // left by an older exclusion list, or by somebody debugging by hand --
+        // would make common.php render "Major Security Risk" and exit, and
+        // every positive control in the suite would fail at once with no hint
+        // as to why. The directory belongs to this harness, so clean it rather
+        // than merely complain about it; complain only if it will not go.
+        $stray = $farm . '/installer.php';
+        if ((file_exists($stray) || is_link($stray)) && (!unlink($stray) || file_exists($stray))) {
+            Assert::fail(
+                "The page harness found an installer.php in its working directory and could not remove it: "
+                . "$stray. common.php exits while that file is present, so no page would run. Delete $farm."
+            );
         }
 
         $written = file_put_contents(
