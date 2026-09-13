@@ -156,6 +156,14 @@ final class SourceFlow
                         $expression .= substr($text, 0, 1) . substr($text, -1);
                         continue;
                     }
+                    // And the literal runs inside an interpolated string or a
+                    // heredoc, which are a different token type. Stripping
+                    // only the first left "$cat = \"array_key_exists $x\";"
+                    // satisfying the guard -- the same hole one token over,
+                    // which is the shape of mistake this audit has hit before.
+                    if ($inner[0] === T_ENCAPSED_AND_WHITESPACE) {
+                        continue;
+                    }
                 }
 
                 $expression .= $text;

@@ -122,7 +122,13 @@ final class RequestNormalizationRegressionTest extends TestCase
     }
 
     /**
-     * viewpetition.php narrows its petition id before it reaches a link.
+     * user_edit.php narrows the petition id before it composes a link.
+     *
+     * Named for the page it reads, which is not the page the link points at:
+     * pages/user/user_edit.php validates the returnpetition id and builds the
+     * viewpetition.php link from it. The docblock said viewpetition.php while
+     * the code tokenized user_edit.php, which is the kind of mismatch that
+     * sends the next reader to the wrong file.
      *
      * The SQL side is the interpolation guard's business now; this is the
      * other half, where the same value composes a URL.
