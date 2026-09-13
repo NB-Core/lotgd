@@ -58,6 +58,9 @@ final class SourceFlow
             if (!is_array($token) || $token[0] !== T_STRING || $token[1] !== $function) {
                 continue;
             }
+            if (!self::isPlainFunctionCall($tokens, $index)) {
+                continue;
+            }
 
             $argument = null;
             for ($cursor = $index + 1; $cursor < $count; $cursor++) {
@@ -81,6 +84,41 @@ final class SourceFlow
         }
 
         return null;
+    }
+
+    /**
+     * A T_STRING that is really a call to the free function of that name.
+     *
+     * Not a definition and not a method: `function rawurlencode($x) {}` and
+     * `Foo::rawurlencode($x)` both put the name before a parenthesis, so
+     * matching on the token alone returned a parameter or an unrelated
+     * argument and the test then reasoned about the wrong value. Reported by
+     * Copilot on #1535; the same guard exists in
+     * src/Lotgd/QA/SqlAddslashesUsageCheck.php for the same reason.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private static function isPlainFunctionCall(array $tokens, int $index): bool
+    {
+        for ($cursor = $index - 1; $cursor >= 0; $cursor--) {
+            $token = $tokens[$cursor];
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+            if ($token === '->' || $token === '::') {
+                return false;
+            }
+            if (
+                is_array($token)
+                && in_array($token[0], [T_FUNCTION, T_FN, T_OBJECT_OPERATOR, T_DOUBLE_COLON, T_NEW], true)
+            ) {
+                return false;
+            }
+
+            break;
+        }
+
+        return true;
     }
 
     /**
