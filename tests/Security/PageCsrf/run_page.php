@@ -54,14 +54,28 @@ $_SERVER['SERVER_PORT'] = '80';
 $_GET = (array) ($spec['get'] ?? []);
 $_POST = (array) ($spec['post'] ?? []);
 
-// PhpGenericEnvironment::sanitizeUri() reduces this to basename + query, and
-// that reduced form is the key forced navigation looks for. Building it the
-// same way here is what keeps the allowednavs entry below matching.
+// The key forced navigation looks for, and the REQUEST_URI the page is asked
+// for, built from one source so they cannot disagree.
+//
+// PhpGenericEnvironment::sanitizeUri() has two paths, and only one of them
+// encodes anything: it builds a query string out of $_GET with URLEncode()
+// *when REQUEST_URI is empty*, and otherwise keeps the REQUEST_URI it was given
+// and only reduces it to basename + query. This harness always supplies one, so
+// the encoding path is never taken and the reduced form is whatever is built
+// here. Both halves below come from the same $parts, so they match whichever
+// encoder is used -- checked by running a value with a space in it, where
+// urlencode and rawurlencode differ, under both.
+//
+// Copilot read the encoders as a live mismatch. It is not one, for the reason
+// above; what was wrong was the comment that used to sit here, which said this
+// is "built the same way sanitizeUri() builds it" when sanitizeUri does not
+// build it at all in this harness. urlencode() is kept anyway, so that the
+// fallback path would agree if REQUEST_URI ever went missing.
 $uri = basename((string) $spec['page']);
 if ($_GET !== []) {
     $parts = [];
     foreach ($_GET as $key => $value) {
-        $parts[] = $key . '=' . rawurlencode((string) $value);
+        $parts[] = $key . '=' . urlencode((string) $value);
     }
     $uri .= '?' . implode('&', $parts);
 }
