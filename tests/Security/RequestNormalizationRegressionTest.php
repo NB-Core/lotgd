@@ -138,7 +138,7 @@ final class RequestNormalizationRegressionTest extends TestCase
         $tested = SourceFlow::argumentOf($tokens, 'ctype_digit');
         self::assertNotNull($tested, 'the petition id is still tested with ctype_digit()');
         self::assertTrue(
-            SourceFlow::everyAssignmentPassesThrough($tokens, $tested, ['Http::get', 'get(']),
+            SourceFlow::everyAssignmentPassesThrough($tokens, $tested, ['Http::get']),
             "$tested is tested for digits but never read from the request"
         );
     }
