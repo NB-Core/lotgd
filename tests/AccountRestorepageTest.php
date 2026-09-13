@@ -48,7 +48,11 @@ final class AccountRestorepageTest extends TestCase
     public function testTheAccountCreationPathsUseTheSameDefault(): void
     {
         foreach (['create.php', 'install/lib/Installer.php'] as $file) {
-            $source = (string) file_get_contents(dirname(__DIR__) . '/' . $file);
+            // Asserted rather than cast: a read failure would otherwise look
+            // like "the pattern is missing", which sends the next reader
+            // hunting through the wrong file. Reported by Copilot on #1535.
+            $source = file_get_contents(dirname(__DIR__) . '/' . $file);
+            self::assertIsString($source, "$file could not be read");
 
             self::assertMatchesRegularExpression(
                 '/restorepage[^;\n]{0,80}' . preg_quote(self::DEFAULT_RESTOREPAGE, '/') . '/',

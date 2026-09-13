@@ -84,18 +84,28 @@ final class SourceFlow
     }
 
     /**
-     * Is $variable ever assigned from a statement calling one of $functions?
+     * The right-hand side of every assignment to $variable, as text.
      *
-     * Deliberately loose about the shape of the expression -- a ternary, a
-     * null-coalesce and a plain call all count. The question is whether the
-     * value came through the named guard, not how the page spelled it.
+     * Every one, and that is the whole design. An earlier version of this
+     * answered "is it assigned from the guard *somewhere*", which returns
+     * true for a page that sanitizes once and then overwrites the result
+     * with the raw request value two lines later -- the guard is named, the
+     * value never passes through it, and the test is green. Codex found that
+     * on #1535 while it was guarding exactly such a value.
+     *
+     * Handing back all of them puts the burden on the caller to say what must
+     * hold for each, which is the honest shape: "every path to this value
+     * goes through the guard" is checkable, "one of them does" is not worth
+     * checking.
      *
      * @param list<array{0: int, 1: string, 2: int}|string> $tokens
-     * @param list<string>                                  $functions
+     *
+     * @return list<string>
      */
-    public static function isAssignedFromAnyOf(array $tokens, string $variable, array $functions): bool
+    public static function assignmentsTo(array $tokens, string $variable): array
     {
         $count = count($tokens);
+        $assignments = [];
 
         for ($index = 0; $index < $count; $index++) {
             $token = $tokens[$index];
@@ -103,26 +113,71 @@ final class SourceFlow
                 continue;
             }
 
-            $sawAssignment = false;
-            for ($cursor = $index + 1; $cursor < $count; $cursor++) {
+            $cursor = self::skipTrivia($tokens, $index + 1, $count);
+            // Only a plain assignment. `$x == $y` is a comparison, `$x[] =`
+            // appends, and `$x .= ` extends -- none of them replaces the
+            // value, so none of them is a path this asks about.
+            if (($tokens[$cursor] ?? null) !== '=') {
+                continue;
+            }
+
+            $expression = '';
+            $depth = 0;
+            for ($cursor++; $cursor < $count; $cursor++) {
                 $inner = $tokens[$cursor];
-                if ($inner === ';') {
+                $text = is_array($inner) ? $inner[1] : $inner;
+
+                if ($text === '(' || $text === '[') {
+                    $depth++;
+                } elseif ($text === ')' || $text === ']') {
+                    if ($depth === 0) {
+                        break;
+                    }
+                    $depth--;
+                } elseif ($depth === 0 && $text === ';') {
                     break;
                 }
-                if ($inner === '=') {
-                    $sawAssignment = true;
-                    continue;
+
+                $expression .= $text;
+            }
+
+            $assignments[] = trim($expression);
+        }
+
+        return $assignments;
+    }
+
+    /**
+     * Does every assignment to $variable mention one of $guards?
+     *
+     * False when there are no assignments at all: a value nothing ever sets
+     * is not a value that passed through a guard.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     * @param list<string>                                  $guards
+     */
+    public static function everyAssignmentPassesThrough(array $tokens, string $variable, array $guards): bool
+    {
+        $assignments = self::assignmentsTo($tokens, $variable);
+        if ($assignments === []) {
+            return false;
+        }
+
+        foreach ($assignments as $expression) {
+            $narrowed = false;
+            foreach ($guards as $guard) {
+                if (str_contains($expression, $guard)) {
+                    $narrowed = true;
+                    break;
                 }
-                if (!$sawAssignment) {
-                    continue;
-                }
-                if (is_array($inner) && $inner[0] === T_STRING && in_array($inner[1], $functions, true)) {
-                    return true;
-                }
+            }
+
+            if (!$narrowed) {
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -157,13 +212,29 @@ final class SourceFlow
                 continue;
             }
 
+            // Depth-counted rather than stopping at the first closer: an
+            // entry that is itself an array, or an array(...) spelling with a
+            // call inside it, ended the scan early and returned a truncated
+            // list -- which reads as "these are all the allowed values" while
+            // silently omitting some. Reported by Copilot on #1535.
             $values = [];
+            $depth = 0;
             for (; $cursor < $count; $cursor++) {
                 $inner = $tokens[$cursor];
-                if ($inner === ']' || $inner === ')') {
-                    break;
+                $text = is_array($inner) ? $inner[1] : $inner;
+
+                if ($text === '[' || $text === '(') {
+                    $depth++;
+                    continue;
                 }
-                if ($inner === ';') {
+                if ($text === ']' || $text === ')') {
+                    $depth--;
+                    if ($depth === 0) {
+                        break;
+                    }
+                    continue;
+                }
+                if ($depth === 0 && $text === ';') {
                     break;
                 }
                 if (is_array($inner) && $inner[0] === T_CONSTANT_ENCAPSED_STRING) {

@@ -21,8 +21,12 @@ use PHPUnit\Framework\TestCase;
  *     less than that.
  *   - The `rawurlencode(...)` assertions guarded belt over braces. In
  *     healer.php the value has already been matched against a two-entry
- *     allowlist, so encoding it cannot change anything; what matters is the
- *     allowlist, and that is asserted below by reading it.
+ *     allowlist by then, so encoding it cannot change anything. What matters
+ *     is that the page consults the allowlist at all -- and the first version
+ *     of this rewrite asserted only that the list existed, which Codex caught
+ *     on #1535: `$return = $returnToken;` left it green, and that is the very
+ *     assumption used to retire the encoding witness. Both halves are checked
+ *     now.
  *   - The narrowings themselves are tested where they live:
  *     Sanitize::modulenameSanitize() in tests/SanitizeExtraTest.php.
  *
@@ -54,9 +58,15 @@ final class RequestNormalizationRegressionTest extends TestCase
 
         $encoded = SourceFlow::argumentOf($tokens, 'rawurlencode');
         self::assertNotNull($encoded, 'user.php must still encode the slug it puts in a link');
+
+        // Every assignment, not merely one of them. Codex found that the
+        // looser question passes for a page that sanitizes once and then
+        // overwrites the result with the raw request value -- the guard is
+        // named, the value never goes through it.
         self::assertTrue(
-            SourceFlow::isAssignedFromAnyOf($tokens, $encoded, ['modulename_sanitize']),
-            "user.php encodes $encoded, which never passes through modulename_sanitize()"
+            SourceFlow::everyAssignmentPassesThrough($tokens, $encoded, ['modulename_sanitize']),
+            "user.php encodes $encoded, and not every path to it passes through modulename_sanitize(): "
+            . implode(' | ', SourceFlow::assignmentsTo($tokens, $encoded))
         );
     }
 
@@ -84,7 +94,19 @@ final class RequestNormalizationRegressionTest extends TestCase
      */
     public function testTheHealerReturnTargetComesFromAnAllowlist(): void
     {
-        $allowed = SourceFlow::arrayAssignedTo($this->page('healer.php'), '$allowedReturnTokens');
+        $tokens = $this->page('healer.php');
+
+        // The list existing is not the point -- the page consulting it is.
+        // Codex found this: asserting only that the array held plausible
+        // pages left `$return = $returnToken;` passing, which is exactly the
+        // assumption used to retire the encoding witness this replaced.
+        self::assertTrue(
+            SourceFlow::everyAssignmentPassesThrough($tokens, '$return', ['in_array']),
+            'healer.php must decide $return by consulting its allowlist: '
+            . implode(' | ', SourceFlow::assignmentsTo($tokens, '$return'))
+        );
+
+        $allowed = SourceFlow::arrayAssignedTo($tokens, '$allowedReturnTokens');
 
         self::assertIsArray($allowed, 'healer.php must still keep a list of return targets');
         self::assertNotSame([], $allowed, 'an empty allowlist would let everything through');
@@ -116,8 +138,34 @@ final class RequestNormalizationRegressionTest extends TestCase
         $tested = SourceFlow::argumentOf($tokens, 'ctype_digit');
         self::assertNotNull($tested, 'the petition id is still tested with ctype_digit()');
         self::assertTrue(
-            SourceFlow::isAssignedFromAnyOf($tokens, $tested, ['get']),
+            SourceFlow::everyAssignmentPassesThrough($tokens, $tested, ['Http::get', 'get(']),
             "$tested is tested for digits but never read from the request"
+        );
+    }
+
+    /**
+     * modules.php builds its category links from a category it recognises.
+     *
+     * Restored after Codex pointed out that retiring the omnibus test took
+     * this wiring with it and nothing else in the suite covered it: changing
+     * the page to reuse the raw category in generated links left everything
+     * green. The category is both a link component and a lookup key, so a raw
+     * value is an injection into the markup and a way to name a category the
+     * page never installed.
+     */
+    public function testTheModuleCategoryLinkComesFromARecognisedCategory(): void
+    {
+        $tokens = $this->page('modules.php');
+
+        self::assertTrue(
+            SourceFlow::everyAssignmentPassesThrough($tokens, '$cat', ['array_key_exists']),
+            'modules.php must check the requested category against the installed ones: '
+            . implode(' | ', SourceFlow::assignmentsTo($tokens, '$cat'))
+        );
+        self::assertSame(
+            '$cat',
+            SourceFlow::argumentOf($tokens, 'rawurlencode'),
+            'and encode that category, not something else, into the link'
         );
     }
 }
