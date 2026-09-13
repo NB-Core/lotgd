@@ -21,6 +21,9 @@
 
 declare(strict_types=1);
 
+/** Kept in step with PageRunner::RESULT_MARKER. */
+const RESULT_MARKER = '@@@LOTGD-PAGE-RESULT@@@';
+
 $spec = json_decode((string) ($argv[1] ?? '{}'), true, 512, JSON_THROW_ON_ERROR);
 $root = (string) $spec['root'];
 $farm = (string) $spec['farm'];
@@ -144,17 +147,35 @@ if (($spec['token'] ?? null) !== null) {
 }
 
 register_shutdown_function(static function (): void {
+    // Whether the process is ending because the page finished or because it
+    // died. PHP runs shutdown handlers after a fatal error too, so without
+    // this the harness happily emits a well-formed payload with an empty
+    // statement list for a page that never loaded -- and every refusal
+    // assertion in this suite accepts that as "the page changed nothing".
+    //
+    // Copilot reported the include/require half of this. Changing it to
+    // require was not enough, which a probe showed rather than reasoning:
+    // the failed require is fatal, the handler still runs, and the result
+    // still decodes. So the fatal itself has to be carried out, and then it
+    // covers every fatal the page can take, not only an unresolvable path.
+    $last = error_get_last();
+    $fatal = null;
+    if ($last !== null && (($last['type'] ?? 0) & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR)) !== 0) {
+        $fatal = sprintf('%s in %s on line %d', $last['message'], $last['file'], $last['line']);
+    }
+
     $connection = \Lotgd\MySQL\Database::getDoctrineConnection();
     $statements = array_map(
         static fn ($statement) => is_array($statement) ? (string) ($statement['sql'] ?? '') : (string) $statement,
         $connection->executeStatements ?? []
     );
 
-    fwrite(STDERR, '@@@' . json_encode([
+    fwrite(STDERR, RESULT_MARKER . json_encode([
         'statements' => $statements,
         'queries' => array_map('strval', $connection->queries ?? []),
         'status' => http_response_code(),
-    ], JSON_THROW_ON_ERROR) . '@@@');
+        'fatal' => $fatal,
+    ], JSON_THROW_ON_ERROR) . RESULT_MARKER);
 });
 
 // From the farm, so that the page's own relative lookups resolve the way they
@@ -162,4 +183,10 @@ register_shutdown_function(static function (): void {
 // common.php answers with a "Major Security Risk" page that exits.
 chdir($farm);
 
-include $root . '/' . ltrim((string) $spec['page'], '/');
+// require, not include: a page path that does not resolve must stop the
+// process, so the harness reports nothing and fails loudly. With include it
+// is a warning, the shutdown handler still runs, and the result is a valid
+// payload with an empty statement list -- which every refusal assertion in
+// this suite would accept as "the page changed nothing". Reported by Copilot,
+// and the fourth instance of that same failure mode in this file.
+require $root . '/' . ltrim((string) $spec['page'], '/');
