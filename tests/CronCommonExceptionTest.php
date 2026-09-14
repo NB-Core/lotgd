@@ -75,6 +75,27 @@ final class CronCommonExceptionTest extends TestCase
             . implode(PHP_EOL, $transcript)
         );
 
+        // A clean run says nothing at all, so anything on the transcript is a
+        // finding -- above all the harness's own cleanup diagnostics, which are
+        // written to stderr precisely so somebody notices them.
+        //
+        // Without this the capture was theatre: the cleanup reported a failure,
+        // exec() caught it, the status stayed at the 1 cron.php is supposed to
+        // exit with, and the transcript was used only to decorate assertion
+        // messages that never fired. Green CI while farms pile up -- which is
+        // what the previous round of this was supposed to prevent, and my own
+        // note claiming the diagnostic "will name the next occurrence" was
+        // wrong, because nothing read it. Reported by Codex.
+        //
+        // It also means a stray PHP notice from the subprocess fails this test.
+        // That is the intent rather than a side effect: a run that printed
+        // something unexpected is not a run this test should call clean.
+        self::assertSame(
+            [],
+            $transcript,
+            'the cron subprocess printed something it should not have'
+        );
+
         // Deliberately not assertFileExists(): tempnam() creates the file, so
         // that assertion passes whether or not the subprocess ever wrote a
         // line. It was in the first version of this test and proved nothing --
