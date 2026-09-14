@@ -44,7 +44,9 @@ class BootstrapErrorHandler
     }
 
     /**
-     * Append one entry to logs/bootstrap.log.
+     * Append one entry to the log, wherever logFile() says that is.
+     *
+     * logs/bootstrap.log by default, or whatever LOTGD_BOOTSTRAP_LOG names.
      *
      * Three places used to write this file, in three formats, and this one wrote
      * every entry twice -- once through error_log() and once through

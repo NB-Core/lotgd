@@ -101,7 +101,12 @@ final class CronCommonExceptionTest extends TestCase
         // line. It was in the first version of this test and proved nothing --
         // the same shape of tautology this audit has been removing elsewhere,
         // introduced by the very change that gave the test its own file.
-        $log = (string) file_get_contents($this->logFile);
+        // Asserted rather than cast: a read failure would otherwise arrive as
+        // "the marker is missing", sending the next reader after the
+        // subprocess when the problem is the file. Same shape of masking this
+        // audit removed from AccountRestorepageTest on #1535.
+        $log = file_get_contents($this->logFile);
+        self::assertIsString($log, "the log file could not be read:\n" . implode(PHP_EOL, $transcript));
 
         // Both halves, because they come from different places and only
         // together say the failure was reported rather than merely thrown.
@@ -183,9 +188,8 @@ final class CronCommonExceptionTest extends TestCase
             }
         }
 
-        self::assertStringContainsString(
-            'a marker only this test writes',
-            (string) file_get_contents($this->logFile)
-        );
+        $log = file_get_contents($this->logFile);
+        self::assertIsString($log, 'the log file could not be read');
+        self::assertStringContainsString('a marker only this test writes', $log);
     }
 }
