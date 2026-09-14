@@ -72,6 +72,52 @@ if (!mkdir($farm, 0777, true) && !is_dir($farm)) {
     exit(SETUP_FAILED);
 }
 
+/**
+ * Clears the directory away, and says so when it cannot.
+ *
+ * Registered here, straight after the directory exists and before anything is
+ * put in it, so that a bail-out further down takes the directory with it. That
+ * is one concrete way farms were surviving a run; whether it is the way the two
+ * empty ones found in /tmp got there is not established, and the diagnostic
+ * below is what will say so next time rather than a guess now.
+ *
+ * A failure here does not make the run wrong -- the directory is this
+ * process's own and lives under the system temp path, and nothing in the
+ * repository was touched either way -- so it does not change the exit status.
+ * But it is not discarded either: AGENTS.md forbids `@` and silently swallowed
+ * errors, and a CI box quietly accumulating stale farms until the disk fills
+ * is exactly the sort of thing that is discovered far from its cause. The
+ * diagnostic goes to stderr, which the test folds into its failure message.
+ */
+register_shutdown_function(static function () use ($farm): void {
+    $remaining = scandir($farm);
+    if ($remaining === false) {
+        fwrite(STDERR, "could not read $farm to clear it away\n");
+
+        return;
+    }
+
+    $stuck = [];
+    foreach ($remaining as $entry) {
+        if ($entry === '.' || $entry === '..') {
+            continue;
+        }
+        if (!unlink($farm . '/' . $entry)) {
+            $stuck[] = $entry;
+        }
+    }
+
+    if ($stuck !== []) {
+        fwrite(STDERR, sprintf("could not clear %s from %s\n", implode(', ', $stuck), $farm));
+
+        return;
+    }
+
+    if (!rmdir($farm)) {
+        fwrite(STDERR, "could not remove $farm\n");
+    }
+});
+
 $entries = scandir($root);
 if ($entries === false) {
     fwrite(STDERR, "could not read $root\n");
@@ -106,18 +152,5 @@ $output = new class {
     }
 };
 
-// Best effort, and harmless if it fails: the directory is this process's own
-// and lives under the system temp path. Nothing in the repository is touched,
-// so a crash here costs a stale temp directory rather than a missing file in
-// somebody's checkout.
-register_shutdown_function(static function () use ($farm): void {
-    foreach ((array) @scandir($farm) as $entry) {
-        if ($entry === '.' || $entry === '..') {
-            continue;
-        }
-        @unlink($farm . '/' . $entry);
-    }
-    @rmdir($farm);
-});
 
 require $farm . '/cron.php';
