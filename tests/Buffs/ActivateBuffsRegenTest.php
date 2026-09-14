@@ -465,9 +465,14 @@ final class ActivateBuffsRegenTest extends TestCase
     {
         global $companions;
 
+        // The downed one is deliberately *not* first: with it in front, an
+        // implementation that removed whatever entry happened to be at the head
+        // of the array would pass, and the case could not tell "remove this
+        // companion" from "remove the first one". Measured -- that mutation
+        // survived until the order was swapped.
         $companions = [
-            'wolf' => ['name' => 'Wolf', 'hitpoints' => 3, 'maxhitpoints' => 100, 'cannotdie' => false, 'dyingtext' => 'The Wolf falls.'],
             'hawk' => ['name' => 'Hawk', 'hitpoints' => 50, 'maxhitpoints' => 100, 'cannotdie' => false, 'dyingtext' => 'The Hawk falls.'],
+            'wolf' => ['name' => 'Wolf', 'hitpoints' => 3, 'maxhitpoints' => 100, 'cannotdie' => false, 'dyingtext' => 'The Wolf falls.'],
         ];
 
         $this->activate(['regen' => -12, 'aura' => true, 'auramsg' => '{companion} suffers {damage}.']);
@@ -481,6 +486,36 @@ final class ActivateBuffsRegenTest extends TestCase
         self::assertArrayHasKey('hawk', $companions, 'a companion still standing is kept');
         self::assertSame(46, $companions['hawk']['hitpoints']);
         self::assertStringNotContainsString('The Hawk falls.', Output::getInstance()->getRawOutput());
+    }
+
+    /**
+     * Every companion the same blow downs is removed, not just the first.
+     *
+     * Written for a worry that measurement did not support, and kept for the
+     * one it did. The worry was that `unset()` inside the `foreach` walking the
+     * same array might make the loop skip entries -- it does not, by value or
+     * by reference, and the mutation written to model that survived because it
+     * models nothing. What the case does catch is a loop that stops after the
+     * first removal, which is the realistic way this goes wrong and which no
+     * other case here would notice, each of them having a single companion to
+     * remove.
+     *
+     * Fourth time in this audit that a justification has outrun what was
+     * actually checked; the difference is that this one was checked.
+     */
+    public function testEveryCompanionTheBlowDownsIsRemoved(): void
+    {
+        global $companions;
+
+        $companions = [
+            'wolf' => ['name' => 'Wolf', 'hitpoints' => 3, 'maxhitpoints' => 100, 'cannotdie' => false],
+            'hawk' => ['name' => 'Hawk', 'hitpoints' => 2, 'maxhitpoints' => 100, 'cannotdie' => false],
+            'bear' => ['name' => 'Bear', 'hitpoints' => 1, 'maxhitpoints' => 100, 'cannotdie' => false],
+        ];
+
+        $this->activate(['regen' => -12, 'aura' => true, 'auramsg' => '{companion} suffers {damage}.']);
+
+        self::assertSame([], $companions, 'all three are below zero after -4, so none of them is left');
     }
 
     /**
