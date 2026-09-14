@@ -4,24 +4,127 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests;
 
+use Lotgd\BootstrapErrorHandler;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * cron.php logs a failure in common.php rather than dying quietly.
+ *
+ * This used to read the real logs/bootstrap.log: delete it, run the
+ * subprocess, assert the file exists with the marker in it, delete it again.
+ * That made a process-global file part of the test, and the file is one *any*
+ * subprocess in this suite can write -- the bootstrap error handler appends
+ * every warning to it. So an unrelated test that shells out could put a line
+ * in the file this one had just emptied, and this one could delete lines
+ * somebody else was appending; and two PHPUnit processes running at once would
+ * delete the file out from under each other. It failed exactly that way during
+ * the executing-CSRF work (#1537), which is what brought it to attention.
+ *
+ * The subprocess now writes to a file of this test's own, handed to it through
+ * LOTGD_BOOTSTRAP_LOG. Nothing here touches the shared log, so nothing else in
+ * the suite can disturb this test and this test can disturb nothing else.
+ */
 final class CronCommonExceptionTest extends TestCase
 {
+    private string $logFile = '';
+
+    protected function setUp(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'lotgd-bootstrap-log-');
+        self::assertIsString($path, 'the test needs a log file of its own');
+        $this->logFile = $path;
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->logFile !== '' && file_exists($this->logFile)) {
+            unlink($this->logFile);
+        }
+    }
+
     public function testExceptionInCommonIsLogged(): void
     {
-        $logFile = __DIR__ . '/../logs/bootstrap.log';
+        // Passed on the command line rather than through putenv(), so it
+        // reaches this one child and no other test in this process.
+        $command = sprintf(
+            '%s=%s %s %s',
+            BootstrapErrorHandler::LOG_FILE_ENV,
+            escapeshellarg($this->logFile),
+            escapeshellarg(PHP_BINARY),
+            escapeshellarg(__DIR__ . '/cron_common_exception.php')
+        );
 
-        if (file_exists($logFile)) {
-            unlink($logFile);
+        shell_exec($command);
+
+        self::assertFileExists($this->logFile);
+        self::assertStringContainsString('Cron common.php failure', (string) file_get_contents($this->logFile));
+    }
+
+    /**
+     * The override is honoured, and only when it says something.
+     *
+     * Asserted on the resolved path rather than by writing, because writing is
+     * what the default case cannot do: its target is the shared file, and
+     * proving "the default is still logs/bootstrap.log" by appending to
+     * logs/bootstrap.log would reintroduce exactly the coupling this change
+     * removes.
+     */
+    public function testTheLogPathFollowsTheEnvironmentAndOtherwiseDoesNotMove(): void
+    {
+        $previous = getenv(BootstrapErrorHandler::LOG_FILE_ENV);
+
+        try {
+            putenv(BootstrapErrorHandler::LOG_FILE_ENV);
+            $default = BootstrapErrorHandler::logFile();
+            self::assertStringEndsWith('/logs/bootstrap.log', $default);
+            self::assertSame(
+                realpath(dirname(__DIR__)),
+                realpath(dirname($default, 2)),
+                'an installation that sets nothing must log where it always has'
+            );
+
+            putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=' . $this->logFile);
+            self::assertSame($this->logFile, BootstrapErrorHandler::logFile());
+
+            // An empty value is not a path, and treating it as one would send
+            // every entry to a file named "" -- silently losing the log for
+            // anyone who exports the variable without setting it.
+            putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=');
+            self::assertSame($default, BootstrapErrorHandler::logFile());
+        } finally {
+            if (is_string($previous) && $previous !== '') {
+                putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=' . $previous);
+            } else {
+                putenv(BootstrapErrorHandler::LOG_FILE_ENV);
+            }
+        }
+    }
+
+    /**
+     * And an entry really lands in the overridden file.
+     *
+     * The pair to the case above: that one pins the path, this one pins that
+     * the path is the one written to. Without it the resolver could be correct
+     * and log() could still ignore it.
+     */
+    public function testAnEntryIsWrittenToTheOverriddenFile(): void
+    {
+        $previous = getenv(BootstrapErrorHandler::LOG_FILE_ENV);
+
+        try {
+            putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=' . $this->logFile);
+            BootstrapErrorHandler::log('a marker only this test writes');
+        } finally {
+            if (is_string($previous) && $previous !== '') {
+                putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=' . $previous);
+            } else {
+                putenv(BootstrapErrorHandler::LOG_FILE_ENV);
+            }
         }
 
-        shell_exec('php ' . escapeshellarg(__DIR__ . '/cron_common_exception.php'));
-
-        $this->assertFileExists($logFile);
-        $log = (string) file_get_contents($logFile);
-        $this->assertStringContainsString('Cron common.php failure', $log);
-
-        unlink($logFile);
+        self::assertStringContainsString(
+            'a marker only this test writes',
+            (string) file_get_contents($this->logFile)
+        );
     }
 }
