@@ -3,14 +3,50 @@
 namespace Lotgd;
 
 /**
- * Simple bootstrap error handler that logs to logs/bootstrap.log.
+ * Simple bootstrap error handler that logs to logs/bootstrap.log, or to
+ * wherever LOTGD_BOOTSTRAP_LOG points.
  */
 class BootstrapErrorHandler
 {
-    private const LOG_FILE = __DIR__ . '/../../logs/bootstrap.log';
+    private const DEFAULT_LOG_FILE = __DIR__ . '/../../logs/bootstrap.log';
 
     /**
-     * Append one entry to logs/bootstrap.log.
+     * The environment variable that moves the log somewhere else.
+     */
+    public const LOG_FILE_ENV = 'LOTGD_BOOTSTRAP_LOG';
+
+    /**
+     * Where entries go.
+     *
+     * The default is the same logs/bootstrap.log it has always been, so an
+     * installation that sets nothing sees no change. The override exists
+     * because the path is otherwise a process-global this class owns and
+     * nobody else can move:
+     *
+     *   - In the Docker image the directory is root-owned and not writable by
+     *     the web user, which is why log() swallows failures and falls back to
+     *     PHP's own error log. An operator can now point this at a writable
+     *     path and keep the entries instead of losing their shape.
+     *   - A test that wants to read back what a subprocess logged had to use
+     *     the one shared file, deleting it before and after -- so any other
+     *     subprocess in the same suite writing a line could break it, and it
+     *     could delete lines somebody else was appending. That is what this
+     *     unblocks; see tests/CronCommonExceptionTest.
+     */
+    public static function logFile(): string
+    {
+        $override = getenv(self::LOG_FILE_ENV);
+        if (is_string($override) && $override !== '') {
+            return $override;
+        }
+
+        return self::DEFAULT_LOG_FILE;
+    }
+
+    /**
+     * Append one entry to the log, wherever logFile() says that is.
+     *
+     * logs/bootstrap.log by default, or whatever LOTGD_BOOTSTRAP_LOG names.
      *
      * Three places used to write this file, in three formats, and this one wrote
      * every entry twice -- once through error_log() and once through
@@ -24,13 +60,14 @@ class BootstrapErrorHandler
     public static function log(string $message): void
     {
         $entry = sprintf('[%s] %s', date('c'), $message);
+        $logFile = self::logFile();
 
-        $dir = dirname(self::LOG_FILE);
+        $dir = dirname($logFile);
         if (!is_dir($dir)) {
             @mkdir($dir, 0777, true);
         }
 
-        if (@file_put_contents(self::LOG_FILE, $entry . PHP_EOL, FILE_APPEND | LOCK_EX) === false) {
+        if (@file_put_contents($logFile, $entry . PHP_EOL, FILE_APPEND | LOCK_EX) === false) {
             error_log($entry);
         }
     }
@@ -40,9 +77,16 @@ class BootstrapErrorHandler
      */
     public static function register(): void
     {
-        $dir = dirname(self::LOG_FILE);
+        // Suppressed like the one in log(), and for a reason this change made
+        // sharper: the path is configurable now, so an override pointing
+        // somewhere unwritable is a deployment mistake rather than a broken
+        // image -- and it would announce itself as a PHP warning during
+        // bootstrap, on a page that has not started rendering. log() already
+        // falls back to error_log() when the write fails; register() should not
+        // be noisier about the same condition. Reported by Copilot.
+        $dir = dirname(self::logFile());
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            @mkdir($dir, 0777, true);
         }
 
         set_error_handler(static function (int $severity, string $message, string $file = '', int $line = 0): bool {
