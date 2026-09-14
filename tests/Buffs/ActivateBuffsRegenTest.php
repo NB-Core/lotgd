@@ -561,6 +561,38 @@ final class ActivateBuffsRegenTest extends TestCase
     }
 
     /**
+     * An aura death reads its farewell the way any other death does.
+     *
+     * The two halves Codex named, and they are the reason this path now goes
+     * through Battle::announceCompanionDeath() instead of printing the text
+     * itself: `{companion}` was never substituted, so a module's wording showed
+     * the placeholder literally, and a companion with no text of its own was
+     * buried in silence while every other death in the game gets a line.
+     */
+    public function testAnAuraDeathRendersTheFarewellLikeAnyOtherDeath(): void
+    {
+        global $companions;
+
+        $companions = [
+            'wolf' => ['name' => 'Wolf', 'hitpoints' => 3, 'maxhitpoints' => 100, 'cannotdie' => false,
+                       'dyingtext' => '{companion} breathes its last.'],
+            'hawk' => ['name' => 'Hawk', 'hitpoints' => 2, 'maxhitpoints' => 100, 'cannotdie' => false],
+        ];
+
+        $this->activate(['regen' => -12, 'aura' => true, 'auramsg' => '{companion} suffers {damage}.']);
+
+        $output = Output::getInstance()->getRawOutput();
+
+        self::assertStringContainsString('Wolf breathes its last.', $output, 'the placeholder is filled in');
+        self::assertStringNotContainsString('{companion} breathes', $output);
+        self::assertStringContainsString(
+            'catches his last breath',
+            $output,
+            'and a companion with no wording of its own still gets the default farewell'
+        );
+    }
+
+    /**
      * An aura with no wording of its own heals silently, without a warning.
      *
      * `auramsg` was read unguarded, so a buff carrying an aura but no text for

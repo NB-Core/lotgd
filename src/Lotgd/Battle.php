@@ -857,6 +857,40 @@ class Battle
  * @param string $activate The stage of activation. Can be one of these: "fight", "defend", "heal" or "magic".
  * @return array The changed companion
  */
+    /**
+     * Say that a companion has fallen.
+     *
+     * Extracted so there is one rendering rather than two. Buffs::activateBuffs()
+     * kills companions too since a damaging regeneration aura was repaired, and
+     * its copy of this got three things differently: no `{companion}`
+     * substitution, so a module's text showed the placeholder literally; the
+     * `battle` schema regardless of what the companion declares, so a module's
+     * own translations were never found; and no farewell at all for a companion
+     * without text of its own. Reported by Codex on #1538 -- on a path that had
+     * only just become reachable, which is why nobody had seen it.
+     *
+     * The schema is restored afterwards: a leak here sends every later lookup
+     * on the page to the wrong table.
+     *
+     * @param array<string,mixed> $companion
+     */
+    public static function announceCompanionDeath(array $companion): void
+    {
+        $output = Output::getInstance();
+
+        if (isset($companion['dyingtext']) && $companion['dyingtext'] > "") {
+            $msg = $companion['dyingtext'];
+        } else {
+            $msg = "`5Your companion catches his last breath before it dies.";
+        }
+
+        $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}"), array($companion['name'] ?? ''));
+        Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
+        $output->output('%s', $msg);
+        $output->outputNotl("`0`n");
+        Translator::getInstance()->setSchema();
+    }
+
     public static function reportCompanionMove(&$badguy, $companion, $activate = "fight")
     {
         global $session,$creatureattack,$creatureatkmod,$adjustment;
@@ -1051,16 +1085,7 @@ class Battle
             $needtosstopfighting = true;
         }
         if ($companion['hitpoints'] <= 0) {
-            if (isset($companion['dyingtext']) && $companion['dyingtext'] > "") {
-                $msg = $companion['dyingtext'];
-            } else {
-                $msg = "`5Your companion catches his last breath before it dies.";
-            }
-            $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}"), array($companion['name']));
-            Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
-            $output->output('%s', $msg);
-            $output->outputNotl("`0`n");
-            Translator::getInstance()->setSchema();
+            self::announceCompanionDeath($companion);
             if (isset($companion['cannotdie']) && $companion['cannotdie'] == true) {
                 $companion['hitpoints'] = 0;
             } else {

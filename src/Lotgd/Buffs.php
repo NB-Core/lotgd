@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
+use Lotgd\Battle;
 use Lotgd\Substitute;
 use Lotgd\Modules\HookHandler;
 use Lotgd\CreateString;
@@ -499,11 +500,15 @@ class Buffs
                                 // never run, and with it neither the dying text nor the
                                 // removal below.
                                 if ($hptoregen < 0 && $companions[$name]['hitpoints'] <= 0) {
-                                    if (isset($companion['dyingtext'])) {
-                                        Translator::getInstance()->setSchema('battle');
-                                        $output->output('%s', $companion['dyingtext']);
-                                        Translator::getInstance()->setSchema();
-                                    }
+                                    // The same rendering the ordinary death path
+                                    // uses, rather than a second copy of it. This
+                                    // one substituted no {companion}, forced the
+                                    // battle schema over whatever the companion
+                                    // declares, and said nothing at all for a
+                                    // companion without text of its own -- three
+                                    // ways a module's farewell came out wrong on a
+                                    // path that had only just become reachable.
+                                    Battle::announceCompanionDeath($companion);
                                     if (($companion['cannotdie'] ?? false) == true) {
                                         // Floored rather than left negative: a companion
                                         // that cannot die is down, not dead.
