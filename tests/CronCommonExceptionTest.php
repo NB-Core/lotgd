@@ -42,6 +42,30 @@ final class CronCommonExceptionTest extends TestCase
         }
     }
 
+    /**
+     * Put LOTGD_BOOTSTRAP_LOG back exactly as it was.
+     *
+     * getenv() distinguishes *unset* (false) from *set but empty* (''), and the
+     * first version of this did not: it unset the variable in both cases, so a
+     * suite run with `LOTGD_BOOTSTRAP_LOG=` exported would come out of these
+     * tests with it gone. A test quietly changing process-wide state for every
+     * test after it -- which is the failure this whole pull request is about,
+     * reproduced in miniature inside the fix for it. Reported by Copilot.
+     *
+     * One helper rather than the two copies it replaces, so a third cannot
+     * drift from the others.
+     */
+    private static function restoreLogEnv(string|false $previous): void
+    {
+        if ($previous === false) {
+            putenv(BootstrapErrorHandler::LOG_FILE_ENV);
+
+            return;
+        }
+
+        putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=' . $previous);
+    }
+
     public function testExceptionInCommonIsLogged(): void
     {
         // Passed on the command line rather than through putenv(), so it
@@ -158,11 +182,7 @@ final class CronCommonExceptionTest extends TestCase
             putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=');
             self::assertSame($default, BootstrapErrorHandler::logFile());
         } finally {
-            if (is_string($previous) && $previous !== '') {
-                putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=' . $previous);
-            } else {
-                putenv(BootstrapErrorHandler::LOG_FILE_ENV);
-            }
+            self::restoreLogEnv($previous);
         }
     }
 
@@ -181,11 +201,7 @@ final class CronCommonExceptionTest extends TestCase
             putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=' . $this->logFile);
             BootstrapErrorHandler::log('a marker only this test writes');
         } finally {
-            if (is_string($previous) && $previous !== '') {
-                putenv(BootstrapErrorHandler::LOG_FILE_ENV . '=' . $previous);
-            } else {
-                putenv(BootstrapErrorHandler::LOG_FILE_ENV);
-            }
+            self::restoreLogEnv($previous);
         }
 
         $log = file_get_contents($this->logFile);
