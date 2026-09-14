@@ -355,6 +355,38 @@ modules.
   and a fighting one without a maximum had its hitpoints set to `null` with an
   undefined-key warning.
 
+- **A damaging regeneration aura can now kill a companion, which matters only
+  to third-party modules.** A buff carrying both `regen` and `aura` extends the
+  player's regeneration to their companions at a third of its strength. With a
+  *negative* `regen` that is damage, and `Buffs::activateBuffs()` has always had
+  a block meant to print the companion's `dyingtext` and drop it from the party
+  when the damage takes it to zero. That block could not run, for two
+  independent reasons — it read the companion's hitpoints from the copy made
+  *before* the damage was applied, and its one effect was an assignment to a
+  local variable nothing read. So companions took the damage, nothing was
+  announced, and they stayed in the party at negative hitpoints.
+
+  What changes:
+
+  | | before | after |
+  |---|---|---|
+  | companion driven to 0 or below | kept, at negative hitpoints | removed from the party |
+  | companion flagged `cannotdie` | kept, at negative hitpoints | kept, floored at 0 |
+  | the companion's `dyingtext` | never shown | shown in both cases |
+
+  **Nothing shipped with this game is affected.** No core page, script or module
+  sets `aura` on a buff, and `auramsg` appears nowhere outside `Buffs.php` — so
+  no existing content changes behaviour, and there is nothing to do on upgrade.
+
+  **If you maintain a module that sets `regen` together with `aura`:** a
+  negative one now removes companions, so anything of yours that assumed a
+  companion would still be in `$companions` after a round of your own aura needs
+  to stop assuming it. A companion you want kept should carry `cannotdie`. In
+  the same change `auramsg` became optional: reading it unguarded put an
+  `Undefined array key` on every companion an aura healed, and an aura with no
+  wording of its own now adds nothing to the page rather than a line of bare
+  colour codes.
+
 - **Physical resistance no longer applies to a riposte, which changes combat
   balance.** A riposte is the counter-blow a combatant lands when their
   opponent's attack falls short. Until now, the *attacking* side's own physical
