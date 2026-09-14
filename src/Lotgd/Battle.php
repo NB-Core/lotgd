@@ -850,13 +850,6 @@ class Battle
         return $localenemies;
     }
 
-/**
- * Based upon the type of the companion different actions are performed and the companion is marked as "used" after that.
- *
- * @param array $companion The companion itself
- * @param string $activate The stage of activation. Can be one of these: "fight", "defend", "heal" or "magic".
- * @return array The changed companion
- */
     /**
      * Say that a companion has fallen.
      *
@@ -891,6 +884,13 @@ class Battle
         Translator::getInstance()->setSchema();
     }
 
+/**
+ * Based upon the type of the companion different actions are performed and the companion is marked as "used" after that.
+ *
+ * @param array $companion The companion itself
+ * @param string $activate The stage of activation. Can be one of these: "fight", "defend", "heal" or "magic".
+ * @return array The changed companion
+ */
     public static function reportCompanionMove(&$badguy, $companion, $activate = "fight")
     {
         global $session,$creatureattack,$creatureatkmod,$adjustment;
