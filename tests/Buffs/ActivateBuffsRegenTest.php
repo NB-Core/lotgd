@@ -444,36 +444,207 @@ final class ActivateBuffsRegenTest extends TestCase
     }
 
     /**
-     * A negative aura damages companions, and the game keeps them.
+     * A damaging aura that takes a companion below zero kills it.
      *
-     * Documenting what the code does, not what it reads as if it does. Below
-     * this point the method has a block that prints a companion's dying text
-     * and drops it from the party -- and that block cannot run. It tests
-     * `$companion['hitpoints']`, which is the by-value copy the foreach made
-     * *before* the damage was written to `$companions[$name]`, so it always
-     * sees the pre-damage value; and its one effect is to assign to
-     * `$newcompanions`, which inside this method is an undeclared local that
-     * nothing ever reads. battle.php has a global of that name, which is
-     * presumably what the author meant.
+     * This block could not run until now, for two independent reasons, and
+     * both are worth keeping in view because the shape recurs. It tested
+     * `$companion['hitpoints']` -- the copy the foreach made *before* the
+     * damage was written to `$companions[$name]` -- and the entry condition
+     * above has already established that value is over zero, so the test could
+     * never be true. And its one effect was to assign to `$newcompanions`,
+     * which inside this method was an undeclared local that nothing read.
+     * Either alone was enough to make the feature inert.
      *
-     * So the observable behaviour is: the companion takes the damage, keeps
-     * whatever hitpoints that leaves it, and stays in the party. This test
-     * says so. Left unfixed deliberately -- making the branch live would
-     * change what third-party aura modules do, and that is a decision for the
-     * project, not a side effect of writing a test. Reported alongside.
+     * A previous version of this file asserted the *old* behaviour, deliberately
+     * and with its reasons: nothing shipped with this game sets both `regen` and
+     * `aura`, so repairing it changes only what third-party modules do, and that
+     * was the project's call rather than a side effect of writing a test. The
+     * project has now made it.
      */
-    public function testANegativeAuraDamagesCompanionsWithoutRemovingThem(): void
+    public function testADamagingAuraThatDownsACompanionRemovesItFromTheParty(): void
     {
         global $companions;
 
+        // The downed one is deliberately *not* first: with it in front, an
+        // implementation that removed whatever entry happened to be at the head
+        // of the array would pass, and the case could not tell "remove this
+        // companion" from "remove the first one". Measured -- that mutation
+        // survived until the order was swapped.
         $companions = [
+            'hawk' => ['name' => 'Hawk', 'hitpoints' => 50, 'maxhitpoints' => 100, 'cannotdie' => false, 'dyingtext' => 'The Hawk falls.'],
             'wolf' => ['name' => 'Wolf', 'hitpoints' => 3, 'maxhitpoints' => 100, 'cannotdie' => false, 'dyingtext' => 'The Wolf falls.'],
         ];
 
         $this->activate(['regen' => -12, 'aura' => true, 'auramsg' => '{companion} suffers {damage}.']);
 
-        self::assertArrayHasKey('wolf', $companions, 'the companion stays in the party');
-        self::assertSame(-1, $companions['wolf']['hitpoints'], '3 - 4, taken below zero and left there');
-        self::assertStringNotContainsString('The Wolf falls.', Output::getInstance()->getRawOutput());
+        self::assertArrayNotHasKey('wolf', $companions, '3 - 4 is below zero, so the wolf is gone');
+        self::assertStringContainsString('The Wolf falls.', Output::getInstance()->getRawOutput());
+
+        // The same run, on a companion the same blow did not down: the removal
+        // has to be about this companion's hitpoints and not about the aura
+        // being negative at all.
+        self::assertArrayHasKey('hawk', $companions, 'a companion still standing is kept');
+        self::assertSame(46, $companions['hawk']['hitpoints']);
+        self::assertStringNotContainsString('The Hawk falls.', Output::getInstance()->getRawOutput());
+    }
+
+    /**
+     * Every companion the same blow downs is removed, not just the first.
+     *
+     * Written for a worry that measurement did not support, and kept for the
+     * one it did. The worry was that `unset()` inside the `foreach` walking the
+     * same array might make the loop skip entries -- it does not, by value or
+     * by reference, and the mutation written to model that survived because it
+     * models nothing. What the case does catch is a loop that stops after the
+     * first removal, which is the realistic way this goes wrong and which no
+     * other case here would notice, each of them having a single companion to
+     * remove.
+     *
+     * Fourth time in this audit that a justification has outrun what was
+     * actually checked; the difference is that this one was checked.
+     */
+    public function testEveryCompanionTheBlowDownsIsRemoved(): void
+    {
+        global $companions;
+
+        $companions = [
+            'wolf' => ['name' => 'Wolf', 'hitpoints' => 3, 'maxhitpoints' => 100, 'cannotdie' => false],
+            'hawk' => ['name' => 'Hawk', 'hitpoints' => 2, 'maxhitpoints' => 100, 'cannotdie' => false],
+            'bear' => ['name' => 'Bear', 'hitpoints' => 1, 'maxhitpoints' => 100, 'cannotdie' => false],
+        ];
+
+        $this->activate(['regen' => -12, 'aura' => true, 'auramsg' => '{companion} suffers {damage}.']);
+
+        self::assertSame([], $companions, 'all three are below zero after -4, so none of them is left');
+    }
+
+    /**
+     * A companion that cannot die is floored at zero and kept.
+     *
+     * Down rather than dead, which is what the flag means everywhere else in
+     * the game -- and it still reads its dying text, because that is the line
+     * the author wrote for the moment it falls.
+     */
+    public function testACompanionThatCannotDieIsFlooredAtZeroRatherThanRemoved(): void
+    {
+        global $companions;
+
+        $companions = [
+            'wisp' => ['name' => 'Wisp', 'hitpoints' => 3, 'maxhitpoints' => 100, 'cannotdie' => true, 'dyingtext' => 'The Wisp fades.'],
+        ];
+
+        $this->activate(['regen' => -12, 'aura' => true, 'auramsg' => '{companion} suffers {damage}.']);
+
+        self::assertArrayHasKey('wisp', $companions, 'a companion that cannot die stays in the party');
+        self::assertSame(0, $companions['wisp']['hitpoints'], 'and is floored at zero rather than left at -1');
+        self::assertStringContainsString('The Wisp fades.', Output::getInstance()->getRawOutput());
+    }
+
+    /**
+     * A companion without a dying text is removed just the same.
+     *
+     * The text is optional; the removal is not. Worth its own case because the
+     * two sit in the same branch and a guard on the wrong one would make a
+     * companion's survival depend on whether somebody wrote it a farewell.
+     */
+    public function testACompanionWithoutADyingTextIsStillRemoved(): void
+    {
+        global $companions;
+
+        $companions = [
+            'wolf' => ['name' => 'Wolf', 'hitpoints' => 3, 'maxhitpoints' => 100, 'cannotdie' => false],
+        ];
+
+        $this->activate(['regen' => -12, 'aura' => true, 'auramsg' => '{companion} suffers {damage}.']);
+
+        self::assertArrayNotHasKey('wolf', $companions);
+    }
+
+    /**
+     * An aura death reads its farewell the way any other death does.
+     *
+     * The two halves Codex named, and they are the reason this path now goes
+     * through Battle::announceCompanionDeath() instead of printing the text
+     * itself: `{companion}` was never substituted, so a module's wording showed
+     * the placeholder literally, and a companion with no text of its own was
+     * buried in silence while every other death in the game gets a line.
+     */
+    public function testAnAuraDeathRendersTheFarewellLikeAnyOtherDeath(): void
+    {
+        global $companions;
+
+        $companions = [
+            'wolf' => ['name' => 'Wolf', 'hitpoints' => 3, 'maxhitpoints' => 100, 'cannotdie' => false,
+                       'dyingtext' => '{companion} breathes its last.'],
+            'hawk' => ['name' => 'Hawk', 'hitpoints' => 2, 'maxhitpoints' => 100, 'cannotdie' => false],
+        ];
+
+        $this->activate(['regen' => -12, 'aura' => true, 'auramsg' => '{companion} suffers {damage}.']);
+
+        $output = Output::getInstance()->getRawOutput();
+
+        self::assertStringContainsString('Wolf breathes its last.', $output, 'the placeholder is filled in');
+        self::assertStringNotContainsString('{companion} breathes', $output);
+        self::assertStringContainsString(
+            'catches his last breath',
+            $output,
+            'and a companion with no wording of its own still gets the default farewell'
+        );
+    }
+
+    /**
+     * An aura with no wording of its own heals silently, without a warning.
+     *
+     * `auramsg` was read unguarded, so a buff carrying an aura but no text for
+     * it put an "Undefined array key" on every companion it healed. Same
+     * optional-key defect as `cannotdie`, in the same block, and reachable by
+     * exactly the modules this repair is for.
+     *
+     * "Silently" is asserted by equivalence rather than by inspecting the
+     * markup: the run that heals a companion has to produce the same output as
+     * the run with no companions at all. Asserting only that no warning was
+     * raised left the empty-message skip with no witness -- removing it kept
+     * every case green while the page gained a line of bare colour codes per
+     * companion per round. The name said "or output" and nothing checked it,
+     * which is the same miss this suite has already caught twice.
+     */
+    public function testAnAuraWithoutAMessageHealsWithoutWarningOrOutput(): void
+    {
+        global $companions;
+
+        $companions = [
+            'wolf' => ['name' => 'Wolf', 'hitpoints' => 50, 'maxhitpoints' => 100, 'cannotdie' => false],
+        ];
+
+        $raised = [];
+        set_error_handler(static function (int $number, string $message) use (&$raised): bool {
+            $raised[] = $message;
+
+            return true;
+        });
+
+        try {
+            $this->activate(['regen' => 12, 'aura' => true]);
+        } finally {
+            restore_error_handler();
+        }
+
+        $withCompanion = Output::getInstance()->getRawOutput();
+
+        self::assertSame([], $raised, implode(' | ', $raised));
+        self::assertSame(54, $companions['wolf']['hitpoints'], 'the heal still happens');
+
+        // The same buff again with nobody to heal. Whatever the player's own
+        // regeneration prints is in both; anything the aura would have added is
+        // in neither.
+        Output::getInstance()->resetOutput();
+        $companions = [];
+        $this->activate(['regen' => 12, 'aura' => true]);
+
+        self::assertSame(
+            Output::getInstance()->getRawOutput(),
+            $withCompanion,
+            'an aura with no message of its own must add nothing to the page'
+        );
     }
 }
