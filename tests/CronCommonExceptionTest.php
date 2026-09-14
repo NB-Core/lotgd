@@ -54,10 +54,50 @@ final class CronCommonExceptionTest extends TestCase
             escapeshellarg(__DIR__ . '/cron_common_exception.php')
         );
 
-        shell_exec($command);
+        // exec() rather than shell_exec(), because the exit status is evidence
+        // and shell_exec() throws it away. stderr is folded in so a failure
+        // arrives with the reason attached rather than as "the file has the
+        // wrong contents".
+        $transcript = [];
+        $status = 0;
+        exec($command . ' 2>&1', $transcript, $status);
 
-        self::assertFileExists($this->logFile);
-        self::assertStringContainsString('Cron common.php failure', (string) file_get_contents($this->logFile));
+        // 1, not 0: cron.php exits 1 by design when common.php throws, which is
+        // exactly the situation this run constructs -- a cron that failed
+        // should tell its scheduler so. Checking the status at all is the
+        // point; the old shell_exec() discarded it, so this test could not have
+        // told a reported failure from a subprocess that died on its way there.
+        // The harness itself bails out with 3 for that reason.
+        self::assertSame(
+            1,
+            $status,
+            "the cron subprocess did not report the failure the way cron.php should:\n"
+            . implode(PHP_EOL, $transcript)
+        );
+
+        // Deliberately not assertFileExists(): tempnam() creates the file, so
+        // that assertion passes whether or not the subprocess ever wrote a
+        // line. It was in the first version of this test and proved nothing --
+        // the same shape of tautology this audit has been removing elsewhere,
+        // introduced by the very change that gave the test its own file.
+        $log = (string) file_get_contents($this->logFile);
+
+        // Both halves, because they come from different places and only
+        // together say the failure was reported rather than merely thrown.
+        // The first is cron.php's own wording; the second is the exception it
+        // caught. They used to be the same words -- the stand-in threw "Cron
+        // common.php failure" too -- so the line carried the phrase twice and
+        // rewording cron.php's half left this test green.
+        self::assertStringContainsString(
+            'Cron common.php failure',
+            $log,
+            "cron.php did not log its own failure line:\n" . implode(PHP_EOL, $transcript)
+        );
+        self::assertStringContainsString(
+            'the stand-in common.php refused to load',
+            $log,
+            "the exception's own message was not carried into the log:\n" . implode(PHP_EOL, $transcript)
+        );
     }
 
     /**

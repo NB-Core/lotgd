@@ -54,21 +54,37 @@ if (!is_dir($cacheDir)) {
  * else the run needs is symlinked, so the copy stays one file and cannot drift
  * from the real cron.php.
  */
+/**
+ * What this script exits with when it cannot even set itself up.
+ *
+ * Not 1: cron.php exits 1 on purpose when common.php throws, which is the
+ * whole point of this run. Sharing the code would make "the cron reported its
+ * failure correctly" and "the harness never got as far as running it"
+ * indistinguishable to the caller.
+ */
+const SETUP_FAILED = 3;
+
 $root = dirname(__DIR__);
 $farm = sys_get_temp_dir() . '/lotgd-cron-exception-' . getmypid() . '-' . bin2hex(random_bytes(4));
 
 if (!mkdir($farm, 0777, true) && !is_dir($farm)) {
     fwrite(STDERR, "could not create $farm\n");
-    exit(1);
+    exit(SETUP_FAILED);
 }
 
-foreach ((array) scandir($root) as $entry) {
+$entries = scandir($root);
+if ($entries === false) {
+    fwrite(STDERR, "could not read $root\n");
+    exit(SETUP_FAILED);
+}
+
+foreach ($entries as $entry) {
     if (in_array($entry, ['.', '..', 'common.php', 'cron.php'], true)) {
         continue;
     }
     if (!symlink($root . '/' . $entry, $farm . '/' . $entry)) {
         fwrite(STDERR, "could not link $entry into $farm\n");
-        exit(1);
+        exit(SETUP_FAILED);
     }
 }
 
@@ -77,7 +93,7 @@ if (
     || !copy($root . '/cron.php', $farm . '/cron.php')
 ) {
     fwrite(STDERR, "could not populate $farm\n");
-    exit(1);
+    exit(SETUP_FAILED);
 }
 
 $mail_sent_count = 0;

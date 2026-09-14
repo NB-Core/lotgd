@@ -75,9 +75,16 @@ class BootstrapErrorHandler
      */
     public static function register(): void
     {
+        // Suppressed like the one in log(), and for a reason this change made
+        // sharper: the path is configurable now, so an override pointing
+        // somewhere unwritable is a deployment mistake rather than a broken
+        // image -- and it would announce itself as a PHP warning during
+        // bootstrap, on a page that has not started rendering. log() already
+        // falls back to error_log() when the write fails; register() should not
+        // be noisier about the same condition. Reported by Copilot.
         $dir = dirname(self::logFile());
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            @mkdir($dir, 0777, true);
         }
 
         set_error_handler(static function (int $severity, string $message, string $file = '', int $line = 0): bool {
