@@ -474,30 +474,52 @@ class Buffs
                     $auraeffect = (int) round($buff['regen'] / 3);
                     if (is_array($companions) && count($companions) > 0 && $auraeffect != 0) {
                         foreach ($companions as $name => $companion) {
-                            $unset = false;
                             if (
                                 $companion['hitpoints'] < $companion['maxhitpoints'] &&
                                 ($companion['hitpoints'] > 0 || (($companion['cannotdie'] ?? false) == true && $auraeffect > 0))
                             ) {
                                 $hptoregen = min($auraeffect, $companion['maxhitpoints'] - $companion['hitpoints']);
                                 $companions[$name]['hitpoints'] += $hptoregen;
-                                $msg = Substitute::applyArray('`)' . $buff['auramsg'] . '`0`n', ['{damage}', '{companion}'], [$hptoregen, $companion['name']]);
-                                $output->output('%s', $msg);
-                                if ($hptoregen < 0 && $companion['hitpoints'] <= 0) {
+                                // auramsg is optional for the same reason cannotdie is:
+                                // a buff may carry an aura without wording for it, and
+                                // reading it unguarded put an Undefined array key on
+                                // every healed companion. An empty message prints
+                                // nothing rather than bare formatting, which is how the
+                                // player's own message above is handled.
+                                $auramsg = $buff['auramsg'] ?? '';
+                                if ($auramsg != '') {
+                                    $msg = Substitute::applyArray('`)' . $auramsg . '`0`n', ['{damage}', '{companion}'], [$hptoregen, $companion['name']]);
+                                    $output->output('%s', $msg);
+                                }
+                                // Read back what was just written, not the copy the
+                                // foreach made before it. Testing $companion here meant
+                                // testing the companion's hitpoints from *before* the
+                                // damage, which the entry condition above has already
+                                // established is above zero -- so this branch could
+                                // never run, and with it neither the dying text nor the
+                                // removal below.
+                                if ($hptoregen < 0 && $companions[$name]['hitpoints'] <= 0) {
                                     if (isset($companion['dyingtext'])) {
                                         Translator::getInstance()->setSchema('battle');
                                         $output->output('%s', $companion['dyingtext']);
                                         Translator::getInstance()->setSchema();
                                     }
-                                    if (isset($companion['cannotdie']) && $companion['cannotdie'] == true) {
-                                        $companion['hitpoints'] = 0;
+                                    if (($companion['cannotdie'] ?? false) == true) {
+                                        // Floored rather than left negative: a companion
+                                        // that cannot die is down, not dead.
+                                        $companions[$name]['hitpoints'] = 0;
                                     } else {
-                                        $unset = true;
+                                        // Removed from the party the caller reads, not
+                                        // collected into $newcompanions -- which inside
+                                        // this method was an undeclared local that
+                                        // nothing ever read. battle.php has a global of
+                                        // that name, which is what the author meant;
+                                        // writing to it from here would be a second way
+                                        // to edit the party, so the party itself is
+                                        // edited instead.
+                                        unset($companions[$name]);
                                     }
                                 }
-                            }
-                            if (!$unset) {
-                                $newcompanions[$name] = $companion;
                             }
                         }
                     }
