@@ -222,7 +222,17 @@ final class MailReadActionBarTest extends TestCase
         self::assertMatchesRegularExpression("/<form action='petition\.php'/", $bottom);
         self::assertStringContainsString("name='abuse' value='yes'", $bottom);
         self::assertStringContainsString("name='abuseplayer' value='2'", $bottom);
-        self::assertStringContainsString('the body', $bottom, 'the report should quote the message');
+        // The field NAME, not merely the text. petition.php prefills from
+        // Http::post('problem') (pages/petition/petition_default.php:19), so a
+        // renamed field reaches the administrator as an empty petition -- and
+        // asserting only that the body appears somewhere in the markup passes
+        // just as well when it arrives under a name nothing reads. Measured:
+        // renaming the field left this test green until this line was added.
+        self::assertMatchesRegularExpression(
+            "/name='problem' value='Abusive Email Report:.*the body'/s",
+            $bottom,
+            'the report should reach petition.php under the name it reads'
+        );
     }
 
     /**

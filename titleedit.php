@@ -276,7 +276,7 @@ switch ($op) {
         while ($row = Database::fetchAssoc($result)) {
             $id = $row['titleid'];
             $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
-            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|" . Forms::postButton("titleedit.php?op=delete&id=$id", $del, $delconfirm, 'linkbutton') . "]</td>");
+            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|" . Forms::postButton("titleedit.php?op=delete&id=$id", $del, $delconfirm, 'button') . "]</td>");
             Nav::add("", "titleedit.php?op=edit&id=$id");
             Nav::add("", "titleedit.php?op=delete&id=$id");
             $output->rawOutput("<td>");

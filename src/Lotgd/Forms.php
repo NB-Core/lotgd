@@ -246,6 +246,136 @@ class Forms
     }
 
     /**
+     * A link that looks like the buttons it stands beside.
+     *
+     * The non-posting twin of {@see self::postButton()}. A row of controls is
+     * usually a mixture -- some navigate, some act -- and until now only the
+     * acting half had a helper, so the navigating half was written by hand at
+     * every call site, each time with its own idea of escaping. `mail.php`
+     * interpolated its label raw; `pages/mail/case_read.php` grew a file-local
+     * function to do it properly. This is that function, somewhere both can
+     * reach.
+     *
+     * The default class is `button` for the same reason postButton's is: it is
+     * the one class every theme defines unqualified, so it lands on an anchor
+     * as readily as on a `<button>`.
+     */
+    public static function linkButton(string $url, string $label, string $class = 'button'): string
+    {
+        return "<a href='" . Escape::html($url) . "' class='" . Escape::html($class) . "'>"
+            . Escape::html($label) . '</a>';
+    }
+
+    /**
+     * A control that holds its place in a row without offering anything.
+     *
+     * For the option that exists but has no target right now -- "previous
+     * message" on the oldest message in a mailbox. Emitting the bare label
+     * instead, which is what the mail read view used to do, produces a row that
+     * is a different shape at the edges of a list than in the middle, and a
+     * string with no element around it is not a control at all.
+     *
+     * A `<span>` rather than a disabled `<button>`: there is nothing to submit,
+     * and `aria-disabled` says why it is inert without promising a form.
+     */
+    public static function disabledButton(string $label, string $class = 'button'): string
+    {
+        return "<span class='" . Escape::html($class) . "' aria-disabled='true'>"
+            . Escape::html($label) . '</span>';
+    }
+
+    /**
+     * A row of controls, described rather than assembled.
+     *
+     * Takes the entries themselves rather than rendered strings, so that the
+     * choice of element and the guard against a malformed entry live in one
+     * place instead of at every caller. That matters most where the list is
+     * open to modules: a hook that hands back markup lets the module pick its
+     * own element and class, which is exactly how the mail read view came to
+     * have three different controls wearing one anchor-only class.
+     *
+     * Each entry is an array:
+     *
+     *     'kind'    => 'link' | 'post' | 'disabled'   required
+     *     'label'   => string                          required, already translated
+     *     'url'     => string                          required except for 'disabled'
+     *     'confirm' => ?string                         optional, 'post' only
+     *     'fields'  => array<string,string>            optional, 'post' only
+     *     'scope'   => ?string                         optional, 'post' only
+     *     'class'   => string                          optional, overrides $class
+     *
+     * `kind` is stated and never inferred. A row inside an existing `<form>`
+     * needs {@see self::formActionButton()} where a free-standing one needs
+     * {@see self::postButton()} -- the same entry means different markup
+     * depending on where it sits, so guessing would be wrong exactly where it
+     * is hardest to notice.
+     *
+     * An entry that does not describe a control is skipped rather than rendered
+     * half-formed or fatal: these lists pass through module code, and one
+     * module's malformed entry should not cost the player the rest of the row.
+     * `mail.php:81` guards its own hook the same way. Note that this cannot
+     * defend against a module returning an empty array, because Modules::hook()
+     * replaces the payload rather than merging it -- that is documented where
+     * the hook is, since no amount of checking here can recover a list that
+     * never came back.
+     *
+     * @param list<array<string,mixed>> $actions
+     */
+    public static function actionBar(array $actions, string $class = 'mail-nav'): string
+    {
+        $controls = [];
+
+        foreach ($actions as $action) {
+            if (!is_array($action)) {
+                continue;
+            }
+
+            $kind = $action['kind'] ?? null;
+            $label = $action['label'] ?? null;
+            if (!is_string($kind) || !is_string($label)) {
+                continue;
+            }
+
+            $controlClass = is_string($action['class'] ?? null) ? $action['class'] : 'button mail-nav__link';
+
+            if ($kind === 'disabled') {
+                $controls[] = self::disabledButton($label, $controlClass);
+                continue;
+            }
+
+            $url = $action['url'] ?? null;
+            if (!is_string($url) || $url === '') {
+                continue;
+            }
+
+            if ($kind === 'link') {
+                $controls[] = self::linkButton($url, $label, $controlClass);
+                continue;
+            }
+
+            if ($kind === 'post') {
+                $confirm = is_string($action['confirm'] ?? null) ? $action['confirm'] : null;
+                $scope = is_string($action['scope'] ?? null) ? $action['scope'] : null;
+                $fields = is_array($action['fields'] ?? null) ? $action['fields'] : [];
+                $controls[] = self::postButton($url, $label, $confirm, $controlClass, $scope, $fields);
+            }
+        }
+
+        if ($controls === []) {
+            return "<div class='" . Escape::html($class) . "'></div>";
+        }
+
+        // Newline-separated, and that is not cosmetic. Whitespace between
+        // inline elements is rendered as a space, and the three legacy themes
+        // that define no .mail-nav leave these controls inline -- joined with
+        // nothing they would butt against each other there. The bars this
+        // replaces emitted one rawOutput() per control, each appending its own
+        // newline, so this also keeps the markup byte-identical to what those
+        // themes were already receiving.
+        return "<div class='" . Escape::html($class) . "'>\n" . implode("\n", $controls) . "\n</div>";
+    }
+
+    /**
      * Render a message preview input field with javascript helper.
      */
     public static function previewField(

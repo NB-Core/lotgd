@@ -84,7 +84,10 @@ foreach ($mailfunctions as $mailfunction) {
 
     $page = $mailfunction[0];
     $name = $mailfunction[1]; // already translated
-    $output->rawOutput("<a href='{$page}' class='button mail-nav__link'>{$name}</a>");
+    // Through the helper rather than interpolated: $name reaches here from the
+    // mailfunctions hook, so it is module-supplied text, and it was going into
+    // the markup unescaped.
+    $output->rawOutput(Forms::linkButton($page, $name, 'button mail-nav__link'));
     // No need for addnav since mail function pages are (or should be) outside the page nav system.
 }
 $output->rawOutput('</div>');

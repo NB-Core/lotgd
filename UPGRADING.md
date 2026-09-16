@@ -322,6 +322,24 @@ modules.
 
 ## 7. Breaking Changes
 
+- **The `linkbutton` class is gone from the tree; those buttons now carry
+  `button`.** It was used at 17 call sites -- `taunt.php`, `titleedit.php`,
+  `masters.php`, `deathmessages.php`, `creatures.php`, `donators.php`,
+  `modules.php`, `configuration.php`, the ban pages and clan membership -- and
+  **no stylesheet in the repository ever defined it**, legacy or Twig. Those
+  buttons have therefore always rendered as bare browser chrome. They are still
+  buttons and still boxes; the boxes are now the theme's.
+
+  **Theme authors:** a rule targeting `.linkbutton` never matched anything, so
+  nothing can break. If you want those controls to look different from other
+  buttons again, they no longer carry a class of their own -- say so on the
+  page's own selector, or ask for one.
+
+- **Modules can add controls to the bar under a mail message**, through the new
+  `mail-read-actions` hook. See `docs/Hooks.md`. The module describes the
+  control and the core renders it, so a contributed button gets the row's
+  styling, escaping and CSRF token for free. Existing modules are unaffected.
+
 - **Deleting a mail message now asks first.** The Delete button on the mail
   read view posted straight through; every other delete in the tree
   (`taunt.php`, `titleedit.php`, `masters.php`, and the mail inbox's own bulk

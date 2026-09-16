@@ -383,12 +383,12 @@ switch ($type_setting) {
                             if (is_module_active($module)) {
                                 $output->output("This module is currently active: ");
                                 $deactivate = Translator::translateInline("Deactivate");
-                                $output->rawOutput(Forms::postButton("modules.php?op=deactivate&module={$module}&cat={$info['category']}", $deactivate, null, 'linkbutton'));
+                                $output->rawOutput(Forms::postButton("modules.php?op=deactivate&module={$module}&cat={$info['category']}", $deactivate, null, 'button'));
                                 Nav::add("", "modules.php?op=deactivate&module={$module}&cat={$info['category']}");
                             } else {
                                 $output->output("This module is currently deactivated: ");
                                 $deactivate = Translator::translateInline("Activate");
-                                $output->rawOutput(Forms::postButton("modules.php?op=activate&module={$module}&cat={$info['category']}", $deactivate, null, 'linkbutton'));
+                                $output->rawOutput(Forms::postButton("modules.php?op=activate&module={$module}&cat={$info['category']}", $deactivate, null, 'button'));
                                 Nav::add("", "modules.php?op=activate&module={$module}&cat={$info['category']}");
                             }
                             $output->rawOutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>", true);

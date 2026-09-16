@@ -224,17 +224,17 @@ if ($op == "") {
             $output->rawOutput("<input type='checkbox' name='module[]' value=\"{$row['modulename']}\">");
             $output->rawOutput("</td><td class='text-nowrap align-top'>[ ");
             if ($row['active']) {
-                $output->rawOutput(Forms::formActionButton("modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery", $deactivate, null, 'linkbutton'));
+                $output->rawOutput(Forms::formActionButton("modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery", $deactivate, null, 'button'));
                 Nav::add("", "modules.php?op=deactivate&module={$row['modulename']}&cat=$catQuery");
             } else {
-                $output->rawOutput(Forms::formActionButton("modules.php?op=activate&module={$row['modulename']}&cat=$catQuery", $activate, null, 'linkbutton'));
+                $output->rawOutput(Forms::formActionButton("modules.php?op=activate&module={$row['modulename']}&cat=$catQuery", $activate, null, 'button'));
                 Nav::add("", "modules.php?op=activate&module={$row['modulename']}&cat=$catQuery");
             }
-            $output->rawOutput(" |" . Forms::formActionButton("modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery", $uninstall, $uninstallconfirm, 'linkbutton'));
+            $output->rawOutput(" |" . Forms::formActionButton("modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery", $uninstall, $uninstallconfirm, 'button'));
             Nav::add("", "modules.php?op=uninstall&module={$row['modulename']}&cat=$catQuery");
-            $output->rawOutput(" | " . Forms::formActionButton("modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery", $reinstall, null, 'linkbutton'));
+            $output->rawOutput(" | " . Forms::formActionButton("modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery", $reinstall, null, 'button'));
             Nav::add("", "modules.php?op=reinstall&module={$row['modulename']}&cat=$catQuery");
-            $output->rawOutput(" | " . Forms::formActionButton("modules.php?op=remove&module={$row['modulename']}&cat=$catQuery", $remove, $removeconfirm, 'linkbutton'));
+            $output->rawOutput(" | " . Forms::formActionButton("modules.php?op=remove&module={$row['modulename']}&cat=$catQuery", $remove, $removeconfirm, 'button'));
             Nav::add("", "modules.php?op=remove&module={$row['modulename']}&cat=$catQuery");
 
             if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
@@ -357,7 +357,7 @@ if ($op == "") {
                 } else {
                     $output->rawOutput("<td><input type='checkbox' name='module[]' value='{$moduleinfo[$i]['shortname']}'></td>");
                     $output->rawOutput("<td class='text-nowrap align-top'>");
-                    $output->rawOutput("[ " . Forms::formActionButton("modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}", $install, null, 'linkbutton') . "]</td>");
+                    $output->rawOutput("[ " . Forms::formActionButton("modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}", $install, null, 'button') . "]</td>");
                     Nav::add("", "modules.php?op=install&module={$moduleinfo[$i]['shortname']}&cat={$moduleinfo[$i]['category']}");
                 }
                 $output->rawOutput("<td class='text-nowrap align-top'><span title=\"" .

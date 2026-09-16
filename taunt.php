@@ -162,7 +162,7 @@ if ($op == "") {
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this taunt?");
         $id = (int) $row['tauntid'];
-        $output->rawOutput("[ <a href='taunt.php?op=edit&tauntid=$id'>$edit</a> | " . Forms::postButton("taunt.php?op=del&tauntid=$id", $del, $conf, 'linkbutton') . " ]");
+        $output->rawOutput("[ <a href='taunt.php?op=edit&tauntid=$id'>$edit</a> | " . Forms::postButton("taunt.php?op=del&tauntid=$id", $del, $conf, 'button') . " ]");
         Nav::add("", "taunt.php?op=edit&tauntid=$id");
         Nav::add("", "taunt.php?op=del&tauntid=$id");
         $output->rawOutput("</td><td>");

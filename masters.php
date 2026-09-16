@@ -221,7 +221,7 @@ if ($op == "") {
         $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'><td nowrap>");
         $output->rawOutput("[ <a href='masters.php?op=edit&id=$id'>");
         $output->outputNotl($edit);
-        $output->rawOutput("</a> | " . Forms::postButton("masters.php?op=del&id=$id", $del, $delconfirm, 'linkbutton') . " ]");
+        $output->rawOutput("</a> | " . Forms::postButton("masters.php?op=del&id=$id", $del, $delconfirm, 'button') . " ]");
         Nav::add("", "masters.php?op=edit&id=$id");
         Nav::add("", "masters.php?op=del&id=$id");
         $output->rawOutput("</td><td>");
