@@ -8,7 +8,7 @@ use PHPUnit\Framework\Assert;
 
 /**
  * Runs a root page with and without its form token, and reports what SQL it
- * issued.
+ * issued and what it rendered.
  *
  * The point of this class is the pair. Asserting that a page issues no DELETE
  * without a token is worthless on its own -- a page that never ran issues no
@@ -41,27 +41,46 @@ final class PageRunner
     /**
      * @param array<string,string> $get
      * @param array<string,string> $post
+     * @param array<string,mixed>  $globals Tables the page reads, by global name.
      */
-    public static function withToken(string $page, int $superuser, array $get = [], array $post = []): PageOutcome
-    {
-        return self::run($page, $superuser, $get, $post, self::TOKEN);
+    public static function withToken(
+        string $page,
+        int $superuser,
+        array $get = [],
+        array $post = [],
+        array $globals = []
+    ): PageOutcome {
+        return self::run($page, $superuser, $get, $post, self::TOKEN, $globals);
     }
 
     /**
      * @param array<string,string> $get
      * @param array<string,string> $post
+     * @param array<string,mixed>  $globals Tables the page reads, by global name.
      */
-    public static function withoutToken(string $page, int $superuser, array $get = [], array $post = []): PageOutcome
-    {
-        return self::run($page, $superuser, $get, $post, null);
+    public static function withoutToken(
+        string $page,
+        int $superuser,
+        array $get = [],
+        array $post = [],
+        array $globals = []
+    ): PageOutcome {
+        return self::run($page, $superuser, $get, $post, null, $globals);
     }
 
     /**
      * @param array<string,string> $get
      * @param array<string,string> $post
+     * @param array<string,mixed>  $globals Tables the page reads, by global name.
      */
-    private static function run(string $page, int $superuser, array $get, array $post, ?string $token): PageOutcome
-    {
+    private static function run(
+        string $page,
+        int $superuser,
+        array $get,
+        array $post,
+        ?string $token,
+        array $globals = []
+    ): PageOutcome {
         $root = dirname(__DIR__, 3);
 
         $spec = [
@@ -73,16 +92,45 @@ final class PageRunner
             'post' => $post,
             'token' => $token,
             'version' => self::version($root),
+            'globals' => $globals,
         ];
 
+        // The page's own markup goes to a file of this run's own rather than to
+        // /dev/null, so an assertion can be about what the page rendered. The
+        // two streams stay separate: `2>&1` points stderr at the pipe
+        // shell_exec reads, and `1>$htmlFile` then sends stdout to the file, so
+        // the result payload cannot be diluted by the page's output. A file
+        // rather than a second buffer inside the child because the child is
+        // free to flush, end or clean its own output buffers, and one that
+        // vanished mid-run would take the evidence with it.
+        $htmlFile = tempnam(sys_get_temp_dir(), 'lotgd-page-html-');
+        if ($htmlFile === false) {
+            Assert::fail('The page harness could not create a file to capture the output of ' . $page);
+        }
+
         $command = sprintf(
-            '%s %s %s 2>&1 1>/dev/null',
+            '%s %s %s 2>&1 1>%s',
             escapeshellarg(PHP_BINARY),
             escapeshellarg($root . '/tests/Security/PageCsrf/run_page.php'),
-            escapeshellarg(json_encode($spec, JSON_THROW_ON_ERROR))
+            escapeshellarg(json_encode($spec, JSON_THROW_ON_ERROR)),
+            escapeshellarg($htmlFile)
         );
 
-        $output = (string) shell_exec($command);
+        try {
+            $output = (string) shell_exec($command);
+            $html = file_get_contents($htmlFile);
+        } finally {
+            // Registered against the whole block, so a failed assertion below
+            // does not leave the file behind: tempnam() creates it, so there is
+            // always something to remove even when the child wrote nothing.
+            unlink($htmlFile);
+        }
+
+        // Asserted rather than cast. `false` here means the capture file could
+        // not be read, and casting it to '' would arrive downstream as "the
+        // page rendered nothing" -- a page that failed to run looking exactly
+        // like a page that rendered an empty bar.
+        Assert::assertIsString($html, "The page harness could not read back what $page rendered");
 
         // The LAST complete marker pair, not the first: the result is written
         // from the shutdown handler, so it is always last, while anything the
@@ -127,7 +175,7 @@ final class PageRunner
             );
         }
 
-        return new PageOutcome($decoded['statements'], $decoded['queries'], $decoded['status']);
+        return new PageOutcome($decoded['statements'], $decoded['queries'], $decoded['status'], $html);
     }
 
     /**

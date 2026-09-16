@@ -215,6 +215,38 @@ class DoctrineConnection
             return $this->makeResult([['count' => $count]]);
         }
 
+        // The previous/next message ids. This has to sit ahead of the generic
+        // mail SELECT below, which ignores every condition but msgto -- it
+        // would answer both of these with the whole mailbox, so the first row
+        // would come back as both the previous message and the next one, and
+        // "there is no previous message" could never be exercised at all.
+        $adjacentPattern = '/SELECT\s+messageid\s+FROM\s+' . preg_quote($mailTable, '/')
+            . '\s+WHERE\s+msgto\s*=\s*:msgto\s+AND\s+messageid\s*(<|>)\s*:messageid/i';
+        if (preg_match($adjacentPattern, $sql, $matches)) {
+            global $mail_table;
+            $msgto = (int) ($params['msgto'] ?? 0);
+            $messageid = (int) ($params['messageid'] ?? 0);
+            $wantLower = $matches[1] === '<';
+
+            $ids = [];
+            foreach ((array) $mail_table as $row) {
+                if ((int) ($row['msgto'] ?? 0) !== $msgto) {
+                    continue;
+                }
+                $candidate = (int) ($row['messageid'] ?? 0);
+                if ($wantLower ? $candidate < $messageid : $candidate > $messageid) {
+                    $ids[] = $candidate;
+                }
+            }
+
+            // ORDER BY messageid DESC LIMIT 1 for the previous, ASC LIMIT 1 for
+            // the next -- so in both cases the neighbour nearest this message.
+            sort($ids);
+            $pick = $wantLower ? end($ids) : reset($ids);
+
+            return $this->makeResult($pick === false ? [] : [['messageid' => $pick]]);
+        }
+
         if (preg_match('/SELECT\s+(.+?)\s+FROM\s+' . preg_quote($mailTable, '/') . '\b/i', $sql, $matches)) {
             global $mail_table;
             $columnsExpr = trim($matches[1]);
@@ -379,6 +411,43 @@ class DoctrineConnection
             $row = $accounts_table[$acctid] ?? [];
 
             return ['name' => $row['name'] ?? ''];
+        }
+
+        // One message with its sender joined on, which is what the mail read
+        // view opens with -- Mail::getMessage(). Answered from $mail_table and
+        // $accounts_table so a test seeds rows rather than queueing results
+        // positionally: the read view issues four queries, and a queue makes
+        // the test depend on the order they happen to be issued in.
+        //
+        // Answers only when the message is actually seeded. Falling through
+        // otherwise leaves the generic queue below to serve every existing
+        // caller exactly as before, and lets a test seed "no such message" by
+        // simply not seeding it.
+        $mailTableName = preg_quote(Database::prefix('mail'), '/');
+        $messagePattern = '/SELECT\s+' . $mailTableName . '\.\*.*FROM\s+' . $mailTableName . '\s+LEFT\s+JOIN/is';
+        if (preg_match($messagePattern, $sql)) {
+            global $mail_table, $accounts_table;
+            $msgto = (int) ($params['msgto'] ?? 0);
+            $messageid = (int) ($params['messageid'] ?? 0);
+
+            foreach ((array) $mail_table as $row) {
+                if ((int) ($row['msgto'] ?? 0) !== $msgto || (int) ($row['messageid'] ?? 0) !== $messageid) {
+                    continue;
+                }
+
+                // The LEFT JOIN, done by hand. A message from the system has
+                // msgfrom 0 and no account to join, and the read view keys its
+                // whole System branch off exactly that -- so the columns have
+                // to be absent rather than empty, the way a real LEFT JOIN
+                // leaves them.
+                $sender = $accounts_table[(int) ($row['msgfrom'] ?? 0)] ?? null;
+
+                return $row + [
+                    'name' => $sender['name'] ?? null,
+                    'acctid' => $sender['acctid'] ?? null,
+                    'login' => $sender['login'] ?? null,
+                ];
+            }
         }
 
         if (!empty($this->fetchAssociativeResults)) {

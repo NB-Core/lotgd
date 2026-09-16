@@ -138,6 +138,22 @@ $GLOBALS['accounts_table'] = [
     ] + $account,
 ];
 
+// Tables beyond the account, for a page whose subject is its own data rather
+// than its guard -- the mail read view reads $mail_table, for instance.
+//
+// accounts_table merges rather than replaces, because the seeded rows are
+// usually *additional* people (the sender of a message) and the harness
+// account above is the one the session is for. Replacing it outright would log
+// the request out, and the page under test would never run.
+foreach ((array) ($spec['globals'] ?? []) as $name => $value) {
+    if ($name === 'accounts_table' && is_array($value)) {
+        $GLOBALS['accounts_table'] = $value + $GLOBALS['accounts_table'];
+        continue;
+    }
+
+    $GLOBALS[$name] = $value;
+}
+
 // Opened here only so the seeded data lands in the session store, then closed
 // again before common.php opens it for real.
 //
