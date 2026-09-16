@@ -91,7 +91,18 @@ $mailfunctions = HookHandler::hook("mailfunctions", $args);
 // copy of the check. Reported by Copilot.
 $actions = [];
 foreach ($mailfunctions as $mailfunction) {
-    if (!is_array($mailfunction) || count($mailfunction) !== 2) {
+    // isset() on both keys rather than count() === 2, which checks the wrong
+    // thing: an associative pair passes it and then indexing [0] and [1] warns
+    // twice. Worse for a list starting at 1, where the URL lands in the label's
+    // position. Neither is new -- the interpolation this replaced warned
+    // identically -- but hardening hook consumption is what this change is for.
+    // Measured, not assumed. Reported by Copilot.
+    if (
+        !is_array($mailfunction)
+        || !isset($mailfunction[0], $mailfunction[1])
+        || !is_string($mailfunction[0])
+        || !is_string($mailfunction[1])
+    ) {
         continue;
     }
 
