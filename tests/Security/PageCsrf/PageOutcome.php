@@ -5,22 +5,28 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Security\PageCsrf;
 
 /**
- * What one run of a page did to the database.
+ * What one run of a page did to the database, and what it rendered.
  *
- * Statements rather than output, because output is what a page says and
- * statements are what it does. A refused operation is allowed to say anything
- * it likes; it is not allowed to write.
+ * The CSRF rows read the statements rather than the output, because output is
+ * what a page says and statements are what it does: a refused operation is
+ * allowed to say anything it likes; it is not allowed to write.
+ *
+ * $html is for the opposite kind of question -- what the page *renders* -- and
+ * it is deliberately the raw page rather than a parsed structure, because the
+ * assertions that want it are about the markup itself.
  */
 final class PageOutcome
 {
     /**
      * @param list<string> $statements Everything that went through executeStatement().
      * @param list<string> $queries    Everything that went through executeQuery().
+     * @param string       $html       Everything the page wrote to stdout.
      */
     public function __construct(
         public readonly array $statements,
         public readonly array $queries,
         public readonly int|false $status,
+        public readonly string $html = '',
     ) {
     }
 

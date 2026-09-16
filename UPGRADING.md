@@ -322,6 +322,28 @@ modules.
 
 ## 7. Breaking Changes
 
+- **Deleting a mail message now asks first.** The Delete button on the mail
+  read view posted straight through; every other delete in the tree
+  (`taunt.php`, `titleedit.php`, `masters.php`, and the mail inbox's own bulk
+  delete) confirms before it acts. It now does too. Nothing about the operation
+  itself changed -- it was already a POST carrying a token -- but a player who
+  had learned to delete a message with one click will get a dialogue they did
+  not get before.
+
+  The same view's controls were unified in that change. They were three
+  different HTML elements sharing one class: an `<a>`, a `<button>`, and a
+  hand-written `<input type='submit'>`, all marked `motd` -- which every theme
+  defines only as `a.motd`. The rule could therefore never match the two that
+  were not anchors, so Delete, Mark Unread and Report to Admin rendered as bare
+  browser chrome beside styled links. They now carry `button mail-nav__link`,
+  the pair `mail.php` has always used for its own Inbox/Write strip, and both
+  bars are flow containers rather than layout tables.
+
+  **Theme authors:** if you styled these controls by targeting `a.motd` inside
+  the mail popup, that selector no longer reaches them. Style `.button` or
+  `.mail-nav__link` instead -- both are already defined in every theme shipped
+  with the game. No stylesheet in the repository was changed.
+
 - **Companions now actually gain levels, which they never did before.** The
   `companionslevelup` setting has existed and defaulted to on, and the code
   behind it computed each companion's new attack, defence and maximum hitpoints
