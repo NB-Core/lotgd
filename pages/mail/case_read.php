@@ -9,56 +9,7 @@ use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Forms;
-use Lotgd\Security\Escape;
-
-/**
- * The class pair worn by every control in the mail action bars.
- *
- * `button` is the one class every theme defines unqualified, so it lands on an
- * `<a>`, a `<button>` and a `<span>` alike. `mail-nav__link` adds the flex
- * alignment in the themes that define it and is ignored by the three legacy
- * ones that do not -- mail.php's own tab strip has shipped this exact pair to
- * those themes for as long as it has existed, so the degradation is not a
- * guess.
- *
- * It replaces `motd`, which every theme defines only as `a.motd`. That styled
- * the anchors and did nothing whatever for the buttons beside them, which is
- * why Delete, Mark Unread and Report to Admin rendered as bare browser chrome
- * next to styled links.
- */
-function mailActionClass(): string
-{
-    return 'button mail-nav__link';
-}
-
-/**
- * A link that looks like the buttons it stands beside.
- *
- * The label is escaped, which it was not before: translated strings come from
- * a table SU_IS_TRANSLATOR writes and are not constants.
- */
-function buildActionLink(string $url, string $label): string
-{
-    return "<a href='" . Escape::html($url) . "' class='" . mailActionClass() . "'>"
-        . Escape::html($label) . '</a>';
-}
-
-/**
- * Build a navigation link for adjacent messages.
- *
- * With no adjacent message the label still occupies the bar, as a span rather
- * than the bare unwrapped text it used to be: a naked string is not a control,
- * and dropping out of the row moved every button beside it.
- */
-function buildNavigationLink(int $id, string $label): string
-{
-    if ($id > 0) {
-        return buildActionLink("mail.php?op=read&id=$id", $label);
-    }
-
-    return "<span class='" . mailActionClass() . "' aria-disabled='true'>"
-        . Escape::html($label) . '</span>';
-}
+use Lotgd\Mail\ReadActions;
 
 /**
  * Display a mail message.
@@ -86,21 +37,6 @@ function mailRead(): void
         return;
     }
 
-    // Translate common action labels
-    $replyLabel = Translator::translateInline('Reply');
-    $deleteLabel = Translator::translateInline('Delete');
-    $forwardLabel = Translator::translateInline('Forward');
-    $unreadLabel = Translator::translateInline('Mark Unread');
-    $reportLabel = Translator::translateInline('Report to Admin');
-    $previousLabel = Translator::translateInline('< Previous');
-    $nextLabel = Translator::translateInline('Next >');
-    // Every other delete in the tree asks first -- taunt.php, titleedit.php,
-    // masters.php. This one did not.
-    $deleteConfirm = Translator::translateInline('Are you sure you wish to delete this message?');
-
-    // Prepare report data for admins
-    $reportMessage = "Abusive Email Report:\nFrom: {$message['name']}\nSubject: {$message['subject']}\nSent: {$message['sent']}\nID: {$message['messageid']}\nBody:\n{$message['body']}";
-    $reportPlayer = (int) $message['msgfrom'];
 
     // Determine sender status
     $statusImage = '';
@@ -161,17 +97,9 @@ function mailRead(): void
     $output->output('`b`2Subject:`b `^%s`n', $message['subject']);
     $output->output('`b`2Sent:`b `^%s`n', $message['sent']);
 
-    // Top bar: everything that moves you somewhere else. The tables this
-    // replaces were invalid in both directions -- one wrote cellspacing into a
-    // style attribute, where it is not a property at all, the other used the
-    // presentational attributes -- and the lower one was a three-row grid
-    // rather than the single row it looked like.
-    $output->rawOutput("<div class='mail-nav'>");
-    $output->rawOutput(buildNavigationLink($previousId, $previousLabel));
-    $output->rawOutput(buildNavigationLink($nextId, $nextLabel));
-    $output->rawOutput(buildActionLink("mail.php?op=write&replyto={$message['messageid']}", $replyLabel));
-    $output->rawOutput(buildActionLink("mail.php?op=address&id={$message['messageid']}", $forwardLabel));
-    $output->rawOutput('</div>');
+    // Both bars are described rather than assembled: see Lotgd\Mail\ReadActions
+    // for why that is a class and not a pair of functions here.
+    $output->rawOutput(Forms::actionBar(ReadActions::navigation($message, $previousId, $nextId)));
 
     // Message body
     $output->outputNotl('%s', Sanitize::sanitizeMb(str_replace("\n", '`n', $message['body'])));
@@ -179,45 +107,7 @@ function mailRead(): void
     // Mark as read
     Mail::markRead($session['user']['acctid'], $messageId);
 
-    // Bottom bar: everything that acts on this message, and nothing that
-    // merely navigates -- Reply and the two adjacent-message links used to be
-    // repeated down here, and Forward appeared only above.
-    $actionClass = mailActionClass();
-    $output->rawOutput("<div class='mail-nav'>");
-    $output->rawOutput(Forms::postButton(
-        "mail.php?op=del&id={$message['messageid']}",
-        $deleteLabel,
-        $deleteConfirm,
-        $actionClass
-    ));
-    $output->rawOutput(Forms::postButton(
-        "mail.php?op=unread&id={$message['messageid']}",
-        $unreadLabel,
-        null,
-        $actionClass
-    ));
-
-    if ((int) $message['msgfrom'] !== 0) {
-        // petition.php only prefills its form from this payload: the branch
-        // that writes is the one where abuse is not 'yes'. So this is a
-        // navigation carrying a body, which is why it posts. postButton takes
-        // the body in $fields and brings a token with it, replacing a
-        // hand-built form that had neither.
-        $output->rawOutput(Forms::postButton(
-            'petition.php',
-            $reportLabel,
-            null,
-            $actionClass,
-            null,
-            [
-                'problem' => $reportMessage,
-                'abuse' => 'yes',
-                'abuseplayer' => (string) $reportPlayer,
-            ]
-        ));
-    }
-
-    $output->rawOutput('</div>');
+    $output->rawOutput(Forms::actionBar(ReadActions::actions($message)));
 }
 
 mailRead();

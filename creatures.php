@@ -302,7 +302,7 @@ if ($op == "" || $op == "search") {
             "creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}",
             $del,
             $confirm,
-            'linkbutton'
+            'button'
         ) . " ]</td><td>");
         Nav::add("", "creatures.php?op=edit&creatureid={$row['creatureid']}");
         Nav::add("", "creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}");

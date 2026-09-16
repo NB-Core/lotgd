@@ -118,6 +118,7 @@ fragments and swaps them into the footer template, so always append to the array
 | --- | --- | --- | --- |
 | `header-mail` | `mail.php` | `['done' => int]` | Override mail actions (e.g., disable deletion). |
 | `mailfunctions` | `mail.php` | Array of `[page, label]` pairs | Add custom tabs to the mail client. |
+| `mail-read-actions` | `pages/mail/case_read.php` | List of action entries (see below) | Add a control to the bar under a mail message. |
 | `mailform` | `pages/mail/case_default.php` | None | Append content below the inbox list. |
 | `mail-write-notify` | `pages/mail/case_write.php` | `['acctid_to' => int]` | Warn players before messaging certain users. |
 | `addpetition` | `pages/petition/petition_default.php` | Form post array | Inspect or alter petitions before saving. |
@@ -137,6 +138,52 @@ fragments and swaps them into the footer template, so always append to the array
 | `specialtynames` | `pages/inn/inn_bartender.php`, `user.php` | Optional map of `[specid => label]` | Register new combat specialties. |
 | `racenames` | `user.php` | None | Add playable races to selection lists. |
 | `warriorlist` | `list.php` | Player row array | Annotate the warrior listing with module data. |
+
+### `mail-read-actions`
+
+Each entry describes a control; the core renders it, so a contributed button
+inherits the row's class and its escaping without the module supplying either,
+and a posting entry gets a CSRF field rendered into its form.
+
+```php
+case 'mail-read-actions':
+    $args[] = [
+        'kind'    => 'post',                  // 'link', 'post' or 'disabled'
+        'url'     => 'runmodule.php?module=yourmodule&op=archive',
+        'label'   => translate_inline('Archive'),
+        'confirm' => null,                    // optional, 'post' only
+        'fields'  => [],                      // optional, 'post' only
+    ];
+    return $args;
+```
+
+**The rendered token is not a validation.** `runmodule.php` does not check
+`form_csrf_token` -- it is not guarded at all, as `AGENTS.md` states -- so a
+control posting there is only protected once the module's own write branch
+asks. `Forms::isUnverifiedRequest()` is the check to use. Mind its sense: it
+returns **true when the request did _not_ carry a valid token**, so the branch
+you refuse in is the one where it is true, as below. The field is rendered for
+you; making it mean something is yours:
+
+```php
+if (Forms::isUnverifiedRequest()) {
+    return;   // or however the module refuses a request
+}
+```
+
+**Append to the list and return it.** The engine assigns each module's return
+value over the payload rather than merging it, so returning a fresh array
+discards every entry before yours -- here that means the player loses Delete and
+Mark Unread. Returning something that is not an array is safe: the engine warns
+and keeps the previous payload.
+
+An entry that does not describe a control is skipped when the bar is rendered,
+so one malformed contribution costs only itself. There is no equivalent
+protection against an emptied list, which is why the rule above is the one to
+follow.
+
+To suppress the core's *own* deletion rather than add to it, use `header-mail`
+and its `done` flag.
 
 ## Administration and Tools
 

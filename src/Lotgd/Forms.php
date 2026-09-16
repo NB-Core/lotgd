@@ -219,9 +219,14 @@ class Forms
      *                         voters, and deleting an entry must not accept it.
      *                         Null uses the page scope, which is right whenever
      *                         only the privileged view renders the button.
-     * @param array<string, string|int> $fields Extra hidden inputs, for a page
-     *                         that reads its operation from the body rather
-     *                         than the query string.
+     * @param array<string|int, string|int|float|null> $fields Extra hidden
+     *                         inputs, for a page that reads its operation from
+     *                         the body rather than the query string. The type
+     *                         is what Escape::html() can render, which is what
+     *                         every key and value here goes through; the
+     *                         narrower `array<string, string|int>` this used to
+     *                         claim disagreed with both the code and the guard
+     *                         in actionBar(), which passes float and null.
      */
     public static function postButton(
         string $url,
@@ -243,6 +248,187 @@ class Forms
             . "<button type='submit' class='" . Escape::html($class) . "'"
             . ($confirm !== null ? Escape::confirmAttribute($confirm) : '')
             . '>' . Escape::html($label) . '</button></form>';
+    }
+
+    /**
+     * A link that looks like the buttons it stands beside.
+     *
+     * The non-posting twin of {@see self::postButton()}. A row of controls is
+     * usually a mixture -- some navigate, some act -- and until now only the
+     * acting half had a helper, so the navigating half was written by hand at
+     * every call site, each time with its own idea of escaping. `mail.php`
+     * interpolated its label raw; `pages/mail/case_read.php` grew a file-local
+     * function to do it properly. This is that function, somewhere both can
+     * reach.
+     *
+     * The default class is `button` for the same reason postButton's is: it is
+     * the one class every theme defines unqualified, so it lands on an anchor
+     * as readily as on a `<button>`.
+     */
+    public static function linkButton(string $url, string $label, string $class = 'button'): string
+    {
+        return "<a href='" . Escape::html($url) . "' class='" . Escape::html($class) . "'>"
+            . Escape::html($label) . '</a>';
+    }
+
+    /**
+     * A control that holds its place in a row without offering anything.
+     *
+     * For the option that exists but has no target right now -- "previous
+     * message" on the oldest message in a mailbox. Emitting the bare label
+     * instead, which is what the mail read view used to do, produces a row that
+     * is a different shape at the edges of a list than in the middle, and a
+     * string with no element around it is not a control at all.
+     *
+     * A `<span>` rather than a disabled `<button>`: there is nothing to submit,
+     * and `aria-disabled` says why it is inert without promising a form.
+     */
+    public static function disabledButton(string $label, string $class = 'button'): string
+    {
+        return "<span class='" . Escape::html($class) . "' aria-disabled='true'>"
+            . Escape::html($label) . '</span>';
+    }
+
+    /**
+     * A row of controls, described rather than assembled.
+     *
+     * Takes the entries themselves rather than rendered strings, so that the
+     * choice of element and the guard against a malformed entry live in one
+     * place instead of at every caller. That matters most where the list is
+     * open to modules: a hook that hands back markup lets the module pick its
+     * own element and class, which is exactly how the mail read view came to
+     * have three different controls wearing one anchor-only class.
+     *
+     * Each entry is an array:
+     *
+     *     'kind'    => 'link' | 'post' | 'disabled'   required
+     *     'label'   => string                          required, already translated
+     *     'url'     => string                          required except for 'disabled'
+     *     'confirm' => ?string                         optional, 'post' only
+     *     'fields'  => array<string|int, string|int|float|null>  optional, 'post' only
+     *     'scope'   => ?string                         optional, 'post' only
+     *     'class'   => string                          optional, the control's own class
+     *                                                  (default 'button mail-nav__link'; $class
+     *                                                  is the container's, not this)
+     *
+     * **A 'post' entry renders a `<form>` of its own, so this must not be
+     * called from inside another one.** A nested form is invalid HTML:
+     * browsers close the outer one while parsing, and the controls after it
+     * detach from the form they belong to. Where a row does sit inside a form
+     * -- the mail inbox is the example, where renderMailTableHeader() opens a
+     * bulk-action form the buttons below it sit inside --
+     * those buttons want {@see self::formActionButton()} instead, and this
+     * renderer has no mode for them.
+     *
+     * `kind` is stated rather than inferred from the entry, because a URL does
+     * not say whether following it navigates or acts, and because it leaves
+     * the list readable by a renderer that does know how to sit inside a form,
+     * should one ever be wanted.
+     *
+     * An entry that does not describe a control is skipped rather than rendered
+     * half-formed or fatal: these lists pass through module code, and one
+     * module's malformed entry should not cost the player the rest of the row.
+     * `mail.php` guards its own `mailfunctions` hook the same way -- without a
+     * line number, because this PR moves that guard and a reference that drifts
+     * is worse than none. Note that this cannot
+     * defend against a module returning an empty array, because Modules::hook()
+     * replaces the payload rather than merging it -- that is documented where
+     * the hook is, since no amount of checking here can recover a list that
+     * never came back.
+     *
+     * @param list<array<string,mixed>> $actions
+     */
+    public static function actionBar(array $actions, string $class = 'mail-nav'): string
+    {
+        $controls = [];
+
+        foreach ($actions as $action) {
+            if (!is_array($action)) {
+                continue;
+            }
+
+            $kind = $action['kind'] ?? null;
+            $label = $action['label'] ?? null;
+            if (!is_string($kind) || !is_string($label)) {
+                continue;
+            }
+
+            $controlClass = is_string($action['class'] ?? null) ? $action['class'] : 'button mail-nav__link';
+
+            if ($kind === 'disabled') {
+                $controls[] = self::disabledButton($label, $controlClass);
+                continue;
+            }
+
+            $url = $action['url'] ?? null;
+            if (!is_string($url) || $url === '') {
+                continue;
+            }
+
+            if ($kind === 'link') {
+                $controls[] = self::linkButton($url, $label, $controlClass);
+                continue;
+            }
+
+            if ($kind === 'post') {
+                $confirm = is_string($action['confirm'] ?? null) ? $action['confirm'] : null;
+                $scope = is_string($action['scope'] ?? null) ? $action['scope'] : null;
+                $fields = is_array($action['fields'] ?? null) ? $action['fields'] : [];
+                if (!self::fieldsAreRenderable($fields)) {
+                    continue;
+                }
+
+                $controls[] = self::postButton($url, $label, $confirm, $controlClass, $scope, $fields);
+            }
+        }
+
+        if ($controls === []) {
+            return "<div class='" . Escape::html($class) . "'></div>";
+        }
+
+        // Newline-separated, and that is not cosmetic. Whitespace between
+        // inline elements is rendered as a space, and the three legacy themes
+        // that define no .mail-nav leave these controls inline -- joined with
+        // nothing they would butt against each other there. The bars this
+        // replaces emitted one rawOutput() per control, each appending its own
+        // newline, so this also keeps the markup byte-identical to what those
+        // themes were already receiving.
+        return "<div class='" . Escape::html($class) . "'>\n" . implode("\n", $controls) . "\n</div>";
+    }
+
+    /**
+     * Whether every hidden field in an entry can actually be rendered.
+     *
+     * postButton() puts each key and value through Escape::html(), which is
+     * typed `string|int|float|null` in a file under strict_types -- so a module
+     * contributing `['fields' => ['x' => true]]` raises a TypeError that takes
+     * down the whole page, not just its own button. Measured rather than
+     * reasoned about: bool and array both throw, null and int render.
+     *
+     * That is the exact opposite of what this class promises about a malformed
+     * contribution, which is why the check is here and not left to the caller.
+     * Reported by Codex and Copilot independently.
+     *
+     * The whole entry is skipped rather than the offending field, because a
+     * button that posts half its payload is worse than one that is missing: the
+     * handler on the other side cannot tell the truncated request from an
+     * ordinary one.
+     *
+     * @param array<mixed,mixed> $fields
+     */
+    private static function fieldsAreRenderable(array $fields): bool
+    {
+        foreach ($fields as $name => $value) {
+            if (!is_string($name) && !is_int($name)) {
+                return false;
+            }
+
+            if (!is_string($value) && !is_int($value) && !is_float($value) && $value !== null) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

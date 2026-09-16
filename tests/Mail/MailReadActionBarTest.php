@@ -102,6 +102,28 @@ final class MailReadActionBarTest extends TestCase
         return array_slice($matches[0], 1);
     }
 
+    /**
+     * The tab strip above every mail page, which mail.php owns.
+     *
+     * Asserted here because this is the only place it is rendered by the real
+     * page. Its entries come from the `mailfunctions` hook, and it is built
+     * through the same Forms::actionBar() as the bars below -- so a module
+     * contributing a malformed pair loses its own tab instead of the page,
+     * which is what it cost before that routing (mail.php is strict_types, and
+     * a direct typed call turned a stringifiable label into a TypeError).
+     */
+    public function testTheTabStripStillOffersInboxAndWrite(): void
+    {
+        $outcome = self::read(7);
+
+        preg_match_all("/<div class='mail-nav'>.*?<\/div>/s", $outcome->html, $matches);
+        $tabs = $matches[0][0] ?? '';
+
+        self::assertStringContainsString("<a href='mail.php' class='button mail-nav__link'>Inbox</a>", $tabs);
+        self::assertStringContainsString("<a href='mail.php?op=address' class='button mail-nav__link'>Write</a>", $tabs);
+        self::assertStringNotContainsString('<form', $tabs, 'the tab strip navigates; it does not act');
+    }
+
     public function testBothBarsAreRenderedAndNeitherIsATable(): void
     {
         $bars = self::actionBars(self::read(7));
@@ -222,7 +244,17 @@ final class MailReadActionBarTest extends TestCase
         self::assertMatchesRegularExpression("/<form action='petition\.php'/", $bottom);
         self::assertStringContainsString("name='abuse' value='yes'", $bottom);
         self::assertStringContainsString("name='abuseplayer' value='2'", $bottom);
-        self::assertStringContainsString('the body', $bottom, 'the report should quote the message');
+        // The field NAME, not merely the text. petition.php prefills from
+        // Http::post('problem') (pages/petition/petition_default.php:19), so a
+        // renamed field reaches the administrator as an empty petition -- and
+        // asserting only that the body appears somewhere in the markup passes
+        // just as well when it arrives under a name nothing reads. Measured:
+        // renaming the field left this test green until this line was added.
+        self::assertMatchesRegularExpression(
+            "/name='problem' value='Abusive Email Report:.*the body'/s",
+            $bottom,
+            'the report should reach petition.php under the name it reads'
+        );
     }
 
     /**

@@ -265,7 +265,7 @@ if ($op == "") {
             $target,
             sprintf('%s (%s/%s)', $row['name'], $row['donation'], $row['donationspent']),
             null,
-            'linkbutton'
+            'button'
         ));
         $output->outputNotl("`n");
         if ($ret != "") {

@@ -274,7 +274,7 @@ function clanMembership(): void
                     'clan.php?op=membership',
                     $removeText,
                     $confirm,
-                    'linkbutton',
+                    'button',
                     null,
                     ['remove' => (int) $row['acctid']]
                 ) . " ]");
