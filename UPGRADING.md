@@ -326,19 +326,25 @@ modules.
   `button`.** It was used at 17 call sites -- `taunt.php`, `titleedit.php`,
   `masters.php`, `deathmessages.php`, `creatures.php`, `donators.php`,
   `modules.php`, `configuration.php`, the ban pages and clan membership -- and
-  **no stylesheet in the repository ever defined it**, legacy or Twig. Those
-  buttons have therefore always rendered as bare browser chrome. They are still
-  buttons and still boxes; the boxes are now the theme's.
+  **none of the themes shipped with the game define it**, legacy or Twig. In a
+  stock installation those buttons have therefore always rendered as bare
+  browser chrome. They are still buttons and still boxes; the boxes are now the
+  theme's.
 
-  **Theme authors:** a rule targeting `.linkbutton` never matched anything, so
-  nothing can break. If you want those controls to look different from other
-  buttons again, they no longer carry a class of their own -- say so on the
-  page's own selector, or ask for one.
+  **Theme authors:** the class *was* on the rendered controls, so if your own
+  stylesheet has a `.linkbutton` rule, it was matching and it will now stop.
+  Move it to `.button` -- which those controls now carry, and which every
+  bundled theme already styles -- or to a selector for the page in question.
+  Those controls no longer have a class of their own to target; ask if you want
+  one back.
 
 - **Modules can add controls to the bar under a mail message**, through the new
   `mail-read-actions` hook. See `docs/Hooks.md`. The module describes the
   control and the core renders it, so a contributed button gets the row's
-  styling, escaping and CSRF token for free. Existing modules are unaffected.
+  styling and escaping for free, and a CSRF field rendered into its form.
+  **That field is not a check**: `runmodule.php` validates nothing, so a module
+  whose control posts there is only protected once its own write branch calls
+  `Forms::validateCsrf()`. Existing modules are unaffected.
 
 - **Deleting a mail message now asks first.** The Delete button on the mail
   read view posted straight through; every other delete in the tree
