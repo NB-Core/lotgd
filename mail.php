@@ -76,21 +76,29 @@ array_push($args, ["mail.php?op=address", $write]);
 // and "functionname" is the name of the mail function to add
 $mailfunctions = HookHandler::hook("mailfunctions", $args);
 
-$output->rawOutput("<div class='mail-nav'>");
+// Rendered by the same helper as the bars on the read view rather than by a
+// loop of its own. The labels reach here from the mailfunctions hook, so they
+// are module-supplied text and were going into the markup unescaped -- but the
+// first attempt at fixing that, a direct Forms::linkButton() call, swapped one
+// defect for a worse one: this file is strict_types, linkButton takes strings,
+// and the pair is only checked for its length. A module returning
+// ["mail.php", 5] used to render (interpolation stringifies anything) and would
+// then have raised a TypeError, taking the whole mail page with it. Measured:
+// in strict mode every type but string throws.
+//
+// actionBar() already skips an entry it cannot render, and that guard is
+// tested, so routing through it fixes the escaping without inventing a second
+// copy of the check. Reported by Copilot.
+$actions = [];
 foreach ($mailfunctions as $mailfunction) {
     if (!is_array($mailfunction) || count($mailfunction) !== 2) {
         continue;
     }
 
-    $page = $mailfunction[0];
-    $name = $mailfunction[1]; // already translated
-    // Through the helper rather than interpolated: $name reaches here from the
-    // mailfunctions hook, so it is module-supplied text, and it was going into
-    // the markup unescaped.
-    $output->rawOutput(Forms::linkButton($page, $name, 'button mail-nav__link'));
     // No need for addnav since mail function pages are (or should be) outside the page nav system.
+    $actions[] = ['kind' => 'link', 'url' => $mailfunction[0], 'label' => $mailfunction[1]];
 }
-$output->rawOutput('</div>');
+$output->rawOutput(Forms::actionBar($actions));
 $output->outputNotl("`n`n");
 switch (Http::get('even')) {
     case "mailsent":

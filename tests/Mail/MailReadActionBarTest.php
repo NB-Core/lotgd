@@ -102,6 +102,28 @@ final class MailReadActionBarTest extends TestCase
         return array_slice($matches[0], 1);
     }
 
+    /**
+     * The tab strip above every mail page, which mail.php owns.
+     *
+     * Asserted here because this is the only place it is rendered by the real
+     * page. Its entries come from the `mailfunctions` hook, and it is built
+     * through the same Forms::actionBar() as the bars below -- so a module
+     * contributing a malformed pair loses its own tab instead of the page,
+     * which is what it cost before that routing (mail.php is strict_types, and
+     * a direct typed call turned a stringifiable label into a TypeError).
+     */
+    public function testTheTabStripStillOffersInboxAndWrite(): void
+    {
+        $outcome = self::read(7);
+
+        preg_match_all("/<div class='mail-nav'>.*?<\/div>/s", $outcome->html, $matches);
+        $tabs = $matches[0][0] ?? '';
+
+        self::assertStringContainsString("<a href='mail.php' class='button mail-nav__link'>Inbox</a>", $tabs);
+        self::assertStringContainsString("<a href='mail.php?op=address' class='button mail-nav__link'>Write</a>", $tabs);
+        self::assertStringNotContainsString('<form', $tabs, 'the tab strip navigates; it does not act');
+    }
+
     public function testBothBarsAreRenderedAndNeitherIsATable(): void
     {
         $bars = self::actionBars(self::read(7));

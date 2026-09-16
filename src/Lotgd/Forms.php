@@ -302,7 +302,9 @@ class Forms
      *     'confirm' => ?string                         optional, 'post' only
      *     'fields'  => array<string|int, string|int|float|null>  optional, 'post' only
      *     'scope'   => ?string                         optional, 'post' only
-     *     'class'   => string                          optional, overrides $class
+     *     'class'   => string                          optional, the control's own class
+     *                                                  (default 'button mail-nav__link'; $class
+     *                                                  is the container's, not this)
      *
      * **A 'post' entry renders a `<form>` of its own, so this must not be
      * called from inside another one.** A nested form is invalid HTML:
