@@ -160,9 +160,10 @@ case 'mail-read-actions':
 **The rendered token is not a validation.** `runmodule.php` does not check
 `form_csrf_token` -- it is not guarded at all, as `AGENTS.md` states -- so a
 control posting there is only protected once the module's own write branch
-asks. `Forms::isUnverifiedRequest()` is the check to use; it validates the
-token and answers whether this request carried a good one. The field is
-rendered for you; making it mean something is yours:
+asks. `Forms::isUnverifiedRequest()` is the check to use. Mind its sense: it
+returns **true when the request did _not_ carry a valid token**, so the branch
+you refuse in is the one where it is true, as below. The field is rendered for
+you; making it mean something is yours:
 
 ```php
 if (Forms::isUnverifiedRequest()) {

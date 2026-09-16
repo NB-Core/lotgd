@@ -310,7 +310,8 @@ class Forms
      * called from inside another one.** A nested form is invalid HTML:
      * browsers close the outer one while parsing, and the controls after it
      * detach from the form they belong to. Where a row does sit inside a form
-     * -- the mail inbox is the example, pages/mail/case_default.php:224 --
+     * -- the mail inbox is the example, where renderMailTableHeader() opens a
+     * bulk-action form the buttons below it sit inside --
      * those buttons want {@see self::formActionButton()} instead, and this
      * renderer has no mode for them.
      *
@@ -322,7 +323,9 @@ class Forms
      * An entry that does not describe a control is skipped rather than rendered
      * half-formed or fatal: these lists pass through module code, and one
      * module's malformed entry should not cost the player the rest of the row.
-     * `mail.php:81` guards its own hook the same way. Note that this cannot
+     * `mail.php` guards its own `mailfunctions` hook the same way -- without a
+     * line number, because this PR moves that guard and a reference that drifts
+     * is worse than none. Note that this cannot
      * defend against a module returning an empty array, because Modules::hook()
      * replaces the payload rather than merging it -- that is documented where
      * the hook is, since no amount of checking here can recover a list that
