@@ -219,9 +219,14 @@ class Forms
      *                         voters, and deleting an entry must not accept it.
      *                         Null uses the page scope, which is right whenever
      *                         only the privileged view renders the button.
-     * @param array<string, string|int> $fields Extra hidden inputs, for a page
-     *                         that reads its operation from the body rather
-     *                         than the query string.
+     * @param array<string|int, string|int|float|null> $fields Extra hidden
+     *                         inputs, for a page that reads its operation from
+     *                         the body rather than the query string. The type
+     *                         is what Escape::html() can render, which is what
+     *                         every key and value here goes through; the
+     *                         narrower `array<string, string|int>` this used to
+     *                         claim disagreed with both the code and the guard
+     *                         in actionBar(), which passes float and null.
      */
     public static function postButton(
         string $url,
