@@ -32,6 +32,25 @@ namespace {
         return $args;
     }
 
+    /**
+     * Contributes a control whose hidden field cannot be rendered.
+     *
+     * postButton() would hand the array to Escape::html() and raise a
+     * TypeError, taking the whole mail page with it rather than just this
+     * button.
+     */
+    function unrenderable_mailactions(string $hookName, array $args): array
+    {
+        $args[] = [
+            'kind' => 'post',
+            'url' => 'runmodule.php?module=unrenderable',
+            'label' => 'Boom',
+            'fields' => ['payload' => ['nested' => 'array']],
+        ];
+
+        return $args;
+    }
+
     /** Returns the wrong type entirely. */
     function broken_mailactions(string $hookName, array $args): string
     {
@@ -194,6 +213,29 @@ namespace Lotgd\Tests\Mail {
             self::assertStringContainsString('Delete', $html);
             self::assertStringContainsString('Mark Unread', $html);
             self::assertStringContainsString('Report to Admin', $html);
+        }
+
+        /**
+         * A module cannot fell the page with an unrenderable hidden field.
+         *
+         * The case Codex and Copilot both reported, asked where it would
+         * actually arise: through the hook, on the real action list. Before the
+         * guard this raised a TypeError out of Escape::html() and the player
+         * got no mail page at all.
+         */
+        public function testAnUnrenderableFieldCostsOnlyItsOwnControl(): void
+        {
+            $this->install(['unrenderable' => 'unrenderable_mailactions']);
+
+            $html = Forms::actionBar(ReadActions::actions($this->message));
+
+            self::assertStringNotContainsString('module=unrenderable', $html);
+            self::assertStringContainsString('Delete', $html);
+            self::assertStringContainsString('Mark Unread', $html);
+            self::assertStringContainsString('Report to Admin', $html);
+            // The report's own fields are the proof the guard is a filter and
+            // not a blanket refusal of every entry that carries any.
+            self::assertStringContainsString("name='problem'", $html);
         }
 
         /**

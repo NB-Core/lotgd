@@ -300,15 +300,22 @@ class Forms
      *     'label'   => string                          required, already translated
      *     'url'     => string                          required except for 'disabled'
      *     'confirm' => ?string                         optional, 'post' only
-     *     'fields'  => array<string,string>            optional, 'post' only
+     *     'fields'  => array<string|int, string|int|float|null>  optional, 'post' only
      *     'scope'   => ?string                         optional, 'post' only
      *     'class'   => string                          optional, overrides $class
      *
-     * `kind` is stated and never inferred. A row inside an existing `<form>`
-     * needs {@see self::formActionButton()} where a free-standing one needs
-     * {@see self::postButton()} -- the same entry means different markup
-     * depending on where it sits, so guessing would be wrong exactly where it
-     * is hardest to notice.
+     * **A 'post' entry renders a `<form>` of its own, so this must not be
+     * called from inside another one.** A nested form is invalid HTML:
+     * browsers close the outer one while parsing, and the controls after it
+     * detach from the form they belong to. Where a row does sit inside a form
+     * -- the mail inbox is the example, pages/mail/case_default.php:224 --
+     * those buttons want {@see self::formActionButton()} instead, and this
+     * renderer has no mode for them.
+     *
+     * `kind` is stated rather than inferred from the entry, because a URL does
+     * not say whether following it navigates or acts, and because it leaves
+     * the list readable by a renderer that does know how to sit inside a form,
+     * should one ever be wanted.
      *
      * An entry that does not describe a control is skipped rather than rendered
      * half-formed or fatal: these lists pass through module code, and one
@@ -357,6 +364,10 @@ class Forms
                 $confirm = is_string($action['confirm'] ?? null) ? $action['confirm'] : null;
                 $scope = is_string($action['scope'] ?? null) ? $action['scope'] : null;
                 $fields = is_array($action['fields'] ?? null) ? $action['fields'] : [];
+                if (!self::fieldsAreRenderable($fields)) {
+                    continue;
+                }
+
                 $controls[] = self::postButton($url, $label, $confirm, $controlClass, $scope, $fields);
             }
         }
@@ -373,6 +384,41 @@ class Forms
         // newline, so this also keeps the markup byte-identical to what those
         // themes were already receiving.
         return "<div class='" . Escape::html($class) . "'>\n" . implode("\n", $controls) . "\n</div>";
+    }
+
+    /**
+     * Whether every hidden field in an entry can actually be rendered.
+     *
+     * postButton() puts each key and value through Escape::html(), which is
+     * typed `string|int|float|null` in a file under strict_types -- so a module
+     * contributing `['fields' => ['x' => true]]` raises a TypeError that takes
+     * down the whole page, not just its own button. Measured rather than
+     * reasoned about: bool and array both throw, null and int render.
+     *
+     * That is the exact opposite of what this class promises about a malformed
+     * contribution, which is why the check is here and not left to the caller.
+     * Reported by Codex and Copilot independently.
+     *
+     * The whole entry is skipped rather than the offending field, because a
+     * button that posts half its payload is worse than one that is missing: the
+     * handler on the other side cannot tell the truncated request from an
+     * ordinary one.
+     *
+     * @param array<mixed,mixed> $fields
+     */
+    private static function fieldsAreRenderable(array $fields): bool
+    {
+        foreach ($fields as $name => $value) {
+            if (!is_string($name) && !is_int($name)) {
+                return false;
+            }
+
+            if (!is_string($value) && !is_int($value) && !is_float($value) && $value !== null) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

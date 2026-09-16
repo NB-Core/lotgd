@@ -76,9 +76,12 @@ final class ReadActions
     /**
      * What can be done to this message, after the modules have had their say.
      *
-     * Every entry posts. That is the line the two bars are drawn along rather
-     * than a tidier arrangement of the same controls: acting on a message is a
-     * POST carrying a token, moving to another one is a GET.
+     * Every entry the core puts here posts, and that is the line the two bars
+     * are drawn along rather than a tidier arrangement of the same controls:
+     * acting on a message is a POST carrying a token, moving to another one is
+     * a GET. A module is not held to it -- the hook below accepts `link` and
+     * `disabled` entries too, and a contributed control that merely takes the
+     * player somewhere is a reasonable thing to want here.
      *
      * **Modules must append to this list and return it.** `Modules::hook()`
      * assigns each module's return value over the payload
@@ -88,6 +91,13 @@ final class ReadActions
      * returns something which is not an array is safe: the engine warns and
      * keeps the previous payload. There is no guard that can recover the first
      * case here, which is why it is written down rather than defended against.
+     *
+     * **A rendered token is not a validated one.** A `post` entry gets a CSRF
+     * field like any other button here, but `runmodule.php` validates nothing
+     * -- AGENTS.md:51 says so outright -- so a module whose control posts to it
+     * is unprotected until its own write branch calls `Forms::validateCsrf()`.
+     * What this list hands a module is the field; the check stays theirs.
+     * Reported by Codex.
      *
      * A module that wants to *remove* the core's own deletion has a sanctioned
      * way to do it that does not depend on this list: `header-mail` carries a

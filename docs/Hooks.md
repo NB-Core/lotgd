@@ -142,8 +142,8 @@ fragments and swaps them into the footer template, so always append to the array
 ### `mail-read-actions`
 
 Each entry describes a control; the core renders it, so a contributed button
-inherits the row's class, its escaping and -- for a posting entry -- its CSRF
-token without the module supplying any of them.
+inherits the row's class and its escaping without the module supplying either,
+and a posting entry gets a CSRF field rendered into its form.
 
 ```php
 case 'mail-read-actions':
@@ -155,6 +155,18 @@ case 'mail-read-actions':
         'fields'  => [],                      // optional, 'post' only
     ];
     return $args;
+```
+
+**The rendered token is not a validation.** `runmodule.php` does not check
+`form_csrf_token` -- it is not guarded at all, as `AGENTS.md` states -- so a
+control posting there is only protected once the module's own write branch
+calls `Forms::validateCsrf()`. The field is rendered for you; making it mean
+something is yours:
+
+```php
+if (Forms::isUnverifiedRequest()) {
+    return;   // or however the module refuses a request
+}
 ```
 
 **Append to the list and return it.** The engine assigns each module's return

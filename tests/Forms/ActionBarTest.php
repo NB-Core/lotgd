@@ -117,7 +117,46 @@ final class ActionBarTest extends TestCase
             'link with no url' => [['kind' => 'link', 'label' => 'X']],
             'link with an empty url' => [['kind' => 'link', 'url' => '', 'label' => 'X']],
             'post with no url' => [['kind' => 'post', 'label' => 'X']],
+            // postButton() puts every field key and value through
+            // Escape::html(), typed string|int|float|null under strict_types.
+            // These three raised a TypeError that took down the whole page
+            // rather than costing their own button -- the opposite of what
+            // actionBar() promises. Reported by Codex and Copilot.
+            'field value is a bool' => [['kind' => 'post', 'url' => 'x.php', 'label' => 'X', 'fields' => ['f' => true]]],
+            'field value is an array' => [['kind' => 'post', 'url' => 'x.php', 'label' => 'X', 'fields' => ['f' => ['a']]]],
+            'field value is an object' => [['kind' => 'post', 'url' => 'x.php', 'label' => 'X', 'fields' => ['f' => new \stdClass()]]],
         ];
+    }
+
+    /**
+     * @return array<string, array{0: mixed}>
+     */
+    public static function renderableFieldValues(): array
+    {
+        return [
+            'string' => ['x'],
+            'int' => [5],
+            'float' => [1.5],
+            'null' => [null],
+        ];
+    }
+
+    /**
+     * The guard rejects what cannot be rendered and nothing else.
+     *
+     * Without this half, a guard that threw every entry away would satisfy the
+     * malformed-entry cases above just as well -- and the report payload, whose
+     * fields are the whole point of that button, would quietly stop being sent.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('renderableFieldValues')]
+    public function testAFieldValueThatCanBeRenderedStillIs(mixed $value): void
+    {
+        $html = Forms::actionBar([
+            ['kind' => 'post', 'url' => 'x.php', 'label' => 'Keep', 'fields' => ['f' => $value]],
+        ]);
+
+        self::assertStringContainsString('>Keep<', $html);
+        self::assertStringContainsString("name='f'", $html);
     }
 
     /**
