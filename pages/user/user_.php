@@ -70,7 +70,7 @@ if ($display == 1) {
             "user.php?op=del&userid={$row['acctid']}",
             $del,
             $conf,
-            'user-del',
+            'button',
             Csrf::SCOPE_USER_EDITOR
         ));
         $output->rawOutput(" | <a href='bans.php?op=setupban&userid={$row['acctid']}'>$ban</a> | <a href='user.php?op=debuglog&userid={$row['acctid']}'>$log</a> ]");

@@ -385,7 +385,7 @@ class Motd
             // editing token now, rendered as a button in the same bracketed row.
             $output->rawOutput(" [ <a href='motd.php?op=$editop&id=$id'>$edit</a> | ");
             $output->rawOutput(
-                Forms::postButton("motd.php?op=del&id=$id", $del, $conf, 'motd-del', Csrf::SCOPE_MOTD_EDIT)
+                Forms::postButton("motd.php?op=del&id=$id", $del, $conf, 'button', Csrf::SCOPE_MOTD_EDIT)
                 . " ]"
             );
             Nav::add('', "motd.php?op=$editop&id=$id");

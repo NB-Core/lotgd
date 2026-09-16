@@ -338,6 +338,22 @@ modules.
   Those controls no longer have a class of their own to target; ask if you want
   one back.
 
+- **`motd-del` and `user-del` are gone the same way.** That sweep searched for
+  the literal string `linkbutton`, so it missed two buttons carrying the same
+  defect under different names: the Del button in the MoTD editor
+  (`src/Lotgd/Motd.php`) and the one that deletes a player's account
+  (`pages/user/user_.php`). Neither class was defined in any stylesheet either.
+  Both now carry `button`, so those two buttons change from browser chrome to
+  the theme's styling. The same note to theme authors applies: a custom
+  `.motd-del` or `.user-del` rule was matching and will now stop.
+
+  A test enforces the rule from here on. `tests/Forms/ButtonClassesAreStyledTest`
+  reads every class handed to `Forms::postButton()` or `formActionButton()` and
+  fails if no stylesheet defines a selector that a `<button>` could match --
+  which is stricter than "is it defined", because `a.motd` is defined in every
+  theme and still cannot style a button. **If you add a button class, add a rule
+  for it, or use `button`.**
+
 - **Modules can add controls to the bar under a mail message**, through the new
   `mail-read-actions` hook. See `docs/Hooks.md`. The module describes the
   control and the core renders it, so a contributed button gets the row's
