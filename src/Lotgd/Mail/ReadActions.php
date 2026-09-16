@@ -95,8 +95,10 @@ final class ReadActions
      * **A rendered token is not a validated one.** A `post` entry gets a CSRF
      * field like any other button here, but `runmodule.php` validates nothing
      * -- AGENTS.md:51 says so outright -- so a module whose control posts to it
-     * is unprotected until its own write branch calls `Forms::validateCsrf()`.
-     * What this list hands a module is the field; the check stays theirs.
+     * is unprotected until its own write branch asks -- with
+     * `Forms::isUnverifiedRequest()`, the same check `docs/Hooks.md` shows and
+     * the shape core pages use at a write. What this list hands a module is
+     * the field; the check stays theirs.
      * Reported by Codex.
      *
      * A module that wants to *remove* the core's own deletion has a sanctioned

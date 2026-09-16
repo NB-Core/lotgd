@@ -344,7 +344,7 @@ modules.
   styling and escaping for free, and a CSRF field rendered into its form.
   **That field is not a check**: `runmodule.php` validates nothing, so a module
   whose control posts there is only protected once its own write branch calls
-  `Forms::validateCsrf()`. Existing modules are unaffected.
+  `Forms::isUnverifiedRequest()`. Existing modules are unaffected.
 
 - **Deleting a mail message now asks first.** The Delete button on the mail
   read view posted straight through; every other delete in the tree
