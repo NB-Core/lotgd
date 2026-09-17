@@ -53,6 +53,20 @@ final class ButtonClassesAreStyledTest extends TestCase
      */
     private const AT_LEAST_THIS_MANY_CALL_SITES = 20;
 
+    /**
+     * Roughly how many of those call sites should yield a class.
+     *
+     * Counting call sites is not enough on its own, and this was measured
+     * rather than reasoned: a splitter that stops at the first `)` still finds
+     * all 28 call sites and resolves 23 of the 27 classes, because the four it
+     * truncates look to the scanner like calls that simply take the default.
+     * Sites alone stayed green through that. This does not.
+     *
+     * Below the real count so that removing one button does not fail an
+     * unrelated build; if buttons are genuinely removed, lower it on purpose.
+     */
+    private const AT_LEAST_THIS_MANY_RESOLVED_CLASSES = 25;
+
     private static function repositoryRoot(): string
     {
         return dirname(__DIR__, 2);
@@ -66,16 +80,19 @@ final class ButtonClassesAreStyledTest extends TestCase
      * The defaults are covered instead by defaultClasses() below, so nothing is
      * lost by the exclusion.
      *
-     * Returns both the classes and the number of call sites seen, because the
-     * count is what proves the scan happened at all and a by-reference
-     * out-parameter for it would be the uglier half of the same answer.
+     * Returns the classes, the number of call sites seen, and the arguments it
+     * could not read. The count is what proves the scan happened at all; the
+     * unreadable ones are reported rather than dropped, because a class this
+     * cannot resolve is a class it cannot judge, and silently judging fewer
+     * things is how a guard goes quiet.
      *
-     * @return array{classes: array<string, list<string>>, sites: int}
+     * @return array{classes: array<string, list<string>>, sites: int, unresolved: list<string>}
      */
     private static function classesAtCallSites(): array
     {
         $root = self::repositoryRoot();
         $found = [];
+        $unresolved = [];
         $count = 0;
 
         foreach (self::phpFiles($root) as $file) {
@@ -99,18 +116,47 @@ final class ButtonClassesAreStyledTest extends TestCase
                     continue;
                 }
 
-                $class = trim($arguments[3]);
-                if (preg_match("/^'([^']*)'$/", $class, $literal) === 1) {
-                    $found[$literal[1]][] = substr($file, strlen($root) + 1);
+                $site = substr($file, strlen($root) + 1);
+                $class = self::classLiteral($arguments[3]);
+                if ($class === null) {
+                    $unresolved[] = $site . ': ' . trim($arguments[3]);
+                    continue;
                 }
-                // A variable class cannot be resolved by reading the file. None
-                // exist outside Forms.php today; if one appears it is silently
-                // uncovered, which is why the call-site floor above is asserted
-                // separately from the classes themselves.
+
+                $found[$class][] = $site;
             }
         }
 
-        return ['classes' => $found, 'sites' => $count];
+        return ['classes' => $found, 'sites' => $count, 'unresolved' => $unresolved];
+    }
+
+    /**
+     * The class an argument passes, or null when reading it cannot say.
+     *
+     * Both PHP quote styles are literals, and treating only one of them as a
+     * literal is how this check would have gone quiet: a call passing
+     * "new-del" would have been ignored while still counting towards the
+     * call-site floor below, so the floor would have stayed green as well.
+     *
+     * A double-quoted string that interpolates is not a literal -- "$prefix-del"
+     * is a variable wearing quotes -- and neither is a bare variable. Those
+     * return null and are reported, not skipped: this cannot judge a class it
+     * cannot read, and a guard that quietly judges fewer things each release is
+     * the failure mode the whole file exists to avoid.
+     */
+    private static function classLiteral(string $argument): ?string
+    {
+        $argument = trim($argument);
+
+        if (preg_match("/^'([^'\\\\]*)'$/", $argument, $literal) === 1) {
+            return $literal[1];
+        }
+
+        if (preg_match('/^"([^"\\\\$]*)"$/', $argument, $literal) === 1) {
+            return $literal[1];
+        }
+
+        return null;
     }
 
     /**
@@ -125,9 +171,12 @@ final class ButtonClassesAreStyledTest extends TestCase
     private static function defaultClasses(): array
     {
         $source = (string) file_get_contents(self::repositoryRoot() . '/src/Lotgd/Forms.php');
-        preg_match_all("/\\\$class\s*=\s*'([^']+)'|:\s*'((?:button|mail-nav)[^']*)'/", $source, $matches);
 
-        $classes = array_merge($matches[1], $matches[2]);
+        // Both quote styles, for the same reason classLiteral() reads both.
+        preg_match_all('/\$class\s*=\s*([\'"])([^\'"$]+)\1/', $source, $parameters);
+        preg_match_all('/:\s*([\'"])((?:button|mail-nav)[^\'"$]*)\1/', $source, $inline);
+
+        $classes = array_merge($parameters[2], $inline[2]);
 
         return array_values(array_unique(array_filter($classes)));
     }
@@ -243,33 +292,112 @@ final class ButtonClassesAreStyledTest extends TestCase
      * whole of what went wrong in #1540 -- a test that only asked whether the
      * class existed would have called that row healthy.
      *
+     * Nor is "the class appears in a selector" the question. `.mail-nav__link a`
+     * mentions the class and styles the `<a>` inside it, so counting it would
+     * be the same mistake in a second costume. Only the rightmost compound of a
+     * selector describes the element the rule applies to.
+     *
+     * Selectors are read rather than matched: the text before each `{` is a
+     * prelude, split on commas. That costs a few lines over a regex and buys
+     * whole selectors instead of fragments, which is what the failure message
+     * quotes back.
+     *
      * @return array{reachable: list<string>, all: list<string>}
      */
     private static function selectorsFor(string $class): array
     {
-        $pattern = '/(?:^|[\s,>+~(])((?:[A-Za-z][\w-]*)?(?::[\w-]+)*)\.'
-            . preg_quote($class, '/') . '(?![\w-])/m';
-
         $reachable = [];
         $all = [];
 
         foreach (self::styleSheets() as $sheet) {
-            $text = (string) file_get_contents($sheet);
-            if (preg_match_all($pattern, $text, $matches, PREG_SET_ORDER) === 0) {
-                continue;
-            }
+            foreach (self::selectorsIn((string) file_get_contents($sheet)) as $selector) {
+                if (!self::mentionsClass($selector, $class)) {
+                    continue;
+                }
 
-            foreach ($matches as $match) {
-                $selector = trim($match[0]);
                 $all[] = $selector;
-                $tag = preg_match('/^[A-Za-z][\w-]*/', $match[1], $name) === 1 ? $name[0] : '';
-                if ($tag === '' || $tag === 'button') {
+                if (self::isButtonReachable($selector, $class)) {
                     $reachable[] = $selector;
                 }
             }
         }
 
         return ['reachable' => $reachable, 'all' => $all];
+    }
+
+    /**
+     * Whether a `<button>` wearing $class could match $selector.
+     *
+     * Two ways it could not: the rule names another element (`a.motd`), or the
+     * class sits left of a combinator, where it selects an ancestor and the
+     * rule styles something else (`.mail-nav__link a`).
+     */
+    private static function isButtonReachable(string $selector, string $class): bool
+    {
+        $parts = preg_split('/\s*[>+~]\s*|\s+/', trim($selector)) ?: [];
+        $compound = (string) end($parts);
+
+        if (!self::mentionsClass($compound, $class)) {
+            return false;
+        }
+
+        $tag = preg_match('/^[A-Za-z][\w-]*/', $compound, $name) === 1 ? $name[0] : '';
+
+        return $tag === '' || $tag === 'button';
+    }
+
+    private static function mentionsClass(string $selector, string $class): bool
+    {
+        return preg_match('/\.' . preg_quote($class, '/') . '(?![\w-])/', $selector) === 1;
+    }
+
+    /**
+     * Every selector in a stylesheet, one per comma-separated entry.
+     *
+     * At-rule preludes (`@media (max-width: 768px)`) are not selectors and are
+     * dropped; the rules nested inside them are reached anyway, because the
+     * prelude ends at its own `{` and the block that follows is read normally.
+     *
+     * @return list<string>
+     */
+    private static function selectorsIn(string $css): array
+    {
+        $css = (string) preg_replace('~/\*.*?\*/~s', '', $css);
+
+        $selectors = [];
+        $buffer = '';
+        $length = strlen($css);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $css[$i];
+
+            // A declaration ends the run of text that could have been a
+            // prelude; so does the end of a block.
+            if ($char === ';' || $char === '}') {
+                $buffer = '';
+                continue;
+            }
+
+            if ($char !== '{') {
+                $buffer .= $char;
+                continue;
+            }
+
+            $prelude = trim($buffer);
+            $buffer = '';
+            if ($prelude === '' || str_starts_with($prelude, '@')) {
+                continue;
+            }
+
+            foreach (explode(',', $prelude) as $selector) {
+                $selector = trim((string) preg_replace('/\s+/', ' ', $selector));
+                if ($selector !== '') {
+                    $selectors[] = $selector;
+                }
+            }
+        }
+
+        return $selectors;
     }
 
     /**
@@ -300,6 +428,94 @@ final class ButtonClassesAreStyledTest extends TestCase
             self::classesAtCallSites()['sites'],
             'the call-site scanner found almost nothing, so the assertions below prove nothing'
         );
+    }
+
+    /**
+     * The scan is resolving classes, and the two sites this PR fixed are in it.
+     *
+     * The floor's companion: an argument splitter that truncates makes a call
+     * look like one that takes the default class, so it disappears from every
+     * judgement below while still counting as a site. The two named sites are
+     * the delete buttons this change was about -- if either stops being found,
+     * the scan has drifted away from the thing it was built to watch.
+     */
+    public function testTheScannerResolvesTheClassesItFinds(): void
+    {
+        $classes = self::classesAtCallSites()['classes'];
+
+        $resolved = 0;
+        $sites = [];
+        foreach ($classes as $files) {
+            $resolved += count($files);
+            $sites = array_merge($sites, $files);
+        }
+
+        self::assertGreaterThanOrEqual(
+            self::AT_LEAST_THIS_MANY_RESOLVED_CLASSES,
+            $resolved,
+            'the scanner is finding call sites but reading far fewer classes than it should'
+        );
+
+        self::assertContains('pages/user/user_.php', $sites, "the account-delete button's class went unread");
+        self::assertContains('src/Lotgd/Motd.php', $sites, "the MoTD delete button's class went unread");
+    }
+
+    /**
+     * Every class argument in the tree could actually be read.
+     *
+     * The second half of the same guard: the floor above counts call sites,
+     * this one counts the ones whose class it could resolve. Without it a call
+     * passing a variable, or an interpolated string, is scanned, counted and
+     * never judged.
+     */
+    public function testEveryClassArgumentCanBeAnalysed(): void
+    {
+        $unresolved = self::classesAtCallSites()['unresolved'];
+
+        self::assertSame(
+            [],
+            $unresolved,
+            "These class arguments could not be read, so their class was never checked:\n"
+                . implode("\n", $unresolved)
+                . "\n\nPass a plain string literal, or teach classLiteral() to read this form."
+        );
+    }
+
+    /**
+     * The literal reader handles both quote styles, and refuses the rest.
+     *
+     * Tested directly because no call site in the tree passes a double-quoted
+     * class today: the hole this closes is one no fixture would have shown.
+     */
+    public function testTheLiteralReaderAcceptsBothQuoteStyles(): void
+    {
+        self::assertSame('new-del', self::classLiteral("'new-del'"));
+        self::assertSame('new-del', self::classLiteral('"new-del"'));
+        self::assertSame('button mail-nav__link', self::classLiteral("  'button mail-nav__link'  "));
+
+        self::assertNull(self::classLiteral('$class'), 'a variable class cannot be read');
+        self::assertNull(self::classLiteral('"$prefix-del"'), 'an interpolated string is not a literal');
+        self::assertNull(self::classLiteral("'a' . \$b"), 'a concatenation is not a literal');
+    }
+
+    /**
+     * The reachability rule reads the rightmost compound, not any occurrence.
+     *
+     * `.foo a` mentions the class and styles the anchor inside it. Counting
+     * that would let a class no button can ever wear pass as styled, which is
+     * #1540's defect with one extra step.
+     */
+    public function testTheReachabilityRuleReadsTheRightmostCompound(): void
+    {
+        self::assertTrue(self::isButtonReachable('.foo', 'foo'));
+        self::assertTrue(self::isButtonReachable('button.foo', 'foo'));
+        self::assertTrue(self::isButtonReachable('.bar .foo', 'foo'), 'the class is still the rightmost part');
+        self::assertTrue(self::isButtonReachable('.foo:hover', 'foo'));
+
+        self::assertFalse(self::isButtonReachable('a.foo', 'foo'), 'names another element');
+        self::assertFalse(self::isButtonReachable('.foo a', 'foo'), 'styles the anchor inside, not the button');
+        self::assertFalse(self::isButtonReachable('.foo > span', 'foo'));
+        self::assertFalse(self::isButtonReachable('.foobar', 'foo'), 'a different class that starts the same');
     }
 
     public function testTheStyleSheetsAreFound(): void
