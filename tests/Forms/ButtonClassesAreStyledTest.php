@@ -67,6 +67,13 @@ final class ButtonClassesAreStyledTest extends TestCase
      */
     private const AT_LEAST_THIS_MANY_RESOLVED_CLASSES = 25;
 
+    /**
+     * Every selector in every bundled stylesheet, or null before the first read.
+     *
+     * @var list<string>|null
+     */
+    private static ?array $selectors = null;
+
     private static function repositoryRoot(): string
     {
         return dirname(__DIR__, 2);
@@ -174,9 +181,17 @@ final class ButtonClassesAreStyledTest extends TestCase
 
         // Both quote styles, for the same reason classLiteral() reads both.
         preg_match_all('/\$class\s*=\s*([\'"])([^\'"$]+)\1/', $source, $parameters);
-        preg_match_all('/:\s*([\'"])((?:button|mail-nav)[^\'"$]*)\1/', $source, $inline);
 
-        $classes = array_merge($parameters[2], $inline[2]);
+        // Only class *lists*. A bare `: 'button'` is far more likely to be one
+        // of the jQuery object literals this file emits -- `type: 'button'`,
+        // `role: 'button'` -- than a class default, and both of those matched
+        // before. They happened to be harmless, since they read back as the
+        // class that is styled everywhere, but a check that quietly counts
+        // markup attributes as CSS classes is one unrelated edit away from
+        // saying something false.
+        preg_match_all('/:\s*([\'"])((?:button|mail-nav)[\w-]*(?:\s+[\w-]+)+)\1/', $source, $lists);
+
+        $classes = array_merge($parameters[2], $lists[2]);
 
         return array_values(array_unique(array_filter($classes)));
     }
@@ -309,20 +324,46 @@ final class ButtonClassesAreStyledTest extends TestCase
         $reachable = [];
         $all = [];
 
-        foreach (self::styleSheets() as $sheet) {
-            foreach (self::selectorsIn((string) file_get_contents($sheet)) as $selector) {
-                if (!self::mentionsClass($selector, $class)) {
-                    continue;
-                }
+        foreach (self::allSelectors() as $selector) {
+            if (!self::mentionsClass($selector, $class)) {
+                continue;
+            }
 
-                $all[] = $selector;
-                if (self::isButtonReachable($selector, $class)) {
-                    $reachable[] = $selector;
-                }
+            $all[] = $selector;
+            if (self::isButtonReachable($selector, $class)) {
+                $reachable[] = $selector;
             }
         }
 
         return ['reachable' => $reachable, 'all' => $all];
+    }
+
+    /**
+     * Every selector in every bundled stylesheet, parsed once per run.
+     *
+     * 81 KB across eleven sheets, re-read and re-parsed for each class before
+     * this cache existed -- about 3.7 ms a class, paid by every test in the
+     * file. Static state in a test is worth being uneasy about, but this is
+     * derived from files that do not change while the suite runs, so it cannot
+     * make one test's result depend on another's; the three orderings say the
+     * same.
+     *
+     * @return list<string>
+     */
+    private static function allSelectors(): array
+    {
+        if (self::$selectors !== null) {
+            return self::$selectors;
+        }
+
+        $selectors = [];
+        foreach (self::styleSheets() as $sheet) {
+            $selectors = array_merge($selectors, self::selectorsIn((string) file_get_contents($sheet)));
+        }
+
+        self::$selectors = $selectors;
+
+        return $selectors;
     }
 
     /**
@@ -596,6 +637,13 @@ final class ButtonClassesAreStyledTest extends TestCase
         $defaults = self::defaultClasses();
 
         self::assertNotEmpty($defaults, 'no default class literals found in Forms.php');
+
+        // The reason the list-only pattern above is safe to narrow: the one
+        // default it exists for is asserted to still be found. Narrowing a
+        // scanner until it reads nothing is the same failure as never reading
+        // anything, and it looks just as green.
+        $lists = array_filter($defaults, static fn (string $class): bool => str_contains($class, ' '));
+        self::assertNotEmpty($lists, "actionBar's multi-class default is no longer being read");
 
         $unstyled = [];
         foreach ($defaults as $classAttribute) {
