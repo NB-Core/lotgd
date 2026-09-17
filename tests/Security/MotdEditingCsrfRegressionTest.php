@@ -46,8 +46,25 @@ final class MotdEditingCsrfRegressionTest extends TestCase
         // this asserts is that the call is made with the editing scope -- the
         // POST method, the token field and the confirmation are the helper's
         // business, covered behaviourally in EscapeAndPostButtonTest.
-        self::assertStringContainsString(
-            'Forms::postButton("motd.php?op=del&id=$id", $del, $conf, \'motd-del\', Csrf::SCOPE_MOTD_EDIT)',
+        //
+        // Matched as a pattern rather than as the whole call verbatim, and for
+        // a reason this test just demonstrated: pinning the literal pinned the
+        // CSS class with it, so changing that class -- which has nothing to do
+        // with CSRF -- broke this. What matters is the target and the scope.
+        //
+        // `[^()]*` rather than `.*?`: the scope has to appear inside this
+        // call's own parentheses. A dot-any accepted it anywhere later in the
+        // file, so the button could lose its scope and any other use of the
+        // constant would stand in for it. That is latent rather than live
+        // today -- the file's other two uses are hiddenField() calls above this
+        // one, and a forward match cannot reach backwards -- but it becomes
+        // live the moment a use is added below, or this row moves up. Measured
+        // both ways rather than argued.
+        //
+        // If the call ever gains a nested call this stops matching and fails
+        // loudly, which is the right way round.
+        self::assertMatchesRegularExpression(
+            '/Forms::postButton\(\s*"motd\.php\?op=del&id=\$id"[^()]*Csrf::SCOPE_MOTD_EDIT[^()]*\)/',
             $source
         );
 
