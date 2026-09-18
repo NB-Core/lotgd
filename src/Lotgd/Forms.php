@@ -308,7 +308,8 @@ class Forms
      *     'fields'  => array<string|int, string|int|float|null>  optional, 'post' only
      *     'scope'   => ?string                         optional, 'post' only
      *     'class'   => string                          optional, the control's own class
-     *                                                  (default 'button mail-nav__link'; $class
+     *                                                  (default 'button <container>__link',
+     *                                                  e.g. 'button mail-nav__link'; $class
      *                                                  is the container's, not this)
      *
      * **A 'post' entry renders a `<form>` of its own, so this must not be
@@ -353,7 +354,14 @@ class Forms
                 continue;
             }
 
-            $controlClass = is_string($action['class'] ?? null) ? $action['class'] : 'button mail-nav__link';
+            // The control's class follows the container's, BEM-fashion, so a
+            // caller that names its row 'action-bar' gets 'action-bar__link'
+            // without repeating it on every entry. For the mail row, whose
+            // container is 'mail-nav', this renders exactly what the literal
+            // it replaces did.
+            $controlClass = is_string($action['class'] ?? null)
+                ? $action['class']
+                : 'button ' . $class . '__link';
 
             if ($kind === 'disabled') {
                 $controls[] = self::disabledButton($label, $controlClass);

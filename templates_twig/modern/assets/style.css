@@ -298,3 +298,54 @@ div.debug {
     height: auto;
     font-size: 10px;
 }
+
+/* --- Action rows ---------------------------------------------------------
+   Appended as one block so a theme can take it verbatim. Geometry only: the
+   colour, border and font of a control still come from this theme's own
+   .button rule above, so each theme stays itself. */
+
+/* The padding comes from the stylesheet now rather than from the browser's
+   own button defaults, so that an <a> and a <button> standing next to each
+   other are the same height. */
+.button {
+    padding: 2px 8px;
+}
+
+/* A link or an inert element wearing the button class would otherwise render
+   as underlined text with no inner spacing at all. */
+a.button,
+span.button {
+    display: inline-block;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+span.button[aria-disabled="true"] {
+    cursor: default;
+    opacity: 0.6;
+}
+
+/* A row of actions. Wraps on a narrow screen instead of forcing the table
+   cell wider than the viewport. */
+.action-bar,
+.mail-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.action-bar__link,
+.mail-nav__link {
+    display: inline-flex;
+    align-items: center;
+}
+
+.action-bar__link,
+.action-bar__link a,
+.mail-nav__link,
+.mail-nav__link a {
+    color: inherit;
+    text-decoration: none;
+}

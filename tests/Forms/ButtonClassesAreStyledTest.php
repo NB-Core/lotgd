@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Forms;
 
+use Lotgd\Tests\Support\StyleSheets;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -66,13 +67,6 @@ final class ButtonClassesAreStyledTest extends TestCase
      * unrelated build; if buttons are genuinely removed, lower it on purpose.
      */
     private const AT_LEAST_THIS_MANY_RESOLVED_CLASSES = 25;
-
-    /**
-     * Every selector in every bundled stylesheet, or null before the first read.
-     *
-     * @var list<string>|null
-     */
-    private static ?array $selectors = null;
 
     private static function repositoryRoot(): string
     {
@@ -169,9 +163,13 @@ final class ButtonClassesAreStyledTest extends TestCase
     /**
      * The class defaults the helpers themselves declare.
      *
-     * `Forms::actionBar()` hands 'button mail-nav__link' to postButton() for
-     * every entry that does not override it, so it is a real class in the
-     * rendered page even though no call site names it.
+     * Parameter defaults only, and that is now the whole of what is here to
+     * read. `actionBar()` used to hand a literal 'button mail-nav__link' to
+     * every entry; it composes that class from the container's name instead,
+     * so no literal remains and no pattern over this file could find one. The
+     * classes it composes are covered by ActionBarClassesAreStyledTest, which
+     * renders a row and reads what came out -- a better question than this
+     * one, asked the only way it can be asked.
      *
      * @return list<string>
      */
@@ -182,18 +180,7 @@ final class ButtonClassesAreStyledTest extends TestCase
         // Both quote styles, for the same reason classLiteral() reads both.
         preg_match_all('/\$class\s*=\s*([\'"])([^\'"$]+)\1/', $source, $parameters);
 
-        // Only class *lists*. A bare `: 'button'` is far more likely to be one
-        // of the jQuery object literals this file emits -- `type: 'button'`,
-        // `role: 'button'` -- than a class default, and both of those matched
-        // before. They happened to be harmless, since they read back as the
-        // class that is styled everywhere, but a check that quietly counts
-        // markup attributes as CSS classes is one unrelated edit away from
-        // saying something false.
-        preg_match_all('/:\s*([\'"])((?:button|mail-nav)[\w-]*(?:\s+[\w-]+)+)\1/', $source, $lists);
-
-        $classes = array_merge($parameters[2], $lists[2]);
-
-        return array_values(array_unique(array_filter($classes)));
+        return array_values(array_unique(array_filter($parameters[2])));
     }
 
     /**
@@ -300,163 +287,6 @@ final class ButtonClassesAreStyledTest extends TestCase
     }
 
     /**
-     * Selectors defining `.$class` that a `<button>` could actually match.
-     *
-     * "Defined somewhere" is not the question. `a.motd` defines the class in
-     * every theme shipped with the game and cannot match a button, which is the
-     * whole of what went wrong in #1540 -- a test that only asked whether the
-     * class existed would have called that row healthy.
-     *
-     * Nor is "the class appears in a selector" the question. `.mail-nav__link a`
-     * mentions the class and styles the `<a>` inside it, so counting it would
-     * be the same mistake in a second costume. Only the rightmost compound of a
-     * selector describes the element the rule applies to.
-     *
-     * Selectors are read rather than matched: the text before each `{` is a
-     * prelude, split on commas. That costs a few lines over a regex and buys
-     * whole selectors instead of fragments, which is what the failure message
-     * quotes back.
-     *
-     * @return array{reachable: list<string>, all: list<string>}
-     */
-    private static function selectorsFor(string $class): array
-    {
-        $reachable = [];
-        $all = [];
-
-        foreach (self::allSelectors() as $selector) {
-            if (!self::mentionsClass($selector, $class)) {
-                continue;
-            }
-
-            $all[] = $selector;
-            if (self::isButtonReachable($selector, $class)) {
-                $reachable[] = $selector;
-            }
-        }
-
-        return ['reachable' => $reachable, 'all' => $all];
-    }
-
-    /**
-     * Every selector in every bundled stylesheet, parsed once per run.
-     *
-     * 81 KB across eleven sheets, re-read and re-parsed for each class before
-     * this cache existed -- about 3.7 ms a class, paid by every test in the
-     * file. Static state in a test is worth being uneasy about, but this is
-     * derived from files that do not change while the suite runs, so it cannot
-     * make one test's result depend on another's; the three orderings say the
-     * same.
-     *
-     * @return list<string>
-     */
-    private static function allSelectors(): array
-    {
-        if (self::$selectors !== null) {
-            return self::$selectors;
-        }
-
-        $selectors = [];
-        foreach (self::styleSheets() as $sheet) {
-            $selectors = array_merge($selectors, self::selectorsIn((string) file_get_contents($sheet)));
-        }
-
-        self::$selectors = $selectors;
-
-        return $selectors;
-    }
-
-    /**
-     * Whether a `<button>` wearing $class could match $selector.
-     *
-     * Two ways it could not: the rule names another element (`a.motd`), or the
-     * class sits left of a combinator, where it selects an ancestor and the
-     * rule styles something else (`.mail-nav__link a`).
-     */
-    private static function isButtonReachable(string $selector, string $class): bool
-    {
-        $parts = preg_split('/\s*[>+~]\s*|\s+/', trim($selector)) ?: [];
-        $compound = (string) end($parts);
-
-        if (!self::mentionsClass($compound, $class)) {
-            return false;
-        }
-
-        $tag = preg_match('/^[A-Za-z][\w-]*/', $compound, $name) === 1 ? $name[0] : '';
-
-        return $tag === '' || $tag === 'button';
-    }
-
-    private static function mentionsClass(string $selector, string $class): bool
-    {
-        return preg_match('/\.' . preg_quote($class, '/') . '(?![\w-])/', $selector) === 1;
-    }
-
-    /**
-     * Every selector in a stylesheet, one per comma-separated entry.
-     *
-     * At-rule preludes (`@media (max-width: 768px)`) are not selectors and are
-     * dropped; the rules nested inside them are reached anyway, because the
-     * prelude ends at its own `{` and the block that follows is read normally.
-     *
-     * @return list<string>
-     */
-    private static function selectorsIn(string $css): array
-    {
-        $css = (string) preg_replace('~/\*.*?\*/~s', '', $css);
-
-        $selectors = [];
-        $buffer = '';
-        $length = strlen($css);
-
-        for ($i = 0; $i < $length; $i++) {
-            $char = $css[$i];
-
-            // A declaration ends the run of text that could have been a
-            // prelude; so does the end of a block.
-            if ($char === ';' || $char === '}') {
-                $buffer = '';
-                continue;
-            }
-
-            if ($char !== '{') {
-                $buffer .= $char;
-                continue;
-            }
-
-            $prelude = trim($buffer);
-            $buffer = '';
-            if ($prelude === '' || str_starts_with($prelude, '@')) {
-                continue;
-            }
-
-            foreach (explode(',', $prelude) as $selector) {
-                $selector = trim((string) preg_replace('/\s+/', ' ', $selector));
-                if ($selector !== '') {
-                    $selectors[] = $selector;
-                }
-            }
-        }
-
-        return $selectors;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function styleSheets(): array
-    {
-        $root = self::repositoryRoot();
-        $sheets = array_merge(
-            (array) glob($root . '/templates/*.css'),
-            (array) glob($root . '/templates/*/*.css'),
-            (array) glob($root . '/templates_twig/*/assets/*.css')
-        );
-
-        return array_values(array_filter($sheets, 'is_string'));
-    }
-
-    /**
      * The scanner is finding call sites at all.
      *
      * Asserted before anything else, because every other assertion here is of
@@ -548,20 +378,20 @@ final class ButtonClassesAreStyledTest extends TestCase
      */
     public function testTheReachabilityRuleReadsTheRightmostCompound(): void
     {
-        self::assertTrue(self::isButtonReachable('.foo', 'foo'));
-        self::assertTrue(self::isButtonReachable('button.foo', 'foo'));
-        self::assertTrue(self::isButtonReachable('.bar .foo', 'foo'), 'the class is still the rightmost part');
-        self::assertTrue(self::isButtonReachable('.foo:hover', 'foo'));
+        self::assertTrue(StyleSheets::isButtonReachable('.foo', 'foo'));
+        self::assertTrue(StyleSheets::isButtonReachable('button.foo', 'foo'));
+        self::assertTrue(StyleSheets::isButtonReachable('.bar .foo', 'foo'), 'the class is still the rightmost part');
+        self::assertTrue(StyleSheets::isButtonReachable('.foo:hover', 'foo'));
 
-        self::assertFalse(self::isButtonReachable('a.foo', 'foo'), 'names another element');
-        self::assertFalse(self::isButtonReachable('.foo a', 'foo'), 'styles the anchor inside, not the button');
-        self::assertFalse(self::isButtonReachable('.foo > span', 'foo'));
-        self::assertFalse(self::isButtonReachable('.foobar', 'foo'), 'a different class that starts the same');
+        self::assertFalse(StyleSheets::isButtonReachable('a.foo', 'foo'), 'names another element');
+        self::assertFalse(StyleSheets::isButtonReachable('.foo a', 'foo'), 'styles the anchor inside, not the button');
+        self::assertFalse(StyleSheets::isButtonReachable('.foo > span', 'foo'));
+        self::assertFalse(StyleSheets::isButtonReachable('.foobar', 'foo'), 'a different class that starts the same');
     }
 
     public function testTheStyleSheetsAreFound(): void
     {
-        $sheets = self::styleSheets();
+        $sheets = StyleSheets::paths();
 
         self::assertGreaterThan(5, count($sheets), 'no stylesheets found, so no class can be judged');
     }
@@ -576,7 +406,7 @@ final class ButtonClassesAreStyledTest extends TestCase
      */
     public function testTheCheckRejectsAnAnchorOnlyClass(): void
     {
-        $motd = self::selectorsFor('motd');
+        $motd = StyleSheets::selectorsFor('motd');
 
         self::assertNotEmpty($motd['all'], 'motd should still be defined in the themes');
         self::assertEmpty(
@@ -587,7 +417,7 @@ final class ButtonClassesAreStyledTest extends TestCase
 
     public function testTheCheckAcceptsAnUnqualifiedClass(): void
     {
-        $button = self::selectorsFor('button');
+        $button = StyleSheets::selectorsFor('button');
 
         self::assertNotEmpty($button['reachable'], '.button should be defined unqualified in the themes');
     }
@@ -605,18 +435,22 @@ final class ButtonClassesAreStyledTest extends TestCase
                     continue;
                 }
 
-                $found = self::selectorsFor($class);
-                if ($found['reachable'] !== []) {
+                $missing = StyleSheets::themesMissing($class);
+                if ($missing === []) {
                     continue;
                 }
 
+                $found = StyleSheets::selectorsFor($class);
                 $unstyled[] = sprintf(
-                    "  '%s' (%s) -- %s",
+                    "  '%s' (%s) -- %s; unstyled in %d of %d themes: %s",
                     $class,
                     implode(', ', array_unique($files)),
                     $found['all'] === []
                         ? 'defined in no stylesheet at all'
-                        : sprintf('defined only as %s, which cannot match a button', $found['all'][0])
+                        : sprintf('defined only as %s, which cannot match a button', $found['all'][0]),
+                    count($missing),
+                    count(StyleSheets::themes()),
+                    implode(', ', $missing)
                 );
             }
         }
@@ -638,18 +472,16 @@ final class ButtonClassesAreStyledTest extends TestCase
 
         self::assertNotEmpty($defaults, 'no default class literals found in Forms.php');
 
-        // The reason the list-only pattern above is safe to narrow: the one
-        // default it exists for is asserted to still be found. Narrowing a
-        // scanner until it reads nothing is the same failure as never reading
-        // anything, and it looks just as green.
-        $lists = array_filter($defaults, static fn (string $class): bool => str_contains($class, ' '));
-        self::assertNotEmpty($lists, "actionBar's multi-class default is no longer being read");
+        // Named rather than merely counted, because a pattern that has stopped
+        // matching reads exactly like a file with nothing to match.
+        self::assertContains('button', $defaults, "the helpers' own default class went unread");
 
         $unstyled = [];
         foreach ($defaults as $classAttribute) {
             foreach (preg_split('/\s+/', trim($classAttribute)) ?: [] as $class) {
-                if ($class !== '' && self::selectorsFor($class)['reachable'] === []) {
-                    $unstyled[] = $class;
+                if ($class !== '' && StyleSheets::themesMissing($class) !== []) {
+                    $unstyled[] = $class . ' (unstyled in '
+                        . implode(', ', StyleSheets::themesMissing($class)) . ')';
                 }
             }
         }
