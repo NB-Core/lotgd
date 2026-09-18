@@ -33,7 +33,15 @@ $op = Http::get('op');
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['del', 'process', 'send', 'unread'])) {
+//
+// The rejection is remembered rather than only logged, because the player has
+// to be told something. Blanking $op drops the request back onto the inbox,
+// which on its own is indistinguishable from having pressed nothing: a message
+// the player spent five minutes writing simply does not arrive, and the page
+// that swallowed it looks exactly as it did before. The success path has said
+// "Your message was sent!" all along; this is the other half of that sentence.
+$rejectedUnverified = Forms::isUnverifiedCoreOp($op, ['del', 'process', 'send', 'unread']);
+if ($rejectedUnverified) {
     debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
@@ -115,6 +123,18 @@ switch (Http::get('even')) {
     case "mailsent":
         $output->output("`vYour message was sent!`n");
         break;
+}
+
+// Here, beside the success message, because this is the same sentence with the
+// other answer, and a player who has learned where the one appears finds the
+// other without looking. Deliberately one line and deliberately vague about
+// which of the three states the token was in: that distinction is the
+// operator's business and belongs in a log, not in front of the player.
+if ($rejectedUnverified) {
+    $output->output(
+        '`$Your request could not be carried out: the security token of the form was missing or '
+        . 'no longer valid. Please try again.`0`n'
+    );
 }
 
 if ($op == "send") {
