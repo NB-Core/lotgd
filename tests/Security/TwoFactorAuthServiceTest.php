@@ -90,4 +90,178 @@ class TwoFactorAuthServiceTest extends TestCase
 
         $this->assertTrue(\TwoFactorAuthService::isUriAllowed('/lotgd/runmodule.php?module=twofactorauth&op=challenge', $allowed));
     }
+
+    /**
+     * The premise the whole fix rests on: decrypting with the wrong key is not
+     * reliably an error.
+     *
+     * aes-256-cbc carries no authentication tag, so openssl_decrypt() rejects a
+     * wrong key only when the final block's PKCS#7 padding comes out invalid --
+     * about 255 times in 256. The remaining case returns bytes, and bytes are
+     * not '', so every caller testing `!== ''` accepts them.
+     *
+     * Asserted by finding one rather than by quoting a rate: a bounded search
+     * for a colliding secret is deterministic in outcome where a probability is
+     * not, and it keeps the test honest if the stored format ever becomes
+     * authenticated -- then no collision exists, the search runs out, and this
+     * says so instead of passing quietly.
+     */
+    public function testAWrongKeySometimesDecryptsIntoSomethingThatIsNotEmpty(): void
+    {
+        self::requireCbcStorage();
+
+        $collision = self::findWrongKeyCollision('key-one', 'key-two');
+
+        self::assertNotNull(
+            $collision,
+            'no blob in 20000 decrypted under the wrong key -- if the stored format is now '
+                . 'authenticated, this test and the check it guards have both outlived their purpose'
+        );
+
+        [, $blob, $garbage] = $collision;
+
+        self::assertNotSame('', $garbage, 'the premise: a wrong key produced something');
+        self::assertFalse(
+            \TwoFactorAuthService::isPlausibleSecret($garbage),
+            'and the check refuses it: ' . bin2hex($garbage)
+        );
+        self::assertTrue(
+            \TwoFactorAuthService::isPlausibleSecret(\TwoFactorAuthService::decryptSecret($blob, 'key-one')),
+            'control: the right key still yields something the check accepts'
+        );
+    }
+
+    /**
+     * The check must not lock out a secret a player already has.
+     *
+     * generateSecret() emits upper-case base32 with no padding, but a secret
+     * carrying the grouping spaces an authenticator app displays, or the
+     * padding another implementation wrote, is one base32Decode() reads
+     * perfectly well -- and rejecting it here would cause exactly the lockout
+     * this check exists to prevent.
+     *
+     * The shapes below are the ones a stored secret plausibly has, not every
+     * shape base32Decode() tolerates: it strips anything outside its alphabet,
+     * so the set it accepts is far larger than this and naming the test after
+     * it would claim more than the test checks.
+     * Reported by Copilot.
+     */
+    public function testTheSecretShapesAPlayerMightHaveStoredPassTheCheck(): void
+    {
+        $generated = \TwoFactorAuthService::generateSecret();
+
+        self::assertTrue(\TwoFactorAuthService::isPlausibleSecret($generated));
+        self::assertTrue(\TwoFactorAuthService::isPlausibleSecret(chunk_split($generated, 4, ' ')));
+        self::assertTrue(\TwoFactorAuthService::isPlausibleSecret('JBSWY3DPEHPK3PXP===='));
+
+        self::assertFalse(\TwoFactorAuthService::isPlausibleSecret(''));
+        self::assertFalse(\TwoFactorAuthService::isPlausibleSecret("\x00\x91\xfe"));
+    }
+
+    /**
+     * Lower case is not a shape this decoder reads, and this test says so
+     * rather than assuming the opposite -- which the first version of the test
+     * above did, with an assertion that was flaky at about one run in a hundred
+     * and went red in CI on its first attempt.
+     *
+     * base32Decode() strips before it uppercases:
+     *
+     *     strtoupper(preg_replace('/[^A-Z2-7]/', '', $encoded))
+     *
+     * so every lower-case letter is removed and only the digits 2-7 survive.
+     * 'JBSWY3DPEHPK3PXP' decodes to the ten bytes it should; lower-cased, the
+     * two surviving '3's decode to the single byte 0xde. So a lower-case secret
+     * does not merely fail -- it silently becomes a different, much shorter one.
+     *
+     * That is why the answer isPlausibleSecret() gives for lower case is left
+     * undefined here: it depends on how many digits happen to survive, which is
+     * what made the earlier assertion flaky. 99.09% of lower-cased generated
+     * secrets keep two or more, measured over 20000.
+     *
+     * Not fixed here. Normalising case in base32Decode() would change which
+     * stored secrets verify, which is a change of its own -- in the harmless
+     * direction, since nothing that works today would stop working.
+     */
+    public function testLowerCaseIsNotReadByTheDecoderAtAll(): void
+    {
+        $decode = new \ReflectionMethod(\TwoFactorAuthService::class, 'base32Decode');
+        $decode->setAccessible(true);
+
+        self::assertSame(
+            'Hello!' . hex2bin('deadbeef'),
+            $decode->invoke(null, 'JBSWY3DPEHPK3PXP'),
+            'control: upper case decodes to what it should'
+        );
+        self::assertSame(
+            hex2bin('de'),
+            $decode->invoke(null, 'jbswy3dpehpk3pxp'),
+            'lower-cased, only the two digits survive the strip'
+        );
+        self::assertSame(
+            '',
+            $decode->invoke(null, 'abcdefgh'),
+            'and with no digits at all, nothing survives'
+        );
+    }
+
+    /**
+     * A value the character class lets through but the decoder cannot use.
+     *
+     * The first form of this check was the character class alone, and these
+     * pass it: base32Decode() strips padding, whitespace and dashes, so what
+     * reaches the token arithmetic is nothing at all. Calling such a value
+     * plausible would skip the legacy key in exactly the case the check exists
+     * to catch -- unreachable in practice, since the values it screens are 47
+     * random bytes, but the predicate is supposed to mean what its name says.
+     *
+     * A single character is here for the same reason: five bits do not fill a
+     * byte, so it decodes to nothing too.
+     * Reported by Copilot.
+     */
+    public function testSeparatorsAloneAreNotASecret(): void
+    {
+        foreach (['====', '   ', '-', " -=\t", 'A'] as $value) {
+            self::assertFalse(
+                \TwoFactorAuthService::isPlausibleSecret($value),
+                var_export($value, true) . ' decodes to nothing, so it cannot produce a token'
+            );
+        }
+    }
+
+    /**
+     * A fixture about the CBC format needs the CBC format.
+     *
+     * encryptSecret() falls back to `plain:` when openssl is unavailable, and
+     * that format does not consult the key at all -- so the "wrong" key returns
+     * the real secret, there is no collision to find, and a test looking for
+     * one fails for a reason that has nothing to do with what it asks.
+     * Measured with both functions disabled: it does.
+     * Reported by Codex.
+     */
+    private static function requireCbcStorage(): void
+    {
+        if (!function_exists('openssl_encrypt') || !function_exists('openssl_decrypt')) {
+            self::markTestSkipped('without openssl the stored format is `plain:`, which ignores the key');
+        }
+    }
+
+    /**
+     * Search for a blob that decrypts under a key it was not encrypted with.
+     *
+     * @return array{0: string, 1: string, 2: string}|null secret, blob, garbage
+     */
+    private static function findWrongKeyCollision(string $key, string $otherKey): ?array
+    {
+        for ($i = 0; $i < 20000; $i++) {
+            $secret = \TwoFactorAuthService::generateSecret();
+            $blob = \TwoFactorAuthService::encryptSecret($secret, $key);
+            $garbage = \TwoFactorAuthService::decryptSecret($blob, $otherKey);
+
+            if ($garbage !== '') {
+                return [$secret, $blob, $garbage];
+            }
+        }
+
+        return null;
+    }
 }
