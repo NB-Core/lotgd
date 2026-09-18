@@ -488,6 +488,49 @@ modules.
   `.mail-nav__link` instead -- both are already defined in every theme shipped
   with the game. No stylesheet in the repository was changed.
 
+- **The mail read view has its spacing back around the message text.** Turning
+  the two layout tables into flow rows took their spacing with them: the upper
+  one ended in `</table><br/>`, and the lower one was a
+  `<table cellspacing='5'>`, whose spacing stood above its first row. Without
+  either, the buttons sat flat on the first and last line of the message. The
+  page emits a line break either side of the body again.
+
+  **Theme authors: nothing to do.** The break is in the page rather than in the
+  stylesheets on purpose, so it reaches a theme that has taken none of the
+  action-row CSS. A margin would have had to go on `.action-bar` or
+  `.mail-nav`, and both are worn elsewhere: `.action-bar` is the control cell of
+  ten administration lists, where a top margin pushes it out of line with the
+  text in the cell beside it, and `.mail-nav` is also the notification strip in
+  every Twig theme's page header.
+
+- **A mail operation refused for its CSRF token now says so.** The guard blanks
+  the operation and drops the request onto the inbox, which on its own looks
+  exactly like having pressed nothing: a message the player has just written
+  does not arrive and the page says nothing about it. There is a one-line
+  notice beside the existing "Your message was sent!" now. The refusal itself is
+  unchanged -- same operations refused, still HTTP 400 -- and the notice
+  deliberately does not say *which* way the token was wrong; that stays in the
+  log.
+
+  **Where that log is has changed.** The refusal went to `debuglog()`, which is
+  a character's own audit trail of gold and experience rather than a record of
+  what the server refused. It goes through `SecurityLog::event()` now, like the
+  same refusal in `user.php`, `moderate.php`, `badword.php` and
+  `weaponeditor.php`: the game log's `security` category, where an
+  administrator reviews it in `gamelog.php`, and PHP's error log, with a shared
+  `diag=` id tying the two together and the page and operation named. **If you
+  were looking for these in a player's debug log, they are not there any more.**
+
+  Only `mail.php` carries the notice, and only `mail.php` had its sink
+  corrected. The other eleven pages with the same guard still log the refusal
+  with `debuglog()`.
+
+  **If you are seeing this refusal on a live game**, check your deployment
+  before your code: a `pages/` directory older than the CSRF work renders forms
+  without a token field, which a `mail.php` from after it correctly refuses.
+  Re-deploying `pages/` is the fix; `pages/bans/`, `pages/clan/` and
+  `pages/user/` have the same pairing.
+
 - **Companions now actually gain levels, which they never did before.** The
   `companionslevelup` setting has existed and defaulted to on, and the code
   behind it computed each companion's new attack, defence and maximum hitpoints

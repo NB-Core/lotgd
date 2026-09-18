@@ -101,12 +101,28 @@ function mailRead(): void
     // for why that is a class and not a pair of functions here.
     $output->rawOutput(Forms::actionBar(ReadActions::navigation($message, $previousId, $nextId)));
 
+    // The break either side of the body is what the tables this replaced used
+    // to provide: the top one ended in `</table><br/>`, and the bottom one was
+    // a `<table cellspacing='5'>`, whose spacing stood above its first row.
+    // Both went with the tables, and the controls ended up flat against the
+    // message text. It belongs here rather than in the stylesheets: the two
+    // container classes are worn elsewhere too -- `.action-bar` by the control
+    // cell of ten admin lists, where a top margin would push it out of line
+    // with the text in the cell beside it, and `.mail-nav` by the notification
+    // strip in every Twig theme's page header -- so a margin on either would
+    // move things nobody asked to have moved. This page builds its vertical
+    // spacing from the same newline code everywhere else, and a theme that has
+    // not taken the action-row CSS at all still gets the break.
+    $output->outputNotl('`n');
+
     // Message body
     $output->outputNotl('%s', Sanitize::sanitizeMb(str_replace("\n", '`n', $message['body'])));
 
     // Mark as read
     Mail::markRead($session['user']['acctid'], $messageId);
 
+    // The other half of the pair above; this is the one that was reported.
+    $output->outputNotl('`n');
     $output->rawOutput(Forms::actionBar(ReadActions::actions($message)));
 }
 

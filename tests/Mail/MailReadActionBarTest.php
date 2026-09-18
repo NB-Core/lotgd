@@ -301,4 +301,43 @@ final class MailReadActionBarTest extends TestCase
         );
         self::assertStringContainsString("<a href='mail.php?op=read&amp;id=7'", $newest);
     }
+
+    /**
+     * The message text is not flush against the two bars.
+     *
+     * Reported from a screen shot: the lower row of buttons sat directly on the
+     * last line of the message. It is a regression of the change this file was
+     * written for, and it lost the spacing at both ends rather than one -- the
+     * upper table ended in `</table><br/>`, and the lower one was a
+     * `<table cellspacing='5'>`, whose spacing stood above its first row. Both
+     * went with the tables.
+     *
+     * Asserted here, on the rendered page, rather than in a stylesheet test,
+     * because the fix is not in the stylesheets and deliberately so: the two
+     * container classes are worn elsewhere too. `.action-bar` is the control
+     * cell of ten admin lists, where a top margin would push it out of line
+     * with the text in the cell beside it; `.mail-nav` is also the notification
+     * strip in every Twig theme's page header. A margin on either would move
+     * things nobody asked to have moved, and a third class would be ten
+     * stylesheets plus every deployed theme. A break from the page reaches a
+     * theme that has taken none of the action-row CSS at all.
+     *
+     * Both sides are asserted separately so a failure says which one went.
+     */
+    public function testTheMessageBodyIsNotFlushAgainstTheBars(): void
+    {
+        $html = self::read(7)->html;
+
+        self::assertMatchesRegularExpression(
+            '#</div>\s*<br>\s*the body#',
+            $html,
+            'the navigation bar above the message sits directly on the first line of it'
+        );
+
+        self::assertMatchesRegularExpression(
+            "#the body\s*<br>\s*<div class='mail-nav'>#",
+            $html,
+            'the action bar below the message sits directly on the last line of it'
+        );
+    }
 }
