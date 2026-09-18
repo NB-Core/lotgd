@@ -122,6 +122,60 @@ final class ActionBarClassesAreStyledTest extends TestCase
     }
 
     /**
+     * A row's own class must not quietly outrank the theme's button rule.
+     *
+     * Reachability is not the whole question, and this exists because the
+     * first version of this branch got it wrong: `.action-bar__link` was
+     * appended with `color: inherit`, which ties `.button` on specificity and
+     * sits later in the sheet, so it won -- stripping the themed colour from
+     * every control in the seven themes that set one. Every assertion here
+     * stayed green, because the class *was* styled. It just was not styled the
+     * way the theme meant.
+     *
+     * A control wears both classes, so anything the row class sets after
+     * `.button` is what a browser uses. The row classes may set geometry that
+     * `.button` leaves alone; they may not overrule what it does set.
+     */
+    #[DataProvider('containerClasses')]
+    public function testARowClassNeverOverridesTheThemesButtonRule(string $container): void
+    {
+        foreach ([$container, $container . '__link'] as $class) {
+            $clashes = StyleSheets::propertiesOverridingButton($class);
+
+            $report = [];
+            foreach ($clashes as $sheet => $properties) {
+                $report[] = sprintf('  %s: %s', $sheet, implode(', ', $properties));
+            }
+
+            self::assertSame(
+                [],
+                $report,
+                sprintf(".%s sets properties that .button already sets, and wins on source order:\n", $class)
+                    . implode("\n", $report)
+                    . "\n\nA control wears both classes. Leave those properties to the theme."
+            );
+        }
+    }
+
+    /**
+     * A container class of several names still yields one usable link class.
+     *
+     * `'action-bar is-compact'` is ordinary in HTML and would compose
+     * 'button action-bar is-compact__link' -- three classes, the last of them
+     * invented and styled by nobody.
+     */
+    public function testAMultiClassContainerComposesFromItsFirstName(): void
+    {
+        $html = Forms::actionBar([
+            ['kind' => 'link', 'url' => 'x.php', 'label' => 'Edit'],
+        ], 'action-bar is-compact');
+
+        self::assertStringContainsString("class='action-bar is-compact'", $html, 'the container keeps both names');
+        self::assertStringContainsString("class='button action-bar__link'", $html);
+        self::assertStringNotContainsString('is-compact__link', $html);
+    }
+
+    /**
      * The container's name reaches the controls.
      *
      * The behaviour the composed class exists for: a caller names its row once

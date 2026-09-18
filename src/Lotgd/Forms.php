@@ -359,9 +359,15 @@ class Forms
             // without repeating it on every entry. For the mail row, whose
             // container is 'mail-nav', this renders exactly what the literal
             // it replaces did.
+            //
+            // The first name only: a container of 'action-bar is-compact' is
+            // ordinary HTML, and appending to the whole string would compose
+            // 'action-bar is-compact__link' -- two classes where one was meant,
+            // the second of them invented and styled by nobody.
+            $base = strtok(trim($class), " \t\n\r") ?: $class;
             $controlClass = is_string($action['class'] ?? null)
                 ? $action['class']
-                : 'button ' . $class . '__link';
+                : 'button ' . $base . '__link';
 
             if ($kind === 'disabled') {
                 $controls[] = self::disabledButton($label, $controlClass);

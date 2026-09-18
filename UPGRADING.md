@@ -400,11 +400,11 @@ modules.
   .mail-nav__link {
       display: inline-flex;
       align-items: center;
+      text-decoration: none;
   }
 
-  .action-bar__link,
+  /* Only the descendant inherits, never the control itself. */
   .action-bar__link a,
-  .mail-nav__link,
   .mail-nav__link a {
       color: inherit;
       text-decoration: none;

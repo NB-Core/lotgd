@@ -361,11 +361,13 @@ span.button[aria-disabled="true"] {
 .mail-nav__link {
     display: inline-flex;
     align-items: center;
+    text-decoration: none;
 }
 
-.action-bar__link,
+/* Only the descendant inherits. NOT the control itself: it wears .button, and
+   a colour here would have the same specificity as .button's while sitting
+   later in the sheet, so it would override the theme's own button colour. */
 .action-bar__link a,
-.mail-nav__link,
 .mail-nav__link a {
     color: inherit;
     text-decoration: none;

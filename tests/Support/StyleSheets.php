@@ -172,6 +172,124 @@ final class StyleSheets
     }
 
     /**
+     * The rules of a stylesheet, in source order: selector, property, index.
+     *
+     * Reachability was not the only question, and a review round is what
+     * showed it. A class can be defined, reachable on a button, and still
+     * wrong: `.action-bar__link { color: inherit }` has the same specificity
+     * as `.button`, so appending it to the sheet made it win and stripped the
+     * themed colour from every control in seven of ten themes. Every existing
+     * assertion stayed green, because the class *was* styled -- just not the
+     * way the theme meant.
+     *
+     * So the rules come back ordered, and a caller can ask which declaration
+     * a browser would actually use.
+     *
+     * Declarations are read shallowly: `prop: value` pairs at the top level of
+     * a block. Enough for the question being asked, which is about a handful of
+     * flat properties, and honest about what it cannot see.
+     *
+     * @return list<array{selector: string, property: string, order: int}>
+     */
+    public static function declarationsIn(string $css): array
+    {
+        $css = (string) preg_replace('~/\*.*?\*/~s', '', $css);
+
+        $rules = [];
+        $order = 0;
+        $offset = 0;
+
+        while (($open = strpos($css, '{', $offset)) !== false) {
+            $close = strpos($css, '}', $open);
+            if ($close === false) {
+                break;
+            }
+
+            $preludeStart = (int) max(
+                (int) strrpos(substr($css, 0, $open), '}'),
+                (int) strrpos(substr($css, 0, $open), '{')
+            );
+            $prelude = trim(substr($css, $preludeStart + 1, $open - $preludeStart - 1));
+            $body = substr($css, $open + 1, $close - $open - 1);
+            $offset = $close + 1;
+
+            if ($prelude === '' || str_starts_with($prelude, '@')) {
+                continue;
+            }
+
+            foreach (explode(',', $prelude) as $selector) {
+                $selector = trim((string) preg_replace('/\s+/', ' ', $selector));
+                if ($selector === '') {
+                    continue;
+                }
+
+                foreach (explode(';', $body) as $declaration) {
+                    if (!str_contains($declaration, ':')) {
+                        continue;
+                    }
+
+                    $property = strtolower(trim(explode(':', $declaration, 2)[0]));
+                    if ($property === '' || !preg_match('/^[a-z-]+$/', $property)) {
+                        continue;
+                    }
+
+                    $rules[] = ['selector' => $selector, 'property' => $property, 'order' => $order++];
+                }
+            }
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Properties where $class would override `.button` on a control wearing both.
+     *
+     * Both are single-class selectors, so specificity ties and source order
+     * decides. A control carries `button` *and* the row class, so anything the
+     * row class sets later is what the browser uses -- which is how a theme
+     * loses its own button colour without any assertion noticing.
+     *
+     * Returns sheet => properties, so the failure names the themes.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function propertiesOverridingButton(string $class): array
+    {
+        $root = dirname(__DIR__, 2);
+        $clashes = [];
+
+        foreach (self::themes() as $sheet => $_) {
+            $button = [];
+            $row = [];
+
+            foreach (self::declarationsIn((string) file_get_contents($sheet)) as $rule) {
+                if ($rule['selector'] === '.button') {
+                    $button[$rule['property']] = $rule['order'];
+                    continue;
+                }
+
+                if ($rule['selector'] === '.' . $class) {
+                    $row[$rule['property']] = $rule['order'];
+                }
+            }
+
+            $properties = [];
+            foreach ($row as $property => $order) {
+                if (isset($button[$property]) && $order > $button[$property]) {
+                    $properties[] = $property;
+                }
+            }
+
+            if ($properties !== []) {
+                sort($properties);
+                $clashes[substr($sheet, strlen($root) + 1)] = $properties;
+            }
+        }
+
+        return $clashes;
+    }
+
+    /**
      * Every selector in a stylesheet, one per comma-separated entry.
      *
      * At-rule preludes (`@media (max-width: 768px)`) are not selectors and are
