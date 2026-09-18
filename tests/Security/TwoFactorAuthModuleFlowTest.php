@@ -315,6 +315,13 @@ namespace Lotgd\Tests\Security {
 
         public function testVerifyAcceptsLegacyEncryptedSecretAndReencryptsWithCurrentKey(): void
         {
+            // Pre-existing, and latent because CI always has openssl: without
+            // it the stored format is `plain:`, the legacy blob is byte-equal
+            // to the re-encrypted one, and the assertion below that they differ
+            // fails for a reason that is not about the legacy key. Found while
+            // guarding the two new fixtures beside it.
+            self::requireCbcStorage();
+
             $secret = \TwoFactorAuthService::generateSecret();
             $legacyStoredSecret = \TwoFactorAuthService::encryptSecret($secret, twofactorauth_legacy_signing_key());
 
@@ -365,6 +372,8 @@ namespace Lotgd\Tests\Security {
          */
         public function testALegacySecretIsReadEvenWhenTheCurrentKeyDecryptsItToGarbage(): void
         {
+            self::requireCbcStorage();
+
             $current = twofactorauth_current_signing_key();
             $legacy = twofactorauth_legacy_signing_key();
 
@@ -639,6 +648,23 @@ namespace Lotgd\Tests\Security {
             $encoded = rtrim(strtr(base64_encode($secret), '+/', '-_'), '=');
 
             return 'plain:' . $encoded;
+        }
+
+        /**
+         * A fixture about the legacy key needs a format that has keys.
+         *
+         * encryptSecret() falls back to `plain:` when openssl is unavailable,
+         * and that format does not consult the key at all -- so every key
+         * "works", there is no fallback to exercise and nothing to re-encrypt.
+         * Measured with both functions disabled: the tests that call this fail,
+         * for that reason rather than the one they are about.
+         * Reported by Codex.
+         */
+        private static function requireCbcStorage(): void
+        {
+            if (!function_exists('openssl_encrypt') || !function_exists('openssl_decrypt')) {
+                self::markTestSkipped('without openssl the stored format is `plain:`, which ignores the key');
+            }
         }
 
         /**

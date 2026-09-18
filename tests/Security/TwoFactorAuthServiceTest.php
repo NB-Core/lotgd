@@ -108,6 +108,8 @@ class TwoFactorAuthServiceTest extends TestCase
      */
     public function testAWrongKeySometimesDecryptsIntoSomethingThatIsNotEmpty(): void
     {
+        self::requireCbcStorage();
+
         $collision = self::findWrongKeyCollision('key-one', 'key-two');
 
         self::assertNotNull(
@@ -178,6 +180,23 @@ class TwoFactorAuthServiceTest extends TestCase
                 \TwoFactorAuthService::isPlausibleSecret($value),
                 var_export($value, true) . ' decodes to nothing, so it cannot produce a token'
             );
+        }
+    }
+
+    /**
+     * A fixture about the CBC format needs the CBC format.
+     *
+     * encryptSecret() falls back to `plain:` when openssl is unavailable, and
+     * that format does not consult the key at all -- so the "wrong" key returns
+     * the real secret, there is no collision to find, and a test looking for
+     * one fails for a reason that has nothing to do with what it asks.
+     * Measured with both functions disabled: it does.
+     * Reported by Codex.
+     */
+    private static function requireCbcStorage(): void
+    {
+        if (!function_exists('openssl_encrypt') || !function_exists('openssl_decrypt')) {
+            self::markTestSkipped('without openssl the stored format is `plain:`, which ignores the key');
         }
     }
 
