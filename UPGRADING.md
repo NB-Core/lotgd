@@ -421,6 +421,34 @@ modules.
   `.mail-nav` is unchanged in meaning. `a.button` and `span.button` are new
   selectors, not new classes: if you already style `.button`, they inherit it.
 
+- **The administration rows are action bars, and the brackets are gone.** The
+  `[ Edit | Delete ]` idiom in the weapon, armour, creature, master, taunt,
+  title, death-message, mount, companion, MoTD and user editors is now a
+  `Forms::actionBar($actions, 'action-bar')` row: a flex container that wraps,
+  rather than bracket-and-pipe text that cannot.
+
+  What changes for a player: the Edit half was a classless `<a>` sitting beside
+  a themed button, and is now themed too; the row wraps on a narrow screen
+  instead of forcing the table cell wider than the viewport; and `<td nowrap>`
+  is gone from every one of those action cells, which would have defeated that
+  in a theme that has not taken the `.action-bar` rules.
+
+  Two smaller repairs ride along. Where an action is unavailable -- deleting an
+  *active* mount or companion -- the page emitted the bare label `Del |` with no
+  element at all, so the row changed shape at its edges; it renders an inert
+  control now. And `companions.php` carried a hand-written copy of
+  `Forms::postButton()`, with its own `htmlspecialchars`, its own hidden fields
+  and the separating pipe emitted *inside* the `</form>` it belonged beside.
+  That function is gone; the row describes its actions and the renderer builds
+  them.
+
+  **Theme authors:** these rows now need `.action-bar` and `.action-bar__link`,
+  which the block above provides. A theme that has not taken that block will
+  render them unstyled.
+
+  **Module authors:** nothing hooks these rows yet. If you were matching the
+  bracketed markup with a regex in an output filter, it is no longer there.
+
 - **`Forms::actionBar()` composes each control's class from the container's.**
   A row created as `actionBar($actions, 'action-bar')` gives its controls
   `button action-bar__link`; the mail row, whose container is `mail-nav`,

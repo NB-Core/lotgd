@@ -165,15 +165,22 @@ if ($op === '') {
         if ($rowId === null) {
             continue;
         }
-        $output->rawOutput("<tr class='" . ($i++ % 2 ? 'trdark' : 'trlight') . "'><td>[<a href='armoreditor.php?op=edit&amp;id=$rowId&amp;level=$armorlevel'>$edit</a>|");
-        $output->rawOutput("" . Forms::postButton(
-            "armoreditor.php?level=$armorlevel",
-            $delete,
-            $deleteConfirmation,
-            'button',
-            Csrf::SCOPE_ARMOR_EDITOR,
-            ['op' => 'del', 'id' => $rowId]
-        ) . "]</td>");
+        $output->rawOutput("<tr class='" . ($i++ % 2 ? 'trdark' : 'trlight') . "'><td>");
+        $output->rawOutput(Forms::actionBar([
+            [
+                'kind' => 'link',
+                'url' => "armoreditor.php?op=edit&id=$rowId&level=$armorlevel",
+                'label' => $edit,
+            ],
+            [
+                'kind' => 'post',
+                'url' => "armoreditor.php?level=$armorlevel",
+                'label' => $delete,
+                'confirm' => $deleteConfirmation,
+                'scope' => Csrf::SCOPE_ARMOR_EDITOR,
+                'fields' => ['op' => 'del', 'id' => $rowId],
+            ],
+        ], 'action-bar') . '</td>');
         Nav::add('', "armoreditor.php?op=edit&id=$rowId&level=$armorlevel");
         $output->rawOutput('<td>');
         $output->outputNotl((string) $row['armorname']);

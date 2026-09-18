@@ -157,12 +157,18 @@ if ($op == "") {
     for ($i = 0; $i < $number; $i++) {
         $row = Database::fetchAssoc($result);
         $output->rawOutput("<tr class='" . ($i % 2 == 0 ? "trdark" : "trlight") . "'>", true);
-        $output->rawOutput("<td nowrap>");
+        // No `nowrap`: the row wraps itself. In a theme that has not taken
+        // the .action-bar rules the controls stay inline, and nowrap would
+        // then stop them wrapping at all.
+        $output->rawOutput('<td>');
         $edit = Translator::translateInline("Edit");
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this taunt?");
         $id = (int) $row['tauntid'];
-        $output->rawOutput("[ <a href='taunt.php?op=edit&tauntid=$id'>$edit</a> | " . Forms::postButton("taunt.php?op=del&tauntid=$id", $del, $conf, 'button') . " ]");
+        $output->rawOutput(Forms::actionBar([
+            ['kind' => 'link', 'url' => "taunt.php?op=edit&tauntid=$id", 'label' => $edit],
+            ['kind' => 'post', 'url' => "taunt.php?op=del&tauntid=$id", 'label' => $del, 'confirm' => $conf],
+        ], 'action-bar'));
         Nav::add("", "taunt.php?op=edit&tauntid=$id");
         Nav::add("", "taunt.php?op=del&tauntid=$id");
         $output->rawOutput("</td><td>");

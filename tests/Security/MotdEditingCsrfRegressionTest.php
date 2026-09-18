@@ -42,30 +42,27 @@ final class MotdEditingCsrfRegressionTest extends TestCase
     {
         $source = $this->source('src/Lotgd/Motd.php');
 
-        // Every such button in the tree renders through one helper now, so what
-        // this asserts is that the call is made with the editing scope -- the
-        // POST method, the token field and the confirmation are the helper's
-        // business, covered behaviourally in EscapeAndPostButtonTest.
+        // The row is described to Forms::actionBar() now rather than assembled
+        // here, so what this asserts is that the deletion is *described* as a
+        // POST carrying the editing scope. The method, the token field and the
+        // confirmation are the renderer's, covered behaviourally in
+        // EscapeAndPostButtonTest and ActionBarTest.
         //
-        // Matched as a pattern rather than as the whole call verbatim, and for
-        // a reason this test just demonstrated: pinning the literal pinned the
-        // CSS class with it, so changing that class -- which has nothing to do
-        // with CSRF -- broke this. What matters is the target and the scope.
+        // Matched as a pattern rather than verbatim, for a reason this test has
+        // demonstrated twice: pinning the literal pinned incidental things with
+        // it -- first the CSS class, then the helper name -- and each time a
+        // change with nothing to do with CSRF broke it. The target and the
+        // scope are what matter.
         //
-        // `[^()]*` rather than `.*?`: the scope has to appear inside this
-        // call's own parentheses. A dot-any accepted it anywhere later in the
-        // file, so the button could lose its scope and any other use of the
-        // constant would stand in for it. That is latent rather than live
-        // today -- the file's other two uses are hiddenField() calls above this
-        // one, and a forward match cannot reach backwards -- but it becomes
-        // live the moment a use is added below, or this row moves up. Measured
-        // both ways rather than argued.
-        //
-        // If the call ever gains a nested call this stops matching and fails
-        // loudly, which is the right way round.
+        // Bounded to one entry: no further 'kind' key may appear between the
+        // POST, its URL and its scope. A dot-any would accept SCOPE_MOTD_EDIT
+        // from anywhere later in the file, and the button could lose its scope
+        // while this stayed green.
         self::assertMatchesRegularExpression(
-            '/Forms::postButton\(\s*"motd\.php\?op=del&id=\$id"[^()]*Csrf::SCOPE_MOTD_EDIT[^()]*\)/',
-            $source
+            "/'kind' => 'post',(?:(?!'kind')[\s\S])*motd\\.php\\?op=del&id=\\\$id"
+                . "(?:(?!'kind')[\s\S])*Csrf::SCOPE_MOTD_EDIT/",
+            $source,
+            'the MoTD deletion must be described as a POST carrying the editing scope'
         );
 
         // The shape that was the problem: a delete reachable by following a link.
@@ -78,9 +75,10 @@ final class MotdEditingCsrfRegressionTest extends TestCase
      */
     public function testEditRemainsAPlainLink(): void
     {
-        self::assertStringContainsString(
-            "<a href='motd.php?op=\$editop&id=\$id'>",
-            $this->source('src/Lotgd/Motd.php')
+        self::assertMatchesRegularExpression(
+            "/'kind' => 'link',(?:(?!'kind')[\s\S])*motd\\.php\\?op=\\\$editop&id=\\\$id/",
+            $this->source('src/Lotgd/Motd.php'),
+            'editing renders a form and changes nothing, so it stays a link'
         );
     }
 
@@ -117,11 +115,15 @@ final class MotdEditingCsrfRegressionTest extends TestCase
         $source = $this->source('src/Lotgd/Motd.php');
 
         // motdForm (op=save) and motdPollForm (op=savenew) render the field
-        // directly; the delete button passes the same scope to the shared
-        // helper. All three must name SCOPE_MOTD_EDIT rather than the page
-        // scope, which motd.php also issues to every player who sees a poll.
+        // directly; the delete entry names the same scope for the row renderer.
+        // All three must name SCOPE_MOTD_EDIT rather than the page scope, which
+        // motd.php also issues to every player who sees a poll.
         self::assertSame(2, substr_count($source, 'Csrf::hiddenField(Csrf::SCOPE_MOTD_EDIT)'));
-        self::assertSame(1, substr_count($source, 'Csrf::SCOPE_MOTD_EDIT)' . "\n"), 'the delete button passes the scope');
+        self::assertSame(
+            1,
+            substr_count($source, "'scope' => Csrf::SCOPE_MOTD_EDIT,"),
+            'the delete entry names the scope'
+        );
         self::assertSame(3, substr_count($source, 'Csrf::SCOPE_MOTD_EDIT'));
     }
 

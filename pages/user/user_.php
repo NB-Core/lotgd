@@ -59,21 +59,27 @@ if ($display == 1) {
         }
         $oorder = $row[$order];
         $output->rawOutput("<tr class='" . ($rn % 2 ? "trlight" : "trdark") . "'>");
-        $output->rawOutput("<td nowrap>");
+        // No `nowrap`: the row wraps itself, and nowrap would stop it in a
+        // theme that has not taken the .action-bar rules. This is the four-
+        // control row, so it is the one that most needs to wrap.
+        $output->rawOutput('<td>');
         // Edit, ban and log stay links: they only render a page. Delete does
         // not -- it used to be a plain GET, so anything that made an admin's
         // browser follow a crafted URL removed the account, and the onClick
         // confirm never runs on a navigation the admin did not start. It is a
         // POST carrying the user editor's token now.
-        $output->rawOutput("[ <a href='user.php?op=edit&userid={$row['acctid']}$m'>$ed</a> | ");
-        $output->rawOutput(Forms::postButton(
-            "user.php?op=del&userid={$row['acctid']}",
-            $del,
-            $conf,
-            'button',
-            Csrf::SCOPE_USER_EDITOR
-        ));
-        $output->rawOutput(" | <a href='bans.php?op=setupban&userid={$row['acctid']}'>$ban</a> | <a href='user.php?op=debuglog&userid={$row['acctid']}'>$log</a> ]");
+        $output->rawOutput(Forms::actionBar([
+            ['kind' => 'link', 'url' => "user.php?op=edit&userid={$row['acctid']}$m", 'label' => $ed],
+            [
+                'kind' => 'post',
+                'url' => "user.php?op=del&userid={$row['acctid']}",
+                'label' => $del,
+                'confirm' => $conf,
+                'scope' => Csrf::SCOPE_USER_EDITOR,
+            ],
+            ['kind' => 'link', 'url' => "bans.php?op=setupban&userid={$row['acctid']}", 'label' => $ban],
+            ['kind' => 'link', 'url' => "user.php?op=debuglog&userid={$row['acctid']}", 'label' => $log],
+        ], 'action-bar'));
         Nav::add("", "user.php?op=edit&userid={$row['acctid']}$m");
         Nav::add("", "user.php?op=del&userid={$row['acctid']}");
         Nav::add("", "bans.php?op=setupban&userid={$row['acctid']}");

@@ -218,10 +218,18 @@ if ($op == "") {
     $i = false;
     while ($row = Database::fetchAssoc($res)) {
         $id = $row['creatureid'];
-        $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'><td nowrap>");
-        $output->rawOutput("[ <a href='masters.php?op=edit&id=$id'>");
-        $output->outputNotl($edit);
-        $output->rawOutput("</a> | " . Forms::postButton("masters.php?op=del&id=$id", $del, $delconfirm, 'button') . " ]");
+        // No `nowrap`: the row wraps itself, and nowrap would stop it in a
+        // theme that has not taken the .action-bar rules.
+        $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'><td>");
+        $output->rawOutput(Forms::actionBar([
+            ['kind' => 'link', 'url' => "masters.php?op=edit&id=$id", 'label' => $edit],
+            [
+                'kind' => 'post',
+                'url' => "masters.php?op=del&id=$id",
+                'label' => $del,
+                'confirm' => $delconfirm,
+            ],
+        ], 'action-bar'));
         Nav::add("", "masters.php?op=edit&id=$id");
         Nav::add("", "masters.php?op=del&id=$id");
         $output->rawOutput("</td><td>");

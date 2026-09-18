@@ -383,11 +383,16 @@ class Motd
             // it used to be a plain GET, so anything that made the browser
             // follow a crafted URL removed the entry. It is a POST carrying the
             // editing token now, rendered as a button in the same bracketed row.
-            $output->rawOutput(" [ <a href='motd.php?op=$editop&id=$id'>$edit</a> | ");
-            $output->rawOutput(
-                Forms::postButton("motd.php?op=del&id=$id", $del, $conf, 'button', Csrf::SCOPE_MOTD_EDIT)
-                . " ]"
-            );
+            $output->rawOutput(Forms::actionBar([
+                ['kind' => 'link', 'url' => "motd.php?op=$editop&id=$id", 'label' => $edit],
+                [
+                    'kind' => 'post',
+                    'url' => "motd.php?op=del&id=$id",
+                    'label' => $del,
+                    'confirm' => $conf,
+                    'scope' => Csrf::SCOPE_MOTD_EDIT,
+                ],
+            ], 'action-bar'));
             Nav::add('', "motd.php?op=$editop&id=$id");
             Nav::add('', "motd.php?op=del&id=$id");
         }
