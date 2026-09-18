@@ -220,21 +220,31 @@ if ($op == "") {
             $companions[$row['companionid']] = 0;
         }
         $output->rawOutput("<tr class='" . ($count % 2 ? "trlight" : "trdark") . "'>");
-        $output->rawOutput("<td nowrap>[ <a href='companions.php?op=edit&id={$row['companionid']}'>$edit</a> |");
         Nav::add("", "companions.php?op=edit&id={$row['companionid']}");
+        $companionId = (int) $row['companionid'];
+        $actions = [
+            ['kind' => 'link', 'url' => "companions.php?op=edit&id=$companionId", 'label' => $edit],
+        ];
+
         if ($row['companionactive']) {
-            $output->rawOutput("$del |");
+            // Active companions cannot be deleted; the control stays in place
+            // rather than leaving a bare label behind.
+            $actions[] = ['kind' => 'disabled', 'label' => $del];
+            $actions[] = companionEditorAction('deactivate', $companionId, $deac);
         } else {
-            $mconf = sprintf($conf, $companions[$row['companionid']]);
-            companionEditorActionButton('del', (int) $row['companionid'], $del);
+            $actions[] = companionEditorAction(
+                'del',
+                $companionId,
+                $del,
+                sprintf($conf, $companions[$row['companionid']])
+            );
+            $actions[] = companionEditorAction('activate', $companionId, $act);
         }
-        if ($row['companionactive']) {
-            companionEditorActionButton('deactivate', (int) $row['companionid'], $deac);
-        } else {
-            companionEditorActionButton('activate', (int) $row['companionid'], $act);
-        }
-        companionEditorActionButton('take', (int) $row['companionid'], $take);
-        $output->rawOutput(" ]</td>");
+
+        $actions[] = companionEditorAction('take', $companionId, $take);
+
+        // No `nowrap`: the row wraps itself now.
+        $output->rawOutput('<td>' . Forms::actionBar($actions, 'action-bar') . '</td>');
         $output->rawOutput("<td>");
         $output->outputNotl("`&%s`0", $row['name']);
         $output->rawOutput("</td><td>");
@@ -600,16 +610,27 @@ function companionEditorValidPostRequest(): bool
     return !Forms::isUnverifiedRequest(Csrf::SCOPE_COMPANION_EDITOR);
 }
 
-/** Render a POST-only, CSRF-protected button for a state-changing companion action. */
-function companionEditorActionButton(string $operation, int $id, string $label): void
+/**
+ * One POST-only, CSRF-protected companion action, described rather than rendered.
+ *
+ * This was a hand-written copy of Forms::postButton() -- its own form, its own
+ * htmlspecialchars, its own hidden fields, and the separating pipe emitted
+ * *inside* the </form> it belonged beside. It describes the action now and the
+ * row renders it, so the escaping, the token and the class come from the same
+ * place as every other button in the game.
+ *
+ * @return array<string, mixed>
+ */
+function companionEditorAction(string $operation, int $id, string $label, ?string $confirm = null): array
 {
-    $output = Output::getInstance();
-    $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
-    $output->rawOutput("<form action='companions.php' method='POST' style='display:inline'>");
-    $output->rawOutput("<input type='hidden' name='op' value='$operation'>");
-    $output->rawOutput("<input type='hidden' name='id' value='$id'>");
-    $output->rawOutput(Csrf::hiddenField(Csrf::SCOPE_COMPANION_EDITOR));
-    $output->rawOutput("<button type='submit' class='button'>$safeLabel</button> | </form>");
+    return [
+        'kind' => 'post',
+        'url' => 'companions.php',
+        'label' => $label,
+        'confirm' => $confirm,
+        'scope' => Csrf::SCOPE_COMPANION_EDITOR,
+        'fields' => ['op' => $operation, 'id' => $id],
+    ];
 }
 
 Footer::pageFooter();

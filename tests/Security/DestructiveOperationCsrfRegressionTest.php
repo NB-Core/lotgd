@@ -52,13 +52,27 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
     {
         $source = $this->source('pages/user/user_.php');
 
-        // Rendered through the shared helper with the user editor's scope; the
-        // POST method, token field and confirmation are the helper's, covered
-        // behaviourally in EscapeAndPostButtonTest.
-        self::assertStringContainsString('Forms::postButton(', $source);
-        self::assertStringContainsString('Csrf::SCOPE_USER_EDITOR', $source);
+        // The row is described to Forms::actionBar() now rather than assembled
+        // here, so what this asserts is that the deletion is described as a
+        // POST carrying the user editor's scope. The method, the token field
+        // and the confirmation are the renderer's, covered behaviourally in
+        // EscapeAndPostButtonTest and ActionBarTest.
+        //
+        // Bounded to one entry -- no further 'kind' key may appear between the
+        // POST, its URL and its scope. With a dot-any, SCOPE_USER_EDITOR
+        // turning up anywhere later would satisfy this and the deletion could
+        // lose its scope while this stayed green. (Not bounded by brackets:
+        // the URL interpolates $row['acctid'], brackets and all.)
+        self::assertMatchesRegularExpression(
+            "/'kind' => 'post',(?:(?!'kind')[\s\S])*user\.php\?op=del"
+                . "(?:(?!'kind')[\s\S])*Csrf::SCOPE_USER_EDITOR/",
+            $source,
+            'the account deletion must be described as a POST carrying the user editor scope'
+        );
+
         // The bare anchor is what made a crafted URL enough.
         self::assertStringNotContainsString("<a href='user.php?op=del", $source);
+        self::assertStringNotContainsString("'kind' => 'link', 'url' => \"user.php?op=del", $source);
     }
 
     /**

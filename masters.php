@@ -219,9 +219,15 @@ if ($op == "") {
     while ($row = Database::fetchAssoc($res)) {
         $id = $row['creatureid'];
         $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'><td nowrap>");
-        $output->rawOutput("[ <a href='masters.php?op=edit&id=$id'>");
-        $output->outputNotl($edit);
-        $output->rawOutput("</a> | " . Forms::postButton("masters.php?op=del&id=$id", $del, $delconfirm, 'button') . " ]");
+        $output->rawOutput(Forms::actionBar([
+            ['kind' => 'link', 'url' => "masters.php?op=edit&id=$id", 'label' => $edit],
+            [
+                'kind' => 'post',
+                'url' => "masters.php?op=del&id=$id",
+                'label' => $del,
+                'confirm' => $delconfirm,
+            ],
+        ], 'action-bar'));
         Nav::add("", "masters.php?op=edit&id=$id");
         Nav::add("", "masters.php?op=del&id=$id");
         $output->rawOutput("</td><td>");

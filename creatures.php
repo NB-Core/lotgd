@@ -296,14 +296,19 @@ if ($op == "" || $op == "search") {
     while ($row = $result->fetchAssociative()) {
         $i = !$i;
         $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'>", true);
-        $output->rawOutput("<td>[ <a href='creatures.php?op=edit&creatureid={$row['creatureid']}'>");
-        $output->outputNotl("%s", $edit);
-        $output->rawOutput("</a> | " . Forms::postButton(
-            "creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}",
-            $del,
-            $confirm,
-            'button'
-        ) . " ]</td><td>");
+        $output->rawOutput('<td>' . Forms::actionBar([
+            [
+                'kind' => 'link',
+                'url' => "creatures.php?op=edit&creatureid={$row['creatureid']}",
+                'label' => $edit,
+            ],
+            [
+                'kind' => 'post',
+                'url' => "creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}",
+                'label' => $del,
+                'confirm' => $confirm,
+            ],
+        ], 'action-bar') . '</td><td>');
         Nav::add("", "creatures.php?op=edit&creatureid={$row['creatureid']}");
         Nav::add("", "creatures.php?op=del&creatureid={$row['creatureid']}&level={$row['creaturelevel']}");
         $output->outputNotl("%s", $row['creatureid']);

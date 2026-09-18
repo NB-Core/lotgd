@@ -65,15 +65,18 @@ if ($display == 1) {
         // browser follow a crafted URL removed the account, and the onClick
         // confirm never runs on a navigation the admin did not start. It is a
         // POST carrying the user editor's token now.
-        $output->rawOutput("[ <a href='user.php?op=edit&userid={$row['acctid']}$m'>$ed</a> | ");
-        $output->rawOutput(Forms::postButton(
-            "user.php?op=del&userid={$row['acctid']}",
-            $del,
-            $conf,
-            'button',
-            Csrf::SCOPE_USER_EDITOR
-        ));
-        $output->rawOutput(" | <a href='bans.php?op=setupban&userid={$row['acctid']}'>$ban</a> | <a href='user.php?op=debuglog&userid={$row['acctid']}'>$log</a> ]");
+        $output->rawOutput(Forms::actionBar([
+            ['kind' => 'link', 'url' => "user.php?op=edit&userid={$row['acctid']}$m", 'label' => $ed],
+            [
+                'kind' => 'post',
+                'url' => "user.php?op=del&userid={$row['acctid']}",
+                'label' => $del,
+                'confirm' => $conf,
+                'scope' => Csrf::SCOPE_USER_EDITOR,
+            ],
+            ['kind' => 'link', 'url' => "bans.php?op=setupban&userid={$row['acctid']}", 'label' => $ban],
+            ['kind' => 'link', 'url' => "user.php?op=debuglog&userid={$row['acctid']}", 'label' => $log],
+        ], 'action-bar'));
         Nav::add("", "user.php?op=edit&userid={$row['acctid']}$m");
         Nav::add("", "user.php?op=del&userid={$row['acctid']}");
         Nav::add("", "bans.php?op=setupban&userid={$row['acctid']}");

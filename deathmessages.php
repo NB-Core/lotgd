@@ -196,7 +196,15 @@ if ($op == "") {
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this deathmessage?");
         $id = (int) $row['deathmessageid'];
-        $output->rawOutput("[ <a href='deathmessages.php?op=edit&deathmessageid=$id'>$edit</a> | " . Forms::postButton("deathmessages.php?op=del&deathmessageid=$id", $del, $conf, 'button') . " ]");
+        $output->rawOutput(Forms::actionBar([
+            ['kind' => 'link', 'url' => "deathmessages.php?op=edit&deathmessageid=$id", 'label' => $edit],
+            [
+                'kind' => 'post',
+                'url' => "deathmessages.php?op=del&deathmessageid=$id",
+                'label' => $del,
+                'confirm' => $conf,
+            ],
+        ], 'action-bar'));
         Nav::add("", "deathmessages.php?op=edit&deathmessageid=$id");
         Nav::add("", "deathmessages.php?op=del&deathmessageid=$id");
         $output->rawOutput("</td><td>");

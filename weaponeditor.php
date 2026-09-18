@@ -166,15 +166,22 @@ if ($op === '') {
         if ($rowId === null) {
             continue;
         }
-        $output->rawOutput("<tr class='" . ($i++ % 2 ? 'trdark' : 'trlight') . "'><td>[<a href='weaponeditor.php?op=edit&amp;id=$rowId&amp;level=$weaponlevel'>$edit</a>|");
-        $output->rawOutput("" . Forms::postButton(
-            "weaponeditor.php?level=$weaponlevel",
-            $delete,
-            $deleteConfirmation,
-            'button',
-            Csrf::SCOPE_WEAPON_EDITOR,
-            ['op' => 'del', 'id' => $rowId]
-        ) . "]</td>");
+        $output->rawOutput("<tr class='" . ($i++ % 2 ? 'trdark' : 'trlight') . "'><td>");
+        $output->rawOutput(Forms::actionBar([
+            [
+                'kind' => 'link',
+                'url' => "weaponeditor.php?op=edit&id=$rowId&level=$weaponlevel",
+                'label' => $edit,
+            ],
+            [
+                'kind' => 'post',
+                'url' => "weaponeditor.php?level=$weaponlevel",
+                'label' => $delete,
+                'confirm' => $deleteConfirmation,
+                'scope' => Csrf::SCOPE_WEAPON_EDITOR,
+                'fields' => ['op' => 'del', 'id' => $rowId],
+            ],
+        ], 'action-bar') . '</td>');
         Nav::add('', "weaponeditor.php?op=edit&id=$rowId&level=$weaponlevel");
         $output->rawOutput('<td>');
         $output->outputNotl((string) $row['weaponname']);

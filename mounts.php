@@ -314,20 +314,53 @@ if ($op == "") {
             $mounts[$row['mountid']] = 0;
         }
         $output->rawOutput("<tr class='" . ($count % 2 ? "trlight" : "trdark") . "'>");
-        $output->rawOutput("<td nowrap>[ <a href='mounts.php?op=edit&id={$row['mountid']}'>$edit</a> |");
         Nav::add("", "mounts.php?op=edit&id={$row['mountid']}");
-        $output->rawOutput(Forms::postButton('mounts.php?op=give', $give, null, 'button', Csrf::SCOPE_MOUNT_EDITOR, ['id' => (int) $row['mountid']]) . ' |', true);
+        $mountId = (int) $row['mountid'];
+        $actions = [
+            ['kind' => 'link', 'url' => "mounts.php?op=edit&id=$mountId", 'label' => $edit],
+            [
+                'kind' => 'post',
+                'url' => 'mounts.php?op=give',
+                'label' => $give,
+                'scope' => Csrf::SCOPE_MOUNT_EDITOR,
+                'fields' => ['id' => $mountId],
+            ],
+        ];
+
         if ($row['mountactive']) {
-            $output->rawOutput("$del |");
+            // An active mount cannot be deleted. The control holds its place
+            // rather than leaving a bare label where a button should be: a row
+            // that changes shape at its edges is harder to read than one that
+            // shows an option as unavailable.
+            $actions[] = ['kind' => 'disabled', 'label' => $del];
+            $actions[] = [
+                'kind' => 'post',
+                'url' => 'mounts.php?op=deactivate',
+                'label' => $deac,
+                'scope' => Csrf::SCOPE_MOUNT_EDITOR,
+                'fields' => ['id' => $mountId],
+            ];
         } else {
-            $mconf = sprintf($conf, $mounts[$row['mountid']]);
-            $output->rawOutput(Forms::postButton('mounts.php?op=del', $del, $mconf, 'button', Csrf::SCOPE_MOUNT_EDITOR, ['id' => (int) $row['mountid']]) . ' |');
+            $actions[] = [
+                'kind' => 'post',
+                'url' => 'mounts.php?op=del',
+                'label' => $del,
+                'confirm' => sprintf($conf, $mounts[$row['mountid']]),
+                'scope' => Csrf::SCOPE_MOUNT_EDITOR,
+                'fields' => ['id' => $mountId],
+            ];
+            $actions[] = [
+                'kind' => 'post',
+                'url' => 'mounts.php?op=activate',
+                'label' => $act,
+                'scope' => Csrf::SCOPE_MOUNT_EDITOR,
+                'fields' => ['id' => $mountId],
+            ];
         }
-        if ($row['mountactive']) {
-            $output->rawOutput(Forms::postButton('mounts.php?op=deactivate', $deac, null, 'button', Csrf::SCOPE_MOUNT_EDITOR, ['id' => (int) $row['mountid']]) . ' ]</td>');
-        } else {
-            $output->rawOutput(Forms::postButton('mounts.php?op=activate', $act, null, 'button', Csrf::SCOPE_MOUNT_EDITOR, ['id' => (int) $row['mountid']]) . ' ]</td>');
-        }
+
+        // No `nowrap`: the row wraps itself now, which is the point of it
+        // being a row rather than a line of text.
+        $output->rawOutput('<td>' . Forms::actionBar($actions, 'action-bar') . '</td>');
         $output->rawOutput("<td>");
         $output->outputNotl("`&%s`0", $row['mountname']);
         $output->rawOutput("</td><td>");

@@ -52,7 +52,7 @@ final class ButtonClassesAreStyledTest extends TestCase
      * does not fail an unrelated build; it is well under the real count, so a
      * parser that breaks still trips it.
      */
-    private const AT_LEAST_THIS_MANY_CALL_SITES = 20;
+    private const AT_LEAST_THIS_MANY_CALL_SITES = 12;
 
     /**
      * Roughly how many of those call sites should yield a class.
@@ -65,8 +65,16 @@ final class ButtonClassesAreStyledTest extends TestCase
      *
      * Below the real count so that removing one button does not fail an
      * unrelated build; if buttons are genuinely removed, lower it on purpose.
+     *
+     * Lowered on purpose once: the administration rows moved to
+     * `Forms::actionBar()`, taking eleven direct calls with them, so the tree
+     * went from 28 sites and 27 classes to 16 and 14. Those controls are not
+     * unwatched -- they take actionBar's composed class, which
+     * ActionBarClassesAreStyledTest checks by rendering a row and reading the
+     * classes back out. This file covers what is left: the calls that still
+     * name a class themselves.
      */
-    private const AT_LEAST_THIS_MANY_RESOLVED_CLASSES = 25;
+    private const AT_LEAST_THIS_MANY_RESOLVED_CLASSES = 10;
 
     private static function repositoryRoot(): string
     {
@@ -302,13 +310,18 @@ final class ButtonClassesAreStyledTest extends TestCase
     }
 
     /**
-     * The scan is resolving classes, and the two sites this PR fixed are in it.
+     * The scan is resolving classes, and two known call sites are in it.
      *
      * The floor's companion: an argument splitter that truncates makes a call
      * look like one that takes the default class, so it disappears from every
-     * judgement below while still counting as a site. The two named sites are
-     * the delete buttons this change was about -- if either stops being found,
-     * the scan has drifted away from the thing it was built to watch.
+     * judgement below while still counting as a site.
+     *
+     * The two named sites are chosen to stay put. They used to be the delete
+     * buttons of #1542, which is exactly what moved to `actionBar()` -- an
+     * anchor is only an anchor while it is moored. `prefs.php` is the player's
+     * own account deletion, and `modules.php` renders its row inside a form,
+     * so it uses `formActionButton()` and cannot move to a renderer that
+     * emits forms of its own.
      */
     public function testTheScannerResolvesTheClassesItFinds(): void
     {
@@ -327,8 +340,8 @@ final class ButtonClassesAreStyledTest extends TestCase
             'the scanner is finding call sites but reading far fewer classes than it should'
         );
 
-        self::assertContains('pages/user/user_.php', $sites, "the account-delete button's class went unread");
-        self::assertContains('src/Lotgd/Motd.php', $sites, "the MoTD delete button's class went unread");
+        self::assertContains('prefs.php', $sites, "the account self-deletion button's class went unread");
+        self::assertContains('modules.php', $sites, "the module editor's button classes went unread");
     }
 
     /**

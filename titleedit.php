@@ -276,7 +276,15 @@ switch ($op) {
         while ($row = Database::fetchAssoc($result)) {
             $id = $row['titleid'];
             $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'>");
-            $output->rawOutput("<td>[<a href='titleedit.php?op=edit&id=$id'>$edit</a>|" . Forms::postButton("titleedit.php?op=delete&id=$id", $del, $delconfirm, 'button') . "]</td>");
+            $output->rawOutput('<td>' . Forms::actionBar([
+                ['kind' => 'link', 'url' => "titleedit.php?op=edit&id=$id", 'label' => $edit],
+                [
+                    'kind' => 'post',
+                    'url' => "titleedit.php?op=delete&id=$id",
+                    'label' => $del,
+                    'confirm' => $delconfirm,
+                ],
+            ], 'action-bar') . '</td>');
             Nav::add("", "titleedit.php?op=edit&id=$id");
             Nav::add("", "titleedit.php?op=delete&id=$id");
             $output->rawOutput("<td>");
