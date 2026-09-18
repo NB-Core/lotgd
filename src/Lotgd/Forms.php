@@ -132,8 +132,9 @@ class Forms
      * **Ask it only about a write that was attempted.** It is no longer a pure
      * predicate: a call that comes back true is filed as a security event. A
      * page whose write keys off a posted field therefore tests for that field
-     * *first* -- `if (postIsset('x') && isUnverifiedRequest())`, not the other
-     * way round -- or every ordinary view of it reports a refused state change.
+     * *first* -- `if (Http::postIsset('x') && Forms::isUnverifiedRequest())`,
+     * not the other way round -- or every ordinary view of it reports a refused
+     * state change.
      *
      * @param ?string $scope A narrower scope than the page's, for an editor
      *                       whose token must not be interchangeable with one
@@ -227,10 +228,10 @@ class Forms
     /**
      * Record a refusal, once, where the refusal is decided.
      *
-     * Thirty-five callers used to write this line themselves -- twenty-three
+     * Thirty-six callers used to write this line themselves -- twenty-three
      * through `debuglog()`, which is a character's audit trail of gold and
      * experience rather than a record of what the server refused, one through
-     * `DebugLog::add()`, and eleven through `SecurityLog::event()` with a
+     * `DebugLog::add()`, and twelve through `SecurityLog::event()` with a
      * wording of its own each time. Twelve of them said "Rejected a state
      * change" wortgleich, and what actually distinguishes them -- the page, the
      * operation, the scope -- appeared in none of them. Here it is the same
@@ -252,27 +253,62 @@ class Forms
     ): void {
         $script = $_SERVER['SCRIPT_NAME'] ?? '';
 
-        // $op reaches this from the query string on the isUnverifiedRequest()
-        // path, so it is request data and is cut to a length a log line can
-        // carry. SecurityLog::event() strips control characters; it does not
-        // bound length, and an operation name is a handful of characters in
-        // every page in the tree.
-        $operation = $op === false ? Http::get('op') : $op;
-        $operation = is_string($operation) ? substr($operation, 0, 64) : null;
-
         SecurityLog::event(
             'Refused a state change with an invalid CSRF token',
-            [
+            // The caller's context first: `+` keeps the LEFT value for a key
+            // both sides carry, so a caller that knows better than the guess
+            // below has to be on this side of it to be heard at all. The
+            // reverse order silently dropped whatever a caller passed under a
+            // name the guard also uses -- `op` above all.
+            $context + [
                 'page' => is_string($script) ? basename($script) : null,
-                'op' => $operation,
+                'op' => self::refusedOperation($op),
                 'scope' => $scope ?? self::csrfScope(),
                 'method' => is_string($_SERVER['REQUEST_METHOD'] ?? null)
                     ? $_SERVER['REQUEST_METHOD']
                     : null,
-            ] + $context,
+            ],
             null,
             $severity
         );
+    }
+
+    /**
+     * The operation a refused request asked for, fit to go in a log line.
+     *
+     * isUnverifiedCoreOp() hands its own `$op` down and that is the end of it.
+     * isUnverifiedRequest() has none, so it is read from the request the way
+     * the pages that call it read it -- body first, then the query string,
+     * which is companions.php:44 exactly. Reading only the query string left
+     * the entry with no operation at all for the companion, armour and weapon
+     * editors, whose forms post `op` as a hidden field: the per-page lines this
+     * replaced named it, so that was an audit regression rather than a smaller
+     * log. Reported by Codex.
+     *
+     * Bounded because it is request data, and bounded on character boundaries
+     * because the game log is utf8mb4: cutting a multi-byte character in half
+     * with substr() produces bytes MySQL rejects, and a refusal that fails to
+     * insert is a refusal nobody can find. SecurityLog::sanitize() does not
+     * repair invalid UTF-8 -- it detects it, and falls back to a byte-wise
+     * strip that leaves it invalid -- so a value that is not valid UTF-8 to
+     * begin with is reported as such rather than carried into the statement.
+     * Reported by Codex.
+     */
+    private static function refusedOperation(string|false $op): ?string
+    {
+        if ($op === false) {
+            $op = Http::postIsset('op') ? Http::post('op') : Http::get('op');
+        }
+
+        if (!is_string($op) || $op === '') {
+            return null;
+        }
+
+        if (!mb_check_encoding($op, 'UTF-8')) {
+            return '(not valid UTF-8)';
+        }
+
+        return mb_substr($op, 0, 64, 'UTF-8');
     }
 
     /**

@@ -382,14 +382,7 @@ final class FormCsrfRegressionTest extends TestCase
         $checked = 0;
 
         foreach (self::bodyDrivenGuardFiles() as $relativePath) {
-            $code = $this->code($relativePath);
-
-            // The condition, from the `if (` to the brace that opens its body.
-            if (!preg_match_all('/if \(\s*(.*?)\s*\) \{/s', $code, $matches)) {
-                continue;
-            }
-
-            foreach ($matches[1] as $condition) {
+            foreach (self::conditionsIn($this->code($relativePath)) as $condition) {
                 if (!str_contains($condition, 'isUnverifiedRequest') || !str_contains($condition, 'postIsset')) {
                     continue;
                 }
@@ -411,6 +404,61 @@ final class FormCsrfRegressionTest extends TestCase
             $offenders,
             'the field test has to come first, or an ordinary page view files a security event'
         );
+    }
+
+    /**
+     * Every `if` condition in a source, from the `if (` to the brace that opens
+     * the body.
+     *
+     * Its own method so it can be asked directly, because the first version
+     * required the brace on the same line preceded by exactly one space. A file
+     * written the other way round -- which PSR-12 allows and this project's own
+     * standard prefers for functions -- would have been skipped in silence, and
+     * a sweep that silently checks nothing is the failure this whole suite
+     * keeps finding. The `assertGreaterThanOrEqual` below catches only the
+     * total outage, not one file dropping out. Reported by Copilot.
+     *
+     * @return list<string>
+     */
+    private static function conditionsIn(string $code): array
+    {
+        if (!preg_match_all('/if\s*\(\s*(.*?)\s*\)\s*\{/s', $code, $matches)) {
+            return [];
+        }
+
+        return $matches[1];
+    }
+
+    /**
+     * The extractor reads a condition whatever the brace style around it.
+     *
+     * Synthetic sources rather than files from the tree: the point is the
+     * shapes the tree does *not* currently contain, since those are the ones
+     * that would drop out unnoticed the day somebody writes one.
+     */
+    public function testTheConditionSweepIsNotDefeatedByBracePlacement(): void
+    {
+        $shapes = [
+            'same line' => "<?php\nif (Http::postIsset('a') && Forms::isUnverifiedRequest()) {\n}\n",
+            'brace on its own line' => "<?php\nif (Http::postIsset('a') && Forms::isUnverifiedRequest())\n{\n}\n",
+            'no space before the brace' => "<?php\nif (Http::postIsset('a') && Forms::isUnverifiedRequest()){\n}\n",
+            'no space after the if' => "<?php\nif(Http::postIsset('a') && Forms::isUnverifiedRequest()) {\n}\n",
+            'wrapped over lines' => "<?php\nif (\n    Http::postIsset('a')\n    && Forms::isUnverifiedRequest()\n) {\n}\n",
+        ];
+
+        foreach ($shapes as $label => $source) {
+            $conditions = self::conditionsIn($source);
+
+            self::assertCount(1, $conditions, "the sweep found no condition at all: $label");
+            self::assertStringContainsString('isUnverifiedRequest', $conditions[0], $label);
+            self::assertStringContainsString('postIsset', $conditions[0], $label);
+        }
+
+        // And a nested call does not end the condition early, which is what a
+        // non-greedy match to the first `)` would do.
+        $nested = self::conditionsIn("<?php\nif ((Http::postIsset('a') || Http::postIsset('b')) && Forms::isUnverifiedRequest()) {\n}\n");
+        self::assertCount(1, $nested);
+        self::assertStringContainsString('isUnverifiedRequest', $nested[0], 'the condition was cut at the inner brace');
     }
 
     /**

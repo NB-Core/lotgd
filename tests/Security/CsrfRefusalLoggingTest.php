@@ -38,6 +38,7 @@ final class CsrfRefusalLoggingTest extends TestCase
         Database::resetDoctrineConnection();
 
         $GLOBALS['session'] = ['user' => ['acctid' => 42]];
+        $_GET = [];
         $_POST = [];
         $_SERVER['SCRIPT_NAME'] = '/bans.php';
         $_SERVER['REQUEST_METHOD'] = 'POST';
@@ -48,6 +49,7 @@ final class CsrfRefusalLoggingTest extends TestCase
         Database::$queries = [];
         Database::resetDoctrineConnection();
         unset($GLOBALS['session']);
+        $_GET = [];
         $_POST = [];
     }
 
@@ -156,8 +158,95 @@ final class CsrfRefusalLoggingTest extends TestCase
     }
 
     /**
-     * On the isUnverifiedRequest() path the operation is read from the query
-     * string, which makes it request data.
+     * The operation is read the way the pages that post it read it.
+     *
+     * The companion, armour and weapon editors submit `op` as a hidden field to
+     * the bare page URL -- `companions.php:44` is
+     * `Http::postIsset('op') ? Http::post('op') : Http::get('op')` -- so a
+     * guard that consulted only the query string filed an entry naming no
+     * operation at all, where the per-page line it replaced named one. A
+     * smaller log would have been a fair trade; a less answerable one is not.
+     * Reported by Codex.
+     */
+    public function testTheOperationIsTakenFromTheBodyWhenThatIsWhereItIs(): void
+    {
+        $_POST['op'] = 'del';
+
+        self::assertTrue(Forms::isUnverifiedRequest(Csrf::SCOPE_COMPANION_EDITOR));
+
+        self::assertStringContainsString('op=del', (string) (self::securityRows()[0]['message'] ?? ''));
+    }
+
+    /**
+     * A caller that knows the operation outranks the guard's reading of the
+     * request.
+     *
+     * The context used to be merged the other way round, and `+` keeps the
+     * left-hand value for a key both sides carry -- so a caller passing `op`
+     * was silently ignored in favour of whatever the request happened to say.
+     * That is the wrong way round for every key the guard guesses at, and this
+     * asserts the fix on the one where a caller and the request can actually
+     * disagree.
+     */
+    public function testWhatTheCallerSaysWinsOverWhatTheRequestSays(): void
+    {
+        $_GET['op'] = 'from-the-request';
+
+        self::assertTrue(Forms::isUnverifiedRequest(null, ['op' => 'from-the-caller']));
+
+        $message = (string) (self::securityRows()[0]['message'] ?? '');
+        self::assertStringContainsString('op=from-the-caller', $message);
+        self::assertStringNotContainsString('from-the-request', $message);
+    }
+
+    /**
+     * The bound is on characters, not bytes, because the game log is utf8mb4.
+     *
+     * substr() cutting a multi-byte character in half produces bytes MySQL
+     * rejects, and SecurityLog::sanitize() does not repair them -- it detects
+     * invalid UTF-8 and falls back to a byte-wise strip that leaves it invalid.
+     * The insert then fails and the refusal is recorded nowhere at all, which
+     * is a worse outcome than a long log line. Reported by Codex.
+     */
+    public function testAMultiByteOperationIsCutOnCharacterBoundaries(): void
+    {
+        // Three bytes each, so byte 64 falls inside the 22nd character -- and
+        // eighty of them, so the bound really does cut.
+        $operation = str_repeat('€', 80);
+        $_GET['op'] = $operation;
+
+        // The control: this is what the byte-wise cut produced, and it is the
+        // thing MySQL refuses.
+        self::assertFalse(
+            mb_check_encoding(substr($operation, 0, 64), 'UTF-8'),
+            'precondition: a byte-wise cut of this value is invalid UTF-8'
+        );
+
+        self::assertTrue(Forms::isUnverifiedRequest());
+
+        $message = (string) (self::securityRows()[0]['message'] ?? '');
+        self::assertTrue(mb_check_encoding($message, 'UTF-8'), 'the log line must be insertable');
+        self::assertStringContainsString('op=' . str_repeat('€', 64) . ' ', $message);
+        self::assertStringNotContainsString(str_repeat('€', 65), $message);
+    }
+
+    /**
+     * And a value that was never valid UTF-8 is described rather than carried.
+     */
+    public function testAnOperationThatIsNotUtf8AtAllIsNotPassedThrough(): void
+    {
+        $_GET['op'] = "\xC3\x28";
+
+        self::assertTrue(Forms::isUnverifiedRequest());
+
+        $message = (string) (self::securityRows()[0]['message'] ?? '');
+        self::assertTrue(mb_check_encoding($message, 'UTF-8'), 'the log line must be insertable');
+        self::assertStringContainsString('op=(not valid UTF-8)', $message);
+    }
+
+    /**
+     * On the isUnverifiedRequest() path the operation is read from the request,
+     * which makes it request data.
      *
      * SecurityLog::event() strips control characters out of what it is handed;
      * it does not bound length, and nothing else between a caller and the log
@@ -173,7 +262,5 @@ final class CsrfRefusalLoggingTest extends TestCase
         $message = (string) (self::securityRows()[0]['message'] ?? '');
         self::assertStringContainsString('op=' . str_repeat('a', 64) . ' ', $message);
         self::assertStringNotContainsString(str_repeat('a', 65), $message);
-
-        $_GET = [];
     }
 }
