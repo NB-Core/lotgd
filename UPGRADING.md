@@ -508,12 +508,22 @@ modules.
   exactly like having pressed nothing: a message the player has just written
   does not arrive and the page says nothing about it. There is a one-line
   notice beside the existing "Your message was sent!" now. The refusal itself is
-  unchanged -- same operations refused, still HTTP 400, still a `debuglog`
-  entry -- and the notice deliberately does not say *which* way the token was
-  wrong; that stays in the log.
+  unchanged -- same operations refused, still HTTP 400 -- and the notice
+  deliberately does not say *which* way the token was wrong; that stays in the
+  log.
 
-  Only `mail.php` carries it. The other eleven pages with the same guard are
-  unchanged for now.
+  **Where that log is has changed.** The refusal went to `debuglog()`, which is
+  a character's own audit trail of gold and experience rather than a record of
+  what the server refused. It goes through `SecurityLog::event()` now, like the
+  same refusal in `user.php`, `moderate.php`, `badword.php` and
+  `weaponeditor.php`: the game log's `security` category, where an
+  administrator reviews it in `gamelog.php`, and PHP's error log, with a shared
+  `diag=` id tying the two together and the page and operation named. **If you
+  were looking for these in a player's debug log, they are not there any more.**
+
+  Only `mail.php` carries the notice, and only `mail.php` had its sink
+  corrected. The other eleven pages with the same guard still log the refusal
+  with `debuglog()`.
 
   **If you are seeing this refusal on a live game**, check your deployment
   before your code: a `pages/` directory older than the CSRF work renders forms

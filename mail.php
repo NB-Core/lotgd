@@ -10,6 +10,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\Translator;
 use Lotgd\Forms;
+use Lotgd\SecurityLog;
 
 // translator ready
 // addnews ready
@@ -40,9 +41,17 @@ $op = Http::get('op');
 // the player spent five minutes writing simply does not arrive, and the page
 // that swallowed it looks exactly as it did before. The success path has said
 // "Your message was sent!" all along; this is the other half of that sentence.
+//
+// What the player is not told has to be findable by the operator, and
+// debuglog() is the wrong place to look for it: that is a character's audit
+// trail of gold and experience, not a record of what the server refused, and
+// AGENTS.md rules it out for exactly this. SecurityLog::event() writes the
+// game log's `security` category and PHP's error log in one call with a shared
+// correlation id, the way user.php, moderate.php, badword.php and
+// weaponeditor.php already record the same refusal. Reported by Codex.
 $rejectedUnverified = Forms::isUnverifiedCoreOp($op, ['del', 'process', 'send', 'unread']);
 if ($rejectedUnverified) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
+    SecurityLog::event('Refused a mail state change with an invalid CSRF token', ['page' => 'mail.php', 'op' => $op]);
     http_response_code(400);
     $op = '';
     $_POST = [];
