@@ -208,10 +208,21 @@ class TwoFactorAuthService
      * the same 300000 measured above, neither this class nor a strict
      * upper-case one let a single garbage decryption through, and neither
      * rejected a single real secret.
+     *
+     * The second half is not redundant with the first. base32Decode() strips
+     * everything outside its alphabet, so a value made only of padding,
+     * whitespace and dashes passes the character class and then decodes to
+     * nothing -- and a value that decodes to nothing cannot produce a token,
+     * which is the whole question here. Accepting one would skip the legacy key
+     * in exactly the case this check exists to catch. Asking the decoder is
+     * also the honest way to put it: what makes a value plausible is that the
+     * code which consumes it gets something out of it.
+     * Reported by Copilot.
      */
     public static function isPlausibleSecret(string $secret): bool
     {
-        return $secret !== '' && preg_match('/^[A-Za-z2-7=\s-]+$/', $secret) === 1;
+        return preg_match('/^[A-Za-z2-7=\s-]+$/', $secret) === 1
+            && self::base32Decode($secret) !== '';
     }
 
     /**

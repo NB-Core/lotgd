@@ -137,8 +137,14 @@ class TwoFactorAuthServiceTest extends TestCase
      * authenticator app displays is one base32Decode() reads perfectly well --
      * and rejecting it here would cause exactly the lockout this check exists
      * to prevent.
+     *
+     * The four shapes below are the ones a stored secret plausibly has, not
+     * every shape base32Decode() tolerates: it strips anything outside its
+     * alphabet, so the set it accepts is far larger than this and naming the
+     * test after it would claim more than the test checks.
+     * Reported by Copilot.
      */
-    public function testEverySecretShapeTheDecoderAcceptsPassesTheCheck(): void
+    public function testTheSecretShapesAPlayerMightHaveStoredPassTheCheck(): void
     {
         $generated = \TwoFactorAuthService::generateSecret();
 
@@ -149,6 +155,30 @@ class TwoFactorAuthServiceTest extends TestCase
 
         self::assertFalse(\TwoFactorAuthService::isPlausibleSecret(''));
         self::assertFalse(\TwoFactorAuthService::isPlausibleSecret("\x00\x91\xfe"));
+    }
+
+    /**
+     * A value the character class lets through but the decoder cannot use.
+     *
+     * The first form of this check was the character class alone, and these
+     * pass it: base32Decode() strips padding, whitespace and dashes, so what
+     * reaches the token arithmetic is nothing at all. Calling such a value
+     * plausible would skip the legacy key in exactly the case the check exists
+     * to catch -- unreachable in practice, since the values it screens are 47
+     * random bytes, but the predicate is supposed to mean what its name says.
+     *
+     * A single character is here for the same reason: five bits do not fill a
+     * byte, so it decodes to nothing too.
+     * Reported by Copilot.
+     */
+    public function testSeparatorsAloneAreNotASecret(): void
+    {
+        foreach (['====', '   ', '-', " -=\t", 'A'] as $value) {
+            self::assertFalse(
+                \TwoFactorAuthService::isPlausibleSecret($value),
+                var_export($value, true) . ' decodes to nothing, so it cannot produce a token'
+            );
+        }
     }
 
     /**
