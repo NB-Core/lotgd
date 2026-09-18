@@ -29,6 +29,11 @@ final class StyleSheets
     private static ?array $selectors = null;
 
     /**
+     * @var array<string, list<string>>|null
+     */
+    private static ?array $themes = null;
+
+    /**
      * Selectors that mention $class, and the subset a `<button>` could match.
      *
      * @return array{reachable: list<string>, all: list<string>}
@@ -96,6 +101,10 @@ final class StyleSheets
      */
     public static function themes(): array
     {
+        if (self::$themes !== null) {
+            return self::$themes;
+        }
+
         $themes = [];
         foreach (self::paths() as $sheet) {
             if (str_contains($sheet, '/templates/common/')) {
@@ -104,6 +113,8 @@ final class StyleSheets
 
             $themes[$sheet] = self::selectorsIn((string) file_get_contents($sheet));
         }
+
+        self::$themes = $themes;
 
         return $themes;
     }
@@ -205,15 +216,36 @@ final class StyleSheets
                 break;
             }
 
-            $preludeStart = (int) max(
-                (int) strrpos(substr($css, 0, $open), '}'),
-                (int) strrpos(substr($css, 0, $open), '{')
+            // -1 rather than 0 when there is no preceding brace, because the
+            // prelude then starts at offset 0. Casting strrpos()'s false to 0
+            // ate the first character of the first prelude in a string -- for
+            // `@media ... {` that is the `@`, so the whole at-rule read as an
+            // ordinary selector. Real sheets hid it behind a leading comment
+            // or blank line; a unit test on a bare string did not.
+            $before = substr($css, 0, $open);
+            $lastClose = strrpos($before, '}');
+            $lastOpen = strrpos($before, '{');
+            $preludeStart = max(
+                $lastClose === false ? -1 : $lastClose,
+                $lastOpen === false ? -1 : $lastOpen
             );
             $prelude = trim(substr($css, $preludeStart + 1, $open - $preludeStart - 1));
+
+            // An at-rule's `}` is not its own: `$close` is the end of the
+            // FIRST RULE NESTED INSIDE IT. Resuming past that skipped that
+            // rule entirely, so a theme overriding .button inside a @media
+            // block went unseen -- which is the guarantee this file exists to
+            // give. Resume just inside the brace instead, so the next `{` the
+            // loop finds is the first nested selector's.
+            if (str_starts_with($prelude, '@')) {
+                $offset = $open + 1;
+                continue;
+            }
+
             $body = substr($css, $open + 1, $close - $open - 1);
             $offset = $close + 1;
 
-            if ($prelude === '' || str_starts_with($prelude, '@')) {
+            if ($prelude === '') {
                 continue;
             }
 

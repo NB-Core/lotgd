@@ -158,6 +158,79 @@ final class ActionBarClassesAreStyledTest extends TestCase
     }
 
     /**
+     * The declaration reader sees inside at-rules.
+     *
+     * Its own guard, and it earns one: the check above is only as good as what
+     * this reads, and the first version of it resumed past an at-rule's first
+     * `}` -- which belongs to the rule NESTED inside it, not to the at-rule.
+     * Sixteen declarations across three themes went unseen. None of them was
+     * `.button`, so no verdict was wrong; the guarantee was simply narrower
+     * than it claimed. A theme overriding `.button` inside a `@media` block
+     * would have passed.
+     *
+     * Asserted on a string rather than on a theme, because the point is what
+     * the reader does with a shape, not what today's sheets happen to contain.
+     */
+    public function testTheDeclarationReaderSeesInsideAtRules(): void
+    {
+        $css = '@media (max-width: 600px) { .button { color: red; } .other { padding: 1px } }';
+
+        $rules = [];
+        foreach (StyleSheets::declarationsIn($css) as $rule) {
+            $rules[$rule['selector']][] = $rule['property'];
+        }
+
+        self::assertSame(['color'], $rules['.button'] ?? [], 'a rule nested in an at-rule went unread');
+        self::assertSame(['padding'], $rules['.other'] ?? []);
+        self::assertArrayNotHasKey(
+            '@media (max-width: 600px)',
+            $rules,
+            'an at-rule prelude is not a selector'
+        );
+    }
+
+    /**
+     * An empty block sets nothing, so it contributes nothing.
+     *
+     * Recorded because measuring this cost me a wrong answer once: comparing
+     * "selectors seen" against "selectors present" made `table { }` look like
+     * a parser bug when it is the parser being right.
+     */
+    public function testAnEmptyBlockContributesNothing(): void
+    {
+        $rules = StyleSheets::declarationsIn('table { } .x { color: red }');
+
+        self::assertCount(1, $rules, 'an empty block was read as setting something');
+        self::assertSame('.x', $rules[0]['selector']);
+    }
+
+    /**
+     * The override check reaches into at-rules too.
+     *
+     * The sharp form of the two above: this is the guarantee the parser defect
+     * weakened, asserted end to end rather than inferred from the parser.
+     */
+    public function testAnOverrideHiddenInsideAnAtRuleIsStillFound(): void
+    {
+        $css = '.button { color: gold } @media (max-width: 600px) { .action-bar__link { color: red } }';
+
+        $button = [];
+        $row = [];
+        foreach (StyleSheets::declarationsIn($css) as $rule) {
+            if ($rule['selector'] === '.button') {
+                $button[$rule['property']] = $rule['order'];
+            }
+            if ($rule['selector'] === '.action-bar__link') {
+                $row[$rule['property']] = $rule['order'];
+            }
+        }
+
+        self::assertArrayHasKey('color', $button, 'the theme rule went unread');
+        self::assertArrayHasKey('color', $row, 'the overriding rule inside the at-rule went unread');
+        self::assertGreaterThan($button['color'], $row['color'], 'source order must be comparable across the two');
+    }
+
+    /**
      * A container class of several names still yields one usable link class.
      *
      * `'action-bar is-compact'` is ordinary in HTML and would compose
