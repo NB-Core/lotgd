@@ -354,6 +354,82 @@ modules.
   theme and still cannot style a button. **If you add a button class, add a rule
   for it, or use `button`.**
 
+- **Every bundled stylesheet gained an action-row block, and `.button` now
+  carries its own padding.** This is the part theme authors have to copy.
+
+  Two things made a themed row impossible before. A `<button>` gets its inner
+  spacing from the browser and an `<a>` does not, so a link and a button
+  standing next to each other were different heights; and no bundled theme set
+  `padding`, `display` or `text-decoration` on `.button` at all, so a link
+  wearing the button class rendered as underlined text in a box drawn tight
+  around the letters. The block below fixes both, and adds the row container
+  itself. It is geometry only -- colour, border and font still come from your
+  own `.button` rule -- so a theme that takes it verbatim stays itself.
+
+  **Append it to your stylesheet**, at the end, so it wins over whatever order
+  your own rules are in:
+
+  ```css
+  /* --- Action rows --- */
+  .button {
+      padding: 2px 8px;
+  }
+
+  a.button,
+  span.button {
+      display: inline-block;
+      text-decoration: none;
+      cursor: pointer;
+  }
+
+  span.button[aria-disabled="true"] {
+      cursor: default;
+      opacity: 0.6;
+  }
+
+  .action-bar,
+  .mail-nav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 4px;
+  }
+
+  .action-bar__link,
+  .mail-nav__link {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+  }
+
+  /* Only the descendant inherits, never the control itself. */
+  .action-bar__link a,
+  .mail-nav__link a {
+      color: inherit;
+      text-decoration: none;
+  }
+  ```
+
+  What changes visibly if you take it: buttons get 2px/8px of padding where
+  they previously had the browser's own, and the mail row's controls gain two
+  pixels of vertical padding (its horizontal 0.5rem was already 8px). Themes
+  that had no `.mail-nav` rule at all -- `jade`, `yarbrough` and the legacy
+  `puritanic_ai` -- get a wrapping row instead of controls laid out inline.
+
+  `.action-bar` is new and is the class the administration rows will use.
+  `.mail-nav` is unchanged in meaning. `a.button` and `span.button` are new
+  selectors, not new classes: if you already style `.button`, they inherit it.
+
+- **`Forms::actionBar()` composes each control's class from the container's.**
+  A row created as `actionBar($actions, 'action-bar')` gives its controls
+  `button action-bar__link`; the mail row, whose container is `mail-nav`,
+  renders exactly what it did before, byte for byte. An entry's own `'class'`
+  key still overrides. **If you call `actionBar()` with a container class of
+  your own, your theme needs a `.<your-class>__link` rule** -- or pass `class`
+  on the entries.
+
+
 - **Modules can add controls to the bar under a mail message**, through the new
   `mail-read-actions` hook. See `docs/Hooks.md`. The module describes the
   control and the core renders it, so a contributed button gets the row's
