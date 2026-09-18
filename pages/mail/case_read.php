@@ -111,8 +111,8 @@ function mailRead(): void
     // with the text in the cell beside it, and `.mail-nav` by the notification
     // strip in every Twig theme's page header -- so a margin on either would
     // move things nobody asked to have moved. This page builds its vertical
-    // spacing out of `n everywhere else, and a theme that has not taken the
-    // action-row CSS at all still gets the break.
+    // spacing from the same newline code everywhere else, and a theme that has
+    // not taken the action-row CSS at all still gets the break.
     $output->outputNotl('`n');
 
     // Message body
