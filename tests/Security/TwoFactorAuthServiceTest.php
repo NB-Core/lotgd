@@ -135,15 +135,15 @@ class TwoFactorAuthServiceTest extends TestCase
      * The check must not lock out a secret a player already has.
      *
      * generateSecret() emits upper-case base32 with no padding, but a secret
-     * that was written by hand or pasted with the grouping spaces an
-     * authenticator app displays is one base32Decode() reads perfectly well --
-     * and rejecting it here would cause exactly the lockout this check exists
-     * to prevent.
+     * carrying the grouping spaces an authenticator app displays, or the
+     * padding another implementation wrote, is one base32Decode() reads
+     * perfectly well -- and rejecting it here would cause exactly the lockout
+     * this check exists to prevent.
      *
-     * The four shapes below are the ones a stored secret plausibly has, not
-     * every shape base32Decode() tolerates: it strips anything outside its
-     * alphabet, so the set it accepts is far larger than this and naming the
-     * test after it would claim more than the test checks.
+     * The shapes below are the ones a stored secret plausibly has, not every
+     * shape base32Decode() tolerates: it strips anything outside its alphabet,
+     * so the set it accepts is far larger than this and naming the test after
+     * it would claim more than the test checks.
      * Reported by Copilot.
      */
     public function testTheSecretShapesAPlayerMightHaveStoredPassTheCheck(): void
@@ -151,12 +151,57 @@ class TwoFactorAuthServiceTest extends TestCase
         $generated = \TwoFactorAuthService::generateSecret();
 
         self::assertTrue(\TwoFactorAuthService::isPlausibleSecret($generated));
-        self::assertTrue(\TwoFactorAuthService::isPlausibleSecret(strtolower($generated)));
         self::assertTrue(\TwoFactorAuthService::isPlausibleSecret(chunk_split($generated, 4, ' ')));
         self::assertTrue(\TwoFactorAuthService::isPlausibleSecret('JBSWY3DPEHPK3PXP===='));
 
         self::assertFalse(\TwoFactorAuthService::isPlausibleSecret(''));
         self::assertFalse(\TwoFactorAuthService::isPlausibleSecret("\x00\x91\xfe"));
+    }
+
+    /**
+     * Lower case is not a shape this decoder reads, and this test says so
+     * rather than assuming the opposite -- which the first version of the test
+     * above did, with an assertion that was flaky at about one run in a hundred
+     * and went red in CI on its first attempt.
+     *
+     * base32Decode() strips before it uppercases:
+     *
+     *     strtoupper(preg_replace('/[^A-Z2-7]/', '', $encoded))
+     *
+     * so every lower-case letter is removed and only the digits 2-7 survive.
+     * 'JBSWY3DPEHPK3PXP' decodes to the ten bytes it should; lower-cased, the
+     * two surviving '3's decode to the single byte 0xde. So a lower-case secret
+     * does not merely fail -- it silently becomes a different, much shorter one.
+     *
+     * That is why the answer isPlausibleSecret() gives for lower case is left
+     * undefined here: it depends on how many digits happen to survive, which is
+     * what made the earlier assertion flaky. 99.09% of lower-cased generated
+     * secrets keep two or more, measured over 20000.
+     *
+     * Not fixed here. Normalising case in base32Decode() would change which
+     * stored secrets verify, which is a change of its own -- in the harmless
+     * direction, since nothing that works today would stop working.
+     */
+    public function testLowerCaseIsNotReadByTheDecoderAtAll(): void
+    {
+        $decode = new \ReflectionMethod(\TwoFactorAuthService::class, 'base32Decode');
+        $decode->setAccessible(true);
+
+        self::assertSame(
+            'Hello!' . hex2bin('deadbeef'),
+            $decode->invoke(null, 'JBSWY3DPEHPK3PXP'),
+            'control: upper case decodes to what it should'
+        );
+        self::assertSame(
+            hex2bin('de'),
+            $decode->invoke(null, 'jbswy3dpehpk3pxp'),
+            'lower-cased, only the two digits survive the strip'
+        );
+        self::assertSame(
+            '',
+            $decode->invoke(null, 'abcdefgh'),
+            'and with no digits at all, nothing survives'
+        );
     }
 
     /**

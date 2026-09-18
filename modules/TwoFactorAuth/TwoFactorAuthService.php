@@ -200,14 +200,23 @@ class TwoFactorAuthService
      * it while a caller with only one wants to give up.
      *
      * The character class is deliberately wider than what generateSecret()
-     * emits (upper-case base32, no padding). A stored secret that was written
-     * by hand, or that carries the grouping spaces authenticator apps display,
-     * must not be locked out by a check meant to keep people in -- and width
-     * costs nothing here: the values this rejects are 47 random bytes, so even
-     * a class of 128 characters rejects them with probability 1 - 2^-47. Over
-     * the same 300000 measured above, neither this class nor a strict
-     * upper-case one let a single garbage decryption through, and neither
-     * rejected a single real secret.
+     * emits (upper-case base32, no padding). A stored secret carrying the
+     * grouping spaces authenticator apps display, or the padding another
+     * implementation wrote, must not be locked out by a check meant to keep
+     * people in -- and width costs nothing here: the values this rejects are 47
+     * random bytes, so even a class of 128 characters rejects them with
+     * probability 1 - 2^-47. Over the same 300000 measured above, neither this
+     * class nor a strict upper-case one let a single garbage decryption
+     * through, and neither rejected a single real secret.
+     *
+     * Lower case is in the class but decides nothing, and that is worth saying
+     * because it is easy to read the other way: base32Decode() strips before it
+     * uppercases -- `strtoupper(preg_replace('/[^A-Z2-7]/', '', $encoded))` --
+     * so lower-case letters are removed and only the digits 2-7 survive. A
+     * lower-case secret has therefore never produced the right token in this
+     * codebase, with or without this check, and what the second half answers
+     * for one is incidental. Left in the class rather than excluded so that the
+     * day base32Decode() normalises case first, this follows it.
      *
      * The second half is not redundant with the first. base32Decode() strips
      * everything outside its alphabet, so a value made only of padding,
