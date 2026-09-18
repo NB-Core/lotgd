@@ -10,6 +10,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\Translator;
 use Lotgd\Forms;
+use Lotgd\SecurityLog;
 
 // translator ready
 // addnews ready
@@ -33,8 +34,24 @@ $op = Http::get('op');
 // Here rather than in each branch: a delete keys off $op with its id in the
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
-if (Forms::isUnverifiedCoreOp($op, ['del', 'process', 'send', 'unread'])) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
+//
+// The rejection is remembered rather than only logged, because the player has
+// to be told something. Blanking $op drops the request back onto the inbox,
+// which on its own is indistinguishable from having pressed nothing: a message
+// the player spent five minutes writing simply does not arrive, and the page
+// that swallowed it looks exactly as it did before. The success path has said
+// "Your message was sent!" all along; this is the other half of that sentence.
+//
+// What the player is not told has to be findable by the operator, and
+// debuglog() is the wrong place to look for it: that is a character's audit
+// trail of gold and experience, not a record of what the server refused, and
+// AGENTS.md rules it out for exactly this. SecurityLog::event() writes the
+// game log's `security` category and PHP's error log in one call with a shared
+// correlation id, the way user.php, moderate.php, badword.php and
+// weaponeditor.php already record the same refusal. Reported by Codex.
+$rejectedUnverified = Forms::isUnverifiedCoreOp($op, ['del', 'process', 'send', 'unread']);
+if ($rejectedUnverified) {
+    SecurityLog::event('Refused a mail state change with an invalid CSRF token', ['page' => 'mail.php', 'op' => $op]);
     http_response_code(400);
     $op = '';
     $_POST = [];
@@ -115,6 +132,18 @@ switch (Http::get('even')) {
     case "mailsent":
         $output->output("`vYour message was sent!`n");
         break;
+}
+
+// Here, beside the success message, because this is the same sentence with the
+// other answer, and a player who has learned where the one appears finds the
+// other without looking. Deliberately one line and deliberately vague about
+// which of the three states the token was in: that distinction is the
+// operator's business and belongs in a log, not in front of the player.
+if ($rejectedUnverified) {
+    $output->output(
+        '`$Your request could not be carried out: the security token of the form was missing or '
+        . 'no longer valid. Please try again.`0`n'
+    );
 }
 
 if ($op == "send") {
