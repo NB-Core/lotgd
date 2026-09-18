@@ -395,9 +395,16 @@ function twofactorauth_render_setup(Output $output): void
 
     $cryptoKey = twofactorauth_signing_key();
 
+    // A name of its own, because $secret is the *stored enrolled* blob and the
+    // branch below asks it whether the player already has a device. Overwriting
+    // it with the freshly generated one made that question unanswerable: after
+    // a start the answer was always yes, so a temp secret that came back
+    // unreadable told a player with no device at all that they already had one
+    // and offered them email recovery instead of a way forward.
+    // Reported by Copilot.
     if ($setupOp === 'start') {
-        $secret = TwoFactorAuthService::generateSecret();
-        set_module_pref('temp_secret_encrypted', TwoFactorAuthService::encryptSecret($secret, $cryptoKey));
+        $freshSecret = TwoFactorAuthService::generateSecret();
+        set_module_pref('temp_secret_encrypted', TwoFactorAuthService::encryptSecret($freshSecret, $cryptoKey));
     }
 
     // Same reason as the compatibility loop below: a decryption that returns
