@@ -10,13 +10,13 @@ use Lotgd\MySQL\Database;
 use Lotgd\AddNews;
 use Lotgd\GameLog;
 use Lotgd\Forms;
-use Lotgd\SecurityLog;
 
 // Deleting an account was a plain GET reached from a link in the user list, so
 // an admin who followed a crafted URL removed the account. The trigger is a
 // POST form now; this is the check that makes that mean something.
-if (Forms::isUnverifiedRequest(Csrf::SCOPE_USER_EDITOR)) {
-    SecurityLog::event('Refused an account deletion with an invalid CSRF token', ['page' => 'user.php', 'op' => 'del', 'target' => $userid], null, GameLog::SEVERITY_ERROR);
+// The target id is the one thing the guard cannot work out for itself, and
+// SEVERITY_ERROR because a refused account deletion is not a warning.
+if (Forms::isUnverifiedRequest(Csrf::SCOPE_USER_EDITOR, ['target' => $userid], GameLog::SEVERITY_ERROR)) {
     http_response_code(400);
     $output->output("`\$Not deleted.`0`n");
 

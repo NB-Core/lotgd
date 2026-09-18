@@ -49,16 +49,23 @@ if ($op == "vote") {
     $motditem = Motd::validatePollVoteIdentifier(Http::post('motditem'));
     $choice = Motd::validatePollVoteChoice(Http::post('choice'));
     $account = (int)($session['user']['acctid'] ?? 0);
-    // The token check is its own clause: folded into the value checks it was
-    // hard to see which of the eight conditions was the security one.
+    // Its own branch rather than one clause of five: the guard records the
+    // refusal itself now, so a shared exit would put a CSRF event in the log
+    // for a vote that was merely malformed, and say nothing for one that was
+    // not. The two failures are different things and leave different traces.
+    if (Forms::isUnverifiedRequest(Csrf::SCOPE_MOTD_VOTE)) {
+        http_response_code(400);
+        header("Location: motd.php");
+        exit();
+    }
+
     if (
-        Forms::isUnverifiedRequest(Csrf::SCOPE_MOTD_VOTE)
-        || $motditem === null
+        $motditem === null
         || $choice === null
         || $account <= 0
         || empty($session['user']['loggedin'])
     ) {
-        debuglog('Rejected invalid or unauthorized MoTD poll vote request.');
+        debuglog('Rejected an invalid or unauthorized MoTD poll vote request.');
         http_response_code(400);
         header("Location: motd.php");
         exit();
@@ -73,7 +80,6 @@ if (($op == "save" || $op == "savenew") && ($session['user']['superuser'] & SU_P
     // SU_POST_MOTD says who may edit, not that this request was meant. Both
     // ops write, so both need the editing token and a POST.
     if (Forms::isUnverifiedRequest(Csrf::SCOPE_MOTD_EDIT)) {
-        debuglog('Rejected MoTD save with an invalid CSRF token.');
         http_response_code(400);
         header('Location: motd.php');
         exit();
@@ -106,7 +112,6 @@ if ($op == "add" || $op == "addpoll" || $op == "del") {
             // crafted link deleted the entry, because SameSite=Lax sends the
             // cookie on a top-level GET navigation.
             if (Forms::isUnverifiedRequest(Csrf::SCOPE_MOTD_EDIT)) {
-                debuglog('Rejected MoTD deletion with an invalid CSRF token.');
                 http_response_code(400);
                 header('Location: motd.php');
                 exit();

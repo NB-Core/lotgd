@@ -30,7 +30,6 @@ use Doctrine\DBAL\ParameterType;
 // page path, and this file runs with SCRIPT_NAME=clan.php because clan.php
 // includes it, so it resolves to the same 'form:clan.php'.
 if ($apply == 1 && \Lotgd\Forms::isUnverifiedRequest()) {
-    debuglog('Rejected a clan application with an invalid CSRF token.');
     http_response_code(400);
     $apply = 0;
     $_POST = [];

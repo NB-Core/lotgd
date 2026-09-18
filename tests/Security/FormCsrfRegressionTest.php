@@ -277,8 +277,16 @@ final class FormCsrfRegressionTest extends TestCase
     {
         $code = $this->code('prefs.php');
 
+        // The body is taken once, and the guard is asked only when there is
+        // one. Both halves matter: an unverified body must not reach the write,
+        // and a request that posted nothing must not be asked about at all --
+        // the guard files a security event for every refusal it decides, so
+        // asking it on a plain page view would report one. The behaviour is
+        // proved by executing the page in
+        // tests/Security/CsrfRefusalLoggingTest.php; this is the shape.
+        self::assertStringContainsString('$posted = Http::allPost();', $code);
         self::assertStringContainsString(
-            '$post = Forms::isUnverifiedRequest() ? [] : Csrf::stripFrom(Http::allPost());',
+            '$post = ($posted !== [] && Forms::isUnverifiedRequest()) ? [] : Csrf::stripFrom($posted);',
             $code,
             'the body a tokenless POST carries must never reach the write'
         );
@@ -339,12 +347,88 @@ final class FormCsrfRegressionTest extends TestCase
         self::assertStringNotContainsString('op=membership&remove=', $code);
         self::assertStringNotContainsString('op=membership&whoacctid=', $code);
 
-        // And the guard still stands in front of them.
+        // And the guard still stands in front of them -- with the field test
+        // first, which is not a style choice: the guard files a security event
+        // for every refusal it decides, so asking it before knowing whether
+        // anything was posted would report one for an ordinary clan page view.
         self::assertMatchesRegularExpression(
-            '/Forms::isUnverifiedRequest\(\).*?postIsset\(\x27setrank\x27\).*?postIsset\(\x27remove\x27\)/s',
+            '/postIsset\(\x27setrank\x27\).*?postIsset\(\x27remove\x27\).*?Forms::isUnverifiedRequest\(\)/s',
             $code,
-            'the write must still be guarded'
+            'the write must still be guarded, and the guard asked only about a write'
         );
+    }
+
+    /**
+     * Every body-driven guard in the tree asks its question in that order.
+     *
+     * Three pages pair the guard with `postIsset()` -- the clan MoTD, the clan
+     * detail editor and clan membership -- and all three used to ask the guard
+     * first, which was harmless while it was a pure predicate and is not now:
+     * the guard files a security event for every refusal it decides, so a
+     * guard-first condition reports a refused state change on every ordinary
+     * view of the page. That is how a security log becomes unreadable, one
+     * page at a time.
+     *
+     * Swept rather than pinned three times, so the next page to adopt the
+     * pattern is covered before anyone remembers to add a row here. Behaviour
+     * for one guarded page is proved by running it, in
+     * tests/Security/CsrfRefusalPageNoiseTest.php; these three cannot be run
+     * that way (they need a clan rank the harness does not model), so the
+     * shape is what this asserts, and it says so.
+     */
+    public function testNoGuardIsAskedBeforeTheFieldTestThatMakesItMeaningful(): void
+    {
+        $offenders = [];
+        $checked = 0;
+
+        foreach (self::bodyDrivenGuardFiles() as $relativePath) {
+            $code = $this->code($relativePath);
+
+            // The condition, from the `if (` to the brace that opens its body.
+            if (!preg_match_all('/if \(\s*(.*?)\s*\) \{/s', $code, $matches)) {
+                continue;
+            }
+
+            foreach ($matches[1] as $condition) {
+                if (!str_contains($condition, 'isUnverifiedRequest') || !str_contains($condition, 'postIsset')) {
+                    continue;
+                }
+
+                $checked++;
+                if (strpos($condition, 'isUnverifiedRequest') < strpos($condition, 'postIsset')) {
+                    $offenders[] = $relativePath . ': ' . preg_replace('/\s+/', ' ', $condition);
+                }
+            }
+        }
+
+        self::assertGreaterThanOrEqual(
+            3,
+            $checked,
+            'this sweep found no guard/postIsset pair at all, so it proved nothing'
+        );
+        self::assertSame(
+            [],
+            $offenders,
+            'the field test has to come first, or an ordinary page view files a security event'
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function bodyDrivenGuardFiles(): array
+    {
+        $root = dirname(__DIR__, 2);
+        $files = [];
+
+        foreach (['', 'pages/clan', 'pages/user', 'pages/mail', 'pages/bans'] as $directory) {
+            $path = $root . ($directory === '' ? '' : '/' . $directory);
+            foreach ((array) glob($path . '/*.php') as $file) {
+                $files[] = ltrim(substr((string) $file, strlen($root)), '/');
+            }
+        }
+
+        return $files;
     }
 
     /**

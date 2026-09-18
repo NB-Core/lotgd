@@ -19,7 +19,6 @@ use Lotgd\Settings;
 // mail ready
 use Lotgd\Output;
 use Lotgd\Forms;
-use Lotgd\SecurityLog;
 use Lotgd\GameLog;
 
 require_once __DIR__ . '/common.php';
@@ -43,8 +42,10 @@ if ($op == "" || $op == "sql") {
     // This page runs whatever it is handed, which makes it the most valuable
     // target in the tree and the cheapest to protect. Nothing is executed
     // until the token checks out.
-    if ($sql != "" && Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)) {
-        SecurityLog::event('Refused raw SQL execution with an invalid CSRF token', ['page' => 'rawsql.php', 'op' => $op], null, GameLog::SEVERITY_ERROR);
+    // SEVERITY_ERROR rather than the guard's default warning: this page runs
+    // whatever it is handed, so a refused attempt on it is not the same event
+    // as a refused taunt edit, and gamelog.php filters on severity.
+    if ($sql != "" && Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL, [], GameLog::SEVERITY_ERROR)) {
         http_response_code(400);
         $output->output("`\$Not executed.`0`n`n");
         $sql = "";
@@ -100,8 +101,7 @@ if ($op == "" || $op == "sql") {
     $php = stripslashes((string) Http::post('php'));
     $source = Translator::translate("Source:");
     $execute = Translator::translate("Execute");
-    if ($php !== "" && Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)) {
-        SecurityLog::event('Refused raw PHP execution with an invalid CSRF token', ['page' => 'rawsql.php', 'op' => $op], null, GameLog::SEVERITY_ERROR);
+    if ($php !== "" && Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL, [], GameLog::SEVERITY_ERROR)) {
         http_response_code(400);
         $output->output("`\$Not executed.`0`n`n");
         $php = "";

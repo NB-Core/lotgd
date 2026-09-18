@@ -47,7 +47,6 @@ $rawId = Http::postIsset('id') ? Http::post('id') : Http::get('id');
 $id = companionEditorPositiveInteger($rawId);
 $stateChangingOperations = ['deactivate', 'activate', 'del', 'take', 'save'];
 if (in_array($op, $stateChangingOperations, true) && !companionEditorValidPostRequest()) {
-    SecurityLog::event('Refused a companion editor state change with an invalid CSRF token', ['page' => 'companions.php', 'op' => $op]);
     $output->output('`$The requested companion action was rejected.`0');
     $op = '';
 } elseif (in_array($op, ['deactivate', 'activate', 'del', 'take'], true) && $id === null) {

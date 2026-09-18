@@ -37,13 +37,19 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
     {
         $source = $this->source('pages/user/user_del.php');
 
-        self::assertStringContainsString(
-            'Forms::isUnverifiedRequest(Csrf::SCOPE_USER_EDITOR)',
+        // Matched as a call rather than as one spelling of it: the guard
+        // records the refusal itself now, and this one hands it the id of the
+        // account that was about to go and asks for error severity, so the
+        // arguments after the scope are expected to grow.
+        self::assertMatchesRegularExpression(
+            '/Forms::isUnverifiedRequest\(Csrf::SCOPE_USER_EDITOR[,)]/',
             $source
         );
-        // Refusal must not fall through into the deletion.
+        // Refusal must not fall through into the deletion. Proved behaviourally
+        // in tests/User/UserDelGuardTest.php, which runs the file; this is the
+        // structure that makes that true.
         self::assertMatchesRegularExpression(
-            '/if \(Forms::isUnverifiedRequest\(Csrf::SCOPE_USER_EDITOR\)\) \{.*?return;\s*\}/s',
+            '/if \(Forms::isUnverifiedRequest\(Csrf::SCOPE_USER_EDITOR[^)]*\)\) \{.*?return;\s*\}/s',
             $source
         );
     }
@@ -166,9 +172,11 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
     {
         $source = $this->source('rawsql.php');
 
+        // The scope, not the whole call: both branches ask for error severity
+        // now, which the guard turns into the log entry it writes itself.
         self::assertSame(
             2,
-            substr_count($source, 'Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)'),
+            preg_match_all('/Forms::isUnverifiedRequest\(Csrf::SCOPE_RAW_SQL[,)]/', $source),
             'both the SQL and the PHP branch must be guarded'
         );
         self::assertSame(
@@ -178,8 +186,8 @@ final class DestructiveOperationCsrfRegressionTest extends TestCase
         );
 
         // The guard has to precede execution, not merely exist in the file.
-        $guard = strpos($source, 'Forms::isUnverifiedRequest(Csrf::SCOPE_RAW_SQL)');
-        self::assertIsInt($guard);
+        self::assertSame(1, preg_match('/Forms::isUnverifiedRequest\(Csrf::SCOPE_RAW_SQL[,)]/', $source, $m, PREG_OFFSET_CAPTURE));
+        $guard = $m[0][1];
         self::assertLessThan(strpos($source, 'Database::query($sql, false)'), $guard);
         self::assertLessThan(strpos($source, 'eval($php)'), $guard);
     }

@@ -48,8 +48,11 @@ function clanMembership(): void
     // from the URL. Only the rank <select>, which genuinely posts, was covered.
     // The buttons carry hidden fields now, so a forged GET carries nothing and
     // every id here is zero.
-    if (Forms::isUnverifiedRequest() && (Http::postIsset('setrank') || Http::postIsset('remove'))) {
-        debuglog('Rejected a clan membership change with an invalid CSRF token.');
+    // The field test comes first, and that is not cosmetic: the guard records
+    // every refusal it decides now, so asking it on a request that posted none
+    // of these fields would file a security event for an ordinary page view.
+    // Asked in this order it answers only about a write that was attempted.
+    if ((Http::postIsset('setrank') || Http::postIsset('remove')) && Forms::isUnverifiedRequest()) {
         http_response_code(400);
         $_POST = [];
     }

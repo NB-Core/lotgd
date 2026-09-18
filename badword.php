@@ -25,7 +25,6 @@ use Lotgd\DataCache;
 // mail ready
 use Lotgd\Output;
 use Lotgd\Forms;
-use Lotgd\SecurityLog;
 
 require_once __DIR__ . "/common.php";
 
@@ -48,7 +47,6 @@ $op = is_string($opRequest) ? $opRequest : '';
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
 if (Forms::isUnverifiedCoreOp($op, ['add', 'addgood', 'remove', 'removegood'])) {
-    SecurityLog::event('Refused a badword list change with an invalid CSRF token', ['page' => 'badword.php', 'op' => $op]);
     http_response_code(400);
     $op = '';
     $_POST = [];
