@@ -325,7 +325,11 @@ namespace Lotgd\Tests\Security {
 
             twofactorauth_handle_challenge_verification(Output::getInstance());
 
-            self::assertSame(0, $GLOBALS['twofactorauth_test_prefs']['pending_challenge']);
+            self::assertSame(
+                0,
+                $GLOBALS['twofactorauth_test_prefs']['pending_challenge'],
+                'the challenge was not cleared, so verification refused the token' . $this->verificationDiagnostics()
+            );
             self::assertNotSame($legacyStoredSecret, $GLOBALS['twofactorauth_test_prefs']['secret_encrypted']);
             self::assertSame(
                 $secret,
@@ -466,7 +470,7 @@ namespace Lotgd\Tests\Security {
         private function assertSecurityLogContains(string $expectedMessage): void
         {
             $matches = array_filter(
-                Bootstrap::$conn->executeStatements,
+                Bootstrap::$conn?->executeStatements ?? [],
                 static function (array $statement) use ($expectedMessage): bool {
                     if (!str_contains((string) ($statement['sql'] ?? ''), 'gamelog')) {
                         return false;
@@ -481,6 +485,68 @@ namespace Lotgd\Tests\Security {
             );
 
             self::assertNotEmpty($matches, sprintf('Expected security log message not found: %s', $expectedMessage));
+        }
+
+        /**
+         * Everything the verification handler recorded about why it refused.
+         *
+         * For failure messages, not for assertions. This test file has gone red
+         * twice in CI and never locally, and the message was "1 is identical
+         * to 0" -- which fits a wrong token, a stale timestep, a lockout and a
+         * decryption failure equally well. Four candidate causes were measured
+         * and all four ruled out, which is exactly the work a failure message
+         * should have made unnecessary.
+         *
+         * The handler already logs its reason (`reason=mismatch` and friends);
+         * nothing needed inventing, only reading.
+         */
+        private function verificationDiagnostics(): string
+        {
+            // setUp() sets Bootstrap::$conn to null, so a failure before a
+            // connection exists must not be reported as "the handler logged
+            // nothing" -- that is a claim about the handler, when the truth is
+            // that this could not look. A message that overstates what it
+            // checked is the fault this whole change is about.
+            $connection = Bootstrap::$conn;
+            $statements = $connection?->executeStatements;
+
+            if ($statements === null) {
+                $log = '(no database connection, so nothing could be read)';
+            } else {
+                $reasons = [];
+                foreach ($statements as $statement) {
+                    if (!str_contains((string) ($statement['sql'] ?? ''), 'gamelog')) {
+                        continue;
+                    }
+
+                    if (($statement['params']['category'] ?? '') !== 'security') {
+                        continue;
+                    }
+
+                    $reasons[] = (string) ($statement['params']['message'] ?? '');
+                }
+
+                $log = $reasons === [] ? '(nothing logged)' : implode(' | ', $reasons);
+            }
+
+            $prefs = $GLOBALS['twofactorauth_test_prefs'] ?? [];
+
+            // One reading of the clock, not two: a diagnosis whose job includes
+            // answering time questions must not report a `now` and a timestep
+            // that disagree because a second ticked between them.
+            $now = time();
+
+            return sprintf(
+                "\nsecurity log: %s\nfailed_attempts=%s locked_until=%s (now=%d) last_used_timestep=%s"
+                    . "\ntoken=%s current step=%d",
+                $log,
+                var_export($prefs['failed_attempts'] ?? null, true),
+                var_export($prefs['locked_until'] ?? null, true),
+                $now,
+                var_export($prefs['last_used_timestep'] ?? null, true),
+                var_export($_POST['token'] ?? null, true),
+                intdiv($now, 30)
+            );
         }
 
         /**

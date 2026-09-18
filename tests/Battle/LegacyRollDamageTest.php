@@ -84,6 +84,39 @@ final class LegacyRollDamageTest extends TestCase
         ];
     }
 
+    /**
+     * What a roll actually produced, for a failure message.
+     *
+     * The creature's stats are in here as well as the result, because the one
+     * CI failure reported `selfdmg` of -4.0 where a normal roll against these
+     * stats produces tens of thousands. That is not an unlucky roll; it looks
+     * like a fight against a different creature. Whether the hopeless stats
+     * reached the arithmetic is therefore the first thing the next failure
+     * should say, and it cannot say it without them.
+     *
+     * @param array<string, mixed> $roll
+     * @param array<string, mixed> $badguy
+     */
+    private static function explain(array $roll, array $badguy): string
+    {
+        global $buffset;
+
+        $parts = [];
+        foreach (['creaturedmg', 'selfdmg', 'playerdmg', 'creaturehp', 'playerhp'] as $key) {
+            if (array_key_exists($key, $roll)) {
+                $parts[] = sprintf('%s=%s', $key, var_export($roll[$key], true));
+            }
+        }
+
+        return sprintf(
+            "\nroll: %s\ncreature: attack=%s defense=%s\nbuffset invulnerable=%s",
+            implode(' ', $parts),
+            var_export($badguy['creatureattack'] ?? null, true),
+            var_export($badguy['creaturedefense'] ?? null, true),
+            var_export($buffset['invulnerable'] ?? null, true)
+        );
+    }
+
     public function testTheReturnShapeIsUnchanged(): void
     {
         $badguy = self::badguy();
@@ -160,16 +193,38 @@ final class LegacyRollDamageTest extends TestCase
         $badguy = $hopeless();
         $doomed = Battle::rollDamage($badguy);
 
-        self::assertLessThan(0, $doomed['creaturedmg'], 'control: the player is riposted');
-        self::assertGreaterThan(0, $doomed['selfdmg'], 'control: and is hit');
+        // The rolls go into the failure messages because rollDamage() is
+        // random and this test has gone red once in CI and never locally. The
+        // message was "Failed asserting that -4.0 is greater than 0", which
+        // does not say whether an unlucky roll beat the supposedly hopeless
+        // odds or the arithmetic stopped reading the buffset. With the numbers
+        // in the message, the next red run answers that by itself.
+        self::assertLessThan(
+            0,
+            $doomed['creaturedmg'],
+            'control: the player is riposted' . self::explain($doomed, $badguy)
+        );
+        self::assertGreaterThan(
+            0,
+            $doomed['selfdmg'],
+            'control: and is hit' . self::explain($doomed, $badguy)
+        );
 
         $buffset['invulnerable'] = 1;
 
         $badguy = $hopeless();
         $roll = Battle::rollDamage($badguy);
 
-        self::assertGreaterThan(0, $roll['creaturedmg'], 'god mode turns the riposte into a hit');
-        self::assertLessThan(0, $roll['selfdmg'], 'and the hit into a riposte');
+        self::assertGreaterThan(
+            0,
+            $roll['creaturedmg'],
+            'god mode turns the riposte into a hit' . self::explain($roll, $badguy)
+        );
+        self::assertLessThan(
+            0,
+            $roll['selfdmg'],
+            'and the hit into a riposte' . self::explain($roll, $badguy)
+        );
     }
 
     /**
