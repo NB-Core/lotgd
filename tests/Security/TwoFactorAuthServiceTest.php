@@ -90,4 +90,84 @@ class TwoFactorAuthServiceTest extends TestCase
 
         $this->assertTrue(\TwoFactorAuthService::isUriAllowed('/lotgd/runmodule.php?module=twofactorauth&op=challenge', $allowed));
     }
+
+    /**
+     * The premise the whole fix rests on: decrypting with the wrong key is not
+     * reliably an error.
+     *
+     * aes-256-cbc carries no authentication tag, so openssl_decrypt() rejects a
+     * wrong key only when the final block's PKCS#7 padding comes out invalid --
+     * about 255 times in 256. The remaining case returns bytes, and bytes are
+     * not '', so every caller testing `!== ''` accepts them.
+     *
+     * Asserted by finding one rather than by quoting a rate: a bounded search
+     * for a colliding secret is deterministic in outcome where a probability is
+     * not, and it keeps the test honest if the stored format ever becomes
+     * authenticated -- then no collision exists, the search runs out, and this
+     * says so instead of passing quietly.
+     */
+    public function testAWrongKeySometimesDecryptsIntoSomethingThatIsNotEmpty(): void
+    {
+        $collision = self::findWrongKeyCollision('key-one', 'key-two');
+
+        self::assertNotNull(
+            $collision,
+            'no blob in 20000 decrypted under the wrong key -- if the stored format is now '
+                . 'authenticated, this test and the check it guards have both outlived their purpose'
+        );
+
+        [, $blob, $garbage] = $collision;
+
+        self::assertNotSame('', $garbage, 'the premise: a wrong key produced something');
+        self::assertFalse(
+            \TwoFactorAuthService::isPlausibleSecret($garbage),
+            'and the check refuses it: ' . bin2hex($garbage)
+        );
+        self::assertTrue(
+            \TwoFactorAuthService::isPlausibleSecret(\TwoFactorAuthService::decryptSecret($blob, 'key-one')),
+            'control: the right key still yields something the check accepts'
+        );
+    }
+
+    /**
+     * The check must not lock out a secret a player already has.
+     *
+     * generateSecret() emits upper-case base32 with no padding, but a secret
+     * that was written by hand or pasted with the grouping spaces an
+     * authenticator app displays is one base32Decode() reads perfectly well --
+     * and rejecting it here would cause exactly the lockout this check exists
+     * to prevent.
+     */
+    public function testEverySecretShapeTheDecoderAcceptsPassesTheCheck(): void
+    {
+        $generated = \TwoFactorAuthService::generateSecret();
+
+        self::assertTrue(\TwoFactorAuthService::isPlausibleSecret($generated));
+        self::assertTrue(\TwoFactorAuthService::isPlausibleSecret(strtolower($generated)));
+        self::assertTrue(\TwoFactorAuthService::isPlausibleSecret(chunk_split($generated, 4, ' ')));
+        self::assertTrue(\TwoFactorAuthService::isPlausibleSecret('JBSWY3DPEHPK3PXP===='));
+
+        self::assertFalse(\TwoFactorAuthService::isPlausibleSecret(''));
+        self::assertFalse(\TwoFactorAuthService::isPlausibleSecret("\x00\x91\xfe"));
+    }
+
+    /**
+     * Search for a blob that decrypts under a key it was not encrypted with.
+     *
+     * @return array{0: string, 1: string, 2: string}|null secret, blob, garbage
+     */
+    private static function findWrongKeyCollision(string $key, string $otherKey): ?array
+    {
+        for ($i = 0; $i < 20000; $i++) {
+            $secret = \TwoFactorAuthService::generateSecret();
+            $blob = \TwoFactorAuthService::encryptSecret($secret, $key);
+            $garbage = \TwoFactorAuthService::decryptSecret($blob, $otherKey);
+
+            if ($garbage !== '') {
+                return [$secret, $blob, $garbage];
+            }
+        }
+
+        return null;
+    }
 }

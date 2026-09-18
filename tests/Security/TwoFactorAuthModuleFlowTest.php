@@ -340,6 +340,86 @@ namespace Lotgd\Tests\Security {
             );
         }
 
+        /**
+         * The legacy key is still tried when the current key answers with
+         * garbage.
+         *
+         * This is the defect behind the CI failure of the test directly above,
+         * which #1545 chased over 240 isolated runs and eight orderings without
+         * reproducing. It is not a test problem. `encryptSecret()` stores
+         * aes-256-cbc with no authentication tag, so `decryptSecret()` under the
+         * wrong key fails only on invalid PKCS#7 padding -- about 255 times in
+         * 256 -- and `twofactorauth_decrypt_secret_with_compat()` accepted
+         * anything that was not the empty string. One legacy blob in 262
+         * therefore "decrypted" under the current key into 47 random bytes, and
+         * the legacy key was never tried.
+         *
+         * For a player that is not a flake, because the blob and both keys are
+         * fixed for their account: every correct token refused as a mismatch,
+         * `failed_attempts` climbing toward the lockout, and nothing they can do
+         * about it.
+         *
+         * The colliding blob is searched for rather than hard-coded. A constant
+         * would be tied to whatever keys this harness happens to derive, and
+         * would quietly stop exercising anything the day one of them changed.
+         */
+        public function testALegacySecretIsReadEvenWhenTheCurrentKeyDecryptsItToGarbage(): void
+        {
+            $current = twofactorauth_current_signing_key();
+            $legacy = twofactorauth_legacy_signing_key();
+
+            self::assertNotSame($current, $legacy, 'precondition: there are two distinct keys to choose between');
+
+            $secret = null;
+            $blob = null;
+            for ($i = 0; $i < 20000; $i++) {
+                $candidate = \TwoFactorAuthService::generateSecret();
+                $encoded = \TwoFactorAuthService::encryptSecret($candidate, $legacy);
+
+                if (\TwoFactorAuthService::decryptSecret($encoded, $current) !== '') {
+                    $secret = $candidate;
+                    $blob = $encoded;
+                    break;
+                }
+            }
+
+            self::assertNotNull(
+                $blob,
+                'no legacy blob in 20000 decrypted under the current key, so this test exercised '
+                    . 'nothing -- the stored format has presumably become authenticated'
+            );
+
+            $state = twofactorauth_decrypt_secret_with_compat((string) $blob);
+
+            self::assertSame(
+                $secret,
+                $state['secret'],
+                'the compatibility read returned the current key\'s garbage instead of the secret'
+            );
+            self::assertTrue($state['used_legacy'], 'and it must know it read with the legacy key');
+            self::assertTrue($state['needs_reencrypt'], 'so that the next success re-encrypts it forward');
+        }
+
+        /**
+         * The ordinary case is unchanged: a blob written with the current key is
+         * read with the current key, and is not reported as legacy.
+         *
+         * Here because the check added above is a `continue`, and a `continue`
+         * placed one condition too wide would send every read down the legacy
+         * branch while the test before this one stayed green.
+         */
+        public function testACurrentKeySecretIsStillReadWithoutTheLegacyFallback(): void
+        {
+            $secret = \TwoFactorAuthService::generateSecret();
+            $blob = \TwoFactorAuthService::encryptSecret($secret, twofactorauth_current_signing_key());
+
+            $state = twofactorauth_decrypt_secret_with_compat($blob);
+
+            self::assertSame($secret, $state['secret']);
+            self::assertFalse($state['used_legacy']);
+            self::assertFalse($state['needs_reencrypt'], 'it is already in the current format');
+        }
+
         public function testDisableConfirmationAcceptsLegacySignedToken(): void
         {
             global $session;

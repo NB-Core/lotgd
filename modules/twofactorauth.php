@@ -400,8 +400,13 @@ function twofactorauth_render_setup(Output $output): void
         set_module_pref('temp_secret_encrypted', TwoFactorAuthService::encryptSecret($secret, $cryptoKey));
     }
 
+    // Same reason as the compatibility loop below: a decryption that returns
+    // something is not a decryption that returned the secret. Here there is no
+    // second key to fall back to, so a garbage read has to land in the "not
+    // enrolled yet" branch and let the player start again -- rather than
+    // printing a QR code for a secret nobody has.
     $tempSecret = TwoFactorAuthService::decryptSecret((string) get_module_pref('temp_secret_encrypted'), $cryptoKey);
-    if ($tempSecret === '') {
+    if (!TwoFactorAuthService::isPlausibleSecret($tempSecret)) {
         Nav::add('Actions');
         if ($secret !== '') {
             $output->output("`nYou already have a TOTP device setup, you can remove it and setup a new device via email recovery`n`n");
@@ -1666,7 +1671,17 @@ function twofactorauth_decrypt_secret_with_compat(string $storedSecret): array
     $canEncrypt = function_exists('openssl_encrypt');
     foreach (twofactorauth_compatible_signing_keys() as $candidateKey) {
         $secret = TwoFactorAuthService::decryptSecret($storedSecret, $candidateKey);
-        if ($secret === '') {
+
+        // Not `!== ''`. The stored format is unauthenticated, so the current
+        // key "succeeds" on a legacy blob about once in 255 -- and this loop
+        // then returned the garbage and never tried the legacy key at all.
+        // Because the blob and the keys are fixed per account, that is
+        // permanent for whoever it lands on: every correct token refused as a
+        // mismatch, failed_attempts climbing toward the lockout, and retrying
+        // no help. It is also what made
+        // TwoFactorAuthModuleFlowTest::testVerifyAcceptsLegacyEncryptedSecret...
+        // fail in CI roughly one run in 262 and never locally.
+        if (!TwoFactorAuthService::isPlausibleSecret($secret)) {
             continue;
         }
 
