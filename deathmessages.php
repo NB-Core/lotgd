@@ -191,7 +191,10 @@ if ($op == "") {
     while ($row = Database::fetchAssoc($result)) {
         $i = !$i;
         $output->rawOutput("<tr class='" . ($i ? "trdark" : "trlight") . "'>", true);
-        $output->rawOutput("<td nowrap>");
+        // No `nowrap`: the row wraps itself. In a theme that has not taken
+        // the .action-bar rules the controls stay inline, and nowrap would
+        // then stop them wrapping at all.
+        $output->rawOutput('<td>');
         $edit = Translator::translateInline("Edit");
         $del = Translator::translateInline("Del");
         $conf = Translator::translateInline("Are you sure you wish to delete this deathmessage?");

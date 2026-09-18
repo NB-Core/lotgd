@@ -430,7 +430,8 @@ modules.
   What changes for a player: the Edit half was a classless `<a>` sitting beside
   a themed button, and is now themed too; the row wraps on a narrow screen
   instead of forcing the table cell wider than the viewport; and `<td nowrap>`
-  is gone from the mount and companion rows, which would have defeated that.
+  is gone from every one of those action cells, which would have defeated that
+  in a theme that has not taken the `.action-bar` rules.
 
   Two smaller repairs ride along. Where an action is unavailable -- deleting an
   *active* mount or companion -- the page emitted the bare label `Del |` with no
