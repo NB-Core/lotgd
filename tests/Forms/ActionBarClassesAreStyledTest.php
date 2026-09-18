@@ -35,10 +35,14 @@ final class ActionBarClassesAreStyledTest extends TestCase
      */
     private static function classesIn(string $html): array
     {
-        preg_match_all('/class=\'([^\']*)\'/', $html, $matches);
+        // Both quote styles. The helpers emit single quotes today, so this
+        // reads nothing extra -- but a reader that only knows one spelling is
+        // how #1542's class scanner went blind, and repeating that here would
+        // be the third time in this line of work.
+        preg_match_all('/class=([\'"])(.*?)\1/', $html, $matches);
 
         $classes = [];
-        foreach ($matches[1] as $attribute) {
+        foreach ($matches[2] as $attribute) {
             foreach (preg_split('/\s+/', trim($attribute)) ?: [] as $class) {
                 if ($class !== '') {
                     $classes[] = $class;
@@ -47,6 +51,29 @@ final class ActionBarClassesAreStyledTest extends TestCase
         }
 
         return array_values(array_unique($classes));
+    }
+
+    /**
+     * The class reader is not tied to one quote style.
+     *
+     * Asserted on markup rather than on a rendered row, because the point is
+     * the shape the reader can handle, and the renderer only ever produces one
+     * of them. A reader blind to the other finds nothing -- which
+     * testTheRenderedRowYieldsClasses does catch, unlike #1542's scanner,
+     * where the equivalent blindness left every assertion green. Fixed anyway:
+     * relying on a second test to notice is worse than not being blind.
+     */
+    public function testTheClassReaderHandlesBothQuoteStyles(): void
+    {
+        self::assertSame(
+            ['button', 'action-bar__link'],
+            self::classesIn('<a class="button action-bar__link">x</a>')
+        );
+
+        self::assertSame(
+            ['button', 'action-bar__link'],
+            self::classesIn("<a class='button action-bar__link'>x</a>")
+        );
     }
 
     /**
