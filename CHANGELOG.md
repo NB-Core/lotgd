@@ -48,6 +48,8 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 - Refactored full and preference-only character restoration around a shared service, with safer serialized preference handling.
 - Modernized administrator and installer password updates, including migration from legacy hashes to the current password format.
+- Added a megauser-only, read-only Diagnostics console with time-window and severity filters, combining runtime and schema health, a security/warning/error/failed-login timeline, and detailed game, failed-login, character-audit, and profiling views.
+- Renamed `Sanitize::fullSanitize()` to `Sanitize::stripAllColorCodes()` to clarify that it removes colour codes rather than providing general-purpose escaping. The old method remains a deprecated 2.x compatibility alias, and the legacy `full_sanitize()` wrapper delegates to the replacement.
 - Replaced the async `mail_debug` setting with `debug_console`; the compatibility key remains accepted without changing polling intervals.
 - Updated dependencies, including Twig 3.27, and upgraded PHPStan to 2.x.
 
