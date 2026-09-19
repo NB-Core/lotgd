@@ -107,6 +107,18 @@ final class StyleSheets
      * themes do not link `sidebar.css`, and this reports that rather than
      * papering over it.
      *
+     * One sheet a browser does load is deliberately left out: the Twig heads
+     * open with `{{ 'bootstrap'|asset('css') }}`, resolved through
+     * assets/vendor/manifest.json. It is excluded because it is not a theme's
+     * sheet to change and because it has nothing to say about the classes
+     * these assertions are about -- measured, not assumed: of its 2967
+     * selectors, none mentions `.button`, `.action-bar` or `.mail-nav`. That
+     * exclusion is therefore a claim about the vendor sheet rather than a
+     * blanket rule, which is what the last one was, so it is asserted every
+     * run by VendorSheetsDoNotStyleTheRowTest instead of stated here and left
+     * to rot. Reported by Copilot, whose point was that the sentence above
+     * promised the full browser cascade and this delivers less.
+     *
      * Keyed by the theme's own sheet so a failure names something a reader can
      * open.
      *
