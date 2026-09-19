@@ -261,28 +261,4 @@ final class BundledTemplatePlaceholdersTest extends TestCase
             }
         }
     }
-
-    /**
-     * @return list<string>
-     */
-    private static function literalAttributes(string $markup, string $label, string $lang, string $description): array
-    {
-        $offenders = [];
-
-        preg_match_all('/<html[^>]*\blang=(["\'])(.*?)\1/i', $markup, $languages);
-        foreach ($languages[2] as $value) {
-            if (trim($value) !== $lang) {
-                $offenders[] = sprintf('%s: <html lang="%s">', $label, $value);
-            }
-        }
-
-        preg_match_all('/<meta[^>]*\bname=(["\'])description\1[^>]*\bcontent=(["\'])(.*?)\2/i', $markup, $descriptions);
-        foreach ($descriptions[3] as $value) {
-            if (trim($value) !== $description) {
-                $offenders[] = sprintf('%s: <meta name="description" content="%s">', $label, $value);
-            }
-        }
-
-        return $offenders;
-    }
 }
