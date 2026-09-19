@@ -37,9 +37,19 @@ class TwoFactorAuthService
     private const PLAIN_PREFIX = 'plain:';
 
     /**
-     * What the capability probe encrypts. Never stored, never a secret.
+     * What the capability probes use. Never stored, never a secret.
+     *
+     * PROBE_VECTOR is PROBE_PLAINTEXT encrypted under PROBE_KEY in the `enc2:`
+     * envelope, written down rather than produced, so that *reading* can be
+     * probed on an installation that cannot encrypt. That is not a contrivance:
+     * disable_functions takes a list, and an installation that has disabled
+     * only openssl_encrypt() still has to be able to read the secrets it stored
+     * before. A probe that had to encrypt first would answer "no" there and
+     * lock every migrated account out.
      */
     private const PROBE_PLAINTEXT = 'probe';
+    private const PROBE_KEY = 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk';
+    private const PROBE_VECTOR = 'AQEBAQEBAQEBAQEB81dlvJM3TuvCnavyPexgeiedl8gQ';
 
     public static function generateSecret(int $bytes = 20): string
     {
@@ -185,87 +195,124 @@ class TwoFactorAuthService
     }
 
     /**
-     * Whether this installation can use the authenticated format at all.
+     * Whether this installation can *read* the authenticated format.
      *
-     * Asked by *doing* it rather than by consulting a list. The first version
-     * looked the cipher up in openssl_get_cipher_methods(), which turned a
-     * question about the crypto into a question about one introspection
-     * function -- and made that function load-bearing for reading, not only for
-     * writing: decryptSecret() gates the `enc2:` branch on this, so an
-     * installation that had already migrated its accounts and then disabled
-     * only openssl_get_cipher_methods() answered false here and returned ''
-     * for every stored secret. Reproduced before fixing: a blob that read back
-     * as its secret on a healthy install came back empty on that one. That is a
-     * lockout, which is the exact failure this whole change exists to end.
-     * Reported by Copilot.
+     * Separate from writing, and that separation is the whole point. Two
+     * versions of this got it wrong in the same way: decryptSecret() gates the
+     * `enc2:` branch on a capability, so any capability that needs more than
+     * decryption locks migrated accounts out of their own secrets. First it was
+     * a cipher list lookup, and disabling openssl_get_cipher_methods() alone
+     * did it; then it was an encrypt-then-decrypt round trip, and disabling
+     * openssl_encrypt() alone did it. Both reproduced. Reported by Copilot,
+     * twice, which is once more than it should have taken.
      *
-     * A round trip cannot be wrong about it the way a list can be missing. It
-     * also costs one encrypt and one decrypt of a five-byte constant, once per
-     * process, which is not a budget worth optimising against a lockout.
+     * So this asks the only question reading actually depends on: can this
+     * build decrypt a known `enc2:` value into what it is known to contain.
+     * Nothing is encrypted to find out.
      */
-    public static function supportsAuthenticatedStorage(): bool
+    public static function supportsAuthenticatedRead(): bool
     {
         static $supported = null;
 
         if ($supported === null) {
-            $supported = self::cipherRoundTrips(self::AEAD_CIPHER);
+            $supported = self::cipherReadsTheVector(self::AEAD_CIPHER);
         }
 
         return $supported;
     }
 
     /**
-     * Whether this build can encrypt and then decrypt with a given cipher.
+     * Whether this installation can *write* the authenticated format.
      *
-     * The key and the plaintext are constants and nothing here is stored: this
-     * encrypts the word `probe` and throws the result away. The iv is random
-     * only so that no reader has to decide whether a fixed one matters.
-     *
-     * An unsupported cipher is an *answer*, not an error, but openssl_encrypt()
-     * reports it as a warning -- so the warning is caught by a handler scoped
-     * to the call and the previous one restored, rather than suppressed with
-     * `@`, which AGENTS.md rules out and which would also swallow anything else
-     * that went wrong in the same expression.
-     *
-     * The decrypt half earns its place by contract rather than by observation,
-     * and that is worth saying because no mutation can show it: on a build that
-     * has the cipher, encryption succeeding implies decryption succeeding, and
-     * a build missing openssl_decrypt() is already refused above. It stays
-     * because supportsAuthenticatedStorage() gates *reading* -- decryptSecret()
-     * consults it before touching an `enc2:` blob -- so a probe that measured
-     * only the write half would be answering a different question than the one
-     * being asked of it. That mismatch is exactly what produced the lockout
-     * this method was rewritten to fix.
+     * Reading is required as well as encrypting: a build that could write an
+     * `enc2:` blob it could never read back would store secrets nobody can use,
+     * which is the same lockout arriving by the other door.
      */
-    private static function cipherRoundTrips(string $cipher): bool
+    public static function supportsAuthenticatedStorage(): bool
     {
-        if (!function_exists('openssl_encrypt') || !function_exists('openssl_decrypt')) {
+        static $supported = null;
+
+        if ($supported === null) {
+            $supported = self::supportsAuthenticatedRead() && self::cipherEncrypts(self::AEAD_CIPHER);
+        }
+
+        return $supported;
+    }
+
+    /**
+     * Whether this build decrypts the known-answer vector with a given cipher.
+     *
+     * A known-answer test rather than a round trip, so that the question does
+     * not smuggle in a dependency on encryption. See PROBE_VECTOR.
+     */
+    private static function cipherReadsTheVector(string $cipher): bool
+    {
+        if (!function_exists('openssl_decrypt')) {
             return false;
         }
 
-        $key = str_repeat('k', 32);
-        $iv = random_bytes(self::AEAD_IV_BYTES);
-        $tag = '';
+        $raw = self::base64UrlDecode(self::PROBE_VECTOR);
+        $offset = self::AEAD_IV_BYTES + self::AEAD_TAG_BYTES;
 
-        set_error_handler(static fn (): bool => true);
+        return self::withoutWarnings(static fn (): bool => openssl_decrypt(
+            substr($raw, $offset),
+            $cipher,
+            self::PROBE_KEY,
+            OPENSSL_RAW_DATA,
+            substr($raw, 0, self::AEAD_IV_BYTES),
+            substr($raw, self::AEAD_IV_BYTES, self::AEAD_TAG_BYTES)
+        ) === self::PROBE_PLAINTEXT);
+    }
 
-        try {
+    /**
+     * Whether this build produces a tagged ciphertext with a given cipher.
+     *
+     * The tag length is checked rather than only the return value, because that
+     * is the part the stored envelope depends on.
+     */
+    private static function cipherEncrypts(string $cipher): bool
+    {
+        if (!function_exists('openssl_encrypt')) {
+            return false;
+        }
+
+        return self::withoutWarnings(static function () use ($cipher): bool {
+            $tag = '';
             $ciphertext = openssl_encrypt(
                 self::PROBE_PLAINTEXT,
                 $cipher,
-                $key,
+                self::PROBE_KEY,
                 OPENSSL_RAW_DATA,
-                $iv,
+                random_bytes(self::AEAD_IV_BYTES),
                 $tag,
                 '',
                 self::AEAD_TAG_BYTES
             );
 
-            if (!is_string($ciphertext) || strlen($tag) !== self::AEAD_TAG_BYTES) {
-                return false;
-            }
+            return is_string($ciphertext) && strlen($tag) === self::AEAD_TAG_BYTES;
+        });
+    }
 
-            return openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag) === self::PROBE_PLAINTEXT;
+    /**
+     * Run a capability probe with its warnings treated as the answer.
+     *
+     * An unsupported cipher is an *answer*, not an error, but openssl reports
+     * it as a warning -- and an installation that legitimately takes the
+     * fallback would otherwise print one from a capability check on every
+     * request, about a condition the code handles on purpose.
+     *
+     * A handler scoped to the call with the previous one restored, rather than
+     * `@`, which AGENTS.md rules out and which would also swallow anything else
+     * that went wrong in the same expression.
+     *
+     * @param callable(): bool $probe
+     */
+    private static function withoutWarnings(callable $probe): bool
+    {
+        set_error_handler(static fn (): bool => true);
+
+        try {
+            return $probe();
         } finally {
             restore_error_handler();
         }
@@ -315,7 +362,13 @@ class TwoFactorAuthService
             }
         }
 
-        if (function_exists('openssl_encrypt')) {
+        // Both functions, not just the one this branch calls. decryptSecret()
+        // reads `enc:` only where openssl_decrypt() exists, so an installation
+        // that has disabled that one alone would be writing a format it can
+        // never read back -- the same lockout as above, arriving by the other
+        // door. Found while checking the disable_functions combinations for
+        // the authenticated format; the legacy branch had always had it.
+        if (function_exists('openssl_encrypt') && function_exists('openssl_decrypt')) {
             $iv = random_bytes(16);
             $ciphertext = openssl_encrypt($secret, 'aes-256-cbc', hash('sha256', $key, true), OPENSSL_RAW_DATA, $iv);
             if (is_string($ciphertext)) {
@@ -328,7 +381,7 @@ class TwoFactorAuthService
 
     public static function decryptSecret(string $storedSecret, string $key): string
     {
-        if (str_starts_with($storedSecret, self::AEAD_PREFIX) && self::supportsAuthenticatedStorage()) {
+        if (str_starts_with($storedSecret, self::AEAD_PREFIX) && self::supportsAuthenticatedRead()) {
             $raw = self::base64UrlDecode(substr($storedSecret, strlen(self::AEAD_PREFIX)));
             if (strlen($raw) > self::AEAD_IV_BYTES + self::AEAD_TAG_BYTES) {
                 $decrypted = openssl_decrypt(

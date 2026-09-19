@@ -802,7 +802,7 @@ Secrets are now written as `enc2:`, which is `aes-256-gcm` with its tag stored a
 Two things worth knowing:
 
 - **Rolling back to an earlier release will lock out any account that has verified since the upgrade.** An older build does not know the `enc2:` prefix and reads it as an unknown format, which is an empty secret. If you need to roll back, restore the accounts' `secret_encrypted` preferences from a backup taken before the upgrade, or have affected players use the emailed disable link and enrol again.
-- A PHP build without `aes-256-gcm` keeps writing the older format rather than failing to store a secret. `TwoFactorAuthService::supportsAuthenticatedStorage()` answers which path an installation is on.
+- A PHP build without `aes-256-gcm` keeps writing the older format rather than failing to store a secret, and no configuration writes a format it cannot read back. `TwoFactorAuthService::supportsAuthenticatedRead()` and `supportsAuthenticatedStorage()` answer which path an installation is on — reading and writing are asked separately, because an installation that has disabled only `openssl_encrypt()` must still be able to read the secrets it stored earlier.
 
 ### SQL addslashes baseline status
 

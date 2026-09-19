@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Security;
 
 use Lotgd\Tests\Support\LegacyTwoFactorSecret;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2) . '/modules/TwoFactorAuth/TwoFactorAuthService.php';
@@ -421,78 +422,87 @@ class TwoFactorAuthServiceTest extends TestCase
     }
 
     /**
-     * Cipher discovery is not load-bearing, for reading or for writing.
+     * What each openssl configuration can read and what it may write.
      *
-     * It was, and that was a lockout. `decryptSecret()` gates the `enc2:`
-     * branch on supportsAuthenticatedStorage(), and the first version of that
-     * method answered by looking the cipher up in openssl_get_cipher_methods()
-     * -- so an installation that had already migrated its accounts and then
-     * disabled only that one function answered false and returned '' for every
-     * stored secret. Every correct token refused, for everybody, permanently.
-     * Reported by Copilot; reproduced before fixing, with a blob that read back
-     * as its secret on a healthy install coming back empty on that one.
+     * A table rather than a test per case, because the two lockouts this file
+     * exists to prevent were both *one row* of it, and both were introduced by
+     * a fix for the row above. `decryptSecret()` gates the `enc2:` branch on a
+     * capability, so any capability that needs more than decryption locks
+     * migrated accounts out of their own secrets:
      *
-     * Both halves are asserted here, because only one of them is the
-     * regression: a blob written before the function went away must still read
-     * (the lockout), and a new one must still be written in the authenticated
-     * format (the capability, which a list lookup got wrong in the cautious
-     * direction).
+     *   - a cipher list lookup, and disabling openssl_get_cipher_methods()
+     *     alone did it;
+     *   - an encrypt-then-decrypt round trip, and disabling openssl_encrypt()
+     *     alone did it.
      *
-     * In a child process because disable_functions is PHP_INI_SYSTEM: there is
-     * no way to turn a function off inside a running test, and a test that
-     * asserted this against a mock would be asserting against its own mock.
+     * Both reported by Copilot and both reproduced before fixing. The answer
+     * was to stop asking one question: reading is probed against a known
+     * `enc2:` value, writing against an encryption that must also be readable.
+     *
+     * `disable_functions` takes a list, which is the whole reason these
+     * combinations exist. The last column is not a preference -- it is the only
+     * format that row can read back, which is the rule the legacy branch was
+     * quietly breaking.
+     *
+     * @return iterable<string, array{0: string, 1: bool, 2: bool, 3: string}>
      */
-    public function testDisablingCipherDiscoveryNeitherLocksOutNorDowngrades(): void
+    public static function opensslConfigurations(): iterable
     {
+        yield 'everything available' => ['', true, true, 'enc2:'];
+        yield 'cipher discovery disabled' => ['openssl_get_cipher_methods', true, true, 'enc2:'];
+        yield 'encryption disabled' => ['openssl_encrypt', true, false, 'plain:'];
+        yield 'decryption disabled' => ['openssl_decrypt', false, false, 'plain:'];
+        yield 'no openssl at all' => ['openssl_encrypt,openssl_decrypt', false, false, 'plain:'];
+    }
+
+    #[DataProvider('opensslConfigurations')]
+    public function testEachOpensslConfigurationReadsWhatItCanAndWritesOnlyWhatItReads(
+        string $disabled,
+        bool $canRead,
+        bool $canWrite,
+        string $expectedPrefix
+    ): void {
         self::requireAuthenticatedStorage();
 
         $secret = \TwoFactorAuthService::generateSecret();
         $existing = \TwoFactorAuthService::encryptSecret($secret, 'a-key');
 
-        self::assertStringStartsWith('enc2:', $existing, 'precondition: the fixture is an already-migrated account');
+        self::assertStringStartsWith('enc2:', $existing, 'precondition: an already-migrated account');
 
-        $result = self::runWithDisabledFunctions('openssl_get_cipher_methods', $existing);
+        $result = self::runWithDisabledFunctions($disabled, $existing);
+
+        self::assertSame($canRead, $result['read'], 'read capability');
+        self::assertSame($canWrite, $result['write'], 'write capability');
 
         self::assertSame(
-            $secret,
+            $canRead ? $secret : '',
             $result['existing'],
-            'an account stored before the function went away is now unreadable, which is a lockout'
+            $canRead
+                ? 'an account stored before this configuration is unreadable, which is a lockout'
+                : 'it claimed not to be able to read and then read something anyway'
         );
-        self::assertTrue($result['supported']);
-        self::assertSame('enc2:', $result['prefix'], 'and a new secret must not be downgraded either');
+
+        self::assertSame($expectedPrefix, $result['prefix'], 'the format chosen for a new secret');
+
+        // The rule the whole table is for: never write what you cannot read.
+        self::assertSame(
+            'JBSWY3DPEHPK3PXP',
+            $result['readback'],
+            'this configuration wrote a format it cannot read back, so the next verification fails'
+        );
     }
 
     /**
-     * With no openssl at all, the last fallback still stores and reads.
+     * The probes answer for a cipher this build does not have, and stay quiet.
      *
-     * The other end of the same question. `plain:` is not encryption and is not
-     * pretending to be; what matters is that an installation without openssl
-     * can still enrol somebody rather than failing to store a secret.
-     */
-    public function testWithoutOpensslTheSecretStillRoundTrips(): void
-    {
-        $stored = 'plain:' . rtrim(strtr(base64_encode('JBSWY3DPEHPK3PXP'), '+/', '-_'), '=');
-
-        $result = self::runWithDisabledFunctions('openssl_encrypt,openssl_decrypt', $stored);
-
-        self::assertFalse($result['supported']);
-        self::assertSame('plain:', $result['prefix']);
-        self::assertSame('JBSWY3DPEHPK3PXP', $result['roundtrip']);
-        self::assertSame('JBSWY3DPEHPK3PXP', $result['existing']);
-    }
-
-    /**
-     * The probe reports a cipher this build does not have, without saying so in
-     * the log.
-     *
-     * The branch it guards -- openssl present, aes-256-gcm absent -- cannot be
+     * The branch they guard -- openssl present, aes-256-gcm absent -- cannot be
      * produced here: disable_functions turns functions off, not ciphers. So the
      * mechanism is tested with a name no build has, which is the same code path
      * reaching the same answer.
      *
-     * The quietness is not decoration. openssl_encrypt() reports an unknown
-     * cipher as a *warning*, and a probe that let it through would print one on
-     * every request of an installation that has to take the fallback -- from a
+     * The quietness is not decoration. openssl reports an unknown cipher as a
+     * *warning*, and a probe that let it through would print one on every
+     * request of an installation that has to take the fallback -- from a
      * capability check, about a condition the code handles deliberately.
      *
      * Asserted through error_get_last() rather than by installing a handler
@@ -502,33 +512,29 @@ class TwoFactorAuthServiceTest extends TestCase
      * either way. error_get_last() is populated exactly when nothing handled
      * the error, which is the question being asked.
      */
-    public function testTheProbeAnswersForAnAbsentCipherAndStaysQuiet(): void
+    public function testTheProbesAnswerForAnAbsentCipherAndStayQuiet(): void
     {
-        $probe = new \ReflectionMethod(\TwoFactorAuthService::class, 'cipherRoundTrips');
-        $probe->setAccessible(true);
+        foreach (['cipherReadsTheVector', 'cipherEncrypts'] as $name) {
+            $probe = new \ReflectionMethod(\TwoFactorAuthService::class, $name);
+            $probe->setAccessible(true);
 
-        error_clear_last();
-        $absent = $probe->invoke(null, 'aes-256-not-a-cipher');
-        $leaked = error_get_last();
+            error_clear_last();
+            $absent = $probe->invoke(null, 'aes-256-not-a-cipher');
+            $leaked = error_get_last();
 
-        self::assertFalse($absent, 'a cipher this build does not have is reported as unavailable');
-        self::assertNull(
-            $leaked,
-            'the probe let an error escape: ' . ($leaked['message'] ?? '')
-        );
+            self::assertFalse($absent, "$name reported a cipher this build does not have as available");
+            self::assertNull($leaked, "$name let an error escape: " . ($leaked['message'] ?? ''));
 
-        if (\TwoFactorAuthService::supportsAuthenticatedStorage()) {
-            self::assertTrue(
-                $probe->invoke(null, 'aes-256-gcm'),
-                'control: the cipher this build does have is reported as available'
-            );
+            if (\TwoFactorAuthService::supportsAuthenticatedStorage()) {
+                self::assertTrue($probe->invoke(null, 'aes-256-gcm'), "control: $name accepts the real cipher");
+            }
         }
     }
 
     /**
      * Run the storage round trip in a child with functions disabled.
      *
-     * @return array{supported: bool, prefix: string, roundtrip: string, existing: string}
+     * @return array{read: bool, write: bool, prefix: string, readback: string, existing: string}
      */
     private static function runWithDisabledFunctions(string $disabled, string $existingBlob): array
     {
@@ -542,9 +548,10 @@ class TwoFactorAuthServiceTest extends TestCase
             // yields arbitrary bytes. Without it the child printed nothing at
             // all and the assertion blamed the wrong thing.
             echo json_encode([
-                'supported' => TwoFactorAuthService::supportsAuthenticatedStorage(),
+                'read' => TwoFactorAuthService::supportsAuthenticatedRead(),
+                'write' => TwoFactorAuthService::supportsAuthenticatedStorage(),
                 'prefix' => substr($blob, 0, strpos($blob, ':') + 1),
-                'roundtrip' => TwoFactorAuthService::decryptSecret($blob, 'a-key'),
+                'readback' => TwoFactorAuthService::decryptSecret($blob, 'a-key'),
                 'existing' => TwoFactorAuthService::decryptSecret($argv[2], 'a-key'),
             ], JSON_THROW_ON_ERROR);
             PHP;
