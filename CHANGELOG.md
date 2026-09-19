@@ -27,6 +27,7 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ### Security
 
+- Two-factor secrets are stored in an authenticated format (`aes-256-gcm`) instead of unauthenticated `aes-256-cbc`. The old format could not distinguish a wrong key from a right one, which permanently locked roughly one account in 262 out of 2FA; existing secrets are rewritten automatically the next time their owner verifies, and the old format is still read until then. See `UPGRADING.md` before rolling back to an earlier release.
 - Centralized CSRF-refusal reporting in `Lotgd\Forms`: core operation and request guards now log each rejection once through `Lotgd\SecurityLog`, with the page, operation, scope, method, caller-supplied record context, severity, and a correlation diagnostic. Affected core pages no longer maintain duplicate per-page logging paths.
 - Added executable CSRF coverage for guarded core pages and tightened bank request validation without blocking module-owned operations.
 - Strengthened SQL-interpolation and request-normalization analysis so concatenation, helper-returned queries, comments, definitions, nullsafe calls, and token edge cases cannot hide unsafe request values.

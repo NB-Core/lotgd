@@ -7,6 +7,68 @@ declare(strict_types=1);
  */
 class TwoFactorAuthService
 {
+    /**
+     * The authenticated at-rest format.
+     *
+     * `enc2:` is base64url(iv || tag || ciphertext) under aes-256-gcm. The tag
+     * is what the format exists for: `enc:` is aes-256-cbc with nothing to
+     * verify, so openssl_decrypt() there rejects a wrong key only when the
+     * final block's PKCS#7 padding comes out invalid -- about 255 times in 256,
+     * and the 256th returns bytes a caller cannot tell from a secret. That is
+     * not a theoretical hole: it locked roughly one account in 262 out of 2FA
+     * permanently, because the blob and the keys are fixed per account, so the
+     * collision either happens for you every time or never. See #1547.
+     *
+     * With a tag, a wrong key fails. Forging one is 2^-128, not 2^-8.
+     */
+    private const AEAD_CIPHER = 'aes-256-gcm';
+    private const AEAD_PREFIX = 'enc2:';
+    private const AEAD_IV_BYTES = 12;
+    private const AEAD_TAG_BYTES = 16;
+
+    /**
+     * The unauthenticated format.
+     *
+     * Always read. Written only where the authenticated one is unavailable and
+     * openssl still is -- see preferredPrefix(). An earlier version of this
+     * comment said "never written", which was true of the first draft and
+     * stopped being true the moment a fallback existed. Reported by Copilot.
+     */
+    private const LEGACY_PREFIX = 'enc:';
+
+    /**
+     * The no-openssl fallback, which does not consult the key at all.
+     */
+    private const PLAIN_PREFIX = 'plain:';
+
+    /**
+     * What the capability probes use. Never stored, never a secret.
+     *
+     * PROBE_VECTOR is PROBE_PLAINTEXT encrypted under PROBE_KEY in the `enc2:`
+     * envelope, written down rather than produced, so that *reading* can be
+     * probed on an installation that cannot encrypt. That is not a contrivance:
+     * disable_functions takes a list, and an installation that has disabled
+     * only openssl_encrypt() still has to be able to read the secrets it stored
+     * before. A probe that had to encrypt first would answer "no" there and
+     * lock every migrated account out.
+     */
+    private const PROBE_PLAINTEXT = 'probe';
+
+    /**
+     * The authenticated format's key derivation. The info string names the
+     * format, so a third one would get its own key by construction.
+     */
+    private const AEAD_KEY_BYTES = 32;
+    private const AEAD_KEY_INFO = 'lotgd-2fa-secret-v2';
+
+    /**
+     * SHA-256's output length, which HKDF's salt is a zero block of. Equal to
+     * AEAD_KEY_BYTES by coincidence; see hkdfSha256().
+     */
+    private const HKDF_HASH_BYTES = 32;
+    private const PROBE_KEY = 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk';
+    private const PROBE_VECTOR = 'AQEBAQEBAQEBAQEB81dlvJM3TuvCnavyPexgeiedl8gQ';
+
     public static function generateSecret(int $bytes = 20): string
     {
         return self::base32Encode(random_bytes($bytes));
@@ -150,23 +212,275 @@ class TwoFactorAuthService
         return rtrim($endpoint) . $separator . $query;
     }
 
-    public static function encryptSecret(string $secret, string $key): string
+    /**
+     * Whether this installation can *read* the authenticated format.
+     *
+     * Separate from writing, and that separation is the whole point. Two
+     * versions of this got it wrong in the same way: decryptSecret() gates the
+     * `enc2:` branch on a capability, so any capability that needs more than
+     * decryption locks migrated accounts out of their own secrets. First it was
+     * a cipher list lookup, and disabling openssl_get_cipher_methods() alone
+     * did it; then it was an encrypt-then-decrypt round trip, and disabling
+     * openssl_encrypt() alone did it. Both reproduced. Reported by Copilot,
+     * twice, which is once more than it should have taken.
+     *
+     * So this asks the only question reading actually depends on: can this
+     * build decrypt a known `enc2:` value into what it is known to contain.
+     * Nothing is encrypted to find out.
+     */
+    public static function supportsAuthenticatedRead(): bool
     {
-        if (function_exists('openssl_encrypt')) {
-            $iv = random_bytes(16);
-            $ciphertext = openssl_encrypt($secret, 'aes-256-cbc', hash('sha256', $key, true), OPENSSL_RAW_DATA, $iv);
-            if (is_string($ciphertext)) {
-                return 'enc:' . self::base64UrlEncode($iv . $ciphertext);
+        static $supported = null;
+
+        if ($supported === null) {
+            $supported = self::cipherReadsTheVector(self::AEAD_CIPHER);
+        }
+
+        return $supported;
+    }
+
+    /**
+     * Whether this installation can *write* the authenticated format.
+     *
+     * Reading is required as well as encrypting: a build that could write an
+     * `enc2:` blob it could never read back would store secrets nobody can use,
+     * which is the same lockout arriving by the other door.
+     */
+    public static function supportsAuthenticatedStorage(): bool
+    {
+        static $supported = null;
+
+        if ($supported === null) {
+            $supported = self::supportsAuthenticatedRead() && self::cipherEncrypts(self::AEAD_CIPHER);
+        }
+
+        return $supported;
+    }
+
+    /**
+     * Whether this build decrypts the known-answer vector with a given cipher.
+     *
+     * A known-answer test rather than a round trip, so that the question does
+     * not smuggle in a dependency on encryption. See PROBE_VECTOR.
+     */
+    private static function cipherReadsTheVector(string $cipher): bool
+    {
+        if (!function_exists('openssl_decrypt')) {
+            return false;
+        }
+
+        $raw = self::base64UrlDecode(self::PROBE_VECTOR);
+        $offset = self::AEAD_IV_BYTES + self::AEAD_TAG_BYTES;
+
+        return self::withoutWarnings(static fn (): bool => openssl_decrypt(
+            substr($raw, $offset),
+            $cipher,
+            self::PROBE_KEY,
+            OPENSSL_RAW_DATA,
+            substr($raw, 0, self::AEAD_IV_BYTES),
+            substr($raw, self::AEAD_IV_BYTES, self::AEAD_TAG_BYTES)
+        ) === self::PROBE_PLAINTEXT);
+    }
+
+    /**
+     * Whether this build produces a tagged ciphertext with a given cipher.
+     *
+     * The tag length is checked rather than only the return value, because that
+     * is the part the stored envelope depends on.
+     */
+    private static function cipherEncrypts(string $cipher): bool
+    {
+        if (!function_exists('openssl_encrypt')) {
+            return false;
+        }
+
+        return self::withoutWarnings(static function () use ($cipher): bool {
+            $tag = '';
+            $ciphertext = openssl_encrypt(
+                self::PROBE_PLAINTEXT,
+                $cipher,
+                self::PROBE_KEY,
+                OPENSSL_RAW_DATA,
+                random_bytes(self::AEAD_IV_BYTES),
+                $tag,
+                '',
+                self::AEAD_TAG_BYTES
+            );
+
+            return is_string($ciphertext) && strlen($tag) === self::AEAD_TAG_BYTES;
+        });
+    }
+
+    /**
+     * Run a capability probe with its warnings treated as the answer.
+     *
+     * An unsupported cipher is an *answer*, not an error, but openssl reports
+     * it as a warning -- and an installation that legitimately takes the
+     * fallback would otherwise print one from a capability check on every
+     * request, about a condition the code handles on purpose.
+     *
+     * A handler scoped to the call with the previous one restored, rather than
+     * `@`, which AGENTS.md rules out and which would also swallow anything else
+     * that went wrong in the same expression.
+     *
+     * @param callable(): bool $probe
+     */
+    private static function withoutWarnings(callable $probe): bool
+    {
+        set_error_handler(static fn (): bool => true);
+
+        try {
+            return $probe();
+        } finally {
+            restore_error_handler();
+        }
+    }
+
+    /**
+     * The format this installation writes.
+     *
+     * One authority, because two of them disagreed. needsReencryption() used to
+     * decide for itself that `enc:` was writable wherever openssl_encrypt()
+     * existed, while encryptSecret() had come to require openssl_decrypt() too
+     * -- so on an installation with only the latter disabled, a `plain:` secret
+     * was reported as needing a rewrite, the rewrite produced `plain:` again,
+     * and every successful verification wrote the preference for nothing.
+     * Reported by Copilot. Same shape as the two lockouts above: one question,
+     * answered in two places, drifting.
+     */
+    private static function preferredPrefix(): string
+    {
+        if (self::supportsAuthenticatedStorage()) {
+            return self::AEAD_PREFIX;
+        }
+
+        // Both, not just the one this branch calls: decryptSecret() reads
+        // `enc:` only where openssl_decrypt() exists, so writing it anywhere
+        // else would store a secret this installation can never verify.
+        if (function_exists('openssl_encrypt') && function_exists('openssl_decrypt')) {
+            return self::LEGACY_PREFIX;
+        }
+
+        return self::PLAIN_PREFIX;
+    }
+
+    /**
+     * How well each stored format protects the secret. Higher is better.
+     *
+     * An ordering rather than an equality, because the migration must only ever
+     * go *up*. The first version of this method asked whether the stored prefix
+     * was the one this installation writes, which reads as the same thing and
+     * is not: on an installation that can still read `enc2:` but can no longer
+     * encrypt, the preferred format is `plain:`, so an authenticated secret was
+     * reported as needing a rewrite -- and the rewrite would have stored it in
+     * plaintext. Reported by Copilot; reproduced. A migration that can downgrade
+     * is worse than one that stalls.
+     */
+    private const FORMAT_STRENGTH = [
+        self::AEAD_PREFIX => 2,
+        self::LEGACY_PREFIX => 1,
+        self::PLAIN_PREFIX => 0,
+    ];
+
+    /**
+     * Whether a stored secret should be rewritten in a better format.
+     *
+     * The migration is opportunistic: a successful verification rewrites the
+     * blob in the current format. So this is not bookkeeping -- it is the only
+     * thing that ever moves an account off the weak format, and a wrong answer
+     * either strands the account, writes the preference on every request, or
+     * throws away the protection the account already had.
+     */
+    public static function needsReencryption(string $storedSecret): bool
+    {
+        return self::formatStrength($storedSecret) < self::FORMAT_STRENGTH[self::preferredPrefix()];
+    }
+
+    /**
+     * Where a stored value sits in that ordering.
+     *
+     * An unrecognised prefix ranks below every format, which is the honest
+     * answer: it is not something this class wrote, and anything it can write
+     * is an improvement. In practice it is unreachable, because a rewrite needs
+     * the plaintext and the plaintext comes from having read the blob.
+     */
+    private static function formatStrength(string $storedSecret): int
+    {
+        foreach (self::FORMAT_STRENGTH as $prefix => $strength) {
+            if (str_starts_with($storedSecret, $prefix)) {
+                return $strength;
             }
         }
 
-        return 'plain:' . self::base64UrlEncode($secret);
+        return -1;
+    }
+
+    public static function encryptSecret(string $secret, string $key): string
+    {
+        $prefix = self::preferredPrefix();
+
+        if ($prefix === self::AEAD_PREFIX) {
+            $iv = random_bytes(self::AEAD_IV_BYTES);
+            $tag = '';
+            $ciphertext = openssl_encrypt(
+                $secret,
+                self::AEAD_CIPHER,
+                self::aeadKey($key),
+                OPENSSL_RAW_DATA,
+                $iv,
+                $tag,
+                '',
+                self::AEAD_TAG_BYTES
+            );
+
+            if (is_string($ciphertext) && strlen($tag) === self::AEAD_TAG_BYTES) {
+                return self::AEAD_PREFIX . self::base64UrlEncode($iv . $tag . $ciphertext);
+            }
+        }
+
+        // Reached either because `enc:` is what this installation writes, or
+        // because the authenticated encrypt above was expected to work and did
+        // not -- which implies both functions, since the authenticated format
+        // requires them.
+        if ($prefix !== self::PLAIN_PREFIX) {
+            $iv = random_bytes(16);
+            $ciphertext = openssl_encrypt($secret, 'aes-256-cbc', hash('sha256', $key, true), OPENSSL_RAW_DATA, $iv);
+            if (is_string($ciphertext)) {
+                return self::LEGACY_PREFIX . self::base64UrlEncode($iv . $ciphertext);
+            }
+        }
+
+        return self::PLAIN_PREFIX . self::base64UrlEncode($secret);
     }
 
     public static function decryptSecret(string $storedSecret, string $key): string
     {
-        if (str_starts_with($storedSecret, 'enc:') && function_exists('openssl_decrypt')) {
-            $raw = self::base64UrlDecode(substr($storedSecret, 4));
+        if (str_starts_with($storedSecret, self::AEAD_PREFIX) && self::supportsAuthenticatedRead()) {
+            $raw = self::base64UrlDecode(substr($storedSecret, strlen(self::AEAD_PREFIX)));
+            if (strlen($raw) > self::AEAD_IV_BYTES + self::AEAD_TAG_BYTES) {
+                $decrypted = openssl_decrypt(
+                    substr($raw, self::AEAD_IV_BYTES + self::AEAD_TAG_BYTES),
+                    self::AEAD_CIPHER,
+                    self::aeadKey($key),
+                    OPENSSL_RAW_DATA,
+                    substr($raw, 0, self::AEAD_IV_BYTES),
+                    substr($raw, self::AEAD_IV_BYTES, self::AEAD_TAG_BYTES)
+                );
+
+                if (is_string($decrypted)) {
+                    return $decrypted;
+                }
+            }
+
+            // A tag that does not verify is a wrong key or a tampered blob, and
+            // both mean this value is not readable. Falling through to the
+            // other formats would only ask them about bytes that are not
+            // theirs.
+            return '';
+        }
+
+        if (str_starts_with($storedSecret, self::LEGACY_PREFIX) && function_exists('openssl_decrypt')) {
+            $raw = self::base64UrlDecode(substr($storedSecret, strlen(self::LEGACY_PREFIX)));
             if (strlen($raw) > 16) {
                 $iv = substr($raw, 0, 16);
                 $ciphertext = substr($raw, 16);
@@ -177,23 +491,92 @@ class TwoFactorAuthService
             }
         }
 
-        if (str_starts_with($storedSecret, 'plain:')) {
-            return self::base64UrlDecode(substr($storedSecret, 6));
+        if (str_starts_with($storedSecret, self::PLAIN_PREFIX)) {
+            return self::base64UrlDecode(substr($storedSecret, strlen(self::PLAIN_PREFIX)));
         }
 
         return '';
     }
 
     /**
+     * The key the authenticated format uses, separated from the legacy one.
+     *
+     * The signing key is the same value either way; deriving a distinct subkey
+     * for this cipher keeps one key from being used under two modes, which is
+     * cheap here and is the kind of thing that is awkward to change later. The
+     * info string names the format, so a third one would get its own.
+     *
+     * hash_hkdf() rejects an empty key, and an empty signing key is a
+     * configuration this module already treats as "no key" -- the compat list
+     * filters those out -- so it is answered with a value that decrypts nothing
+     * rather than with an exception from inside a crypto helper.
+     */
+    private static function aeadKey(string $key): string
+    {
+        if ($key === '') {
+            return str_repeat("\0", self::AEAD_KEY_BYTES);
+        }
+
+        if (function_exists('hash_hkdf')) {
+            return hash_hkdf('sha256', $key, self::AEAD_KEY_BYTES, self::AEAD_KEY_INFO);
+        }
+
+        return self::hkdfSha256($key, self::AEAD_KEY_INFO, self::AEAD_KEY_BYTES);
+    }
+
+    /**
+     * HKDF-SHA256, for a build where hash_hkdf() is not callable.
+     *
+     * disable_functions takes a list, and hash_hkdf() is exactly the sort of
+     * entry that ends up on one. aeadKey() called it unconditionally while the
+     * capability probes asked only about openssl, so an installation that had
+     * disabled it answered "authenticated storage available" and then fatalled
+     * on the next read -- the fifth time on this PR that one predicate stood in
+     * for a capability it did not actually measure. Reported by Copilot.
+     *
+     * Reporting the format as unavailable instead would have been the wrong
+     * repair: it locks migrated accounts out of secrets that are perfectly
+     * readable. So the derivation is done by hand, and it must be *identical*
+     * to the extension's, or a build without it could not read what a build
+     * with it wrote -- which a test asserts rather than trusting this comment.
+     *
+     * RFC 5869 for one output block: PRK = HMAC(salt, ikm) with a zero salt of
+     * the hash length, then T(1) = HMAC(PRK, info || 0x01). One block is enough
+     * because 32 bytes is exactly SHA-256's output.
+     */
+    private static function hkdfSha256(string $key, string $info, int $length): string
+    {
+        // The salt is a zero block of the *hash* length, which RFC 5869 defines
+        // independently of the output length. It is 32 here because SHA-256
+        // says so, not because the derived key happens to be 32 bytes too --
+        // reaching for AEAD_KEY_BYTES would tie two numbers that are equal by
+        // coincidence and would silently break interoperability with
+        // hash_hkdf() if the key size ever changed.
+        $prk = hash_hmac('sha256', $key, str_repeat("\0", self::HKDF_HASH_BYTES), true);
+
+        return substr(hash_hmac('sha256', $info . "\x01", $prk, true), 0, $length);
+    }
+
+    /**
      * Whether a decrypted value can be a TOTP secret at all.
      *
-     * decryptSecret() cannot tell a wrong key from a right one. The stored
-     * format is aes-256-cbc with no authentication tag, and openssl_decrypt()
-     * fails only when the final block's PKCS#7 padding is invalid -- which
-     * random bytes satisfy about once in 255. So a blob encrypted under one key
-     * "decrypts" under another roughly 0.4% of the time, into garbage that is
-     * not empty and is therefore indistinguishable from a secret to any caller
-     * testing `!== ''`. Measured over 300000 secrets: 1176 of them, 0.392%.
+     * decryptSecret() cannot always tell a wrong key from a right one, and this
+     * is what a caller asks when it cannot.
+     *
+     * For `enc2:` it can: the tag either verifies or it does not, so a wrong
+     * key yields '' and this check has nothing left to decide. The check is
+     * still here because `enc:` exists on disk. That format is aes-256-cbc with
+     * no tag, and openssl_decrypt() fails only when the final block's PKCS#7
+     * padding is invalid -- which random bytes satisfy about once in 255. So a
+     * blob encrypted under one key "decrypts" under another roughly 0.4% of the
+     * time, into garbage that is not empty and is therefore indistinguishable
+     * from a secret to any caller testing `!== ''`. Measured over 300000
+     * secrets: 1176 of them, 0.392%.
+     *
+     * Nothing writes `enc:` any more, and nothing sweeps it either: the
+     * migration happens when an account next verifies, so how long the last one
+     * survives is a question about players, not about releases. Removing this
+     * check on a schedule would therefore be removing it on a guess.
      *
      * That is what this answers, and it is a caller's question rather than
      * decryptSecret()'s, because a caller with a second key to try wants to try

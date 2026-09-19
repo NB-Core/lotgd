@@ -791,6 +791,19 @@ Recent 2.x updates switched several superuser and security-sensitive endpoints t
 
 If you maintain custom overrides of any migrated page, update those overrides to match bound-parameter execution semantics (including explicit type maps and DBAL array binding for dynamic `IN` clauses).
 
+### Two-factor secrets move to an authenticated at-rest format
+
+Stored TOTP secrets were encrypted with `aes-256-cbc` and no authentication tag (`enc:`). That format cannot tell a wrong key from a right one: OpenSSL rejects a wrong key only when the final block's PKCS#7 padding comes out invalid, so roughly one decryption in 255 returns bytes instead of failing. Because an account's blob and the server's keys are both fixed, that outcome is **permanent for whoever it lands on** — every correct token refused, `failed_attempts` climbing toward the lockout, and no way for the player to clear it.
+
+Secrets are now written as `enc2:`, which is `aes-256-gcm` with its tag stored alongside the ciphertext. A wrong key is refused, and so is a blob that has been altered in the database. This is the change the earlier note on that lockout called "the better long-term answer" and deferred.
+
+**No action is required, and there is no migration to run.** The secret lives in a module preference, and the only moment the game holds both the plaintext and a reason to write is a successful verification — so each account is rewritten the next time its owner passes a 2FA challenge. Accounts that never log in again keep their old blob, which is still read.
+
+Two things worth knowing:
+
+- **Rolling back to an earlier release will lock out any account that has verified since the upgrade.** An older build does not know the `enc2:` prefix and reads it as an unknown format, which is an empty secret. If you need to roll back, restore the accounts' `secret_encrypted` preferences from a backup taken before the upgrade, or have affected players use the emailed disable link and enrol again.
+- A PHP build without `aes-256-gcm` keeps writing the older format rather than failing to store a secret, and no configuration writes a format it cannot read back. `TwoFactorAuthService::supportsAuthenticatedRead()` and `supportsAuthenticatedStorage()` answer which path an installation is on — reading and writing are asked separately, because an installation that has disabled only `openssl_encrypt()` must still be able to read the secrets it stored earlier.
+
 ### SQL addslashes baseline status
 
 The SQL addslashes QA baseline (`src/Lotgd/QA/SqlAddslashesUsageCheck.php`) remains empty: all previously tracked core call sites have been migrated to Doctrine DBAL parameter binding. Any new SQL-building `addslashes()` usage will fail QA and should be migrated to `executeQuery()` / `executeStatement()` with explicit parameter types.

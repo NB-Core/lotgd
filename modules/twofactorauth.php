@@ -1675,25 +1675,31 @@ function twofactorauth_decrypt_secret_with_compat(string $storedSecret): array
     }
 
     $currentKey = twofactorauth_current_signing_key();
-    $canEncrypt = function_exists('openssl_encrypt');
     foreach (twofactorauth_compatible_signing_keys() as $candidateKey) {
         $secret = TwoFactorAuthService::decryptSecret($storedSecret, $candidateKey);
 
-        // Not `!== ''`. The stored format is unauthenticated, so the current
-        // key "succeeds" on a legacy blob about once in 255 -- and this loop
-        // then returned the garbage and never tried the legacy key at all.
-        // Because the blob and the keys are fixed per account, that is
-        // permanent for whoever it lands on: every correct token refused as a
-        // mismatch, failed_attempts climbing toward the lockout, and retrying
-        // no help. It is also what made
+        // Not `!== ''`, for as long as an unauthenticated blob can still be
+        // read here. `enc:` is aes-256-cbc with no tag, so the current key
+        // "succeeds" on a legacy blob about once in 255 -- and this loop then
+        // returned the garbage and never tried the legacy key at all. Because
+        // the blob and the keys are fixed per account, that is permanent for
+        // whoever it lands on: every correct token refused as a mismatch,
+        // failed_attempts climbing toward the lockout, and retrying no help. It
+        // is also what made
         // TwoFactorAuthModuleFlowTest::testVerifyAcceptsLegacyEncryptedSecret...
         // fail in CI roughly one run in 262 and never locally.
+        //
+        // `enc2:` does not need the check -- a wrong key fails its tag -- but
+        // it passes it anyway, so this stays one branch rather than two. It
+        // becomes dead the day the last legacy blob is rewritten, and there is
+        // no way to know when that is: the migration is opportunistic, so a
+        // player who has not logged in since still has one.
         if (!TwoFactorAuthService::isPlausibleSecret($secret)) {
             continue;
         }
 
         $usedLegacy = $candidateKey !== $currentKey;
-        $needsReencrypt = $usedLegacy || ($canEncrypt && !str_starts_with($storedSecret, 'enc:'));
+        $needsReencrypt = $usedLegacy || TwoFactorAuthService::needsReencryption($storedSecret);
 
         return [
             'secret' => $secret,
