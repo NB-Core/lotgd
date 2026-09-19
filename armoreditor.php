@@ -93,7 +93,6 @@ if ($op === 'edit' || $op === 'add') {
     }
 } elseif ($op === 'del' || $op === 'save') {
     if (Forms::isUnverifiedRequest(Csrf::SCOPE_ARMOR_EDITOR)) {
-        SecurityLog::event('Refused armor editor state change with an invalid CSRF token', ['page' => 'armoreditor.php', 'op' => $op]);
         http_response_code(400);
     } elseif ($op === 'del') {
         $id = armorEditorInteger(Http::post('id'), 1, PHP_INT_MAX);

@@ -132,7 +132,6 @@ $op = Http::get('op');
 // a plain view fall into the same branch and the write is driven by the posted
 // body, so it is guarded where that body is taken, further down.
 if (Forms::isUnverifiedCoreOp($op, ['forcechangeemail', 'cancelemail'])) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
     $_POST = [];
@@ -156,7 +155,6 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // the request parameter is not consulted at all.
     $userid = (int) ($session['user']['acctid'] ?? 0);
     if (Forms::isUnverifiedRequest(Csrf::SCOPE_SELF_DELETE)) {
-        DebugLog::add('Rejected character self-deletion with an invalid CSRF token.');
         http_response_code(400);
         $output->output("`\$Your character was not deleted.`0`n");
     } elseif ($userid > 0 && PlayerFunctions::charCleanup($userid, CHAR_DELETE_SUICIDE)) {
@@ -236,7 +234,14 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // where the body is taken, and an unverified one is treated as if nothing
     // had been posted -- `if (count($post) == 0)` below already means "nothing
     // to write". A GET carries no body either way, so browsing is untouched.
-    $post = Forms::isUnverifiedRequest() ? [] : Csrf::stripFrom(Http::allPost());
+    //
+    // The body is taken first and tested before the guard is asked, and that
+    // order matters now that the guard records every refusal it decides: asked
+    // on a request that posted nothing at all, it would file a security event
+    // for an ordinary visit to the preferences page, which is most of what this
+    // page sees. An empty body yields an empty $post either way.
+    $posted = Http::allPost();
+    $post = ($posted !== [] && Forms::isUnverifiedRequest()) ? [] : Csrf::stripFrom($posted);
     //strip unnecessary values
     unset($post['oldvalues']);
     unset($post['showFormTabIndex']);

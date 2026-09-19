@@ -47,7 +47,6 @@ $sep = $settings->getSetting('moneythousandssep', ",");
 // forgotten in. transfer2 is only a preview, but it carries the amount and
 // recipient forward into transfer3, so it is on the list too.
 if (Forms::isUnverifiedCoreOp($op, ['transfer2', 'transfer3', 'depositfinish', 'withdrawfinish'])) {
-    debuglog('Rejected a bank state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
     $_POST = [];

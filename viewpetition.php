@@ -37,7 +37,6 @@ SuAccess::check(SU_EDIT_PETITIONS);
 // already been saved, which is worse than either outcome on its own.
 $insertCommentary = (string) Http::post('insertcommentary');
 if ($insertCommentary !== '' && Forms::isUnverifiedRequest()) {
-    debuglog('Rejected a petition update with an invalid CSRF token.');
     http_response_code(400);
     $insertCommentary = '';
     $_POST = [];

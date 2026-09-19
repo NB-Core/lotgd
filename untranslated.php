@@ -55,7 +55,6 @@ $op = Http::get('op');
 // view is not a state change. Its one write, `mode=save`, arrives as a POST
 // from the form below and is guarded there.
 if (Forms::isUnverifiedCoreOp($op, ['step2'])) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
     $_POST = [];
@@ -80,7 +79,6 @@ if ($op == "list") {
     // op=list is also the browsing view, so it cannot be guarded as a whole:
     // the write is mode=save, which arrives as a POST from the form below.
     if ($mode == "save" && Forms::isUnverifiedRequest()) {
-        debuglog('Rejected a translation save with an invalid CSRF token.');
         http_response_code(400);
         $mode = "";
         $_POST = [];

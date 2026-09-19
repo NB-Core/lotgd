@@ -123,7 +123,6 @@ $op = Http::get('op');
 // and it writes nothing -- it lists candidates as buttons. The write those
 // buttons lead to is `add2`, which is listed.
 if (Forms::isUnverifiedCoreOp($op, ['add2'])) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
     $_POST = [];

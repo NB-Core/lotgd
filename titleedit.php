@@ -44,7 +44,6 @@ $op = Http::get('op');
 // `add` is not listed: it is a nav link that renders the empty add form and
 // writes nothing. The write it leads to is `save`, which is listed.
 if (Forms::isUnverifiedCoreOp($op, ['delete', 'reset', 'save'])) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
     $_POST = [];

@@ -55,7 +55,6 @@ $op = is_string($opRequest) ? $opRequest : '';
 // never been a token-carrying POST, and it writes nothing -- it sends one
 // test mail to the address the admin just configured.
 if (Forms::isUnverifiedCoreOp($op, ['save'])) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
     $_POST = [];
@@ -306,7 +305,6 @@ switch ($type_setting) {
                     // form, reached by a link from modules.php, so it cannot be
                     // guarded as a whole. The write is the branch below.
                     if ($save != "" && Forms::isUnverifiedRequest()) {
-                        debuglog('Rejected a module settings save with an invalid CSRF token.');
                         http_response_code(400);
                         $save = "";
                     }

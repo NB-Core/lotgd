@@ -521,15 +521,50 @@ modules.
   `diag=` id tying the two together and the page and operation named. **If you
   were looking for these in a player's debug log, they are not there any more.**
 
-  Only `mail.php` carries the notice, and only `mail.php` had its sink
-  corrected. The other eleven pages with the same guard still log the refusal
-  with `debuglog()`.
+  Only `mail.php` carries the notice. The sink is now corrected everywhere --
+  see the entry below.
 
   **If you are seeing this refusal on a live game**, check your deployment
   before your code: a `pages/` directory older than the CSRF work renders forms
   without a token field, which a `mail.php` from after it correctly refuses.
   Re-deploying `pages/` is the fix; `pages/bans/`, `pages/clan/` and
   `pages/user/` have the same pairing.
+
+- **Every refused CSRF check is now recorded in one place, and in the security
+  log.** Thirty-six call sites used to write that line themselves: twenty-three
+  through `debuglog()`, one through `DebugLog::add()`, and twelve through
+  `SecurityLog::event()` with a wording of its own each time. Twelve of them
+  said "Rejected a state change" word for word, and what actually tells one
+  refusal from another -- the page, the operation, the scope -- appeared in none
+  of them.
+
+  `Forms::isUnverifiedCoreOp()` and `Forms::isUnverifiedRequest()` record it
+  themselves now, once, with all four:
+
+  ```
+  [security] Refused a state change with an invalid CSRF token
+  [diag=e40b07e19a68a85d page=bans.php op=delban scope=form:bans.php method=POST]
+  ```
+
+  **For operators:** every one of these entries is in `gamelog.php` under
+  `security` now, and in PHP's error log with the same `diag=` id. The
+  twenty-four that used to go to a character's debug log are not there any
+  more. Nothing about *what* is refused changed -- same operations, same
+  HTTP 400, same behaviour for the player.
+
+  **For module and page authors:** do not write a log line beside the guard.
+  It writes one, and a second puts the same event in the log twice. Two
+  optional arguments cover what the guard cannot know: `$context`, for *which*
+  record was about to be deleted, and `$severity`, for a refusal that is not a
+  warning.
+
+  **One thing to check if you maintain a page of your own.** The guard is no
+  longer a pure predicate: a call that comes back true is filed. If your page
+  keys its write off a posted field, test for the field *first* --
+  `if (Http::postIsset('x') && Forms::isUnverifiedRequest())`, not the reverse
+  -- or every ordinary view of the page will report a refused state change.
+  Three bundled clan pages and the preferences page were in that shape and have
+  been turned round.
 
 - **Companions now actually gain levels, which they never did before.** The
   `companionslevelup` setting has existed and defaulted to on, and the code

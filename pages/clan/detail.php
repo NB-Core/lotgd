@@ -22,11 +22,15 @@ $charset = $settings->getSetting('charset', 'UTF-8');
 
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     // Same shape: the writes here key off posted fields.
-    if (Forms::isUnverifiedRequest()
-        && (Http::postIsset('clanname') || Http::postIsset('clanshort')
+    // The field test comes first, and that is not cosmetic: the guard records
+    // every refusal it decides now, so asking it on a request that posted none
+    // of these fields would file a security event for an ordinary page view.
+    // Asked in this order it answers only about a write that was attempted.
+    if (
+        (Http::postIsset('clanname') || Http::postIsset('clanshort')
             || Http::postIsset('block') || Http::postIsset('unblock'))
+        && Forms::isUnverifiedRequest()
     ) {
-        debuglog('Rejected a clan detail change with an invalid CSRF token.');
         http_response_code(400);
         $_POST = [];
     }

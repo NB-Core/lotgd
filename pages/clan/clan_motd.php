@@ -25,8 +25,11 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     // The writes below are triggered by posted fields rather than by $op, so
     // the guard sits here. A module posting its own fields to clan.php is not
     // affected: nothing it sends matches these names.
-    if (Forms::isUnverifiedRequest() && (Http::postIsset('clanmotd') || Http::postIsset('clandesc') || Http::postIsset('customsay'))) {
-        debuglog('Rejected a clan state change with an invalid CSRF token.');
+    // The field test comes first, and that is not cosmetic: the guard records
+    // every refusal it decides now, so asking it on a request that posted none
+    // of these fields would file a security event for an ordinary page view.
+    // Asked in this order it answers only about a write that was attempted.
+    if ((Http::postIsset('clanmotd') || Http::postIsset('clandesc') || Http::postIsset('customsay')) && Forms::isUnverifiedRequest()) {
         http_response_code(400);
         $_POST = [];
     }

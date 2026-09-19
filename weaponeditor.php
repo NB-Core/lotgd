@@ -94,7 +94,6 @@ if ($op === 'edit' || $op === 'add') {
     }
 } elseif ($op === 'del' || $op === 'save') {
     if (Forms::isUnverifiedRequest(Csrf::SCOPE_WEAPON_EDITOR)) {
-        SecurityLog::event('Refused weapon editor state change with an invalid CSRF token', ['page' => 'weaponeditor.php', 'op' => $op]);
         http_response_code(400);
     } elseif ($op === 'del') {
         $id = weaponEditorInteger(Http::post('id'), 1, PHP_INT_MAX);

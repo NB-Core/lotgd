@@ -21,7 +21,6 @@ use Lotgd\Sanitize;
 use Lotgd\DataCache;
 use Lotgd\Redirect;
 use Lotgd\Forms;
-use Lotgd\SecurityLog;
 
 // translator ready
 // addnews ready
@@ -70,7 +69,6 @@ $op = Http::get("op");
 // moderator. The write underneath it is `subop=undelete`, which arrives as a
 // POST from the form on that view and is guarded there.
 if (Forms::isUnverifiedCoreOp($op, ['commentdelete'])) {
-    SecurityLog::event('Refused a moderation state change with an invalid CSRF token', ['page' => 'moderate.php', 'op' => $op]);
     http_response_code(400);
     $op = '';
     $_POST = [];
@@ -263,7 +261,6 @@ if ($op == "") {
     // op=audit is also the review view, so it cannot be guarded as a whole:
     // the write is subop=undelete, which arrives as a POST from the form below.
     if ($subop == "undelete" && Forms::isUnverifiedRequest()) {
-        SecurityLog::event('Refused a comment undeletion with an invalid CSRF token', ['page' => 'moderate.php', 'op' => $op]);
         http_response_code(400);
         $subop = '';
     }

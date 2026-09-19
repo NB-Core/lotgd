@@ -13,6 +13,8 @@ use Lotgd\Security\Escape;
 use Lotgd\Translator;
 use Lotgd\Http;
 use Lotgd\DataCache;
+use Lotgd\GameLog;
+use Lotgd\SecurityLog;
 
 class Forms
 {
@@ -102,11 +104,14 @@ class Forms
      * after it reads `$op`:
      *
      *     if (Forms::isUnverifiedRequest()) {
-     *         debuglog('…');
      *         http_response_code(400);
      *         $op = '';
      *         $_POST = [];
      *     }
+     *
+     * No log line: the guard records every refusal it decides, naming the page,
+     * the operation and the scope. A caller that adds one of its own puts the
+     * same event in the log twice.
      *
      * At the entry rather than in each branch, because a branch check is one
      * someone can forget -- that is how a dozen editors came to write with no
@@ -124,14 +129,32 @@ class Forms
      * present. A guard added here must satisfy one of those two, not assume a
      * GET is safe.
      *
+     * **Ask it only about a write that was attempted.** It is no longer a pure
+     * predicate: a call that comes back true is filed as a security event. A
+     * page whose write keys off a posted field therefore tests for that field
+     * *first* -- `if (Http::postIsset('x') && Forms::isUnverifiedRequest())`,
+     * not the other way round -- or every ordinary view of it reports a refused
+     * state change.
+     *
      * @param ?string $scope A narrower scope than the page's, for an editor
      *                       whose token must not be interchangeable with one
      *                       the same script hands to an ordinary viewer. Null
      *                       uses the page scope.
+     * @param array<string,scalar|null> $context What the guard cannot work out
+     *                       for itself, such as *which* record was about to be
+     *                       deleted. Everything it can -- page, operation,
+     *                       scope, method -- it adds on its own.
+     * @param string  $severity For a refusal that is not a warning. rawsql.php
+     *                       runs whatever it is handed and pages/user/user_del.php
+     *                       removes an account; gamelog.php filters on severity,
+     *                       so those two are not filed beside a taunt edit.
      */
-    public static function isUnverifiedRequest(?string $scope = null): bool
-    {
-        return self::isUnverifiedRequestInternal($scope);
+    public static function isUnverifiedRequest(
+        ?string $scope = null,
+        array $context = [],
+        string $severity = GameLog::SEVERITY_WARNING
+    ): bool {
+        return self::isUnverifiedRequestInternal($scope, false, $context, $severity);
     }
 
     /**
@@ -165,7 +188,7 @@ class Forms
             return false;
         }
 
-        return self::isUnverifiedRequestInternal($scope);
+        return self::isUnverifiedRequestInternal($scope, $op);
     }
 
     /**
@@ -185,11 +208,107 @@ class Forms
      * about, and a page whose write keys off a posted field asks only when that
      * field is present, which a GET never has.
      */
-    private static function isUnverifiedRequestInternal(?string $scope): bool
-    {
-        return $scope === null
+    private static function isUnverifiedRequestInternal(
+        ?string $scope,
+        string|false $op = false,
+        array $context = [],
+        string $severity = GameLog::SEVERITY_WARNING
+    ): bool {
+        $unverified = $scope === null
             ? !self::validateCsrf()
             : !Csrf::validatePostRequest($scope);
+
+        if ($unverified) {
+            self::reportRefusal($scope, $op, $context, $severity);
+        }
+
+        return $unverified;
+    }
+
+    /**
+     * Record a refusal, once, where the refusal is decided.
+     *
+     * Thirty-six callers used to write this line themselves -- twenty-three
+     * through `debuglog()`, which is a character's audit trail of gold and
+     * experience rather than a record of what the server refused, one through
+     * `DebugLog::add()`, and twelve through `SecurityLog::event()` with a
+     * wording of its own each time. Twelve of them said "Rejected a state
+     * change" wortgleich, and what actually distinguishes them -- the page, the
+     * operation, the scope -- appeared in none of them. Here it is the same
+     * sentence every time and the differences are data, which is what a log
+     * filter can work with.
+     *
+     * The caller no longer writes one. Two lines per refusal is worse than
+     * either, so a page that adds its own puts the same event in the log twice.
+     *
+     * @param array<string,scalar|null> $context Anything the guard cannot know,
+     *                                           such as *which* record was
+     *                                           about to be deleted.
+     */
+    private static function reportRefusal(
+        ?string $scope,
+        string|false $op,
+        array $context,
+        string $severity
+    ): void {
+        $script = $_SERVER['SCRIPT_NAME'] ?? '';
+
+        SecurityLog::event(
+            'Refused a state change with an invalid CSRF token',
+            // The caller's context first: `+` keeps the LEFT value for a key
+            // both sides carry, so a caller that knows better than the guess
+            // below has to be on this side of it to be heard at all. The
+            // reverse order silently dropped whatever a caller passed under a
+            // name the guard also uses -- `op` above all.
+            $context + [
+                'page' => is_string($script) ? basename($script) : null,
+                'op' => self::refusedOperation($op),
+                'scope' => $scope ?? self::csrfScope(),
+                'method' => is_string($_SERVER['REQUEST_METHOD'] ?? null)
+                    ? $_SERVER['REQUEST_METHOD']
+                    : null,
+            ],
+            null,
+            $severity
+        );
+    }
+
+    /**
+     * The operation a refused request asked for, fit to go in a log line.
+     *
+     * isUnverifiedCoreOp() hands its own `$op` down and that is the end of it.
+     * isUnverifiedRequest() has none, so it is read from the request the way
+     * the pages that call it read it -- body first, then the query string,
+     * which is companions.php:44 exactly. Reading only the query string left
+     * the entry with no operation at all for the companion, armour and weapon
+     * editors, whose forms post `op` as a hidden field: the per-page lines this
+     * replaced named it, so that was an audit regression rather than a smaller
+     * log. Reported by Codex.
+     *
+     * Bounded because it is request data, and bounded on character boundaries
+     * because the game log is utf8mb4: cutting a multi-byte character in half
+     * with substr() produces bytes MySQL rejects, and a refusal that fails to
+     * insert is a refusal nobody can find. SecurityLog::sanitize() does not
+     * repair invalid UTF-8 -- it detects it, and falls back to a byte-wise
+     * strip that leaves it invalid -- so a value that is not valid UTF-8 to
+     * begin with is reported as such rather than carried into the statement.
+     * Reported by Codex.
+     */
+    private static function refusedOperation(string|false $op): ?string
+    {
+        if ($op === false) {
+            $op = Http::postIsset('op') ? Http::post('op') : Http::get('op');
+        }
+
+        if (!is_string($op) || $op === '') {
+            return null;
+        }
+
+        if (!mb_check_encoding($op, 'UTF-8')) {
+            return '(not valid UTF-8)';
+        }
+
+        return mb_substr($op, 0, 64, 'UTF-8');
     }
 
     /**

@@ -57,7 +57,6 @@ $op = Http::get('op');
 // query string, so blanking the body alone would not stop it, and this list is
 // the page's inventory of what changes state.
 if (Forms::isUnverifiedCoreOp($op, ['activate', 'deactivate', 'install', 'mass', 'reinstall', 'remove', 'uninstall'])) {
-    debuglog('Rejected a state change with an invalid CSRF token.');
     http_response_code(400);
     $op = '';
     $_POST = [];
