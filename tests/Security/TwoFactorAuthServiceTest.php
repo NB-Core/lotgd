@@ -322,6 +322,15 @@ class TwoFactorAuthServiceTest extends TestCase
             \TwoFactorAuthService::needsReencryption('plain:' . rtrim(strtr(base64_encode($secret), '+/', '-_'), '=')),
             'and so is the fallback that stores the secret unencrypted'
         );
+
+        // A prefix this class never wrote ranks below everything it can write.
+        // Unreachable in practice -- a rewrite needs the plaintext, and the
+        // plaintext comes from having read the blob -- so it is pinned here
+        // rather than left to whichever way the comparison happened to fall.
+        self::assertTrue(
+            \TwoFactorAuthService::needsReencryption('something-else:' . $secret),
+            'an unrecognised stored format is not treated as already good enough'
+        );
     }
 
     /**
@@ -499,9 +508,22 @@ class TwoFactorAuthServiceTest extends TestCase
         // `plain:` again, and every successful verification wrote the preference
         // for nothing. Reported by Copilot.
         self::assertSame($plainNeedsRewriting, $result['plain_needs_rewriting'], 'a plain secret, in this configuration');
+        self::assertSame($plainNeedsRewriting, $result['legacy_needs_rewriting'], 'a legacy secret, in this configuration');
         self::assertFalse(
             $result['own_needs_rewriting'],
             'it asked to rewrite what it had just written, which repeats on every verification'
+        );
+
+        // The migration only ever goes up. Asking whether the stored prefix is
+        // the one this installation writes reads as the same thing and is not:
+        // where `enc2:` can still be read but no longer written, that question
+        // answers yes for an authenticated secret, and the rewrite stores it in
+        // plaintext. A migration that can downgrade is worse than one that
+        // stalls. Reported by Copilot.
+        self::assertFalse(
+            $result['authenticated_needs_rewriting'],
+            'an already-authenticated secret was offered for rewriting, and this configuration '
+                . 'would have written it as ' . $result['prefix']
         );
     }
 
@@ -548,7 +570,8 @@ class TwoFactorAuthServiceTest extends TestCase
      * Run the storage round trip in a child with functions disabled.
      *
      * @return array{read: bool, write: bool, prefix: string, readback: string, existing: string,
-     *     plain_needs_rewriting: bool, own_needs_rewriting: bool}
+     *     plain_needs_rewriting: bool, legacy_needs_rewriting: bool,
+     *     authenticated_needs_rewriting: bool, own_needs_rewriting: bool}
      */
     private static function runWithDisabledFunctions(string $disabled, string $existingBlob): array
     {
@@ -570,6 +593,8 @@ class TwoFactorAuthServiceTest extends TestCase
                 'readback' => TwoFactorAuthService::decryptSecret($blob, 'a-key'),
                 'existing' => TwoFactorAuthService::decryptSecret($argv[2], 'a-key'),
                 'plain_needs_rewriting' => TwoFactorAuthService::needsReencryption($plain),
+                'legacy_needs_rewriting' => TwoFactorAuthService::needsReencryption($argv[3]),
+                'authenticated_needs_rewriting' => TwoFactorAuthService::needsReencryption($argv[2]),
                 'own_needs_rewriting' => TwoFactorAuthService::needsReencryption($blob),
             ], JSON_THROW_ON_ERROR);
             PHP;
@@ -580,12 +605,13 @@ class TwoFactorAuthServiceTest extends TestCase
             file_put_contents($file, "<?php\n" . $script);
 
             $output = (string) shell_exec(sprintf(
-                '%s -d disable_functions=%s %s %s %s 2>&1',
+                '%s -d disable_functions=%s %s %s %s %s 2>&1',
                 escapeshellarg(PHP_BINARY),
                 escapeshellarg($disabled),
                 escapeshellarg($file),
                 escapeshellarg(dirname(__DIR__, 2)),
-                escapeshellarg($existingBlob)
+                escapeshellarg($existingBlob),
+                escapeshellarg(LegacyTwoFactorSecret::encrypt('JBSWY3DPEHPK3PXP', 'a-key'))
             ));
         } finally {
             @unlink($file);

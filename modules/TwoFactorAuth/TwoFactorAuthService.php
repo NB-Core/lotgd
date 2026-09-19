@@ -347,16 +347,54 @@ class TwoFactorAuthService
     }
 
     /**
+     * How well each stored format protects the secret. Higher is better.
+     *
+     * An ordering rather than an equality, because the migration must only ever
+     * go *up*. The first version of this method asked whether the stored prefix
+     * was the one this installation writes, which reads as the same thing and
+     * is not: on an installation that can still read `enc2:` but can no longer
+     * encrypt, the preferred format is `plain:`, so an authenticated secret was
+     * reported as needing a rewrite -- and the rewrite would have stored it in
+     * plaintext. Reported by Copilot; reproduced. A migration that can downgrade
+     * is worse than one that stalls.
+     */
+    private const FORMAT_STRENGTH = [
+        self::AEAD_PREFIX => 2,
+        self::LEGACY_PREFIX => 1,
+        self::PLAIN_PREFIX => 0,
+    ];
+
+    /**
      * Whether a stored secret should be rewritten in a better format.
      *
      * The migration is opportunistic: a successful verification rewrites the
      * blob in the current format. So this is not bookkeeping -- it is the only
      * thing that ever moves an account off the weak format, and a wrong answer
-     * either strands the account or writes the preference on every request.
+     * either strands the account, writes the preference on every request, or
+     * throws away the protection the account already had.
      */
     public static function needsReencryption(string $storedSecret): bool
     {
-        return !str_starts_with($storedSecret, self::preferredPrefix());
+        return self::formatStrength($storedSecret) < self::FORMAT_STRENGTH[self::preferredPrefix()];
+    }
+
+    /**
+     * Where a stored value sits in that ordering.
+     *
+     * An unrecognised prefix ranks below every format, which is the honest
+     * answer: it is not something this class wrote, and anything it can write
+     * is an improvement. In practice it is unreachable, because a rewrite needs
+     * the plaintext and the plaintext comes from having read the blob.
+     */
+    private static function formatStrength(string $storedSecret): int
+    {
+        foreach (self::FORMAT_STRENGTH as $prefix => $strength) {
+            if (str_starts_with($storedSecret, $prefix)) {
+                return $strength;
+            }
+        }
+
+        return -1;
     }
 
     public static function encryptSecret(string $secret, string $key): string
