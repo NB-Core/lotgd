@@ -22,8 +22,8 @@ use PHPUnit\Framework\TestCase;
  * Adding nothing is the part that has to stay true, and a sentence in a
  * docblock cannot stay true by itself -- the last blanket claim about which
  * sheets could be ignored is what let `sidebar.css` disappear from every
- * assertion in this suite. So the exclusion is asserted rather than asserted
- * *about*: the day a vendor sheet starts styling one of these classes, this
+ * assertion in this suite. So the exclusion is checked rather than merely
+ * explained: the day a vendor sheet starts styling one of these classes, this
  * goes red and names it.
  */
 final class VendorSheetsDoNotStyleTheRowTest extends TestCase
