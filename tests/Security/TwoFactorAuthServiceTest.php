@@ -462,6 +462,13 @@ class TwoFactorAuthServiceTest extends TestCase
         yield 'encryption disabled' => ['openssl_encrypt', true, false, 'plain:', false];
         yield 'decryption disabled' => ['openssl_decrypt', false, false, 'plain:', false];
         yield 'no openssl at all' => ['openssl_encrypt,openssl_decrypt', false, false, 'plain:', false];
+
+        // Not an openssl function, and that is the point: aeadKey() called
+        // hash_hkdf() unconditionally while the probes asked only about
+        // openssl, so an installation that had disabled it answered
+        // "authenticated storage available" and then fatalled on the next read.
+        // Reported by Copilot.
+        yield 'key derivation helper disabled' => ['hash_hkdf', true, true, 'enc2:', true];
     }
 
     #[DataProvider('opensslConfigurations')]
@@ -614,7 +621,9 @@ class TwoFactorAuthServiceTest extends TestCase
                 escapeshellarg(LegacyTwoFactorSecret::encrypt('JBSWY3DPEHPK3PXP', 'a-key'))
             ));
         } finally {
-            @unlink($file);
+            if (is_file($file)) {
+                unlink($file);
+            }
         }
 
         $result = json_decode($output, true);
@@ -622,6 +631,40 @@ class TwoFactorAuthServiceTest extends TestCase
         self::assertIsArray($result, 'the child did not complete: ' . $output);
 
         return $result;
+    }
+
+    /**
+     * The hand-rolled key derivation is byte-identical to the extension's.
+     *
+     * This is the whole of what makes the fallback safe. If the two disagreed,
+     * a build without hash_hkdf() could not read what a build with it wrote --
+     * which is the lockout this PR keeps almost reintroducing, arriving through
+     * the key instead of through the cipher.
+     *
+     * Asserted rather than argued from RFC 5869, because "I implemented the RFC
+     * correctly" is exactly the kind of claim that is cheap to make and cheap
+     * to check.
+     */
+    public function testTheFallbackKeyDerivationMatchesTheExtension(): void
+    {
+        if (!function_exists('hash_hkdf')) {
+            self::markTestSkipped('there is nothing to compare the fallback against on this build');
+        }
+
+        $derive = new \ReflectionMethod(\TwoFactorAuthService::class, 'hkdfSha256');
+        $derive->setAccessible(true);
+
+        foreach (['a-key', '', str_repeat('x', 200), "\x00\xff binary"] as $key) {
+            if ($key === '') {
+                continue; // hash_hkdf() rejects an empty key; aeadKey() answers that case before either is reached.
+            }
+
+            self::assertSame(
+                hash_hkdf('sha256', $key, 32, 'lotgd-2fa-secret-v2'),
+                $derive->invoke(null, $key, 'lotgd-2fa-secret-v2', 32),
+                'the fallback derived a different key for ' . bin2hex($key)
+            );
+        }
     }
 
     /**

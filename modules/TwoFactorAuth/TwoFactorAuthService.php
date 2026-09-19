@@ -27,7 +27,12 @@ class TwoFactorAuthService
     private const AEAD_TAG_BYTES = 16;
 
     /**
-     * The legacy unauthenticated format, still read and never written.
+     * The unauthenticated format.
+     *
+     * Always read. Written only where the authenticated one is unavailable and
+     * openssl still is -- see preferredPrefix(). An earlier version of this
+     * comment said "never written", which was true of the first draft and
+     * stopped being true the moment a fallback existed. Reported by Copilot.
      */
     private const LEGACY_PREFIX = 'enc:';
 
@@ -48,6 +53,13 @@ class TwoFactorAuthService
      * lock every migrated account out.
      */
     private const PROBE_PLAINTEXT = 'probe';
+
+    /**
+     * The authenticated format's key derivation. The info string names the
+     * format, so a third one would get its own key by construction.
+     */
+    private const AEAD_KEY_BYTES = 32;
+    private const AEAD_KEY_INFO = 'lotgd-2fa-secret-v2';
     private const PROBE_KEY = 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk';
     private const PROBE_VECTOR = 'AQEBAQEBAQEBAQEB81dlvJM3TuvCnavyPexgeiedl8gQ';
 
@@ -499,7 +511,38 @@ class TwoFactorAuthService
             return str_repeat("\0", 32);
         }
 
-        return hash_hkdf('sha256', $key, 32, 'lotgd-2fa-secret-v2');
+        if (function_exists('hash_hkdf')) {
+            return hash_hkdf('sha256', $key, self::AEAD_KEY_BYTES, self::AEAD_KEY_INFO);
+        }
+
+        return self::hkdfSha256($key, self::AEAD_KEY_INFO, self::AEAD_KEY_BYTES);
+    }
+
+    /**
+     * HKDF-SHA256, for a build where hash_hkdf() is not callable.
+     *
+     * disable_functions takes a list, and hash_hkdf() is exactly the sort of
+     * entry that ends up on one. aeadKey() called it unconditionally while the
+     * capability probes asked only about openssl, so an installation that had
+     * disabled it answered "authenticated storage available" and then fatalled
+     * on the next read -- the fifth time on this PR that one predicate stood in
+     * for a capability it did not actually measure. Reported by Copilot.
+     *
+     * Reporting the format as unavailable instead would have been the wrong
+     * repair: it locks migrated accounts out of secrets that are perfectly
+     * readable. So the derivation is done by hand, and it must be *identical*
+     * to the extension's, or a build without it could not read what a build
+     * with it wrote -- which a test asserts rather than trusting this comment.
+     *
+     * RFC 5869 for one output block: PRK = HMAC(salt, ikm) with a zero salt of
+     * the hash length, then T(1) = HMAC(PRK, info || 0x01). One block is enough
+     * because 32 bytes is exactly SHA-256's output.
+     */
+    private static function hkdfSha256(string $key, string $info, int $length): string
+    {
+        $prk = hash_hmac('sha256', $key, str_repeat("\0", 32), true);
+
+        return substr(hash_hmac('sha256', $info . "\x01", $prk, true), 0, $length);
     }
 
     /**
