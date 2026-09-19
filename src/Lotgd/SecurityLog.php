@@ -145,10 +145,20 @@ class SecurityLog
      * mangled value look like a value someone actually sent.
      *
      * mb_substitute_character() is saved and restored because it is global
-     * state and this class is called from everywhere. Setting it explicitly
-     * rather than relying on the default is what makes the output the same on
-     * every installation: the default is `?`, which is also a character a
-     * request can legitimately contain, and the ini setting can be changed.
+     * state and this class is called from everywhere, and it is set explicitly
+     * rather than left at its default -- which is `?`, a character a request
+     * can legitimately contain, and an ini setting an installation can change.
+     *
+     * One thing this does *not* promise, and an earlier version of this
+     * docblock wrongly did: identical output everywhere. Where the mbstring
+     * extension is absent, symfony/polyfill-mbstring supplies these functions,
+     * and its mb_substitute_character() returns false for a codepoint instead
+     * of setting one -- so the malformed bytes are dropped rather than marked.
+     * Measured against the polyfill directly: `login=\xC3\x28probe\xFF` comes
+     * back as `login=(probe`. What holds either way is the property this method
+     * exists for: the result is valid UTF-8, so the game log can take the row.
+     * Marking is the better outcome and the extension is what makes it
+     * available. Reported by Copilot.
      */
     private static function toValidUtf8(string $value): string
     {

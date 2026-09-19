@@ -197,21 +197,46 @@ final class SecurityLogTest extends TestCase
     }
 
     /**
-     * What survives is the readable part, and the damage is marked rather than
-     * hidden.
+     * The readable part survives, everywhere.
      *
-     * A silent deletion would make `probe` out of a value that was not `probe`,
-     * which is a worse answer than saying so: an operator reading this line is
-     * trying to work out what somebody sent.
+     * This is the half that does not depend on how the installation is built,
+     * so it is asserted without a guard: whatever happens to the unreadable
+     * bytes, a log line that threw away `probe` as well would be no use to the
+     * operator reading it.
      */
-    public function testTheUnreadableBytesAreMarkedAndTheRestIsKept(): void
+    public function testTheReadablePartOfAMangledValueIsKept(): void
     {
         $this->captureErrorLog();
         SecurityLog::event('Refused a state change', ['login' => self::MALFORMED]);
 
-        $log = $this->errorLog();
+        $this->assertStringContainsString('probe', $this->errorLog());
+    }
 
-        $this->assertStringContainsString('login=' . "\u{FFFD}" . '(probe' . "\u{FFFD}", $log);
+    /**
+     * And with the mbstring extension, the damage is marked rather than hidden.
+     *
+     * A silent deletion makes `probe` out of a value that was not `probe`,
+     * which is a worse answer than saying so: an operator reading this line is
+     * trying to work out what somebody sent.
+     *
+     * Guarded, because it is not true everywhere and saying so is the point.
+     * Without the extension, symfony/polyfill-mbstring provides these functions
+     * and its mb_substitute_character() returns false for a codepoint instead
+     * of setting one, so the bytes are dropped. Measured against the polyfill
+     * directly. Asserting U+FFFD unconditionally would have made this test a
+     * claim about the reviewer's machine rather than about the code.
+     * Reported by Copilot.
+     */
+    public function testTheUnreadableBytesAreMarkedWhereMbstringCanMarkThem(): void
+    {
+        if (!extension_loaded('mbstring')) {
+            $this->markTestSkipped('the polyfill cannot set a substitute character, so it drops the bytes instead');
+        }
+
+        $this->captureErrorLog();
+        SecurityLog::event('Refused a state change', ['login' => self::MALFORMED]);
+
+        $this->assertStringContainsString('login=' . "\u{FFFD}" . '(probe' . "\u{FFFD}", $this->errorLog());
     }
 
     /**
@@ -222,22 +247,30 @@ final class SecurityLogTest extends TestCase
      * the request produces -- from a logger, which is the last place anyone
      * would look for it.
      *
-     * Set to a sentinel rather than read-then-compared, which is how the first
-     * version of this test was written and why it passed against a version of
-     * the logger that never restored anything: an earlier test in the same
-     * process had already left the value at U+FFFD, so "unchanged" was true of
-     * the damage as well as of the fix. The sentinel is a character no code
-     * here would choose on its own.
+     * A sentinel is set first, rather than reading whatever happens to be there,
+     * which is how the first version of this test was written and why it passed
+     * against a logger that never restored anything: an earlier test in the
+     * same process had already left the value at U+FFFD, so "unchanged" was
+     * true of the damage as well as of the fix. The sentinel is a character no
+     * code here would choose on its own, and in particular is not U+FFFD.
+     *
+     * What is compared is the value that *took*, read back, not the one asked
+     * for. That is what keeps this portable: without the mbstring extension the
+     * polyfill refuses a codepoint and leaves the setting at 'none', so
+     * asserting the sentinel came back would be asserting something about the
+     * machine rather than about the logger. There the assertion is vacuous,
+     * which is honest -- with no settable substitute character there is nothing
+     * for the logger to leak.
      */
     public function testTheGlobalSubstituteCharacterIsLeftAsItWasFound(): void
     {
-        $sentinel = 0x2620; // SKULL AND CROSSBONES
-        mb_substitute_character($sentinel);
+        mb_substitute_character(0x2620); // SKULL AND CROSSBONES
+        $before = mb_substitute_character();
 
         SecurityLog::event('Refused a state change', ['login' => self::MALFORMED]);
 
         $this->assertSame(
-            $sentinel,
+            $before,
             mb_substitute_character(),
             'the logger left the process-wide substitute character where it put it'
         );
