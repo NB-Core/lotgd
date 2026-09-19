@@ -429,22 +429,16 @@ form > .button {
 }
 
 /*
- * Wider gaps separate adjacent targets. Flexible, breakable links allow labels
- * such as “Report to Admin” to wrap inside narrow popup viewports.
+ * Wider gaps separate adjacent targets. The shared `.button` class retains
+ * ownership of each control's sizing and label-wrapping behavior.
  */
 .mail-nav {
-    display: flex;
     flex-wrap: wrap;
-    align-items: center;
     gap: 0.5rem;
-    max-width: 100%;
     margin-bottom: 0.5rem;
 }
 
 .mail-nav__link {
     flex: 0 1 auto;
     min-width: 0;
-    max-width: 100%;
-    white-space: normal;
-    overflow-wrap: anywhere;
 }
