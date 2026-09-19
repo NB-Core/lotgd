@@ -5,96 +5,96 @@
     <title>{{ title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ meta_description }}">
-    {{ headscript_pre|raw }}{{ headscript_mid|raw }}
+    {{ headscript_pre|raw }}
+    <link rel="stylesheet" href="{{ 'bootstrap'|asset('css') }}">
+    {{ headscript_mid|raw }}
     <link rel="stylesheet" href="{{ '/templates/common/colors.css'|ver }}"/>
     <link rel="stylesheet" href="{{ ('/' ~ template_path ~ '/assets/style.css')|ver }}"/>
     {{ headscript|raw }}{{ script|raw }}
 </head>
 <body class="main-body">
-    <table class="layout-table" width="100%">
-        <tr>
-            <td>
-                <table class="layout-table noborder" width="100%">
-                    <tr class="page-header">
-                        <td class="noborder pageheader-left align-center">
-                            <table>
-                                <tr>
-                                    <td class="noborder motd align-left valign-bottom" width="50%">&nbsp;&nbsp;<strong>{{ motd|raw }}</strong></td>
-                                    <td class="noborder align-right valign-bottom" width="50%"><strong>{{ petition|raw }}</strong></td>
-                                </tr>
-                            </table>
-                        </td>
-                        <td class="noborder pageheader-center align-center">{{ title }}</td>
-                        <td class="noborder pageheader-right">
-                            <nav class="mail-nav justify-content-end" aria-label="Player notifications">
-                                <span class="mail-nav__link">
-                                    <img src="{{ '/' ~ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail">
-                                    <strong>{{ mail|raw }}</strong>
-                                </span>
-                                <span class="mail-nav__link">
-                                    {{ petitiondisplay|raw }}
-                                </span>
-                            </nav>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <table class="layout-table" width="100%">
-                    <tr>
-                        <td width="200" class="sidebar-content valign-top">
-                            <div class="navad-wrapper">{{ navad|raw }}</div>
-                            <div class="nav-container" role="navigation">{{ nav|raw }}</div>
-                        </td>
-                        <td width="100%" class="main-content valign-top">
-                            <div class="verticalad-wrapper">{{ verticalad|raw }}</div>
-                            {{ bodyad|raw }}
-                            {{ content|raw }}
-                        </td>
-                        <td width="132" class="sidebar-content valign-top">
-                            {{ stats|raw }}
-                            <br>
-                            {{ paypal|raw }}
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="3">
-                <table class="layout-table" width="100%" height="20">
-                    <tr>
-                        <td class="align-center"></td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="3">
-                <table class="layout-table" width="100%">
-                    <tr>
-                        <td colspan="3" height="10" class="align-center"></td>
-                    </tr>
-                    <tr>
-                        <td width="12"></td>
-                        <td class="valign-top">
-                            <table class="layout-table colOtWhite" width="100%">
-                                <tr>
-                                    <td class="valign-top">{{ copyright|raw }}Design: Puritanic AI Mobile theme by NB-Core{</td>
-                                    <td class="valign-top align-right">{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})</td>
-                                </tr>
-                            </table>
-                        </td>
-                        <td width="12"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" height="10" class="align-center"></td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
+{% set right_sidebar %}
+    {{ stats|raw }}<br/>
+    {{ paypal|raw }}
+{% endset %}
+<div class="container-fluid">
+    <div class="row page-header align-items-center">
+        <div class="col-4 pageheader-left text-center">
+            <div class="d-flex gap-2 justify-content-center">
+                <div class="motd">&nbsp;&nbsp;<strong>{{ motd|raw }}</strong></div>
+                <div class="petition"><strong>{{ petition|raw }}</strong></div>
+            </div>
+        </div>
+        <div class="col-4 pageheader-center text-center">
+            {{ title }}
+        </div>
+        <div class="col-4 pageheader-right text-end">
+            <nav class="mail-nav justify-content-end" aria-label="Player notifications">
+                <span class="mail-nav__link">
+                    <img src="{{ '/' ~ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail">
+                    <strong>{{ mail|raw }}</strong>
+                </span>
+                <span class="mail-nav__link">
+                    {{ petitiondisplay|raw }}
+                </span>
+            </nav>
+        </div>
+    </div>
+    <div class="row d-lg-none mobile-toggles">
+        <nav class="navbar navbar-dark bg-dark">
+            <div class="container-fluid justify-content-end">
+                <button class="navbar-toggler me-2" type="button" aria-label="Navigation" data-bs-toggle="offcanvas" data-bs-target="#leftSidebar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <button class="navbar-toggler" type="button" aria-label="Char Stats" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    <div class="row">
+        <nav class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content">
+            <div class="navad-wrapper">{{ navad|raw }}</div>
+            <div class="nav-container" role="navigation">{{ nav|raw }}</div>
+        </nav>
+        <main class="col flex-grow-1 main-content">
+            <div class="verticalad-wrapper">{{ verticalad|raw }}</div>
+            {{ bodyad|raw }}
+            {{ content|raw }}
+        </main>
+        <aside class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content">
+            {{ right_sidebar|raw }}
+        </aside>
+    </div>
+    <div class="bootstrap-footer row">
+        <div class="col-12 col-sm-6">
+            {{ copyright|raw }}Design: Puritanic AI Mobile theme by NB-Core
+        </div>
+        <div class="col-12 col-sm-6 text-end">
+            {{ source|raw }}<br />{{ version }}<br />({{ pagegen|raw }})
+        </div>
+    </div>
+</div>
+<div class="offcanvas offcanvas-start" tabindex="-1" id="leftSidebar">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Menu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        {{ navad|raw }}
+        {{ nav|raw }}
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Info</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        {{ right_sidebar|raw }}
+    </div>
+</div>
+<script src="{{ 'bootstrap'|asset('js') }}" defer></script>
 </body>
 </html>

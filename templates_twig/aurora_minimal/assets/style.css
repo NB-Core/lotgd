@@ -12,6 +12,9 @@
     --translator-hot-bg: #dc2626;
     --translator-hot-border: #f87171;
     --translator-hot-text: #ffffff;
+    --login-message-bg: rgba(59, 130, 246, 0.12);
+    --login-message-border: #3b82f6;
+    --login-message-text: #123f7a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -29,6 +32,9 @@
         --translator-hot-bg: #b91c1c;
         --translator-hot-border: #f97373;
         --translator-hot-text: #ffffff;
+        --login-message-bg: rgba(139, 164, 255, 0.18);
+        --login-message-border: rgba(139, 164, 255, 0.6);
+        --login-message-text: #dbe6ff;
     }
 
     .main-content {
@@ -57,8 +63,9 @@
     }
 
     .login-message {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
-        border-color: rgba(255, 255, 255, 0.16);
+        background: linear-gradient(135deg, var(--login-message-bg), rgba(255, 255, 255, 0.03));
+        border-color: var(--login-message-border);
+        color: var(--login-message-text);
     }
 }
 
@@ -69,11 +76,42 @@ body, td, caption {
 }
 
 .trhead td {
-    color: #000;
+    color: var(--text-color);
 }
 
 .trlight, .trdark {
     overflow-wrap: anywhere;
+}
+
+
+table.dataTable > tbody > tr.trhead,
+.trhead {
+    background-color: var(--surface-background);
+    color: var(--text-color);
+}
+
+table.dataTable > tbody > tr.trlight,
+.trlight {
+    background-color: var(--surface-elevated);
+    color: var(--text-color);
+}
+
+table.dataTable > tbody > tr.trdark,
+.trdark {
+    background-color: var(--page-background);
+    color: var(--text-color);
+}
+
+table.dataTable > tbody > tr.trhighlight,
+.trhilight {
+    background-color: var(--translator-neutral-bg);
+    color: var(--translator-neutral-text);
+}
+
+.trlight td,
+.trdark td {
+    background-color: inherit;
+    color: inherit;
 }
 
 .hidden {
@@ -137,24 +175,27 @@ a:focus {
     color: var(--muted-text);
 }
 
+.action-bar,
 .mail-nav {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
     align-items: center;
-    margin-bottom: 0.5rem;
+    gap: 4px;
+    margin-bottom: 4px;
 }
 
+.action-bar__link,
 .mail-nav__link {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0 0.5rem;
     text-decoration: none;
-    color: var(--text-color);
 }
 
-.mail-nav__link,
+/*
+ * Only the contained anchor inherits color because setting color on the control
+ * wrapper would override the theme color supplied by `.button`.
+ */
+.action-bar__link a,
 .mail-nav__link a {
     color: inherit;
     text-decoration: none;
@@ -330,11 +371,14 @@ td.charinfo {
 }
 
 .login-message {
-    border: 1px solid var(--accent-color);
-    background-color: rgba(59, 130, 246, 0.08);
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
+    background-color: var(--login-message-bg);
+    border: 1px solid var(--login-message-border);
     border-radius: 0.5rem;
+    color: var(--login-message-text);
+    font-size: 14px;
+    line-height: 1.45;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
 }
 
 .login-table,
@@ -385,6 +429,11 @@ select,
 textarea {
     font-family: "Segoe UI", Helvetica, Arial, sans-serif;
 }
+
+.button {
+    padding: 2px 8px;
+}
+
 
 select,
 input,
@@ -473,55 +522,102 @@ a.thot:hover {
     }
 }
 
-/* --- Action rows ---------------------------------------------------------
-   Appended as one block so a theme can take it verbatim. Geometry only: the
-   colour, border and font of a control still come from this theme's own
-   .button rule above, so each theme stays itself. */
-
-/* The padding comes from the stylesheet now rather than from the browser's
-   own button defaults, so that an <a> and a <button> standing next to each
-   other are the same height. */
+/*
+ * Shared interactive-control contract.
+ *
+ * The game can emit the same action as an anchor, a native button, or a
+ * non-interactive span. Keeping every metric here prevents those variants from
+ * changing size when a mail action becomes unavailable. `.btn-close` is not
+ * targeted: Bootstrap must retain control of its background-image close icon.
+ */
 .button {
-    padding: 2px 8px;
-}
-
-/* A link or an inert element wearing the button class would otherwise render
-   as underlined text with no inner spacing at all. */
-a.button,
-span.button {
-    display: inline-block;
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-height: 2rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--accent-color);
+    border-radius: 0.4rem;
+    background: var(--accent-color);
+    color: #111827;
+    font: inherit;
+    line-height: 1.25;
+    text-align: center;
     text-decoration: none;
+    vertical-align: middle;
+    white-space: normal;
+    overflow-wrap: anywhere;
     cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease,
+        box-shadow 120ms ease, transform 60ms ease;
 }
 
-span.button[aria-disabled="true"] {
-    cursor: default;
-    opacity: 0.6;
+/* Add line spacing when consecutive inline buttons wrap in the narrow mailbox popup. */
+form > .button {
+    margin-block: 2px;
 }
 
-/* A row of actions. Wraps on a narrow screen instead of forcing the table
-   cell wider than the viewport. */
-.action-bar,
+/* Color and elevation make hover visible without changing control metrics. */
+.button:not([aria-disabled="true"]):not(:disabled):hover {
+    background: #2563eb;
+    color: #111827;
+    text-decoration: none;
+    box-shadow: 0 2px 5px rgb(0 0 0 / 30%);
+}
+
+/* The offset outline is a non-color-only focus cue against the skin canvas. */
+.button:not([aria-disabled="true"]):focus-visible {
+    outline: 3px solid var(--text-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.button:not([aria-disabled="true"]):not(:disabled):active {
+    background: #1d4ed8;
+    color: #111827;
+    box-shadow: inset 0 2px 3px rgb(0 0 0 / 35%);
+    transform: translateY(1px);
+}
+
+/*
+ * Disabled actions stay legible and stable. Explicit interaction overrides are
+ * intentional because a disabled span still participates in selector matching.
+ */
+.button[aria-disabled="true"],
+.button[aria-disabled="true"]:hover,
+.button[aria-disabled="true"]:active,
+.button:disabled,
+.button:disabled:hover,
+.button:disabled:active {
+    border-color: var(--border-color);
+    background: var(--surface-elevated);
+    color: var(--text-color);
+    box-shadow: none;
+    opacity: 1;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/*
+ * Wider gaps separate adjacent targets. Flexible, breakable links allow labels
+ * such as “Report to Admin” to wrap inside narrow popup viewports.
+ */
 .mail-nav {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px;
-    margin-bottom: 4px;
+    gap: 0.5rem;
+    max-width: 100%;
+    margin-bottom: 0.5rem;
 }
 
-.action-bar__link,
 .mail-nav__link {
-    display: inline-flex;
-    align-items: center;
-    text-decoration: none;
-}
-
-/* Only the descendant inherits. NOT the control itself: it wears .button, and
-   a colour here would have the same specificity as .button's while sitting
-   later in the sheet, so it would override the theme's own button colour. */
-.action-bar__link a,
-.mail-nav__link a {
-    color: inherit;
-    text-decoration: none;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }

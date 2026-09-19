@@ -14,34 +14,28 @@
 </head>
 <body class="main-body">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
-                <table class="noborder w-100">
-                    <tr class="page-header">
-                        <td class="noborder pageheader-left align-center valign-top">
-                            <button class="btn btn-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNav" aria-controls="offcanvasNav" aria-label="Open navigation menu">&#9776;</button>
-                            <table>
-                                <tr>
-                                    <td class="noborder motd align-left valign-bottom">&nbsp;&nbsp;<strong>{{ motd|raw }}</strong></td>
-                                    <td class="noborder align-right valign-bottom"><strong>{{ petition|raw }}</strong></td>
-                                </tr>
-                            </table>
-                        </td>
-                        <td class="noborder pageheader-center align-center">{{ title }}</td>
-                        <td class="noborder pageheader-right valign-top">
-                            <button class="btn btn-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasStats" aria-controls="offcanvasStats">&#128202;</button>
-                            <nav class="mail-nav justify-content-end" aria-label="Player notifications">
-                                <span class="mail-nav__link">
-                                    <img src="{{ '/' ~ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail">
-                                    <strong>{{ mail|raw }}</strong>
-                                </span>
-                                <span class="mail-nav__link">
-                                    {{ petitiondisplay|raw }}
-                                </span>
-                            </nav>
-                        </td>
-                    </tr>
-                </table>
+        <div class="row page-header align-items-center">
+            <div class="col-4 pageheader-left text-center">
+                <button class="btn btn-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNav" aria-controls="offcanvasNav" aria-label="Open navigation menu">&#9776;</button>
+                <div class="d-flex gap-2 justify-content-center">
+                    <div class="motd">&nbsp;&nbsp;<strong>{{ motd|raw }}</strong></div>
+                    <div class="petition"><strong>{{ petition|raw }}</strong></div>
+                </div>
+            </div>
+            <div class="col-4 pageheader-center text-center">
+                {{ title }}
+            </div>
+            <div class="col-4 pageheader-right text-end">
+                <button class="btn btn-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasStats" aria-controls="offcanvasStats">&#128202;</button>
+                <nav class="mail-nav justify-content-end" aria-label="Player notifications">
+                    <span class="mail-nav__link">
+                        <img src="{{ '/' ~ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail">
+                        <strong>{{ mail|raw }}</strong>
+                    </span>
+                    <span class="mail-nav__link">
+                        {{ petitiondisplay|raw }}
+                    </span>
+                </nav>
             </div>
         </div>
         <div class="row">
