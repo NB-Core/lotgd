@@ -137,12 +137,17 @@ class SecurityLog
     }
 
     /**
-     * Replace malformed byte sequences with U+FFFD, leaving valid input alone.
+     * Make a value valid UTF-8, leaving input that already is alone.
      *
-     * U+FFFD rather than dropping the bytes, because the whole point of the
-     * line is to tell an operator what was seen: a replacement character says
-     * "there was something unreadable here", where a silent deletion makes a
-     * mangled value look like a value someone actually sent.
+     * Where mbstring is present the malformed sequences are marked with U+FFFD,
+     * which is the better outcome and is what this asks for; where it is not,
+     * they are dropped. The guarantee is the validity -- see the last paragraph
+     * for why the marking cannot be one.
+     *
+     * Marking rather than dropping, because the whole point of the line is to
+     * tell an operator what was seen: a replacement character says "there was
+     * something unreadable here", where a silent deletion makes a mangled value
+     * look like a value someone actually sent.
      *
      * mb_substitute_character() is saved and restored because it is global
      * state and this class is called from everywhere, and it is set explicitly
