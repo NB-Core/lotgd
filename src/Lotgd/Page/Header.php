@@ -54,12 +54,7 @@ class Header
             }
         }
 
-        $arguments = func_get_args();
-        if (!$arguments || count($arguments) === 0) {
-            $arguments = ['Legend of the Green Dragon'];
-        }
-        $title = call_user_func_array([Translator::class, 'sprintfTranslate'], $arguments);
-        $title = Sanitize::sanitize(HolidayText::holidayize($title, 'title'));
+        $title = self::headerTitle(func_get_args());
         Buffs::calculateBuffFields();
 
         $lang     = defined('LANGUAGE') ? LANGUAGE : $settings->getSetting('defaultlanguage', 'en');
@@ -88,12 +83,7 @@ class Header
 
         HookHandler::hook('header-popup');
 
-        $arguments = func_get_args();
-        if (!$arguments || count($arguments) === 0) {
-            $arguments = ['Legend of the Green Dragon'];
-        }
-        $title = Translator::sprintfTranslate(...$arguments);
-        $title = HolidayText::holidayize($title, 'title');
+        $title = self::headerTitle(func_get_args());
 
         $settings = Settings::getInstance();
         $lang     = defined('LANGUAGE') ? LANGUAGE : $settings->getSetting('defaultlanguage', 'en');
@@ -107,6 +97,31 @@ class Header
         }
 
         $nav->setHeader(self::fillHeadPlaceholders($template['popuphead'], $title, $lang, $metaDesc));
+    }
+
+    /**
+     * The title both head paths render.
+     *
+     * One method because the two had drifted: pageHeader() ran the translated
+     * title through Sanitize::sanitize() and popupHeader() did not, so a title
+     * carrying a colour code -- a backtick-4 for red, and a title is one of the
+     * places the game writes them -- reached a popup's <title> as those two
+     * literal characters, where a page's did not. Reported by Copilot.
+     *
+     * What that sanitiser does is strip colour codes; it is not an escaper and
+     * confers no HTML safety. See fillHeadPlaceholders() for what does.
+     *
+     * @param list<mixed> $arguments sprintf-style: a format string, then values
+     */
+    public static function headerTitle(array $arguments): string
+    {
+        if ($arguments === []) {
+            $arguments = ['Legend of the Green Dragon'];
+        }
+
+        $title = Translator::sprintfTranslate(...$arguments);
+
+        return Sanitize::sanitize(HolidayText::holidayize($title, 'title'));
     }
 
     /**
@@ -127,11 +142,17 @@ class Header
      * escapes `{{ meta_description }}` by default, which is why only this path
      * needed it. Reported by Codex.
      *
-     * `{title}` is not escaped here. It arrives already through
-     * Sanitize::sanitize(), whose output is the game's own colour markup, and
-     * no bundled template puts it inside an attribute -- it is element content
-     * everywhere it appears. Escaping it here would render that markup as
-     * literal text.
+     * `{title}` is deliberately *not* escaped, and the reason is not the one it
+     * is easy to assume: Sanitize::sanitize() strips colour codes and is not an
+     * escaper, so it buys nothing here. Two things do. It is element content in
+     * every bundled template -- `<title>`, a `<span>`, a `<td>` -- and never an
+     * attribute, so there is no quote to close. And titles legitimately carry
+     * entities: pages/clan/detail.php:121 asks for
+     * `"Clan Membership for %s &lt;%s&gt;"`, which escaping would print as the
+     * literal `&lt;`. So this is a known limit, not an oversight -- a title is
+     * assembled by core and by modules, and one built from something a player
+     * controls would need escaping at that call site, where what the value is
+     * is still known.
      */
     public static function fillHeadPlaceholders(
         string $head,

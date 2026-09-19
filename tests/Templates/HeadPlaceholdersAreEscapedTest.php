@@ -112,17 +112,38 @@ final class HeadPlaceholdersAreEscapedTest extends TestCase
     }
 
     /**
-     * The title keeps its colour markup.
+     * The title is not escaped, and this says why rather than that it is fine.
      *
-     * It arrives through Sanitize::sanitize() already and is element content in
-     * every bundled template, never an attribute. Escaping it here would print
-     * the game's own markup as literal text, so this asserts the deliberate
-     * asymmetry rather than leaving it to be "fixed" later.
+     * The first version of this test gave the wrong reason -- that the title
+     * had been through Sanitize::sanitize(). That sanitiser strips colour
+     * codes; it is not an escaper and buys nothing against markup. Copilot
+     * noticed the claim was load-bearing where it was not earned.
+     *
+     * The real reason is the second assertion: pages/clan/detail.php:121 asks
+     * for "Clan Membership for %s &lt;%s&gt;", so a title carrying entities is
+     * ordinary and escaping would print `&lt;` to the reader. The price is the
+     * first assertion -- raw markup in a title reaches the page -- and it is
+     * asserted rather than hidden, because a known limit someone can read is
+     * worth more than a comfortable silence. Nothing in core builds a title
+     * from player input; a caller that did would escape at that point, where
+     * what the value is is still known.
      */
-    public function testTheTitleIsLeftAsTheSanitiserProducedIt(): void
+    public function testTheTitleIsNotEscaped(): void
     {
-        $filled = Header::fillHeadPlaceholders(self::HEAD, 'Ye Olde <b>Poste</b>', 'en', 'A description');
+        $markup = Header::fillHeadPlaceholders(self::HEAD, 'Ye Olde <b>Poste</b>', 'en', 'A description');
 
-        self::assertStringContainsString('<title>Ye Olde <b>Poste</b></title>', $filled);
+        self::assertStringContainsString(
+            '<title>Ye Olde <b>Poste</b></title>',
+            $markup,
+            'the known limit: a title is placed as markup'
+        );
+
+        $entities = Header::fillHeadPlaceholders(self::HEAD, 'Clan Membership for Reds &lt;RED&gt;', 'en', 'A');
+
+        self::assertStringContainsString(
+            '<title>Clan Membership for Reds &lt;RED&gt;</title>',
+            $entities,
+            'and the reason for it: escaping would double-encode a title core writes'
+        );
     }
 }
