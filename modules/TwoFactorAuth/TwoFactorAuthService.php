@@ -36,6 +36,11 @@ class TwoFactorAuthService
      */
     private const PLAIN_PREFIX = 'plain:';
 
+    /**
+     * What the capability probe encrypts. Never stored, never a secret.
+     */
+    private const PROBE_PLAINTEXT = 'probe';
+
     public static function generateSecret(int $bytes = 20): string
     {
         return self::base32Encode(random_bytes($bytes));
@@ -180,32 +185,90 @@ class TwoFactorAuthService
     }
 
     /**
-     * Whether this installation can write the authenticated format.
+     * Whether this installation can use the authenticated format at all.
      *
-     * aes-256-gcm needs both openssl and a build that offers the mode, so it is
-     * asked rather than assumed -- a build without it must keep working, on the
-     * older format, instead of failing to store a secret at all.
+     * Asked by *doing* it rather than by consulting a list. The first version
+     * looked the cipher up in openssl_get_cipher_methods(), which turned a
+     * question about the crypto into a question about one introspection
+     * function -- and made that function load-bearing for reading, not only for
+     * writing: decryptSecret() gates the `enc2:` branch on this, so an
+     * installation that had already migrated its accounts and then disabled
+     * only openssl_get_cipher_methods() answered false here and returned ''
+     * for every stored secret. Reproduced before fixing: a blob that read back
+     * as its secret on a healthy install came back empty on that one. That is a
+     * lockout, which is the exact failure this whole change exists to end.
+     * Reported by Copilot.
+     *
+     * A round trip cannot be wrong about it the way a list can be missing. It
+     * also costs one encrypt and one decrypt of a five-byte constant, once per
+     * process, which is not a budget worth optimising against a lockout.
      */
     public static function supportsAuthenticatedStorage(): bool
     {
         static $supported = null;
 
         if ($supported === null) {
-            $supported = function_exists('openssl_encrypt')
-                && function_exists('openssl_decrypt')
-                // Asked separately rather than assumed to come with the other
-                // two: disable_functions takes a list, so an installation can
-                // and does disable them one at a time. Without this, an
-                // installation that had disabled only this one fatalled here --
-                // on 2FA setup and on every successful verification of a legacy
-                // secret, since needsReencryption() asks the same question.
-                // Reproduced with `php -d disable_functions=openssl_get_cipher_methods`.
-                // Reported by Codex.
-                && function_exists('openssl_get_cipher_methods')
-                && in_array(self::AEAD_CIPHER, openssl_get_cipher_methods(), true);
+            $supported = self::cipherRoundTrips(self::AEAD_CIPHER);
         }
 
         return $supported;
+    }
+
+    /**
+     * Whether this build can encrypt and then decrypt with a given cipher.
+     *
+     * The key and the plaintext are constants and nothing here is stored: this
+     * encrypts the word `probe` and throws the result away. The iv is random
+     * only so that no reader has to decide whether a fixed one matters.
+     *
+     * An unsupported cipher is an *answer*, not an error, but openssl_encrypt()
+     * reports it as a warning -- so the warning is caught by a handler scoped
+     * to the call and the previous one restored, rather than suppressed with
+     * `@`, which AGENTS.md rules out and which would also swallow anything else
+     * that went wrong in the same expression.
+     *
+     * The decrypt half earns its place by contract rather than by observation,
+     * and that is worth saying because no mutation can show it: on a build that
+     * has the cipher, encryption succeeding implies decryption succeeding, and
+     * a build missing openssl_decrypt() is already refused above. It stays
+     * because supportsAuthenticatedStorage() gates *reading* -- decryptSecret()
+     * consults it before touching an `enc2:` blob -- so a probe that measured
+     * only the write half would be answering a different question than the one
+     * being asked of it. That mismatch is exactly what produced the lockout
+     * this method was rewritten to fix.
+     */
+    private static function cipherRoundTrips(string $cipher): bool
+    {
+        if (!function_exists('openssl_encrypt') || !function_exists('openssl_decrypt')) {
+            return false;
+        }
+
+        $key = str_repeat('k', 32);
+        $iv = random_bytes(self::AEAD_IV_BYTES);
+        $tag = '';
+
+        set_error_handler(static fn (): bool => true);
+
+        try {
+            $ciphertext = openssl_encrypt(
+                self::PROBE_PLAINTEXT,
+                $cipher,
+                $key,
+                OPENSSL_RAW_DATA,
+                $iv,
+                $tag,
+                '',
+                self::AEAD_TAG_BYTES
+            );
+
+            if (!is_string($ciphertext) || strlen($tag) !== self::AEAD_TAG_BYTES) {
+                return false;
+            }
+
+            return openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag) === self::PROBE_PLAINTEXT;
+        } finally {
+            restore_error_handler();
+        }
     }
 
     /**
