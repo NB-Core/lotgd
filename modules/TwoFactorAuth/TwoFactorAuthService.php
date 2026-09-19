@@ -60,6 +60,12 @@ class TwoFactorAuthService
      */
     private const AEAD_KEY_BYTES = 32;
     private const AEAD_KEY_INFO = 'lotgd-2fa-secret-v2';
+
+    /**
+     * SHA-256's output length, which HKDF's salt is a zero block of. Equal to
+     * AEAD_KEY_BYTES by coincidence; see hkdfSha256().
+     */
+    private const HKDF_HASH_BYTES = 32;
     private const PROBE_KEY = 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk';
     private const PROBE_VECTOR = 'AQEBAQEBAQEBAQEB81dlvJM3TuvCnavyPexgeiedl8gQ';
 
@@ -508,7 +514,7 @@ class TwoFactorAuthService
     private static function aeadKey(string $key): string
     {
         if ($key === '') {
-            return str_repeat("\0", 32);
+            return str_repeat("\0", self::AEAD_KEY_BYTES);
         }
 
         if (function_exists('hash_hkdf')) {
@@ -540,7 +546,13 @@ class TwoFactorAuthService
      */
     private static function hkdfSha256(string $key, string $info, int $length): string
     {
-        $prk = hash_hmac('sha256', $key, str_repeat("\0", 32), true);
+        // The salt is a zero block of the *hash* length, which RFC 5869 defines
+        // independently of the output length. It is 32 here because SHA-256
+        // says so, not because the derived key happens to be 32 bytes too --
+        // reaching for AEAD_KEY_BYTES would tie two numbers that are equal by
+        // coincidence and would silently break interoperability with
+        // hash_hkdf() if the key size ever changed.
+        $prk = hash_hmac('sha256', $key, str_repeat("\0", self::HKDF_HASH_BYTES), true);
 
         return substr(hash_hmac('sha256', $info . "\x01", $prk, true), 0, $length);
     }
