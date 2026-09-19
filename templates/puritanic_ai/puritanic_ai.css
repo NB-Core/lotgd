@@ -260,13 +260,6 @@ td[class*="page-bottom"] {
 	padding: 2px 8px;
 }
 
-.action-bar,
-.mail-nav {
-	flex-wrap: wrap;
-	gap: 4px;
-	margin-bottom: 4px;
-}
-
 .action-bar__link,
 .mail-nav__link {
 	display: inline-flex;

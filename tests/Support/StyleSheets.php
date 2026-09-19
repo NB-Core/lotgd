@@ -34,6 +34,11 @@ final class StyleSheets
     private static ?array $themes = null;
 
     /**
+     * @var array<string, list<string>>|null
+     */
+    private static ?array $themeSheets = null;
+
+    /**
      * Selectors that mention $class, and the subset a `<button>` could match.
      *
      * @return array{reachable: list<string>, all: list<string>}
@@ -84,6 +89,122 @@ final class StyleSheets
     }
 
     /**
+     * The stylesheets each theme actually loads, in load order.
+     *
+     * Read from the templates rather than assumed, because the answer changed
+     * underneath this file once already. It used to skip everything under
+     * `templates/common/` on the grounds that the only thing there was a shared
+     * palette -- true of `colors.css`, and wrong the moment `sidebar.css`
+     * arrived carrying the `.button` geometry and the action-row layout that
+     * all four legacy themes now depend on. The blanket path rule swallowed it,
+     * so those themes appeared to style nothing they in fact style, and a
+     * deletion of the shared sheet would have gone unnoticed by every
+     * assertion here.
+     *
+     * A theme is therefore the set of sheets its template links, which is the
+     * only definition a browser agrees with. The two shapes are the four
+     * legacy `.htm` templates and the six Twig `page.twig` ones; the Twig
+     * themes do not link `sidebar.css`, and this reports that rather than
+     * papering over it.
+     *
+     * One sheet a browser does load is deliberately left out: the Twig heads
+     * open with `{{ 'bootstrap'|asset('css') }}`, resolved through
+     * assets/vendor/manifest.json. It is excluded because it is not a theme's
+     * sheet to change and because it has nothing to say about the classes
+     * these assertions are about -- measured, not assumed: of its 2967
+     * selectors, none mentions `.button`, `.action-bar` or `.mail-nav`. That
+     * exclusion is therefore a claim about the vendor sheet rather than a
+     * blanket rule, which is what the last one was, so it is asserted every
+     * run by VendorSheetsDoNotStyleTheRowTest instead of stated here and left
+     * to rot. Reported by Copilot, whose point was that the sentence above
+     * promised the full browser cascade and this delivers less.
+     *
+     * Keyed by the theme's own sheet so a failure names something a reader can
+     * open.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function themeSheets(): array
+    {
+        if (self::$themeSheets !== null) {
+            return self::$themeSheets;
+        }
+
+        $root = dirname(__DIR__, 2);
+        $themes = [];
+
+        foreach ((array) glob($root . '/templates/*.htm') as $template) {
+            $html = (string) file_get_contents((string) $template);
+            preg_match_all('/href=[\'"](templates\/[^\'"]+\.css)[\'"]/', $html, $matches);
+            $themes += self::themeFor($root, (string) $template, array_values(array_unique($matches[1])));
+        }
+
+        foreach ((array) glob($root . '/templates_twig/*/page.twig') as $template) {
+            $name = basename(dirname((string) $template));
+            $twig = (string) file_get_contents((string) $template);
+            $sheets = [];
+            if (str_contains($twig, '/templates/common/colors.css')) {
+                $sheets[] = 'templates/common/colors.css';
+            }
+            if (str_contains($twig, "template_path ~ '/assets/style.css'")) {
+                $sheets[] = 'templates_twig/' . $name . '/assets/style.css';
+            }
+            $themes += self::themeFor($root, (string) $template, $sheets);
+        }
+
+        self::$themeSheets = $themes;
+
+        return $themes;
+    }
+
+    /**
+     * One theme's entry: its own sheet as the key, every sheet it loads as the
+     * value.
+     *
+     * The theme's own sheet is the one that is not shared. A template that
+     * links none has no theme to name, and returning nothing for it would make
+     * this map quietly cover less than the caller believes -- a bundled theme
+     * dropping out of every assertion here without a word. So it throws, which
+     * is what the docblock used to promise while the code skipped. Reported by
+     * Copilot.
+     *
+     * A sheet the template links but that is not on disk is left out rather
+     * than fatal, and deliberately: that is how deleting `sidebar.css` makes
+     * the themes which depend on it report what they lost.
+     *
+     * @param list<string> $relative
+     *
+     * @return array<string, list<string>>
+     */
+    private static function themeFor(string $root, string $template, array $relative): array
+    {
+        $own = null;
+        $paths = [];
+
+        foreach ($relative as $sheet) {
+            $path = $root . '/' . $sheet;
+            if (!is_file($path)) {
+                continue;
+            }
+
+            $paths[] = $path;
+            if (!str_starts_with($sheet, 'templates/common/')) {
+                $own = $sheet;
+            }
+        }
+
+        if ($own === null) {
+            throw new \RuntimeException(sprintf(
+                'No theme stylesheet of its own is linked by %s, so it would drop out of every '
+                    . 'assertion about the bundled themes unnoticed.',
+                substr($template, strlen($root) + 1)
+            ));
+        }
+
+        return [$own => $paths];
+    }
+
+    /**
      * The themes a player can actually be wearing, as sheet => selectors.
      *
      * Asking whether a class is styled *somewhere* is too coarse a question,
@@ -92,10 +213,9 @@ final class StyleSheets
      * nine other themes still defined it. A player using that theme would have
      * had the unstyled row -- which is #1540 exactly, one level up.
      *
-     * `templates/common/colors.css` is excluded: it is a shared palette loaded
-     * *alongside* a theme (see Redirect.php and the page.twig of every twig
-     * theme), not a theme anyone can select, so it is not expected to define
-     * a button.
+     * The selectors of every sheet the theme loads, merged, because that is
+     * what reaches the page. See themeSheets() for why this is read from the
+     * templates.
      *
      * @return array<string, list<string>>
      */
@@ -106,12 +226,13 @@ final class StyleSheets
         }
 
         $themes = [];
-        foreach (self::paths() as $sheet) {
-            if (str_contains($sheet, '/templates/common/')) {
-                continue;
+        foreach (self::themeSheets() as $theme => $sheets) {
+            $selectors = [];
+            foreach ($sheets as $sheet) {
+                $selectors = array_merge($selectors, self::selectorsIn((string) file_get_contents($sheet)));
             }
 
-            $themes[$sheet] = self::selectorsIn((string) file_get_contents($sheet));
+            $themes[$theme] = $selectors;
         }
 
         self::$themes = $themes;
@@ -126,17 +247,16 @@ final class StyleSheets
      */
     public static function themesMissing(string $class): array
     {
-        $root = dirname(__DIR__, 2);
         $missing = [];
 
-        foreach (self::themes() as $sheet => $selectors) {
+        foreach (self::themes() as $theme => $selectors) {
             foreach ($selectors as $selector) {
                 if (self::isButtonReachable($selector, $class)) {
                     continue 2;
                 }
             }
 
-            $missing[] = substr($sheet, strlen($root) + 1);
+            $missing[] = $theme;
         }
 
         return $missing;
@@ -281,40 +401,55 @@ final class StyleSheets
      * row class sets later is what the browser uses -- which is how a theme
      * loses its own button colour without any assertion noticing.
      *
-     * Returns sheet => properties, so the failure names the themes.
+     * Returns theme => properties, so the failure names the themes.
+     *
+     * Across every sheet the theme loads, in load order, rather than each on
+     * its own: the two rules need not live in the same file. `.button`'s
+     * geometry sits in the shared `templates/common/sidebar.css` now, which
+     * every legacy template links *after* its own -- so a per-file reading
+     * cannot see which of the two a browser would use, and would answer for
+     * the wrong one.
      *
      * @return array<string, list<string>>
      */
     public static function propertiesOverridingButton(string $class): array
     {
-        $root = dirname(__DIR__, 2);
         $clashes = [];
 
-        foreach (self::themes() as $sheet => $_) {
+        foreach (self::themeSheets() as $theme => $sheets) {
             $button = [];
             $row = [];
+            $order = 0;
 
-            foreach (self::declarationsIn((string) file_get_contents($sheet)) as $rule) {
-                if ($rule['selector'] === '.button') {
-                    $button[$rule['property']] = $rule['order'];
-                    continue;
-                }
+            foreach ($sheets as $sheet) {
+                foreach (self::declarationsIn((string) file_get_contents($sheet)) as $rule) {
+                    // The declaration's own index restarts per sheet, so the
+                    // sheets are re-numbered into one sequence here; comparing
+                    // the raw indices would say a later sheet's first rule
+                    // precedes an earlier sheet's last.
+                    $order++;
 
-                if ($rule['selector'] === '.' . $class) {
-                    $row[$rule['property']] = $rule['order'];
+                    if ($rule['selector'] === '.button') {
+                        $button[$rule['property']] = $order;
+                        continue;
+                    }
+
+                    if ($rule['selector'] === '.' . $class) {
+                        $row[$rule['property']] = $order;
+                    }
                 }
             }
 
             $properties = [];
-            foreach ($row as $property => $order) {
-                if (isset($button[$property]) && $order > $button[$property]) {
+            foreach ($row as $property => $position) {
+                if (isset($button[$property]) && $position > $button[$property]) {
                     $properties[] = $property;
                 }
             }
 
             if ($properties !== []) {
                 sort($properties);
-                $clashes[substr($sheet, strlen($root) + 1)] = $properties;
+                $clashes[$theme] = $properties;
             }
         }
 
