@@ -1,16 +1,17 @@
 <!--!popuphead-->
 <!DOCTYPE html>
-<html lang="{lang}">
+<html lang="en">
 <head>
- <meta name="viewport" content="width=device-width, initial-scale=1">
- <meta name="description" content="{meta_description}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Shinobi Legends - A browser game using the Legend of the Green Dragon Engine">
  <title>{title}</title>
  {headscript_pre}{headscript_mid}
  <link href="templates/common/colors.css" rel="stylesheet" type="text/css">
  <link href='templates/jade.css' rel='stylesheet' type='text/css'>
- {headscript}{script}
-</head>
-<body bgcolor='#003800' text="#CCCCCC" class='template-jade'>
+<link href='templates/common/sidebar.css' rel='stylesheet' type='text/css'>
+ {headscript}{script}</head>
+<body bgcolor='#003800' text="#CCCCCC">
  <table border='0' cellpadding='0' cellspacing='0' width='100%'>
   <tr>
    <td>
@@ -89,17 +90,18 @@
 </html>
 <!--!header-->
 <!DOCTYPE html>
-<html lang="{lang}">
+<html lang="en">
 <head>
- <meta name="viewport" content="width=device-width, initial-scale=1">
- <meta name="description" content="{meta_description}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Shinobi Legends - A browser game using the Legend of the Green Dragon Engine">
  <title>{title}</title>
- {headscript_pre}{headscript_mid}
- <link href="templates/common/colors.css" rel="stylesheet" type="text/css">
+{headscript_pre}{headscript_mid}
+<link href="templates/common/colors.css" rel="stylesheet" type="text/css">
  <link href='templates/jade.css' rel='stylesheet' type='text/css'>
- {headscript}{script}
-</head>
-<body bgcolor='#003800' text="#CCCCCC" class='template-jade'>
+<link href='templates/common/sidebar.css' rel='stylesheet' type='text/css'>
+ {headscript}{script}</head>
+<body bgcolor='#003800' text="#CCCCCC">
 <table border='0' cellpadding='0' cellspacing='0' width='100%'>
  <tr>
   <td>
@@ -124,7 +126,7 @@
 	   </tr>
 	  </table>
 	 </td>
-	 <td align='right' valign="top"><img src='templates/jade/logo.jpg' alt='Logo'></td>
+	 <td align='right' valign="top"><img src='templates/jade/logo.jpg' alt=""></td>
 	</tr>
 	<tr>
 		<td valign='top' colspan='2'>
@@ -182,7 +184,7 @@
 			 </tr> 
 			 <tr>
 			  <td background='templates/jade/tlt.gif'><img name='tlt' src='templates/jade/spacer.gif' width='1' height='1' border='0' alt=''></td>
-			  <td valign='top' bgcolor='#003800'class='nav' align='left' nowrap>{stats} <p>&nbsp;</p> {paypal}</td>
+			  <td valign='top' bgcolor='#003800'class='nav sidebar-content' align='left' nowrap>{stats} <p>&nbsp;</p> {paypal}</td>
 			  <td background='templates/jade/trt.gif'><img name='trt' src='templates/jade/spacer.gif' width='1' height='1' border='0' alt=''></td>
 			 </tr>
 			 <tr>
@@ -252,10 +254,10 @@
 <!--!navhead-->
 <span class="navhead">&#151;{title}&#151;</span><br clear='all'>
 <!--!navheadsub-->
-<span class="navheadsub">&#172;{title}&#8976;</span><br clear='all'>
+<span class="navheadsub">{title}</span><br clear='all'>
 <!--!navhelp-->
 <span class="navhelp">{text}</span><br clear='all'>
-<!--!navitem--> <!-- accesskey attribute provides keyboard shortcuts for screen-reader users -->
+<!--!navitem-->
 <a href="{link}"{accesskey}class='nav' {popup}>{text}</a><br clear='all'>
 <!--!petitioncount-->
 <table border='0' cellpadding='5' cellspacing='0' align='right'><tr><td>{petitioncount}</td></tr></table>
@@ -280,19 +282,19 @@
 <!--!login-->
 <table border='0' cellpadding='0' cellspacing='0'>
  <tr>
-  <td><img src='images/logindragon.gif' alt='Login dragon' class='noborder'></td>
+  <td><img src='images/logindragon.gif' class='noborder' alt=""></td>
  </tr>
  <tr>
   <td valign='center' align='center' class='noborder'>
    <table border='0'>
-        <tr>
-         <td align='center'><label for='name'><font color='#ffff00'>{username}:</font></label></td>
-         <td align='center'><label for='password'><font color='#ffff00'>{password}:</font></label></td>
-        </tr>
-        <tr>
-         <td><input name='name' id='name' accesskey='u' size='10' autocomplete='username'></td>
-         <td><input name='password' id='password' accesskey='p' type='password' size='10' autocomplete='current-password'></td>
-        </tr>
+	<tr>
+	 <td align='center'><font color='#ffff00'>{username}:</font></td>
+	 <td align='center'><font color='#ffff00'>{password}:</font></td>
+	</tr>
+	<tr>
+	 <td><input name='name' id='name' accesskey='u' size='10'></td>
+	 <td><input name='password' id='password' accesskey='p' type='password' size='10'></td>
+	</tr>
 	<tr>
 	 <td colspan='2' align='center'><input type='submit' value='{button}' class='button'><br></td>
 	</tr>
@@ -303,7 +305,7 @@
 <!--!loginfull-->
 <table border='0' cellpadding='0' cellspacing='0'>
  <tr>
-  <td><img src='images/serverfull.jpg' alt='Server full' class='noborder'></td>
+  <td><img src='images/serverfull.jpg' class='noborder' alt=""></td>
  </tr>
  <tr>
   <td valign='center' align='center' class='noborder'>

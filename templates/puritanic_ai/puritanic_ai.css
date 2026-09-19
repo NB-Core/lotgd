@@ -1,103 +1,91 @@
-/* CSS Document - based on work by ©MacBladez - Template puritanic_ai of LotGD */
+/* CSS Document Template puritanic_ai of LotGD */
 
 /* General Styles */
 caption {
-    white-space: nowrap;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 12px;
+	white-space: nowrap;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 12px;
 }
 
 td {
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 12px;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	color: #a3a3a3;
 }
-body.template-puritanic_ai table.dataTable > tbody > tr.trhead {
-    background-color: #FFFFFF;
-    color: #000000;
-}
-body.template-puritanic_ai table.dataTable > tbody > tr.trlight {
-    background-color: #CDC8AA;
-    color: #000000;
-}
-body.template-puritanic_ai table.dataTable > tbody > tr.trdark {
-    background-color: #A3A6A3;
-    color: #000000;
+
+.trdark td{
+	color: #000;
 }
 
 .main-body {
-    background-color: #000;
-    color: #777474;
-    margin: 0;
+	background-color: #000;
+	color: '#777474';
+	margin: 0;
 }
 
 .popup-body {
-    background-color: #000;
-    color: #777474;
+	background-color: #000;
+	color: '#777474';
 }
 
 /* Navigation Table */
 table.nav {
-        border: 1px solid #000000;
-        height: auto;
+	border: 1px solid #000000;
+	height: auto;
+	width: 182px;
 }
 
 .navhead {
-        text-decoration: none;
-        height: auto;
-        padding: 1px;
-        float: left;
-        line-height: 33px;
-        clear: none;
-    color: #FFFFFF;
-    cursor: default;
-    text-align: center;
-        font-family: Tahoma Small Cap;
-        font-weight: bolder;
-}
-.navheadsub {
-        text-decoration: none;
-        height: auto;
-        padding: 1px;
-        float: left;
-        line-height: 33px;
-        clear: none;
-        color: #FFFFFF;
-        cursor: default;
-        text-align: center;
-        font-family: Tahoma Small Cap;
-        font-weight: bolder;
-        margin-left: 10px;
+	text-decoration: none;
+	width: 180px;
+	height: auto;
+	padding: 1px;
+	float: left;
+	line-height: 33px;
+	clear: none;
+	color: #FFFFFF;
+	cursor: default;
+	text-align: center;
+	font-family: Tahoma Small Cap;
+	font-weight: bolder;
 }
 
 a {
-    color: #669933;
-    text-decoration: none;
+	color: #669933;
+	text-decoration: none;
 }
 
 /* Header and other styles */
 
 .page-header {
-    height: 48px;
-    padding-bottom: 3px;
+	height: 48px;
+	padding-bottom: 3px;
 }
 
 .main-content {
-    border-style: dotted;
-    background-color: #2B2B2B;
-    align-content: start;
+	border-style: dotted;
+	background-color: #2B2B2B;
+}
+
+.sidebar-content {
+    width: 132px;
+	padding-left: 3px;
+	padding-right: 3px;
+	color: #a3a3a3;
 }
 
 .pageheader-center,.pageheader-left,.pageheader-right {
-        padding: 3px;
-        text-align: center;
+	width: 33.3%;
+	padding: 3px;
+	text-align: center;
 }
 
 .pageheader-left {
-    text-align: left;
+	text-align: left;
 }
 
 .pageheader-right {
-    text-align: right;
+	text-align: right;
 }
 
 
@@ -105,213 +93,241 @@ a {
 
 /* Navigation Link */
 a.nav {
-        color: #FFFFFF;
-        text-decoration: none;
-        height: auto;
-        float: left;
-        padding: 1px;
-        clear: none;
-        text-align: center;
+	color: #FFFFFF;
+	text-decoration: none;
+	width: 181px;
+	height: auto;
+	float: left;
+	padding: 1px;
+	clear: none;
+	text-align: center;
 }
 
 .navhelp {
-        text-decoration: none;
-        height: auto;
-        padding: 1px;
-        float: left;
-        clear: none;
+	text-decoration: none;
+	width: 181px;
+	height: auto;
+	padding: 1px;
+	float: left;
+	clear: none;
 }
 
 /* Translations and others */
 
 select {
-    background-color: #000000;
-    border: 1px solid #999999;
-    color: #CCCCCC;
+	background-color: #000000;
+	border: 1px solid #999999;
+	color: #CCCCCC;
 }
 table.vitalinfo {
-        background-color: #333333;
-        border: 1px solid #000000;
+	background-color: #333333;
+	border: 1px solid #000000;
+	width: 182px;
 }
 a.motd {
-    text-decoration: none;
-    color:#c61d2e;
+	text-decoration: none;
+	color:#c61d2e;
 }
 a:hover.motd {
-    font-weight: normal;
-    color:#FFFFFF;
+	font-weight: normal;
+	color:#FFFFFF;
 }
 
 a.hotmotd {
-    font-weight: normal;
-    color:#FFFFFF;
+	font-weight: normal;
+	color:#FFFFFF;
 }
 
 .pagetitle {
-    font-family: "Arial Black", "Courier";
-    font-variant: small-caps;
-    font-size: 14px;
-    color: #000000;
+	font-family: "Arial Black", "Courier";
+	font-variant: small-caps;
+	font-size: 14px;
+	color: #000000;
 }
 .navhi {
-    color: #c61d2e;
-    text-decoration: underline;
+	color: #c61d2e;
+	text-decoration: underline;
 }
 
 td.nav a.thot {
-    position: absolute;
-    left: 0px;
-    height: auto;
+	position: absolute;
+	left: 0px;
+	height: auto;
 }
 td.nav a.t {
-    position: absolute;
-    left: 0px;
-    height: auto;
+	position: absolute;
+	left: 0px;
+	height: auto;
 }
 
 a.t {
-        height: 7px;
-        border: 1px dotted #FFFFFF;
-        background-color: #999;
-    color: #FFF;
-    font-size: 7px;
-    text-decoration: none;
-    padding-left: 1px;
-    padding-right: 1px;
+	width: 7px;
+	height: 7px;
+	border: 1px dotted #FFFFFF;
+	background-color: #999;
+	color: #FFF;
+	font-size: 7px;
+	text-decoration: none;
+	padding-left: 1px;
+	padding-right: 1px;
 }
 
 a.thot {
-        height: 7px;
-        border: 1px dotted #FFFFFF;
-    background-color: #666666;
-    color: #FFFFFF;
-    font-size: 7px;
-    text-decoration: none;
-    padding-left: 1px;
-    padding-right: 1px;
+	width: 7px;
+	height: 7px;
+	border: 1px dotted #FFFFFF;
+	background-color: #666666;
+	color: #FFFFFF;
+	font-size: 7px;
+	text-decoration: none;
+	padding-left: 1px;
+	padding-right: 1px;
 }
 
 /* Hover Effects */
 a:hover.nav {
-    background-color: #404040;
-    border: none;
+	background-color: #404040;
+	border: none;
 }
 
 /* Message of the Day Link */
 a.motd {
-    text-decoration: none;
-    color: #c61d2e;
+	text-decoration: none;
+	color: #c61d2e;
 }
 
 a:hover.motd {
-    font-weight: normal;
-    color: #FFFFFF;
+	font-weight: normal;
+	color: #FFFFFF;
 }
 
 /* Character Info Styles */
 td.charhead {
-    background-color: #222222;
-    color: #FFFFFF;
+	background-color: #222222;
+	color: #FFFFFF;
+	border-spacing: 0px;
 }
 
 table.charinfo {
-        color: #FFFFFF;
-        border: none;
-        border-spacing: 0px;
-}
-
-td.charinfo {
-    color: #FFFFFF;
-    border-top: 1px solid #FFFFFF;
-    cursor: default;
-    padding: 2px;
+	width: 182px;
+	color: #FFFFFF;
+	border: none;
+	padding: 2px;
 }
 
 /* Not used right now, due to moving images to css */
 /* Additional Background Images based on HTML Attributes */
 .page-top {
-    background-image: url('images/page_top.gif');
-    background-repeat: repeat-x;
+	background-image: url('images/page_top.gif');
+	background-repeat: repeat-x;
 }
 
 .page-bottom {
-    background-image: url('images/page_bot.gif');
-    background-repeat: repeat-x;
+	background-image: url('images/page_bot.gif');
+	background-repeat: repeat-x;
 }
 
 .page-left {
-    background-image: url('images/page_lt.gif');
-    background-repeat: repeat-y;
+	background-image: url('images/page_lt.gif');
+	background-repeat: repeat-y;
 }
 
 .page-right {
-    background-image: url('images/page_rt.gif');
-    background-repeat: repeat-y;
+	background-image: url('images/page_rt.gif');
+	background-repeat: repeat-y;
 }
 
 
 /* Specific adjustments for td elements that used inline background attributes */
 td[class*="page-top"] {
-    background-image: url('images/page_top.gif');
+	background-image: url('images/page_top.gif');
 }
 
 td[class*="page-bottom"] {
-    background-image: url('images/page_bot.gif');
+	background-image: url('images/page_bot.gif');
 }
 
 /* Button Styles */
 .button {
-    background-color: #222222;
-    color: #000000;
-    font-family: verdana, arial, helvetica, sans-serif;
-    font-size: 12px;
-    background-image: url(images/input.gif);
-    border: 1px solid;
-    border-color: #000000 #888846 #888846 #000000;
+	background-color: #222222;
+	color: #000000;
+	font-family: verdana, arial, helvetica, sans-serif;
+	font-size: 12px;
+	background-image: url(images/input.gif);
+	border: 1px solid;
+	border-color: #000000 #888846 #888846 #000000;
+	/* The theme stylesheet controls padding for consistent button sizing. */
+	padding: 2px 8px;
 }
 
+.action-bar__link,
+.mail-nav__link {
+	display: inline-flex;
+	align-items: center;
+	text-decoration: none;
+}
+
+/* Only descendant links inherit color so outer button links retain their theme color. */
+.action-bar__link a,
+.mail-nav__link a {
+	color: inherit;
+	text-decoration: none;
+}
+
+
 .login-submit {
-    text-align:center;
+	text-align:center;
 }
 
 /* Other Styles */
 .select {
-    background-color: #000000;
-    border: 1px solid #999999;
-    color: #CCCCCC;
+	background-color: #000000;
+	border: 1px solid #999999;
+	color: #CCCCCC;
 }
 
 .stonage {
-    background-image: url(images/stone_corner.gif);
-    background-repeat: no-repeat;
-    background-position: left top;
+	background-image: url(images/stone_corner.gif);
+	background-repeat: no-repeat;
+	background-position: left top;
 }
 
 .stonage2 {
-    background-image: url(images/stone_center.gif);
-    background-repeat: no-repeat;
-    background-position: left top;
-    color: #669933;
+	background-image: url(images/stone_center.gif);
+	background-repeat: no-repeat;
+	background-position: left top;
+	color: #669933;
 }
+
+div.debug {
+	background-color: #000000;
+	color: #CCCCCC;
+	border: 1px dotted #CCCCCC;
+	width: auto;
+	height: auto;
+	font-size: 10px;
+	font-weight: bold;
+}
+
 
 /* Background Images for Different Sections */
 td.village {
-    background-image: url(../images/village.jpg);
-    background-repeat: no-repeat;
-    background-position: right bottom;
+	background-image: url(../images/village.jpg);
+	background-repeat: no-repeat;
+	background-position: right bottom;
 }
 
 td.forest {
-    background-image: url(../images/forest.jpg);
-    background-repeat: no-repeat;
-    background-position: center bottom;
+	background-image: url(../images/forest.jpg);
+	background-repeat: no-repeat;
+	background-position: center bottom;
 }
 
 td.dragon {
-    background-image: url(../images/dragon.jpg);
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-attachment: fixed;
+	background-image: url(../images/dragon.jpg);
+	background-repeat: no-repeat;
+	background-position: center center;
+	background-attachment: fixed;
 }
 
 /* Additional styles as needed based on your layout and design requirements */
@@ -320,55 +336,21 @@ td.dragon {
 /* Add styling specific to the elements in the HTML structure you provided */
 
 
-/* --- Action rows ---------------------------------------------------------
-   Appended as one block so a theme can take it verbatim. Geometry only: the
-   colour, border and font of a control still come from this theme's own
-   .button rule above, so each theme stays itself. */
-
-/* The padding comes from the stylesheet now rather than from the browser's
-   own button defaults, so that an <a> and a <button> standing next to each
-   other are the same height. */
-.button {
-    padding: 2px 8px;
-}
-
-/* A link or an inert element wearing the button class would otherwise render
-   as underlined text with no inner spacing at all. */
-a.button,
-span.button {
-    display: inline-block;
+.navheadsub {
+    border: 1px solid #fff;
+    border-radius: 12px;
     text-decoration: none;
-    cursor: pointer;
-}
-
-span.button[aria-disabled="true"] {
+    width: 170px;
+    height: auto;
+    padding: 1px;
+    float: left;
+    line-height: 1em;
+    font-size: 1.2em !important;
+    clear: none;
+    color: #FFFFFF;
     cursor: default;
-    opacity: 0.6;
-}
-
-/* A row of actions. Wraps on a narrow screen instead of forcing the table
-   cell wider than the viewport. */
-.action-bar,
-.mail-nav {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 4px;
-}
-
-.action-bar__link,
-.mail-nav__link {
-    display: inline-flex;
-    align-items: center;
-    text-decoration: none;
-}
-
-/* Only the descendant inherits. NOT the control itself: it wears .button, and
-   a colour here would have the same specificity as .button's while sitting
-   later in the sheet, so it would override the theme's own button colour. */
-.action-bar__link a,
-.mail-nav__link a {
-    color: inherit;
-    text-decoration: none;
+    text-align: center;
+    font-family: Tahoma Small Cap;
+    font-weight: bolder;
+    margin-left: 10px;
 }
