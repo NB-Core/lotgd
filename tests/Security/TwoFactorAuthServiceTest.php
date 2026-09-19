@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Security;
 
+use Lotgd\Tests\Support\LegacyTwoFactorSecret;
 use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2) . '/modules/TwoFactorAuth/TwoFactorAuthService.php';
@@ -92,43 +93,241 @@ class TwoFactorAuthServiceTest extends TestCase
     }
 
     /**
-     * The premise the whole fix rests on: decrypting with the wrong key is not
-     * reliably an error.
+     * The premise the check rests on, now scoped to the format that has it.
      *
      * aes-256-cbc carries no authentication tag, so openssl_decrypt() rejects a
      * wrong key only when the final block's PKCS#7 padding comes out invalid --
      * about 255 times in 256. The remaining case returns bytes, and bytes are
      * not '', so every caller testing `!== ''` accepts them.
      *
-     * Asserted by finding one rather than by quoting a rate: a bounded search
-     * for a colliding secret is deterministic in outcome where a probability is
-     * not, and it keeps the test honest if the stored format ever becomes
-     * authenticated -- then no collision exists, the search runs out, and this
-     * says so instead of passing quietly.
+     * This used to build its fixture with encryptSecret(), and stopped
+     * compiling the moment that method started writing `enc2:` -- with the
+     * message its own assertion carried for the occasion. That is what it was
+     * for: the check below guards a format, not a codebase, and a test that
+     * silently followed the production code to the new format would have gone
+     * on passing while asserting nothing about the old one, which is the one
+     * still on disk.
+     *
+     * Asserted by finding a collision rather than by quoting a rate: a bounded
+     * search is deterministic in outcome where a probability is not.
      */
-    public function testAWrongKeySometimesDecryptsIntoSomethingThatIsNotEmpty(): void
+    public function testAWrongKeyCanDecryptALegacyBlobIntoSomethingThatIsNotEmpty(): void
     {
         self::requireCbcStorage();
 
-        $collision = self::findWrongKeyCollision('key-one', 'key-two');
+        $collision = LegacyTwoFactorSecret::findWrongKeyCollision('key-one', 'key-two');
 
         self::assertNotNull(
             $collision,
-            'no blob in 20000 decrypted under the wrong key -- if the stored format is now '
-                . 'authenticated, this test and the check it guards have both outlived their purpose'
+            'no legacy blob in 20000 decrypted under the wrong key, so nothing here was exercised'
         );
 
-        [, $blob, $garbage] = $collision;
+        self::assertSame(
+            $collision['secret'],
+            \TwoFactorAuthService::decryptSecret($collision['blob'], 'key-one'),
+            'precondition: the fixture is a real legacy blob, not something this helper has drifted into'
+        );
 
-        self::assertNotSame('', $garbage, 'the premise: a wrong key produced something');
+        self::assertNotSame('', $collision['garbage'], 'the premise: a wrong key produced something');
         self::assertFalse(
-            \TwoFactorAuthService::isPlausibleSecret($garbage),
-            'and the check refuses it: ' . bin2hex($garbage)
+            \TwoFactorAuthService::isPlausibleSecret($collision['garbage']),
+            'and the check refuses it: ' . bin2hex($collision['garbage'])
         );
         self::assertTrue(
-            \TwoFactorAuthService::isPlausibleSecret(\TwoFactorAuthService::decryptSecret($blob, 'key-one')),
+            \TwoFactorAuthService::isPlausibleSecret($collision['secret']),
             'control: the right key still yields something the check accepts'
         );
+    }
+
+    /**
+     * The authenticated format does not have that premise, which is the point.
+     *
+     * Where the test above searches for a wrong-key collision and expects to
+     * find one, this searches for the same thing and expects to find none.
+     *
+     * The bound is chosen to make this a regression guard rather than a
+     * restatement of what GCM promises. Forging a tag is 2^-128, so "none in
+     * any number of attempts" is not in doubt; what is worth catching is
+     * someone quietly putting the CBC path back, and at its 1-in-255 rate,
+     * 2000 attempts miss a collision only 0.04% of the time. That is the number
+     * this bound is for.
+     *
+     * Counted rather than asserted per iteration, so a failure reports how many
+     * leaked instead of stopping at the first and so the suite's assertion
+     * count stays a number someone can read.
+     */
+    public function testAWrongKeyNeverDecryptsAnAuthenticatedBlob(): void
+    {
+        self::requireAuthenticatedStorage();
+
+        $attempts = 2000;
+        $leaked = 0;
+        $lastBlob = '';
+        $lastSecret = '';
+
+        for ($i = 0; $i < $attempts; $i++) {
+            $lastSecret = \TwoFactorAuthService::generateSecret();
+            $lastBlob = \TwoFactorAuthService::encryptSecret($lastSecret, 'key-one');
+
+            if (\TwoFactorAuthService::decryptSecret($lastBlob, 'key-two') !== '') {
+                $leaked++;
+            }
+        }
+
+        self::assertSame(
+            0,
+            $leaked,
+            "$leaked of $attempts authenticated blobs gave bytes to a wrong key, which the tag is supposed to prevent"
+        );
+
+        self::assertStringStartsWith('enc2:', $lastBlob, 'precondition: the authenticated format was written');
+        self::assertSame(
+            $lastSecret,
+            \TwoFactorAuthService::decryptSecret($lastBlob, 'key-one'),
+            'control: the right key reads it back, so "the wrong key got nothing" means something'
+        );
+    }
+
+    /**
+     * The two formats do not share a key, which is the one claim about this
+     * change that behaviour cannot show.
+     *
+     * Everything else here is observable: swap the cipher, drop the tag, stop
+     * reading the old format, and a test goes red. Not this one. Any
+     * self-consistent derivation encrypts and decrypts perfectly well, so
+     * replacing the HKDF with the legacy `sha256(key)` passes every other
+     * assertion in this file -- measured, by doing it.
+     *
+     * So it is asserted where it lives rather than left as a sentence in a
+     * docblock. What it buys is domain separation: the signing key is the same
+     * value for both formats, and one key used under two cipher modes is the
+     * kind of thing that is cheap to avoid now and awkward to change once blobs
+     * exist. The info string names the format, so a third one would get its own
+     * key by construction.
+     */
+    public function testTheAuthenticatedFormatDoesNotUseTheLegacyKey(): void
+    {
+        $derive = new \ReflectionMethod(\TwoFactorAuthService::class, 'aeadKey');
+        $derive->setAccessible(true);
+
+        $signingKey = 'a-signing-key';
+        $aead = $derive->invoke(null, $signingKey);
+
+        self::assertSame(32, strlen($aead), 'aes-256 wants 32 bytes');
+        self::assertNotSame(
+            hash('sha256', $signingKey, true),
+            $aead,
+            'the authenticated format derives the legacy key, so both ciphers share one key'
+        );
+        self::assertSame($aead, $derive->invoke(null, $signingKey), 'and it has to be deterministic, or nothing decrypts');
+        self::assertNotSame(
+            $aead,
+            $derive->invoke(null, 'another-signing-key'),
+            'a different signing key must give a different key'
+        );
+        self::assertSame(
+            32,
+            strlen($derive->invoke(null, '')),
+            'an empty signing key is answered rather than raised from inside a crypto helper'
+        );
+    }
+
+    /**
+     * A single flipped bit is refused, which is what distinguishes a tag from a
+     * checksum nobody checks.
+     *
+     * The byte chosen is in the ciphertext rather than the tag or the iv,
+     * because tampering with the tag is the case anyone would think to test and
+     * tampering with the payload is the case that matters: without
+     * authentication, CBC lets an attacker who can write to the prefs table
+     * make predictable changes to the plaintext.
+     */
+    public function testATamperedAuthenticatedBlobIsRefused(): void
+    {
+        self::requireAuthenticatedStorage();
+
+        $secret = \TwoFactorAuthService::generateSecret();
+        $blob = \TwoFactorAuthService::encryptSecret($secret, 'key-one');
+
+        $raw = self::base64UrlDecode(substr($blob, 5));
+        self::assertGreaterThan(28, strlen($raw), 'precondition: iv and tag and at least one byte of payload');
+
+        $raw[28] = chr(ord($raw[28]) ^ 0x01);
+        $tampered = 'enc2:' . rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+
+        self::assertNotSame($blob, $tampered, 'precondition: the fixture was actually changed');
+        self::assertSame(
+            '',
+            \TwoFactorAuthService::decryptSecret($tampered, 'key-one'),
+            'one flipped bit in the ciphertext was accepted'
+        );
+    }
+
+    /**
+     * A blob written before this change is still readable, which is the whole
+     * of what makes the migration safe to ship.
+     *
+     * Without it the change would lock out every account that has not verified
+     * since -- the same outcome as the bug it fixes, applied to everybody.
+     */
+    public function testALegacyBlobIsStillReadable(): void
+    {
+        self::requireCbcStorage();
+
+        $secret = \TwoFactorAuthService::generateSecret();
+        $blob = LegacyTwoFactorSecret::encrypt($secret, 'key-one');
+
+        self::assertSame($secret, \TwoFactorAuthService::decryptSecret($blob, 'key-one'));
+    }
+
+    /**
+     * And it is reported as wanting rewriting, which is how it stops being one.
+     *
+     * The migration is opportunistic: a successful verification rewrites the
+     * blob in the current format. So "needs rewriting" is not bookkeeping --
+     * it is the only thing that ever moves an account off the weak format.
+     */
+    public function testEachStoredFormatKnowsWhetherItShouldBeRewritten(): void
+    {
+        self::requireAuthenticatedStorage();
+
+        $secret = \TwoFactorAuthService::generateSecret();
+
+        self::assertFalse(
+            \TwoFactorAuthService::needsReencryption(\TwoFactorAuthService::encryptSecret($secret, 'key-one')),
+            'what encryptSecret() just wrote is by definition the current format'
+        );
+        self::assertTrue(
+            \TwoFactorAuthService::needsReencryption(LegacyTwoFactorSecret::encrypt($secret, 'key-one')),
+            'the unauthenticated format is exactly what the migration is for'
+        );
+        self::assertTrue(
+            \TwoFactorAuthService::needsReencryption('plain:' . rtrim(strtr(base64_encode($secret), '+/', '-_'), '=')),
+            'and so is the fallback that stores the secret unencrypted'
+        );
+    }
+
+    /**
+     * Only the authenticated format claims a wrong key is refused.
+     *
+     * The compatibility read uses this to decide whether a non-empty
+     * decryption still needs sanity-checking, so a predicate that said yes for
+     * `enc:` would remove the check that #1547 added.
+     */
+    public function testOnlyTheAuthenticatedFormatIsReportedAsAuthenticated(): void
+    {
+        self::requireAuthenticatedStorage();
+
+        $secret = \TwoFactorAuthService::generateSecret();
+
+        self::assertTrue(
+            \TwoFactorAuthService::isAuthenticatedFormat(\TwoFactorAuthService::encryptSecret($secret, 'key-one'))
+        );
+        self::assertFalse(
+            \TwoFactorAuthService::isAuthenticatedFormat(LegacyTwoFactorSecret::encrypt($secret, 'key-one'))
+        );
+        self::assertFalse(\TwoFactorAuthService::isAuthenticatedFormat('plain:AAAA'));
+        self::assertFalse(\TwoFactorAuthService::isAuthenticatedFormat(''));
     }
 
     /**
@@ -246,22 +445,31 @@ class TwoFactorAuthServiceTest extends TestCase
     }
 
     /**
-     * Search for a blob that decrypts under a key it was not encrypted with.
+     * A fixture about the authenticated format needs that format.
      *
-     * @return array{0: string, 1: string, 2: string}|null secret, blob, garbage
+     * A build without aes-256-gcm falls back to `enc:`, where a wrong key is
+     * refused only most of the time -- so the assertions above would be asking
+     * the weaker format to keep the stronger one's promise, and would fail for
+     * a reason that has nothing to do with what they check.
      */
-    private static function findWrongKeyCollision(string $key, string $otherKey): ?array
+    private static function requireAuthenticatedStorage(): void
     {
-        for ($i = 0; $i < 20000; $i++) {
-            $secret = \TwoFactorAuthService::generateSecret();
-            $blob = \TwoFactorAuthService::encryptSecret($secret, $key);
-            $garbage = \TwoFactorAuthService::decryptSecret($blob, $otherKey);
+        if (!\TwoFactorAuthService::supportsAuthenticatedStorage()) {
+            self::markTestSkipped('this build cannot write aes-256-gcm, so the stored format is the older one');
+        }
+    }
 
-            if ($garbage !== '') {
-                return [$secret, $blob, $garbage];
-            }
+    /**
+     * The decoding half of the storage envelope, for the tampering fixture.
+     */
+    private static function base64UrlDecode(string $value): string
+    {
+        $padded = strtr($value, '-_', '+/');
+        $remainder = strlen($padded) % 4;
+        if ($remainder !== 0) {
+            $padded .= str_repeat('=', 4 - $remainder);
         }
 
-        return null;
+        return (string) base64_decode($padded, true);
     }
 }

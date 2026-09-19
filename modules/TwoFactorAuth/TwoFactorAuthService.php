@@ -7,6 +7,35 @@ declare(strict_types=1);
  */
 class TwoFactorAuthService
 {
+    /**
+     * The authenticated at-rest format.
+     *
+     * `enc2:` is base64url(iv || tag || ciphertext) under aes-256-gcm. The tag
+     * is what the format exists for: `enc:` is aes-256-cbc with nothing to
+     * verify, so openssl_decrypt() there rejects a wrong key only when the
+     * final block's PKCS#7 padding comes out invalid -- about 255 times in 256,
+     * and the 256th returns bytes a caller cannot tell from a secret. That is
+     * not a theoretical hole: it locked roughly one account in 262 out of 2FA
+     * permanently, because the blob and the keys are fixed per account, so the
+     * collision either happens for you every time or never. See #1547.
+     *
+     * With a tag, a wrong key fails. Forging one is 2^-128, not 2^-8.
+     */
+    private const AEAD_CIPHER = 'aes-256-gcm';
+    private const AEAD_PREFIX = 'enc2:';
+    private const AEAD_IV_BYTES = 12;
+    private const AEAD_TAG_BYTES = 16;
+
+    /**
+     * The legacy unauthenticated format, still read and never written.
+     */
+    private const LEGACY_PREFIX = 'enc:';
+
+    /**
+     * The no-openssl fallback, which does not consult the key at all.
+     */
+    private const PLAIN_PREFIX = 'plain:';
+
     public static function generateSecret(int $bytes = 20): string
     {
         return self::base32Encode(random_bytes($bytes));
@@ -150,23 +179,121 @@ class TwoFactorAuthService
         return rtrim($endpoint) . $separator . $query;
     }
 
+    /**
+     * Whether this installation can write the authenticated format.
+     *
+     * aes-256-gcm needs both openssl and a build that offers the mode, so it is
+     * asked rather than assumed -- a build without it must keep working, on the
+     * older format, instead of failing to store a secret at all.
+     */
+    public static function supportsAuthenticatedStorage(): bool
+    {
+        static $supported = null;
+
+        if ($supported === null) {
+            $supported = function_exists('openssl_encrypt')
+                && function_exists('openssl_decrypt')
+                && in_array(self::AEAD_CIPHER, openssl_get_cipher_methods(), true);
+        }
+
+        return $supported;
+    }
+
+    /**
+     * Whether a stored secret should be rewritten in a better format.
+     *
+     * The policy lives here rather than in the caller's boolean, because the
+     * caller had to know the prefixes to ask it and there is now more than one
+     * older format to know about. A blob already in the best format this
+     * installation can write needs nothing; anything else is rewritten the next
+     * time its owner verifies successfully, which is how `plain:` and the
+     * legacy key have always been migrated.
+     */
+    public static function needsReencryption(string $storedSecret): bool
+    {
+        if (self::supportsAuthenticatedStorage()) {
+            return !str_starts_with($storedSecret, self::AEAD_PREFIX);
+        }
+
+        if (function_exists('openssl_encrypt')) {
+            return !str_starts_with($storedSecret, self::LEGACY_PREFIX);
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a wrong key is guaranteed to be refused for this stored value.
+     *
+     * Only the authenticated format can promise that. Callers use it to decide
+     * whether a non-empty decryption still has to be sanity-checked -- see
+     * isPlausibleSecret(), which exists for the formats that cannot.
+     */
+    public static function isAuthenticatedFormat(string $storedSecret): bool
+    {
+        return str_starts_with($storedSecret, self::AEAD_PREFIX);
+    }
+
     public static function encryptSecret(string $secret, string $key): string
     {
+        if (self::supportsAuthenticatedStorage()) {
+            $iv = random_bytes(self::AEAD_IV_BYTES);
+            $tag = '';
+            $ciphertext = openssl_encrypt(
+                $secret,
+                self::AEAD_CIPHER,
+                self::aeadKey($key),
+                OPENSSL_RAW_DATA,
+                $iv,
+                $tag,
+                '',
+                self::AEAD_TAG_BYTES
+            );
+
+            if (is_string($ciphertext) && strlen($tag) === self::AEAD_TAG_BYTES) {
+                return self::AEAD_PREFIX . self::base64UrlEncode($iv . $tag . $ciphertext);
+            }
+        }
+
         if (function_exists('openssl_encrypt')) {
             $iv = random_bytes(16);
             $ciphertext = openssl_encrypt($secret, 'aes-256-cbc', hash('sha256', $key, true), OPENSSL_RAW_DATA, $iv);
             if (is_string($ciphertext)) {
-                return 'enc:' . self::base64UrlEncode($iv . $ciphertext);
+                return self::LEGACY_PREFIX . self::base64UrlEncode($iv . $ciphertext);
             }
         }
 
-        return 'plain:' . self::base64UrlEncode($secret);
+        return self::PLAIN_PREFIX . self::base64UrlEncode($secret);
     }
 
     public static function decryptSecret(string $storedSecret, string $key): string
     {
-        if (str_starts_with($storedSecret, 'enc:') && function_exists('openssl_decrypt')) {
-            $raw = self::base64UrlDecode(substr($storedSecret, 4));
+        if (str_starts_with($storedSecret, self::AEAD_PREFIX) && self::supportsAuthenticatedStorage()) {
+            $raw = self::base64UrlDecode(substr($storedSecret, strlen(self::AEAD_PREFIX)));
+            if (strlen($raw) > self::AEAD_IV_BYTES + self::AEAD_TAG_BYTES) {
+                $decrypted = openssl_decrypt(
+                    substr($raw, self::AEAD_IV_BYTES + self::AEAD_TAG_BYTES),
+                    self::AEAD_CIPHER,
+                    self::aeadKey($key),
+                    OPENSSL_RAW_DATA,
+                    substr($raw, 0, self::AEAD_IV_BYTES),
+                    substr($raw, self::AEAD_IV_BYTES, self::AEAD_TAG_BYTES)
+                );
+
+                if (is_string($decrypted)) {
+                    return $decrypted;
+                }
+            }
+
+            // A tag that does not verify is a wrong key or a tampered blob, and
+            // both mean this value is not readable. Falling through to the
+            // other formats would only ask them about bytes that are not
+            // theirs.
+            return '';
+        }
+
+        if (str_starts_with($storedSecret, self::LEGACY_PREFIX) && function_exists('openssl_decrypt')) {
+            $raw = self::base64UrlDecode(substr($storedSecret, strlen(self::LEGACY_PREFIX)));
             if (strlen($raw) > 16) {
                 $iv = substr($raw, 0, 16);
                 $ciphertext = substr($raw, 16);
@@ -177,23 +304,55 @@ class TwoFactorAuthService
             }
         }
 
-        if (str_starts_with($storedSecret, 'plain:')) {
-            return self::base64UrlDecode(substr($storedSecret, 6));
+        if (str_starts_with($storedSecret, self::PLAIN_PREFIX)) {
+            return self::base64UrlDecode(substr($storedSecret, strlen(self::PLAIN_PREFIX)));
         }
 
         return '';
     }
 
     /**
+     * The key the authenticated format uses, separated from the legacy one.
+     *
+     * The signing key is the same value either way; deriving a distinct subkey
+     * for this cipher keeps one key from being used under two modes, which is
+     * cheap here and is the kind of thing that is awkward to change later. The
+     * info string names the format, so a third one would get its own.
+     *
+     * hash_hkdf() rejects an empty key, and an empty signing key is a
+     * configuration this module already treats as "no key" -- the compat list
+     * filters those out -- so it is answered with a value that decrypts nothing
+     * rather than with an exception from inside a crypto helper.
+     */
+    private static function aeadKey(string $key): string
+    {
+        if ($key === '') {
+            return str_repeat("\0", 32);
+        }
+
+        return hash_hkdf('sha256', $key, 32, 'lotgd-2fa-secret-v2');
+    }
+
+    /**
      * Whether a decrypted value can be a TOTP secret at all.
      *
-     * decryptSecret() cannot tell a wrong key from a right one. The stored
-     * format is aes-256-cbc with no authentication tag, and openssl_decrypt()
-     * fails only when the final block's PKCS#7 padding is invalid -- which
-     * random bytes satisfy about once in 255. So a blob encrypted under one key
-     * "decrypts" under another roughly 0.4% of the time, into garbage that is
-     * not empty and is therefore indistinguishable from a secret to any caller
-     * testing `!== ''`. Measured over 300000 secrets: 1176 of them, 0.392%.
+     * decryptSecret() cannot always tell a wrong key from a right one, and this
+     * is what a caller asks when it cannot.
+     *
+     * For `enc2:` it can: the tag either verifies or it does not, so a wrong
+     * key yields '' and this check has nothing left to decide. The check is
+     * still here because `enc:` exists on disk. That format is aes-256-cbc with
+     * no tag, and openssl_decrypt() fails only when the final block's PKCS#7
+     * padding is invalid -- which random bytes satisfy about once in 255. So a
+     * blob encrypted under one key "decrypts" under another roughly 0.4% of the
+     * time, into garbage that is not empty and is therefore indistinguishable
+     * from a secret to any caller testing `!== ''`. Measured over 300000
+     * secrets: 1176 of them, 0.392%.
+     *
+     * Nothing writes `enc:` any more, and nothing sweeps it either: the
+     * migration happens when an account next verifies, so how long the last one
+     * survives is a question about players, not about releases. Removing this
+     * check on a schedule would therefore be removing it on a guess.
      *
      * That is what this answers, and it is a caller's question rather than
      * decryptSecret()'s, because a caller with a second key to try wants to try

@@ -32,6 +32,7 @@ namespace Lotgd\Tests\Security {
     use Lotgd\Doctrine\Bootstrap;
     use Lotgd\Nav;
     use Lotgd\Output;
+    use Lotgd\Tests\Support\LegacyTwoFactorSecret;
     use PHPUnit\Framework\Attributes\PreserveGlobalState;
     use PHPUnit\Framework\Attributes\RunInSeparateProcess;
     use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -369,6 +370,13 @@ namespace Lotgd\Tests\Security {
          * The colliding blob is searched for rather than hard-coded. A constant
          * would be tied to whatever keys this harness happens to derive, and
          * would quietly stop exercising anything the day one of them changed.
+         *
+         * The fixture is built by LegacyTwoFactorSecret rather than by
+         * encryptSecret(), which now writes the authenticated format and can no
+         * longer produce the thing this test is about. That is the change
+         * working: a wrong key cannot decrypt an `enc2:` blob at all, so the
+         * search would have run out and this test would have quietly measured
+         * nothing. What it still measures is the format that is on disk.
          */
         public function testALegacySecretIsReadEvenWhenTheCurrentKeyDecryptsItToGarbage(): void
         {
@@ -379,26 +387,17 @@ namespace Lotgd\Tests\Security {
 
             self::assertNotSame($current, $legacy, 'precondition: there are two distinct keys to choose between');
 
-            $secret = null;
-            $blob = null;
-            for ($i = 0; $i < 20000; $i++) {
-                $candidate = \TwoFactorAuthService::generateSecret();
-                $encoded = \TwoFactorAuthService::encryptSecret($candidate, $legacy);
-
-                if (\TwoFactorAuthService::decryptSecret($encoded, $current) !== '') {
-                    $secret = $candidate;
-                    $blob = $encoded;
-                    break;
-                }
-            }
+            $collision = LegacyTwoFactorSecret::findWrongKeyCollision($legacy, $current);
 
             self::assertNotNull(
-                $blob,
-                'no legacy blob in 20000 decrypted under the current key, so this test exercised '
-                    . 'nothing -- the stored format has presumably become authenticated'
+                $collision,
+                'no legacy blob in 20000 decrypted under the current key, so this test exercised nothing'
             );
 
-            $state = twofactorauth_decrypt_secret_with_compat((string) $blob);
+            $secret = $collision['secret'];
+            $blob = $collision['blob'];
+
+            $state = twofactorauth_decrypt_secret_with_compat($blob);
 
             self::assertSame(
                 $secret,
@@ -407,6 +406,60 @@ namespace Lotgd\Tests\Security {
             );
             self::assertTrue($state['used_legacy'], 'and it must know it read with the legacy key');
             self::assertTrue($state['needs_reencrypt'], 'so that the next success re-encrypts it forward');
+        }
+
+        /**
+         * The migration itself: an account stored in the weak format moves to
+         * the strong one the next time its owner verifies.
+         *
+         * This is the whole delivery mechanism. There is no sweep and no schema
+         * change -- the secret lives in a module pref, and the only moment the
+         * game has both the plaintext and a reason to write is a successful
+         * verification. So if this does not happen, nothing migrates ever, and
+         * the new format protects only accounts created after the release.
+         *
+         * Asserted on the prefix rather than on "it changed", because a
+         * re-encryption that wrote `enc:` again would also change the bytes --
+         * the iv is random -- and would look exactly like success.
+         */
+        public function testASuccessfulVerificationRewritesALegacyBlobInTheAuthenticatedFormat(): void
+        {
+            self::requireCbcStorage();
+
+            if (!\TwoFactorAuthService::supportsAuthenticatedStorage()) {
+                self::markTestSkipped('this build cannot write aes-256-gcm, so there is nothing to migrate to');
+            }
+
+            $secret = \TwoFactorAuthService::generateSecret();
+            $legacyBlob = LegacyTwoFactorSecret::encrypt($secret, twofactorauth_current_signing_key());
+
+            self::assertStringStartsWith('enc:', $legacyBlob, 'precondition: the account starts in the weak format');
+
+            $GLOBALS['twofactorauth_test_prefs']['pending_challenge'] = 1;
+            $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'] = $legacyBlob;
+            $GLOBALS['twofactorauth_test_prefs']['last_used_timestep'] = 0;
+            $_POST['token'] = \TwoFactorAuthService::generateTokenAtTime($secret, 6, 30, time());
+
+            twofactorauth_handle_challenge_verification(Output::getInstance());
+
+            self::assertSame(
+                0,
+                $GLOBALS['twofactorauth_test_prefs']['pending_challenge'],
+                'the challenge was not cleared, so verification refused the token' . $this->verificationDiagnostics()
+            );
+
+            $stored = (string) $GLOBALS['twofactorauth_test_prefs']['secret_encrypted'];
+
+            self::assertStringStartsWith(
+                'enc2:',
+                $stored,
+                'a successful verification left the account in the unauthenticated format'
+            );
+            self::assertSame(
+                $secret,
+                \TwoFactorAuthService::decryptSecret($stored, twofactorauth_current_signing_key()),
+                'and the rewritten blob must still be the same secret'
+            );
         }
 
         /**
