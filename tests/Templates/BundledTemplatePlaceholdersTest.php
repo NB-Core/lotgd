@@ -135,27 +135,84 @@ final class BundledTemplatePlaceholdersTest extends TestCase
      * The test above would pass for a template that kept `{meta_description}`
      * in a comment while the real `<meta>` carried a hard-coded sentence. This
      * one reads the attribute, so what it checks is what the browser gets.
+     *
+     * Per head block rather than per file, and presence before value: the
+     * first version compared values only, so a template that deleted the
+     * `<html lang>` or the description outright matched nothing and was
+     * recorded as clean -- silencing the check by removing the thing it
+     * checks, which loses the setting just as completely as hard-coding it.
+     * Reported by Copilot.
      */
-    public function testTheLanguageAndDescriptionAreNotHardCoded(): void
+    public function testEveryHeadDeclaresTheLanguageAndDescriptionAsPlaceholders(): void
     {
         $offenders = [];
 
         foreach (self::legacyTemplates() as $template) {
-            $html = (string) file_get_contents($template);
-            $offenders = array_merge($offenders, self::literalAttributes($html, basename($template), '{lang}', '{meta_description}'));
+            $blocks = self::blocksOf($template);
+            foreach (self::HEAD_BLOCKS as $block) {
+                $offenders = array_merge($offenders, self::headOffenders(
+                    $blocks[$block] ?? '',
+                    basename($template) . " [$block]",
+                    '{lang}',
+                    '{meta_description}'
+                ));
+            }
         }
 
         foreach (self::twigHeads() as $template) {
-            $twig = (string) file_get_contents($template);
-            $label = basename(dirname($template)) . '/' . basename($template);
-            $offenders = array_merge($offenders, self::literalAttributes($twig, $label, '{{ lang }}', '{{ meta_description }}'));
+            $offenders = array_merge($offenders, self::headOffenders(
+                (string) file_get_contents($template),
+                basename(dirname($template)) . '/' . basename($template),
+                '{{ lang }}',
+                '{{ meta_description }}'
+            ));
         }
 
         self::assertSame(
             [],
             $offenders,
-            "A bundled template hard-codes what an operator configures:\n" . implode("\n", $offenders)
+            "A bundled head does not leave the language and description to the operator:\n"
+                . implode("\n", $offenders)
         );
+    }
+
+    /**
+     * What is wrong with one head block, if anything.
+     *
+     * Each attribute has to be there exactly once and carry the placeholder.
+     * Absence is reported as loudly as a literal, because both end the same
+     * way: the setting behind it stops reaching the page.
+     *
+     * @return list<string>
+     */
+    private static function headOffenders(string $markup, string $label, string $lang, string $description): array
+    {
+        $offenders = [];
+
+        $checks = [
+            ['<html lang>', '/<html[^>]*\\blang=(["\'])(.*?)\\1/i', 2, $lang],
+            [
+                '<meta name="description">',
+                '/<meta[^>]*\\bname=(["\'])description\\1[^>]*\\bcontent=(["\'])(.*?)\\2/i',
+                3,
+                $description,
+            ],
+        ];
+
+        foreach ($checks as [$what, $pattern, $group, $expected]) {
+            $found = preg_match_all($pattern, $markup, $matches);
+
+            if ($found !== 1) {
+                $offenders[] = sprintf('%s: %s appears %d times, expected once', $label, $what, (int) $found);
+                continue;
+            }
+
+            if (trim($matches[$group][0]) !== $expected) {
+                $offenders[] = sprintf('%s: %s carries %s, expected %s', $label, $what, $matches[$group][0], $expected);
+            }
+        }
+
+        return $offenders;
     }
 
     /**
@@ -227,28 +284,5 @@ final class BundledTemplatePlaceholdersTest extends TestCase
         }
 
         return $offenders;
-    }
-
-    /**
-     * The description tag exists at all, in every head that has an `<html>`.
-     *
-     * Without this the test above is satisfied by deleting the tag, which
-     * silences the check and loses the setting just as completely.
-     */
-    public function testEveryBundledHeadStillDeclaresADescription(): void
-    {
-        $heads = array_merge(self::legacyTemplates(), self::twigHeads());
-        self::assertNotEmpty($heads);
-
-        foreach ($heads as $template) {
-            $markup = (string) file_get_contents($template);
-            $label = basename(dirname($template)) . '/' . basename($template);
-
-            self::assertSame(
-                preg_match_all('/<html[^>]*\blang=/i', $markup),
-                preg_match_all('/<meta[^>]*\bname=(["\'])description\1/i', $markup),
-                $label . ' has a head without a description meta tag'
-            );
-        }
     }
 }

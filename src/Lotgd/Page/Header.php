@@ -16,6 +16,7 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Settings;
 use Lotgd\Nav;
 use Lotgd\PhpGenericEnvironment;
+use Lotgd\Security\Escape;
 
 class Header
 {
@@ -69,11 +70,7 @@ class Header
             PageParts::$twigVars['lang']  = $lang;
             PageParts::$twigVars['meta_description'] = $metaDesc;
         } else {
-            $header = $template['header'];
-            $header = str_replace('{title}', $title, $header);
-            $header = str_replace('{lang}', $lang, $header);
-            $header = str_replace('{meta_description}', $metaDesc, $header);
-            $nav->setHeader($header);
+            $nav->setHeader(self::fillHeadPlaceholders($template['header'], $title, $lang, $metaDesc));
         }
         $nav->setHeader($nav->getHeader() . Translator::tlbuttonPop());
         if ($settings->getSetting('debug', 0)) {
@@ -109,10 +106,42 @@ class Header
             return;
         }
 
-        $header = $template['popuphead'];
-        $header = str_replace('{title}', $title, $header);
-        $header = str_replace('{lang}', $lang, $header);
-        $header = str_replace('{meta_description}', $metaDesc, $header);
-        $nav->setHeader($header);
+        $nav->setHeader(self::fillHeadPlaceholders($template['popuphead'], $title, $lang, $metaDesc));
+    }
+
+    /**
+     * Fill a legacy template's head block.
+     *
+     * One method for the page head and the popup head, which carried the same
+     * three replacements twice, and public so it can be asked directly: the
+     * escaping below is the kind of thing that has to be provable, and driving
+     * a whole page header to prove it would need Settings, Nav, the translator
+     * and the module hooks.
+     *
+     * `{lang}` and `{meta_description}` land **inside quoted attributes**, and
+     * both come from settings an operator edits in configuration.php. Without
+     * escaping, a description containing a double quote closes the attribute,
+     * and `"><script>...</script>` becomes stored markup on every page of every
+     * legacy theme. Measured before this was added, on the real jade head: the
+     * script tag reached the page. The Twig themes were never exposed -- Twig
+     * escapes `{{ meta_description }}` by default, which is why only this path
+     * needed it. Reported by Codex.
+     *
+     * `{title}` is not escaped here. It arrives already through
+     * Sanitize::sanitize(), whose output is the game's own colour markup, and
+     * no bundled template puts it inside an attribute -- it is element content
+     * everywhere it appears. Escaping it here would render that markup as
+     * literal text.
+     */
+    public static function fillHeadPlaceholders(
+        string $head,
+        string $title,
+        string $lang,
+        string $metaDescription
+    ): string {
+        $head = str_replace('{title}', $title, $head);
+        $head = str_replace('{lang}', Escape::html($lang), $head);
+
+        return str_replace('{meta_description}', Escape::html($metaDescription), $head);
     }
 }

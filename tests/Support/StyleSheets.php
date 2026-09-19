@@ -124,7 +124,7 @@ final class StyleSheets
         foreach ((array) glob($root . '/templates/*.htm') as $template) {
             $html = (string) file_get_contents((string) $template);
             preg_match_all('/href=[\'"](templates\/[^\'"]+\.css)[\'"]/', $html, $matches);
-            $themes += self::themeFromSheets($root, array_values(array_unique($matches[1])));
+            $themes += self::themeFor($root, (string) $template, array_values(array_unique($matches[1])));
         }
 
         foreach ((array) glob($root . '/templates_twig/*/page.twig') as $template) {
@@ -137,7 +137,7 @@ final class StyleSheets
             if (str_contains($twig, "template_path ~ '/assets/style.css'")) {
                 $sheets[] = 'templates_twig/' . $name . '/assets/style.css';
             }
-            $themes += self::themeFromSheets($root, $sheets);
+            $themes += self::themeFor($root, (string) $template, $sheets);
         }
 
         self::$themeSheets = $themes;
@@ -150,14 +150,21 @@ final class StyleSheets
      * value.
      *
      * The theme's own sheet is the one that is not shared. A template that
-     * links only shared sheets has no theme of its own to name and would make
-     * the map lie about what it covers, so it is refused rather than skipped.
+     * links none has no theme to name, and returning nothing for it would make
+     * this map quietly cover less than the caller believes -- a bundled theme
+     * dropping out of every assertion here without a word. So it throws, which
+     * is what the docblock used to promise while the code skipped. Reported by
+     * Copilot.
+     *
+     * A sheet the template links but that is not on disk is left out rather
+     * than fatal, and deliberately: that is how deleting `sidebar.css` makes
+     * the themes which depend on it report what they lost.
      *
      * @param list<string> $relative
      *
      * @return array<string, list<string>>
      */
-    private static function themeFromSheets(string $root, array $relative): array
+    private static function themeFor(string $root, string $template, array $relative): array
     {
         $own = null;
         $paths = [];
@@ -174,8 +181,12 @@ final class StyleSheets
             }
         }
 
-        if ($own === null || $paths === []) {
-            return [];
+        if ($own === null) {
+            throw new \RuntimeException(sprintf(
+                'No theme stylesheet of its own is linked by %s, so it would drop out of every '
+                    . 'assertion about the bundled themes unnoticed.',
+                substr($template, strlen($root) + 1)
+            ));
         }
 
         return [$own => $paths];
