@@ -162,14 +162,22 @@ class TwoFactorAuthServiceTest extends TestCase
 
         $attempts = 2000;
         $leaked = 0;
-        $lastBlob = '';
-        $lastSecret = '';
+        $authenticated = 0;
+        $readBack = 0;
 
         for ($i = 0; $i < $attempts; $i++) {
-            $lastSecret = \TwoFactorAuthService::generateSecret();
-            $lastBlob = \TwoFactorAuthService::encryptSecret($lastSecret, 'key-one');
+            $secret = \TwoFactorAuthService::generateSecret();
+            $blob = \TwoFactorAuthService::encryptSecret($secret, 'key-one');
 
-            if (\TwoFactorAuthService::decryptSecret($lastBlob, 'key-two') !== '') {
+            if (str_starts_with($blob, 'enc2:')) {
+                $authenticated++;
+            }
+
+            if (\TwoFactorAuthService::decryptSecret($blob, 'key-one') === $secret) {
+                $readBack++;
+            }
+
+            if (\TwoFactorAuthService::decryptSecret($blob, 'key-two') !== '') {
                 $leaked++;
             }
         }
@@ -180,11 +188,19 @@ class TwoFactorAuthServiceTest extends TestCase
             "$leaked of $attempts authenticated blobs gave bytes to a wrong key, which the tag is supposed to prevent"
         );
 
-        self::assertStringStartsWith('enc2:', $lastBlob, 'precondition: the authenticated format was written');
+        // Every iteration, not the last one. The first version of this checked
+        // the blob left in the loop variable, so a run where encryptSecret()
+        // fell back to `enc:` for some or all of the earlier iterations would
+        // have measured the legacy format and still passed. Reported by Copilot.
         self::assertSame(
-            $lastSecret,
-            \TwoFactorAuthService::decryptSecret($lastBlob, 'key-one'),
-            'control: the right key reads it back, so "the wrong key got nothing" means something'
+            $attempts,
+            $authenticated,
+            'some iterations did not write the authenticated format, so the count above measured the wrong thing'
+        );
+        self::assertSame(
+            $attempts,
+            $readBack,
+            'control: the right key reads every one of them back, so "the wrong key got nothing" means something'
         );
     }
 
@@ -308,29 +324,6 @@ class TwoFactorAuthServiceTest extends TestCase
     }
 
     /**
-     * Only the authenticated format claims a wrong key is refused.
-     *
-     * The compatibility read uses this to decide whether a non-empty
-     * decryption still needs sanity-checking, so a predicate that said yes for
-     * `enc:` would remove the check that #1547 added.
-     */
-    public function testOnlyTheAuthenticatedFormatIsReportedAsAuthenticated(): void
-    {
-        self::requireAuthenticatedStorage();
-
-        $secret = \TwoFactorAuthService::generateSecret();
-
-        self::assertTrue(
-            \TwoFactorAuthService::isAuthenticatedFormat(\TwoFactorAuthService::encryptSecret($secret, 'key-one'))
-        );
-        self::assertFalse(
-            \TwoFactorAuthService::isAuthenticatedFormat(LegacyTwoFactorSecret::encrypt($secret, 'key-one'))
-        );
-        self::assertFalse(\TwoFactorAuthService::isAuthenticatedFormat('plain:AAAA'));
-        self::assertFalse(\TwoFactorAuthService::isAuthenticatedFormat(''));
-    }
-
-    /**
      * The check must not lock out a secret a player already has.
      *
      * generateSecret() emits upper-case base32 with no padding, but a secret
@@ -425,6 +418,64 @@ class TwoFactorAuthServiceTest extends TestCase
                 var_export($value, true) . ' decodes to nothing, so it cannot produce a token'
             );
         }
+    }
+
+    /**
+     * An installation that disabled one openssl function falls back instead of
+     * dying.
+     *
+     * `disable_functions` takes a list, so an administrator can and does
+     * disable them one at a time -- and the first version of
+     * supportsAuthenticatedStorage() checked openssl_encrypt() and
+     * openssl_decrypt() and then *called* openssl_get_cipher_methods() without
+     * asking whether it was there. On an installation that had disabled only
+     * that one, 2FA setup fatalled, and so did every successful verification of
+     * a legacy secret, because needsReencryption() asks the same question.
+     * Reported by Codex.
+     *
+     * In a child process because disable_functions is a PHP_INI_SYSTEM setting:
+     * there is no way to turn a function off inside a running test, and a test
+     * that asserted this against a mock would be asserting against its own
+     * mock. The child does the whole round trip, so "it did not fatal" is not
+     * the only thing being claimed.
+     */
+    public function testAnInstallationWithoutCipherDiscoveryFallsBackInsteadOfFatalling(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $script = <<<'PHP'
+            require $argv[1] . '/modules/TwoFactorAuth/TwoFactorAuthService.php';
+
+            $supported = TwoFactorAuthService::supportsAuthenticatedStorage();
+            $blob = TwoFactorAuthService::encryptSecret('JBSWY3DPEHPK3PXP', 'a-key');
+
+            echo json_encode([
+                'supported' => $supported,
+                'prefix' => substr($blob, 0, strpos($blob, ':') + 1),
+                'roundtrip' => TwoFactorAuthService::decryptSecret($blob, 'a-key'),
+            ]);
+            PHP;
+
+        $file = (string) tempnam(sys_get_temp_dir(), 'lotgd_2fa_');
+
+        try {
+            file_put_contents($file, "<?php\n" . $script);
+
+            $output = (string) shell_exec(sprintf(
+                '%s -d disable_functions=openssl_get_cipher_methods %s %s 2>&1',
+                escapeshellarg(PHP_BINARY),
+                escapeshellarg($file),
+                escapeshellarg($root)
+            ));
+        } finally {
+            @unlink($file);
+        }
+
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'the child did not complete: ' . $output);
+        self::assertFalse($result['supported'], 'cipher discovery was gone, so the format is not available');
+        self::assertSame('enc:', $result['prefix'], 'it must fall back rather than fail to store a secret');
+        self::assertSame('JBSWY3DPEHPK3PXP', $result['roundtrip'], 'and what it wrote must still be readable');
     }
 
     /**

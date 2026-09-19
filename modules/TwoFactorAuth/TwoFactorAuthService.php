@@ -193,6 +193,15 @@ class TwoFactorAuthService
         if ($supported === null) {
             $supported = function_exists('openssl_encrypt')
                 && function_exists('openssl_decrypt')
+                // Asked separately rather than assumed to come with the other
+                // two: disable_functions takes a list, so an installation can
+                // and does disable them one at a time. Without this, an
+                // installation that had disabled only this one fatalled here --
+                // on 2FA setup and on every successful verification of a legacy
+                // secret, since needsReencryption() asks the same question.
+                // Reproduced with `php -d disable_functions=openssl_get_cipher_methods`.
+                // Reported by Codex.
+                && function_exists('openssl_get_cipher_methods')
                 && in_array(self::AEAD_CIPHER, openssl_get_cipher_methods(), true);
         }
 
@@ -220,18 +229,6 @@ class TwoFactorAuthService
         }
 
         return false;
-    }
-
-    /**
-     * Whether a wrong key is guaranteed to be refused for this stored value.
-     *
-     * Only the authenticated format can promise that. Callers use it to decide
-     * whether a non-empty decryption still has to be sanity-checked -- see
-     * isPlausibleSecret(), which exists for the formats that cannot.
-     */
-    public static function isAuthenticatedFormat(string $storedSecret): bool
-    {
-        return str_starts_with($storedSecret, self::AEAD_PREFIX);
     }
 
     public static function encryptSecret(string $secret, string $key): string
