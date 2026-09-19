@@ -444,15 +444,15 @@ class TwoFactorAuthServiceTest extends TestCase
      * format that row can read back, which is the rule the legacy branch was
      * quietly breaking.
      *
-     * @return iterable<string, array{0: string, 1: bool, 2: bool, 3: string}>
+     * @return iterable<string, array{0: string, 1: bool, 2: bool, 3: string, 4: bool}>
      */
     public static function opensslConfigurations(): iterable
     {
-        yield 'everything available' => ['', true, true, 'enc2:'];
-        yield 'cipher discovery disabled' => ['openssl_get_cipher_methods', true, true, 'enc2:'];
-        yield 'encryption disabled' => ['openssl_encrypt', true, false, 'plain:'];
-        yield 'decryption disabled' => ['openssl_decrypt', false, false, 'plain:'];
-        yield 'no openssl at all' => ['openssl_encrypt,openssl_decrypt', false, false, 'plain:'];
+        yield 'everything available' => ['', true, true, 'enc2:', true];
+        yield 'cipher discovery disabled' => ['openssl_get_cipher_methods', true, true, 'enc2:', true];
+        yield 'encryption disabled' => ['openssl_encrypt', true, false, 'plain:', false];
+        yield 'decryption disabled' => ['openssl_decrypt', false, false, 'plain:', false];
+        yield 'no openssl at all' => ['openssl_encrypt,openssl_decrypt', false, false, 'plain:', false];
     }
 
     #[DataProvider('opensslConfigurations')]
@@ -460,7 +460,8 @@ class TwoFactorAuthServiceTest extends TestCase
         string $disabled,
         bool $canRead,
         bool $canWrite,
-        string $expectedPrefix
+        string $expectedPrefix,
+        bool $plainNeedsRewriting
     ): void {
         self::requireAuthenticatedStorage();
 
@@ -489,6 +490,18 @@ class TwoFactorAuthServiceTest extends TestCase
             'JBSWY3DPEHPK3PXP',
             $result['readback'],
             'this configuration wrote a format it cannot read back, so the next verification fails'
+        );
+
+        // And the rule that keeps the migration from spinning. needsReencryption()
+        // used to decide for itself which formats were writable, and disagreed
+        // with encryptSecret() in the row where only decryption is missing: a
+        // `plain:` secret was reported as needing a rewrite, the rewrite produced
+        // `plain:` again, and every successful verification wrote the preference
+        // for nothing. Reported by Copilot.
+        self::assertSame($plainNeedsRewriting, $result['plain_needs_rewriting'], 'a plain secret, in this configuration');
+        self::assertFalse(
+            $result['own_needs_rewriting'],
+            'it asked to rewrite what it had just written, which repeats on every verification'
         );
     }
 
@@ -534,7 +547,8 @@ class TwoFactorAuthServiceTest extends TestCase
     /**
      * Run the storage round trip in a child with functions disabled.
      *
-     * @return array{read: bool, write: bool, prefix: string, readback: string, existing: string}
+     * @return array{read: bool, write: bool, prefix: string, readback: string, existing: string,
+     *     plain_needs_rewriting: bool, own_needs_rewriting: bool}
      */
     private static function runWithDisabledFunctions(string $disabled, string $existingBlob): array
     {
@@ -547,12 +561,16 @@ class TwoFactorAuthServiceTest extends TestCase
             // value that is not valid UTF-8 -- and a decryption that failed
             // yields arbitrary bytes. Without it the child printed nothing at
             // all and the assertion blamed the wrong thing.
+            $plain = 'plain:' . rtrim(strtr(base64_encode('JBSWY3DPEHPK3PXP'), '+/', '-_'), '=');
+
             echo json_encode([
                 'read' => TwoFactorAuthService::supportsAuthenticatedRead(),
                 'write' => TwoFactorAuthService::supportsAuthenticatedStorage(),
                 'prefix' => substr($blob, 0, strpos($blob, ':') + 1),
                 'readback' => TwoFactorAuthService::decryptSecret($blob, 'a-key'),
                 'existing' => TwoFactorAuthService::decryptSecret($argv[2], 'a-key'),
+                'plain_needs_rewriting' => TwoFactorAuthService::needsReencryption($plain),
+                'own_needs_rewriting' => TwoFactorAuthService::needsReencryption($blob),
             ], JSON_THROW_ON_ERROR);
             PHP;
 

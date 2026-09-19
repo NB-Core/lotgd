@@ -319,31 +319,51 @@ class TwoFactorAuthService
     }
 
     /**
+     * The format this installation writes.
+     *
+     * One authority, because two of them disagreed. needsReencryption() used to
+     * decide for itself that `enc:` was writable wherever openssl_encrypt()
+     * existed, while encryptSecret() had come to require openssl_decrypt() too
+     * -- so on an installation with only the latter disabled, a `plain:` secret
+     * was reported as needing a rewrite, the rewrite produced `plain:` again,
+     * and every successful verification wrote the preference for nothing.
+     * Reported by Copilot. Same shape as the two lockouts above: one question,
+     * answered in two places, drifting.
+     */
+    private static function preferredPrefix(): string
+    {
+        if (self::supportsAuthenticatedStorage()) {
+            return self::AEAD_PREFIX;
+        }
+
+        // Both, not just the one this branch calls: decryptSecret() reads
+        // `enc:` only where openssl_decrypt() exists, so writing it anywhere
+        // else would store a secret this installation can never verify.
+        if (function_exists('openssl_encrypt') && function_exists('openssl_decrypt')) {
+            return self::LEGACY_PREFIX;
+        }
+
+        return self::PLAIN_PREFIX;
+    }
+
+    /**
      * Whether a stored secret should be rewritten in a better format.
      *
-     * The policy lives here rather than in the caller's boolean, because the
-     * caller had to know the prefixes to ask it and there is now more than one
-     * older format to know about. A blob already in the best format this
-     * installation can write needs nothing; anything else is rewritten the next
-     * time its owner verifies successfully, which is how `plain:` and the
-     * legacy key have always been migrated.
+     * The migration is opportunistic: a successful verification rewrites the
+     * blob in the current format. So this is not bookkeeping -- it is the only
+     * thing that ever moves an account off the weak format, and a wrong answer
+     * either strands the account or writes the preference on every request.
      */
     public static function needsReencryption(string $storedSecret): bool
     {
-        if (self::supportsAuthenticatedStorage()) {
-            return !str_starts_with($storedSecret, self::AEAD_PREFIX);
-        }
-
-        if (function_exists('openssl_encrypt')) {
-            return !str_starts_with($storedSecret, self::LEGACY_PREFIX);
-        }
-
-        return false;
+        return !str_starts_with($storedSecret, self::preferredPrefix());
     }
 
     public static function encryptSecret(string $secret, string $key): string
     {
-        if (self::supportsAuthenticatedStorage()) {
+        $prefix = self::preferredPrefix();
+
+        if ($prefix === self::AEAD_PREFIX) {
             $iv = random_bytes(self::AEAD_IV_BYTES);
             $tag = '';
             $ciphertext = openssl_encrypt(
@@ -362,13 +382,11 @@ class TwoFactorAuthService
             }
         }
 
-        // Both functions, not just the one this branch calls. decryptSecret()
-        // reads `enc:` only where openssl_decrypt() exists, so an installation
-        // that has disabled that one alone would be writing a format it can
-        // never read back -- the same lockout as above, arriving by the other
-        // door. Found while checking the disable_functions combinations for
-        // the authenticated format; the legacy branch had always had it.
-        if (function_exists('openssl_encrypt') && function_exists('openssl_decrypt')) {
+        // Reached either because `enc:` is what this installation writes, or
+        // because the authenticated encrypt above was expected to work and did
+        // not -- which implies both functions, since the authenticated format
+        // requires them.
+        if ($prefix !== self::PLAIN_PREFIX) {
             $iv = random_bytes(16);
             $ciphertext = openssl_encrypt($secret, 'aes-256-cbc', hash('sha256', $key, true), OPENSSL_RAW_DATA, $iv);
             if (is_string($ciphertext)) {
