@@ -98,19 +98,86 @@ class SecurityLog
     }
 
     /**
-     * Strip control characters so attacker-supplied values cannot forge log lines.
+     * Make a value safe to put in a log line: valid UTF-8, and no control
+     * characters an attacker could use to forge a second line.
      *
-     * Mirrors the sanitising already performed on async dispatch tokens: a value
-     * that reaches this class may come straight from a request parameter.
+     * A value that reaches this class may come straight from a request
+     * parameter, so neither property can be assumed.
+     *
+     * The encoding half is not cosmetic. This class writes to two channels and
+     * they do not agree about invalid bytes: error_log() takes anything, while
+     * the game log is an INSERT over a utf8mb4 connection, which rejects a
+     * malformed string outright. So an event carrying one byte of garbage did
+     * not merely arrive looking odd -- the write raised, from inside the logger,
+     * on the path of a refusal that was being recorded precisely because
+     * something had already gone wrong. The event an operator most needs is the
+     * one that was thrown away.
+     *
+     * The previous version of this method *detected* that case and then did
+     * nothing about it: preg_replace() with /u returns null on malformed UTF-8,
+     * and the fallback stripped control bytes without touching the malformed
+     * ones, so the output was as invalid as the input. Measured on
+     * `login=\xC3\x28admin\xFF`: byte-identical, still invalid.
      */
     private static function sanitize(string $value): string
     {
+        $value = self::toValidUtf8($value);
+
         $sanitized = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $value);
         if ($sanitized === null) {
-            // preg_replace returns null on malformed UTF-8; fall back to a byte-safe filter.
+            // Unreachable by way of encoding now that the subject is valid, and
+            // kept for the other reasons a PCRE call can fail (backtrack and
+            // recursion limits). Byte-wise is safe here where it was not
+            // before: these are ASCII control bytes, which cannot be part of a
+            // multi-byte sequence, so removing them leaves valid UTF-8 valid.
             $sanitized = preg_replace('/[\x00-\x1F\x7F]/', ' ', $value) ?? '';
         }
 
         return trim($sanitized);
+    }
+
+    /**
+     * Make a value valid UTF-8, leaving input that already is alone.
+     *
+     * Where mbstring is present the malformed sequences are marked with U+FFFD,
+     * which is the better outcome and is what this asks for; where it is not,
+     * they are dropped. The guarantee is the validity -- see the last paragraph
+     * for why the marking cannot be one.
+     *
+     * Marking rather than dropping, because the whole point of the line is to
+     * tell an operator what was seen: a replacement character says "there was
+     * something unreadable here", where a silent deletion makes a mangled value
+     * look like a value someone actually sent.
+     *
+     * mb_substitute_character() is saved and restored because it is global
+     * state and this class is called from everywhere, and it is set explicitly
+     * rather than left at its default -- which is `?`, a character a request
+     * can legitimately contain, and an ini setting an installation can change.
+     *
+     * One thing this does *not* promise, and an earlier version of this
+     * docblock wrongly did: identical output everywhere. Where the mbstring
+     * extension is absent, symfony/polyfill-mbstring supplies these functions,
+     * and its mb_substitute_character() returns false for a codepoint instead
+     * of setting one -- so the malformed bytes are dropped rather than marked.
+     * Measured against the polyfill directly: `login=\xC3\x28probe\xFF` comes
+     * back as `login=(probe`. What holds either way is the property this method
+     * exists for: the result is valid UTF-8, so the game log can take the row.
+     * Marking is the better outcome and the extension is what makes it
+     * available. Reported by Copilot.
+     */
+    private static function toValidUtf8(string $value): string
+    {
+        if ($value === '' || mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+
+        $previous = mb_substitute_character();
+        mb_substitute_character(0xFFFD);
+
+        try {
+            return mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+        } finally {
+            mb_substitute_character($previous);
+        }
     }
 }

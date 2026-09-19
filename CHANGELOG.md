@@ -23,6 +23,7 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Made warning suppression severity-aware and kept bootstrap/test diagnostics from being swallowed or overstating what they could observe.
 - Updated `modules/twofactorauth.php` and `modules/TwoFactorAuth/TwoFactorAuthService.php` to restore legacy two-factor secrets when the active key cannot decrypt them, reject implausible decoded values before accepting a key, and preserve the stored encrypted blob during setup; incompatible CBC fixtures now skip with an accurate diagnostic.
 - Kept mail navigation and action rendering stable for malformed hook payloads and recorded refused mail actions through the centralized security log.
+- `Lotgd\SecurityLog` now makes its output valid UTF-8 instead of only detecting when it is not. A context or message value carrying a malformed byte sequence previously reached the game log's `utf8mb4` insert unchanged, so the write raised from inside the logger and the security event was lost. The output is now guaranteed to be valid UTF-8; where the mbstring extension is present the invalid sequences are marked with U+FFFD rather than dropped. Valid multi-byte text is untouched either way.
 
 ### Security
 
