@@ -5,19 +5,28 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Support;
 
 /**
- * The unauthenticated at-rest format for 2FA secrets, which only tests write.
+ * The unauthenticated at-rest format for 2FA secrets, as a fixture.
  *
- * `enc:` is aes-256-cbc with no authentication tag. TwoFactorAuthService stopped
- * writing it when `enc2:` arrived and still reads it, because a stored secret is
- * migrated when its owner next verifies -- so how long the last `enc:` blob
- * survives is a question about players, not about releases.
+ * `enc:` is aes-256-cbc with no authentication tag. TwoFactorAuthService always
+ * reads it and writes it only where the authenticated format is unavailable and
+ * openssl is not -- see preferredPrefix(). On a build that can do aes-256-gcm,
+ * which is every build these tests run on, nothing in production writes it.
+ *
+ * (An earlier version of this said the service had "stopped writing" it. That
+ * was true of the first draft of the change and stopped being true the moment a
+ * fallback existed. Reported by Copilot, in the same review as the identical
+ * claim in the service's own docblock -- which I fixed while missing this one.)
+ *
+ * It is still migrated away from opportunistically, when its owner next
+ * verifies, so how long the last `enc:` blob survives is a question about
+ * players rather than about releases.
  *
  * That leaves the tests for the reading path with nothing to build a fixture
- * from, and this is the honest answer to it: the format is written out here,
- * once, where a reader can see exactly what the production code is being asked
- * to cope with. The alternative -- a test-only branch in the service -- would
- * put a way to write the weak format back into the shipped code to prove that
- * the shipped code no longer writes it.
+ * from on an ordinary build, and this is the honest answer to it: the format is
+ * written out here, once, where a reader can see exactly what the production
+ * code is being asked to cope with. The alternative -- a test-only branch in
+ * the service -- would put a way to write the weak format back into the shipped
+ * code in order to prove what the shipped code does with it.
  *
  * Every fixture built here is checked against decryptSecret() with its own key
  * before it is used, because a helper that drifted from the format would leave
