@@ -33,6 +33,37 @@ final class ActionBarClassesAreStyledTest extends TestCase
      *
      * @return list<string>
      */
+    /**
+     * The classes that share a `class` attribute with `button`.
+     *
+     * That is the population the cascade question is about: a rule on one of
+     * these and a rule on `.button` land on the same element, tie on
+     * specificity, and are decided by source order. A class that never appears
+     * beside `button` -- the row container -- cannot collide with it at all.
+     *
+     * @return list<string>
+     */
+    private static function classesWornWithButton(string $html): array
+    {
+        preg_match_all('/class=([\'"])(.*?)\\1/', $html, $matches);
+
+        $worn = [];
+        foreach ($matches[2] as $attribute) {
+            $classes = array_values(array_filter(preg_split('/\s+/', trim($attribute)) ?: []));
+            if (!in_array('button', $classes, true)) {
+                continue;
+            }
+
+            foreach ($classes as $class) {
+                if ($class !== 'button') {
+                    $worn[] = $class;
+                }
+            }
+        }
+
+        return array_values(array_unique($worn));
+    }
+
     private static function classesIn(string $html): array
     {
         // Both quote styles. The helpers emit single quotes today, so this
@@ -162,11 +193,30 @@ final class ActionBarClassesAreStyledTest extends TestCase
      * A control wears both classes, so anything the row class sets after
      * `.button` is what a browser uses. The row classes may set geometry that
      * `.button` leaves alone; they may not overrule what it does set.
+     *
+     * Asked only of the classes a control actually wears, which is what that
+     * sentence means and not what this test used to check: it asked it of the
+     * *container* class too, and no element carries `button` and `mail-nav` at
+     * once -- one is the `<div>`, the other the control inside it. The mistake
+     * was invisible while each stylesheet was read on its own, and surfaced the
+     * moment the sheets a theme loads were read together: `.button` and the row
+     * both set `display`, in different files, on different elements. Taken from
+     * the rendered markup rather than named here, so it cannot drift from what
+     * the renderer emits.
      */
     #[DataProvider('containerClasses')]
     public function testARowClassNeverOverridesTheThemesButtonRule(string $container): void
     {
-        foreach ([$container, $container . '__link'] as $class) {
+        $worn = self::classesWornWithButton(Forms::actionBar(self::oneOfEachKind(), $container));
+
+        self::assertContains(
+            $container . '__link',
+            $worn,
+            'precondition: the control class is the one this asks about'
+        );
+        self::assertNotContains($container, $worn, 'the container is not something a control wears');
+
+        foreach ($worn as $class) {
             $clashes = StyleSheets::propertiesOverridingButton($class);
 
             $report = [];
