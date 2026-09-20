@@ -66,5 +66,13 @@ final class OutputNotlArrayArgumentTest extends TestCase
         $this->assertStringContainsString('Hello', $result);
         $this->assertStringContainsString('Bandit', $result);
     }
-}
 
+    public function testIntegerArgumentIsFormattedBeforeHolidayProcessing(): void
+    {
+        $output = new Output();
+
+        $output->outputNotl('%s', 12);
+
+        $this->assertStringContainsString('12', $output->getRawOutput());
+    }
+}
