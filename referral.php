@@ -70,7 +70,7 @@ if ($session['user']['loggedin']) {
         $output->rawOutput("<tr class='" . ($i % 2 ? "trlight" : "trdark") . "'><td>");
         $output->outputNotl($row['name']);
         $output->rawOutput("</td><td>");
-        $output->outputNotl($row['level']);
+        $output->outputNotl('%s', $row['level']);
         $output->rawOutput("</td><td>");
         $output->outputNotl($row['refererawarded'] ? $yes : $no);
         $output->rawOutput("</td></tr>");
