@@ -177,6 +177,29 @@ final class LegacyRollDamageTest extends TestCase
      * test passed with the buffset ignored, and a mutation caught it. Here the
      * player loses both halves of the exchange by many thousands of points
      * unless the flag reaches the arithmetic and flips the signs.
+     *
+     * Losing them is not certain, though, and the second version of this test
+     * asserted as if it were. It read one round and required that round to be
+     * a riposte, and it went red in CI. The cause is the one
+     * testTheGlobalOptionsStillSelectThePvpPath already writes down thirty
+     * lines above: BellRand clamps at roughly three sigma, so a roll against
+     * *any* range whatsoever comes back at exactly zero about once in 750.
+     * Measured over 200000 draws, and the scale does not matter, which is what
+     * makes it the right explanation:
+     *
+     *     bell(0, 100000)    : exactly 0 = 0.150%
+     *     bell(0, 100000000) : exactly 0 = 0.128%
+     *
+     * So the creature's defence roll is occasionally 0 and the hopeless
+     * creature loses the exchange. Raising its stats cannot help -- that is
+     * what the second row shows -- and the god-mode half had the same hole on
+     * a different event, since abs(0) is not greater than 0 and a missed
+     * exchange therefore failed it.
+     *
+     * Counted over thirty rounds instead. The two god-mode assertions are
+     * arithmetic certainties (abs() and -abs() have no other outcome); the
+     * three that need a real exchange to have happened are near-certainties,
+     * wrong only if all thirty rounds hit the clamp at once.
      */
     public function testTheGlobalBuffsetStillReachesTheArithmetic(): void
     {
@@ -190,40 +213,77 @@ final class LegacyRollDamageTest extends TestCase
             return $badguy;
         };
 
-        $badguy = $hopeless();
-        $doomed = Battle::rollDamage($badguy);
+        // The last roll of each run goes into the failure messages, because
+        // rollDamage() is random and a count on its own does not say whether
+        // the hopeless stats reached the arithmetic at all. That was worth
+        // having: it is how the red run above was diagnosed in one read.
+        $rounds = static function () use ($hopeless): array {
+            $ripostes = 0;
+            $hitsTaken = 0;
+            $flipped = 0;
+            $last = [];
+            $badguy = [];
 
-        // The rolls go into the failure messages because rollDamage() is
-        // random and this test has gone red once in CI and never locally. The
-        // message was "Failed asserting that -4.0 is greater than 0", which
-        // does not say whether an unlucky roll beat the supposedly hopeless
-        // odds or the arithmetic stopped reading the buffset. With the numbers
-        // in the message, the next red run answers that by itself.
-        self::assertLessThan(
+            for ($i = 0; $i < 30; $i++) {
+                $badguy = $hopeless();
+                $last = Battle::rollDamage($badguy);
+
+                if ($last['creaturedmg'] < 0) {
+                    $ripostes++;
+                }
+                if ($last['selfdmg'] > 0) {
+                    $hitsTaken++;
+                }
+                if ($last['creaturedmg'] > 0 && $last['selfdmg'] < 0) {
+                    $flipped++;
+                }
+            }
+
+            return [
+                'ripostes' => $ripostes,
+                'hitsTaken' => $hitsTaken,
+                'flipped' => $flipped,
+                'explain' => self::explain($last, $badguy),
+            ];
+        };
+
+        $control = $rounds();
+
+        self::assertGreaterThan(
             0,
-            $doomed['creaturedmg'],
-            'control: the player is riposted' . self::explain($doomed, $badguy)
+            $control['ripostes'],
+            'control: the player is riposted' . $control['explain']
         );
         self::assertGreaterThan(
             0,
-            $doomed['selfdmg'],
-            'control: and is hit' . self::explain($doomed, $badguy)
+            $control['hitsTaken'],
+            'control: and is hit' . $control['explain']
         );
 
         $buffset['invulnerable'] = 1;
 
-        $badguy = $hopeless();
-        $roll = Battle::rollDamage($badguy);
+        $blessed = $rounds();
 
+        // Certainties: god mode is abs() on one figure and -abs() on the
+        // other, so neither sign can survive it, in any round.
+        self::assertSame(
+            0,
+            $blessed['ripostes'],
+            'god mode leaves no round in which the creature ripostes' . $blessed['explain']
+        );
+        self::assertSame(
+            0,
+            $blessed['hitsTaken'],
+            'nor one in which it lands a hit' . $blessed['explain']
+        );
+
+        // And not vacuously: thirty misses would satisfy both of the above
+        // while proving nothing, so at least one round has to show the signs
+        // actually turned over.
         self::assertGreaterThan(
             0,
-            $roll['creaturedmg'],
-            'god mode turns the riposte into a hit' . self::explain($roll, $badguy)
-        );
-        self::assertLessThan(
-            0,
-            $roll['selfdmg'],
-            'and the hit into a riposte' . self::explain($roll, $badguy)
+            $blessed['flipped'],
+            'and the signs are turned over, not merely absent' . $blessed['explain']
         );
     }
 
