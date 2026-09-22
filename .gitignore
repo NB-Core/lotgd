@@ -8,5 +8,8 @@ config/async.settings.php
 .phpunit.result.cache
 .env
 dbconnect.php
+dbconnect.php.borrowed-by-tests
+dbconnect.php.left-by-killed-test-run*
+dbconnect.php.held-by-rootdbconnecttest
 
 logs/*.log

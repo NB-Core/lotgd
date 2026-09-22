@@ -10,6 +10,7 @@ use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\Database;
 use Lotgd\Tests\Stubs\DummySettings;
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -21,9 +22,7 @@ use PHPUnit\Framework\TestCase;
 final class Stage5Test extends TestCase
 {
     private DummySettings $settings;
-    private string $dbconnectPath;
-    private bool $dbconnectExisted = false;
-    private ?string $dbconnectOriginal = null;
+    private ?RootDbConnect $dbconnect = null;
 
     protected function setUp(): void
     {
@@ -43,15 +42,7 @@ final class Stage5Test extends TestCase
 
         Output::getInstance();
 
-        $this->dbconnectPath = dirname(__DIR__, 2) . '/dbconnect.php';
-        if (file_exists($this->dbconnectPath)) {
-            $this->dbconnectExisted = true;
-            $contents = file_get_contents($this->dbconnectPath);
-            $this->dbconnectOriginal = $contents === false ? null : $contents;
-        } else {
-            $this->dbconnectExisted = false;
-            $this->dbconnectOriginal = null;
-        }
+        $this->dbconnect = RootDbConnect::takeOver();
 
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
         $session = [];
@@ -85,13 +76,7 @@ final class Stage5Test extends TestCase
         Settings::setInstance(null);
         unset($GLOBALS['settings']);
 
-        if ($this->dbconnectExisted) {
-            if ($this->dbconnectOriginal !== null) {
-                file_put_contents($this->dbconnectPath, $this->dbconnectOriginal);
-            }
-        } elseif (file_exists($this->dbconnectPath)) {
-            unlink($this->dbconnectPath);
-        }
+        $this->dbconnect?->restore();
 
         parent::tearDown();
     }
@@ -207,7 +192,7 @@ final class Stage5Test extends TestCase
     {
         global $session;
 
-        file_put_contents($this->dbconnectPath, "<?php\nreturn ['DB_PREFIX' => 'lotgd'];\n");
+        $this->dbconnect->write("<?php\nreturn ['DB_PREFIX' => 'lotgd'];\n");
 
         Database::$mockResults = [
             [

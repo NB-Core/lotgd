@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Common;
 
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 final class CharsetFailureTest extends TestCase
@@ -11,11 +12,7 @@ final class CharsetFailureTest extends TestCase
     public function testCommonExitsOnCharsetFailure(): void
     {
         $root = dirname(__DIR__, 2);
-        $dbconnect = $root . '/dbconnect.php';
-        file_put_contents(
-            $dbconnect,
-            "<?php return ['DB_HOST'=>'','DB_USER'=>'','DB_PASS'=>'','DB_NAME'=>'','DB_PREFIX'=>''];"
-        );
+        $dbconnect = RootDbConnect::takeOver();
 
 $script = <<<'PHP'
 <?php
@@ -29,13 +26,30 @@ include __DIR__ . '/common.php';
 echo "AFTER\n";
 PHP;
         $scriptFile = $root . '/charset_failure_runner.php';
-        file_put_contents($scriptFile, $script);
 
-        $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($scriptFile) . ' 2>&1';
-        exec($cmd, $output, $status);
+        // Everything between the borrow and the restore lives in here, the
+        // fixture write included: both of these things sit at the repository
+        // root, and both are given back whatever happens. The assertions below
+        // already run after the restore, so a failing one was never the risk
+        // -- a throw from write(), file_put_contents() or exec() was, and it
+        // would have left the borrow open, which makes the *next* takeOver()
+        // refuse rather than this test report.
+        try {
+            $dbconnect->write(
+                "<?php return ['DB_HOST'=>'','DB_USER'=>'','DB_PASS'=>'','DB_NAME'=>'','DB_PREFIX'=>''];"
+            );
 
-        unlink($scriptFile);
-        unlink($dbconnect);
+            file_put_contents($scriptFile, $script);
+
+            $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($scriptFile) . ' 2>&1';
+            exec($cmd, $output, $status);
+        } finally {
+            if (is_file($scriptFile)) {
+                unlink($scriptFile);
+            }
+
+            $dbconnect->restore();
+        }
 
         $outputText = implode("", $output);
 

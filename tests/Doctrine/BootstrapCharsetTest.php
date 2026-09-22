@@ -5,28 +5,26 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Doctrine;
 
 use Lotgd\Doctrine\Bootstrap;
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 final class BootstrapCharsetTest extends TestCase
 {
-    private string $dbConfig;
+    private ?RootDbConnect $dbConfig = null;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->dbConfig = dirname(__DIR__, 2) . '/dbconnect.php';
-        file_put_contents(
-            $this->dbConfig,
+        $this->dbConfig = RootDbConnect::takeOver();
+        $this->dbConfig->write(
             "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>''];"
         );
     }
 
     protected function tearDown(): void
     {
-        if (file_exists($this->dbConfig)) {
-            unlink($this->dbConfig);
-        }
+        $this->dbConfig?->restore();
 
         unset($GLOBALS['DB_PREFIX']);
 
