@@ -82,9 +82,11 @@ final class Stage6Test extends TestCase
         putenv('LOTGD_STATE_PATH');
         chdir($this->originalCwd);
 
-        // This suite's own artefact, not the borrow's: one test puts a
-        // directory at that path to make the installer's write fail, and
-        // restore() deals in files.
+        // Kept from before this suite borrowed the file: defensive cleanup of
+        // a directory at that path, which restore() does not deal in. Nothing
+        // here creates one -- the write failure is simulated by the namespaced
+        // fopen() at the top of this file -- so it only ever fires on wreckage
+        // left by something else.
         if (is_dir($this->dbconnectPath)) {
             rmdir($this->dbconnectPath);
         }

@@ -240,13 +240,14 @@ final class RootDbConnect
             return;
         }
 
-        // file_exists(), not is_file(): a killed run can leave a *directory*
-        // here -- Stage6Test puts one there deliberately, to make the
-        // installer's write fail. Reported by Copilot, and reproduced: the
-        // rename below then failed with "Is a directory", the real config
-        // stayed in the sidecar, and every later run threw the same way. One
-        // aborted test made the suite unrunnable until someone cleared the root
-        // by hand.
+        // file_exists(), not is_file(): what stands here need not be a regular
+        // file. Nothing stops a directory taking that name, and Stage6Test has
+        // carried an rmdir() for one in its teardown since long before this
+        // class existed, so it has happened. Reported by Copilot, and
+        // reproduced: is_file() walked past it, the rename below then failed
+        // with "Is a directory", the real config stayed in the sidecar, and
+        // every later run threw the same way. One aborted run made the suite
+        // unrunnable until someone cleared the root by hand.
         if (file_exists($path)) {
             $displaced = self::freeDisplacedName($path);
 

@@ -197,11 +197,12 @@ final class RootDbConnectTest extends TestCase
 
     public function testADirectoryLeftByAKilledRunDoesNotStrandTheConfig(): void
     {
-        // Stage6Test puts a directory at this path on purpose, to make the
-        // installer's write fail. A run killed in the middle of that leaves one
-        // behind, and a recovery that only looks for a regular file walks past
-        // it and then cannot put the config back -- which blocked every later
-        // run, not just that one.
+        // A killed run can leave a directory at that path -- nothing stops one
+        // taking the name, and Stage6Test's teardown has cleaned one up since
+        // long before this class existed. This test makes one to stand in for
+        // that wreckage. A recovery that looks only for a regular file walks
+        // past it and then cannot put the config back, which blocked every
+        // later run, not just the one that died.
         file_put_contents($this->sidecar, "<?php return ['DB_NAME' => 'real'];\n");
         mkdir($this->path);
 
