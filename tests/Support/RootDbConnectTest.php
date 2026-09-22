@@ -73,22 +73,33 @@ final class RootDbConnectTest extends TestCase
             glob($this->displaced . '*') ?: []
         );
 
+        // Collected rather than raised as they happen: self::fail() throws, and
+        // raising one here would skip the stash restore below -- stranding the
+        // developer's real config on the one path that exists to notice that
+        // something went wrong. Reported by Copilot. Put the file back first,
+        // then say everything that failed.
+        $problems = [];
+
         foreach ($leftovers as $leftover) {
             if (is_dir($leftover)) {
                 if (!rmdir($leftover)) {
-                    self::fail("Could not clear the directory $leftover after this test");
+                    $problems[] = "could not clear the directory $leftover";
                 }
 
                 continue;
             }
 
             if (is_file($leftover) && !unlink($leftover)) {
-                self::fail("Could not clear $leftover after this test");
+                $problems[] = "could not clear $leftover";
             }
         }
 
-        if (is_file($this->stash) && !rename($this->stash, $this->path)) {
-            self::fail("Could not put $this->path back after this test");
+        if (file_exists($this->stash) && !rename($this->stash, $this->path)) {
+            $problems[] = "could not put $this->path back";
+        }
+
+        if ($problems !== []) {
+            self::fail('Cleaning up after this test: ' . implode('; ', $problems));
         }
     }
 
@@ -211,6 +222,27 @@ final class RootDbConnectTest extends TestCase
         $borrowed->restore();
 
         self::assertDirectoryExists($this->path, 'and what was borrowed comes back');
+    }
+
+    public function testWhatIsBorrowedComesBackEvenWhenOneRenameCannotDoIt(): void
+    {
+        // A rename replaces a regular file in one step, which is the whole
+        // reason restore() reaches for it -- but it will not replace a
+        // directory with one, and takeOver() borrows whatever shape is there.
+        // Without a second step the borrow is stranded and the suite stays
+        // unrunnable until the root is cleared by hand.
+        mkdir($this->path);
+
+        $borrowed = RootDbConnect::takeOver();
+        $borrowed->write("<?php return ['fixture' => true];\n");
+        $borrowed->restore();
+
+        self::assertDirectoryExists($this->path, 'what was borrowed is back');
+        self::assertStringContainsString(
+            'fixture',
+            (string) file_get_contents($this->displaced),
+            'and the fixture it could not replace in one step is moved aside, not deleted'
+        );
     }
 
     public function testADirectoryLeftByAKilledRunDoesNotStrandTheConfig(): void

@@ -198,8 +198,39 @@ final class RootDbConnect
                 );
             }
 
-            // Replaces the fixture in one step, so the root is never briefly
-            // without a config.
+            // A rename replaces a regular file with a regular file in one
+            // step, and that is the case worth having: the root is then never
+            // briefly without a config. It will not replace a directory, and
+            // takeOver() borrows whatever shape is standing there, so the one
+            // step is not always available -- reported by Copilot, whose point
+            // is that without a second one the borrow is stranded and the
+            // suite stays unrunnable until the root is cleared by hand.
+            //
+            // Asked before it is attempted rather than after it fails: a
+            // rename that cannot work raises a PHP warning on the way, and a
+            // warning for something this code knows in advance and handles is
+            // noise in every run that hits it.
+            if (file_exists($this->path) && !(is_file($this->path) && is_file($sidecar))) {
+                // Moved, not deleted. At this point it is almost certainly the
+                // fixture, which the rename would have replaced anyway -- but
+                // this class does not decide that by guessing.
+                $displaced = self::freeDisplacedName($this->path);
+
+                if (!rename($this->path, $displaced)) {
+                    throw new \RuntimeException(
+                        "Could not move the borrowed dbconnect.php back from $sidecar to "
+                            . "$this->path, because what is at $this->path could not be moved out "
+                            . 'of the way. It has been borrowed and not given back.'
+                    );
+                }
+
+                fwrite(
+                    STDERR,
+                    "RootDbConnect: dbconnect.php could not be put back in one step, so what was "
+                        . "in its place is at $displaced.\n"
+                );
+            }
+
             if (!rename($sidecar, $this->path)) {
                 throw new \RuntimeException(
                     "Could not move the borrowed dbconnect.php back from $sidecar to $this->path. "
