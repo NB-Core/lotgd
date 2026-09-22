@@ -13,9 +13,6 @@ final class CharsetFailureTest extends TestCase
     {
         $root = dirname(__DIR__, 2);
         $dbconnect = RootDbConnect::takeOver();
-        $dbconnect->write(
-            "<?php return ['DB_HOST'=>'','DB_USER'=>'','DB_PASS'=>'','DB_NAME'=>'','DB_PREFIX'=>''];"
-        );
 
 $script = <<<'PHP'
 <?php
@@ -30,13 +27,18 @@ echo "AFTER\n";
 PHP;
         $scriptFile = $root . '/charset_failure_runner.php';
 
-        // Both of these live at the repository root, and both are given back
-        // whatever happens in between. The assertions below already run after
-        // the restore, so a failing one was never the risk -- a throw from
-        // file_put_contents() or exec() was, and it would have left the borrow
-        // open, which makes the *next* takeOver() refuse rather than this test
-        // report.
+        // Everything between the borrow and the restore lives in here, the
+        // fixture write included: both of these things sit at the repository
+        // root, and both are given back whatever happens. The assertions below
+        // already run after the restore, so a failing one was never the risk
+        // -- a throw from write(), file_put_contents() or exec() was, and it
+        // would have left the borrow open, which makes the *next* takeOver()
+        // refuse rather than this test report.
         try {
+            $dbconnect->write(
+                "<?php return ['DB_HOST'=>'','DB_USER'=>'','DB_PASS'=>'','DB_NAME'=>'','DB_PREFIX'=>''];"
+            );
+
             file_put_contents($scriptFile, $script);
 
             $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($scriptFile) . ' 2>&1';

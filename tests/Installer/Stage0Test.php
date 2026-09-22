@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 final class Stage0Test extends TestCase
 {
     private string $config;
-    private RootDbConnect $dbconnect;
+    private ?RootDbConnect $dbconnect = null;
 
     protected function setUp(): void
     {
@@ -20,7 +20,7 @@ final class Stage0Test extends TestCase
 
     protected function tearDown(): void
     {
-        $this->dbconnect->restore();
+        $this->dbconnect?->restore();
     }
 
     public function testInstallerOutputsDefaultFavicon(): void

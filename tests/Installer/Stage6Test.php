@@ -38,7 +38,7 @@ final class Stage6Test extends TestCase
     public static bool $simulateWriteFailure = false;
     private string $root;
     private string $dbconnectPath;
-    private RootDbConnect $dbconnect;
+    private ?RootDbConnect $dbconnect = null;
     private DummySettings $settings;
     private string $originalCwd;
 
@@ -91,7 +91,7 @@ final class Stage6Test extends TestCase
             rmdir($this->dbconnectPath);
         }
 
-        $this->dbconnect->restore();
+        $this->dbconnect?->restore();
 
         Settings::setInstance(null);
         unset($GLOBALS['settings']);

@@ -39,7 +39,7 @@ namespace Lotgd\Tests\Installer {
     #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class Stage7Test extends TestCase
     {
-        private RootDbConnect $dbconnect;
+        private ?RootDbConnect $dbconnect = null;
 
         protected function setUp(): void
         {
@@ -82,7 +82,7 @@ namespace Lotgd\Tests\Installer {
         protected function tearDown(): void
         {
             if (isset($this->dbconnect)) {
-                $this->dbconnect->restore();
+                $this->dbconnect?->restore();
             }
 
             Settings::setInstance(null);

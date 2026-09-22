@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 final class Stage4Test extends TestCase
 {
-    private RootDbConnect $dbconnect;
+    private ?RootDbConnect $dbconnect = null;
     private string $configDir;
     private string $configBackup;
 
@@ -54,7 +54,7 @@ final class Stage4Test extends TestCase
         }
 
         // Puts back whatever was there, including nothing.
-        $this->dbconnect->restore();
+        $this->dbconnect?->restore();
 
         parent::tearDown();
     }

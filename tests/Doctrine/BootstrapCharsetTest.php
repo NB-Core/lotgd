@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 final class BootstrapCharsetTest extends TestCase
 {
-    private RootDbConnect $dbConfig;
+    private ?RootDbConnect $dbConfig = null;
 
     protected function setUp(): void
     {
@@ -24,7 +24,7 @@ final class BootstrapCharsetTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->dbConfig->restore();
+        $this->dbConfig?->restore();
 
         unset($GLOBALS['DB_PREFIX']);
 

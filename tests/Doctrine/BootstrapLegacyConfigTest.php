@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 final class BootstrapLegacyConfigTest extends TestCase
 {
-    private RootDbConnect $dbConfig;
+    private ?RootDbConnect $dbConfig = null;
 
     protected function setUp(): void
     {
@@ -33,7 +33,7 @@ PHP;
 
     protected function tearDown(): void
     {
-        $this->dbConfig->restore();
+        $this->dbConfig?->restore();
 
         unset(
             $GLOBALS['DB_HOST'],

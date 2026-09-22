@@ -24,7 +24,7 @@ final class Stage3Test extends TestCase
     /** @var array<string, string|null> */
     private array $envArrayBackup = [];
     private DummySettings $settings;
-    private RootDbConnect $dbconnect;
+    private ?RootDbConnect $dbconnect = null;
 
     protected function setUp(): void
     {
@@ -74,7 +74,7 @@ final class Stage3Test extends TestCase
 
     protected function tearDown(): void
     {
-        $this->dbconnect->restore();
+        $this->dbconnect?->restore();
 
         foreach ($this->envBackup as $key => $value) {
             if ($value === null) {

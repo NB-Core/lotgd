@@ -22,7 +22,7 @@ use PHPUnit\Framework\TestCase;
 final class Stage5Test extends TestCase
 {
     private DummySettings $settings;
-    private RootDbConnect $dbconnect;
+    private ?RootDbConnect $dbconnect = null;
 
     protected function setUp(): void
     {
@@ -76,7 +76,7 @@ final class Stage5Test extends TestCase
         Settings::setInstance(null);
         unset($GLOBALS['settings']);
 
-        $this->dbconnect->restore();
+        $this->dbconnect?->restore();
 
         parent::tearDown();
     }

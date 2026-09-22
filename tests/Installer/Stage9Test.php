@@ -139,7 +139,7 @@ namespace Lotgd\Tests\Installer {
 
     class Stage9Test extends TestCase
     {
-        private RootDbConnect $dbconnect;
+        private ?RootDbConnect $dbconnect = null;
 
         protected function setUp(): void
         {
@@ -186,7 +186,7 @@ namespace Lotgd\Tests\Installer {
 
         protected function tearDown(): void
         {
-            $this->dbconnect->restore();
+            $this->dbconnect?->restore();
 
             Database::setPrefix('');
             Database::$doctrineConnection = null;
