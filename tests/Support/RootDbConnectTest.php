@@ -32,6 +32,16 @@ final class RootDbConnectTest extends TestCase
     private string $displaced;
     private string $stash;
 
+    /**
+     * Whether setUp() got as far as taking the root over.
+     *
+     * tearDown() runs even when setUp() threw, so without this a run that
+     * skipped before staging anything would still clear the root -- deleting a
+     * config this class never moved. Which is the defect this pull request is
+     * about, in the tests that demonstrate the fix.
+     */
+    private bool $staged = false;
+
     protected function setUp(): void
     {
         $this->path = RootDbConnect::path();
@@ -39,9 +49,32 @@ final class RootDbConnectTest extends TestCase
         $this->displaced = $this->path . '.left-by-killed-test-run';
         $this->stash = $this->path . self::STASH_SUFFIX;
 
+        // A previous run of this class that died does not get the shutdown
+        // handler below. Measured, and it is not what I assumed: under PHPUnit
+        // it never runs at all, because PHPUnit registers its own shutdown
+        // handler first, and that one reports the premature end and exits --
+        // which abandons every handler registered after it.
+        //
+        // So the way back in is here, on the next run, exactly as
+        // RootDbConnect recovers its own sidecar. Only when the root is free,
+        // because anything standing there might be a config the developer has
+        // since put back, and this class does not decide that by guessing.
+        if (file_exists($this->stash) && !file_exists($this->path)) {
+            if (!rename($this->stash, $this->path)) {
+                self::fail("A previous run left dbconnect.php at $this->stash and it could not be put back");
+            }
+        }
+
         // Deliberately not done with RootDbConnect: a test of a borrow that
         // borrows to set itself up cannot tell the two apart.
-        if (file_exists($this->sidecar) || file_exists($this->stash) || glob($this->displaced . '*')) {
+        if (file_exists($this->stash)) {
+            self::markTestSkipped(
+                "a previous run left dbconnect.php at $this->stash, and something else is at "
+                    . "$this->path -- keep whichever is wanted and remove the other"
+            );
+        }
+
+        if (file_exists($this->sidecar) || glob($this->displaced . '*')) {
             self::markTestSkipped('the repository root already holds files these tests use');
         }
 
@@ -49,22 +82,51 @@ final class RootDbConnectTest extends TestCase
             self::fail("Could not move $this->path aside for the duration of this test");
         }
 
-        // The same promise the class under test makes, and for the same reason:
-        // tearDown() is exactly what does not run when the process is killed,
-        // and this test moves the developer's real config aside under a name
-        // nothing else knows. Reported by Copilot -- these tests had the very
-        // defect the pull request exists to fix.
+        $this->staged = true;
+
+        // Kept even so: outside PHPUnit it does run, and it costs nothing.
+        // What it must not be is the thing this class relies on.
         $stash = $this->stash;
         $path = $this->path;
-        register_shutdown_function(static function () use ($stash, $path): void {
-            if (is_file($stash) && !is_file($path)) {
-                rename($stash, $path);
+        $displaced = $this->displaced;
+        register_shutdown_function(static function () use ($stash, $path, $displaced): void {
+            if (!file_exists($stash)) {
+                return;
             }
+
+            // And the same rule as well: whatever is standing at the root gets
+            // moved out of the way, not deleted, and a directory counts --
+            // tests in this very class put one there. Reported by Copilot: a
+            // rename onto a directory fails, and the config that this handler
+            // exists to rescue would have stayed under the stash name.
+            if (file_exists($path)) {
+                $aside = $displaced;
+
+                for ($n = 2; file_exists($aside); $n++) {
+                    $aside = $displaced . '-' . $n;
+                }
+
+                if (!rename($path, $aside)) {
+                    // Nothing better is available at shutdown: say where the
+                    // config is, since it is about to stay there.
+                    fwrite(STDERR, "RootDbConnectTest: dbconnect.php is still at $stash.\n");
+
+                    return;
+                }
+            }
+
+            rename($stash, $path);
         });
     }
 
     protected function tearDown(): void
     {
+        if (!$this->staged) {
+            // setUp() never took the root over, so nothing standing there is
+            // this class's to clear.
+            return;
+        }
+
         // Reported failures, not ignored ones: a leftover this cannot remove
         // is what the next test would silently run against, and it is what
         // stops the stash going back.
