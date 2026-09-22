@@ -225,10 +225,11 @@ final class RootDbConnect
      * at the root before any fixture was written -- so the sidecar is the real
      * configuration, and it wins.
      *
-     * Whatever is at the root in that situation is almost always the fixture
-     * the killed run had just written, which is worth nothing. Almost: a
-     * developer could have re-run the installer since. So it is moved aside
-     * rather than deleted, and said out loud. Nothing this class touches is
+     * Whatever is at the root in that situation -- a file, or the directory
+     * one suite puts there on purpose -- is almost always the killed run's own
+     * artefact, which is worth nothing. Almost: a developer could have re-run
+     * the installer since. So it is moved aside rather than deleted, and said
+     * out loud. Nothing this class touches is
      * ever destroyed to make room for something else -- that is the whole
      * point of it, and it has to hold on the second killed run as well as the
      * first.
@@ -239,12 +240,19 @@ final class RootDbConnect
             return;
         }
 
-        if (is_file($path)) {
+        // file_exists(), not is_file(): a killed run can leave a *directory*
+        // here -- Stage6Test puts one there deliberately, to make the
+        // installer's write fail. Reported by Copilot, and reproduced: the
+        // rename below then failed with "Is a directory", the real config
+        // stayed in the sidecar, and every later run threw the same way. One
+        // aborted test made the suite unrunnable until someone cleared the root
+        // by hand.
+        if (file_exists($path)) {
             $displaced = self::freeDisplacedName($path);
 
             if (!rename($path, $displaced)) {
                 throw new \RuntimeException(
-                    "A previous run left a borrowed dbconnect.php at $sidecar, and the file now at "
+                    "A previous run left a borrowed dbconnect.php at $sidecar, and what is now at "
                         . "$path could not be moved out of the way to put it back."
                 );
             }

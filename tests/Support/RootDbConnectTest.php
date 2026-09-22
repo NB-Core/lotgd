@@ -41,11 +41,11 @@ final class RootDbConnectTest extends TestCase
 
         // Deliberately not done with RootDbConnect: a test of a borrow that
         // borrows to set itself up cannot tell the two apart.
-        if (is_file($this->sidecar) || is_file($this->stash) || glob($this->displaced . '*')) {
+        if (file_exists($this->sidecar) || file_exists($this->stash) || glob($this->displaced . '*')) {
             self::markTestSkipped('the repository root already holds files these tests use');
         }
 
-        if (is_file($this->path) && !rename($this->path, $this->stash)) {
+        if (file_exists($this->path) && !rename($this->path, $this->stash)) {
             self::fail("Could not move $this->path aside for the duration of this test");
         }
 
@@ -74,6 +74,14 @@ final class RootDbConnectTest extends TestCase
         );
 
         foreach ($leftovers as $leftover) {
+            if (is_dir($leftover)) {
+                if (!rmdir($leftover)) {
+                    self::fail("Could not clear the directory $leftover after this test");
+                }
+
+                continue;
+            }
+
             if (is_file($leftover) && !unlink($leftover)) {
                 self::fail("Could not clear $leftover after this test");
             }
@@ -185,6 +193,24 @@ final class RootDbConnectTest extends TestCase
             'the second killed run',
             (string) file_get_contents($this->displaced . '-2')
         );
+    }
+
+    public function testADirectoryLeftByAKilledRunDoesNotStrandTheConfig(): void
+    {
+        // Stage6Test puts a directory at this path on purpose, to make the
+        // installer's write fail. A run killed in the middle of that leaves one
+        // behind, and a recovery that only looks for a regular file walks past
+        // it and then cannot put the config back -- which blocked every later
+        // run, not just that one.
+        file_put_contents($this->sidecar, "<?php return ['DB_NAME' => 'real'];\n");
+        mkdir($this->path);
+
+        $borrowed = RootDbConnect::takeOver();
+        $borrowed->restore();
+
+        self::assertFileExists($this->path);
+        self::assertStringContainsString('real', (string) file_get_contents($this->path));
+        self::assertDirectoryExists($this->displaced, 'the directory is moved aside, not deleted');
     }
 
     public function testTwoBorrowsAtOnceAreRefusedRatherThanSharingOneBackup(): void
