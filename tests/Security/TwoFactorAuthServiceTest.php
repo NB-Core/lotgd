@@ -361,48 +361,112 @@ class TwoFactorAuthServiceTest extends TestCase
     }
 
     /**
-     * Lower case is not a shape this decoder reads, and this test says so
-     * rather than assuming the opposite -- which the first version of the test
-     * above did, with an assertion that was flaky at about one run in a hundred
-     * and went red in CI on its first attempt.
+     * The decoder folds case, as RFC 4648 says base32 does.
      *
-     * base32Decode() strips before it uppercases:
+     * It did not, and the earlier version of this test asserted that -- which
+     * was the right thing to do at the time and is what made this change safe
+     * to reason about. base32Decode() stripped before it uppercased:
      *
      *     strtoupper(preg_replace('/[^A-Z2-7]/', '', $encoded))
      *
-     * so every lower-case letter is removed and only the digits 2-7 survive.
-     * 'JBSWY3DPEHPK3PXP' decodes to the ten bytes it should; lower-cased, the
-     * two surviving '3's decode to the single byte 0xde. So a lower-case secret
-     * does not merely fail -- it silently becomes a different, much shorter one.
+     * so every lower-case letter was *deleted* rather than folded, and only the
+     * digits 2-7 survived. `jbswy3dpehpk3pxp` decoded to the single byte 0xde
+     * where its upper-case twin decodes to ten. Not a rejection -- a silently
+     * different secret.
      *
-     * That is why the answer isPlausibleSecret() gives for lower case is left
-     * undefined here: it depends on how many digits happen to survive, which is
-     * what made the earlier assertion flaky. 99.09% of lower-cased generated
-     * secrets keep two or more, measured over 20000.
-     *
-     * Not fixed here. Normalising case in base32Decode() would change which
-     * stored secrets verify, which is a change of its own -- in the harmless
-     * direction, since nothing that works today would stop working.
+     * The upper-case row is the one that matters for compatibility: it decodes
+     * to exactly what it always did, so no enrolment made by this codebase --
+     * generateSecret() emits upper case -- changes by a byte.
      */
-    public function testLowerCaseIsNotReadByTheDecoderAtAll(): void
+    public function testTheDecoderFoldsCase(): void
+    {
+        $decode = new \ReflectionMethod(\TwoFactorAuthService::class, 'base32Decode');
+        $decode->setAccessible(true);
+
+        $expected = 'Hello!' . hex2bin('deadbeef');
+
+        self::assertSame(
+            $expected,
+            $decode->invoke(null, 'JBSWY3DPEHPK3PXP'),
+            'upper case decodes to what it always did, which is what keeps existing enrolments working'
+        );
+        self::assertSame(
+            $expected,
+            $decode->invoke(null, 'jbswy3dpehpk3pxp'),
+            'lower case used to give one byte instead of ten'
+        );
+        self::assertSame(
+            $expected,
+            $decode->invoke(null, 'JbSwY3dPeHpK3pXp'),
+            'and mixed case, which is what a person retyping one produces'
+        );
+    }
+
+    /**
+     * The whole point of the fold, stated where a reader will believe it: the
+     * same secret in either case yields the same token.
+     *
+     * A decoder test proves the bytes; this proves the consequence. Before the
+     * fold, someone whose stored secret had arrived lower-cased -- an import, a
+     * migration, an operator pasting one in -- had an authenticator app holding
+     * the real secret and a server holding a different, shorter one, so every
+     * correct token was refused. That is why this change cannot break anybody:
+     * there was no such account that worked.
+     */
+    public function testTheSameSecretInEitherCaseProducesTheSameToken(): void
+    {
+        $secret = \TwoFactorAuthService::generateSecret();
+        $now = 1700000000;
+
+        self::assertSame(
+            \TwoFactorAuthService::generateTokenAtTime($secret, 6, 30, $now),
+            \TwoFactorAuthService::generateTokenAtTime(strtolower($secret), 6, 30, $now)
+        );
+
+        $token = \TwoFactorAuthService::generateTokenAtTime($secret, 6, 30, $now);
+
+        self::assertTrue(
+            \TwoFactorAuthService::verifyTotp(strtolower($secret), $token, 6, 30, 1, 0, $now)['valid'],
+            'a lower-cased stored secret now verifies the token its owner sees'
+        );
+    }
+
+    /**
+     * Folding case does not widen the alphabet.
+     *
+     * `abcdefgh` is eight letters of which none is in base32's digit range, so
+     * before the fold it decoded to nothing at all -- and that is the row that
+     * could have changed meaning by accident here. It does decode now, because
+     * those letters *are* base32 once folded, which is correct and worth
+     * pinning: the fold must change case, not the alphabet.
+     */
+    public function testTheFoldChangesCaseAndNotTheAlphabet(): void
     {
         $decode = new \ReflectionMethod(\TwoFactorAuthService::class, 'base32Decode');
         $decode->setAccessible(true);
 
         self::assertSame(
-            'Hello!' . hex2bin('deadbeef'),
-            $decode->invoke(null, 'JBSWY3DPEHPK3PXP'),
-            'control: upper case decodes to what it should'
-        );
-        self::assertSame(
-            hex2bin('de'),
-            $decode->invoke(null, 'jbswy3dpehpk3pxp'),
-            'lower-cased, only the two digits survive the strip'
+            $decode->invoke(null, 'ABCDEFGH'),
+            $decode->invoke(null, 'abcdefgh'),
+            'letters inside the alphabet fold'
         );
         self::assertSame(
             '',
-            $decode->invoke(null, 'abcdefgh'),
-            'and with no digits at all, nothing survives'
+            $decode->invoke(null, '0189'),
+            'and digits outside it are still dropped, in either case'
+        );
+
+        // The row the previous assertion could not distinguish, which a
+        // mutation showed: widening the strip class to keep 0, 1, 8 and 9
+        // leaves this one returning '' instead of the secret, because the
+        // alphabet lookup rejects what the strip let through. A stray
+        // character in a stored secret has to be *removed*, not fatal -- that
+        // is the same tolerance which lets the grouping spaces an
+        // authenticator app displays survive.
+        self::assertSame(
+            $decode->invoke(null, 'JBSWY3DPEHPK3PXP'),
+            $decode->invoke(null, 'JBSW0Y3DP1EHPK3PXP'),
+            'a character outside the alphabet is dropped, not allowed to poison the decode'
         );
     }
 

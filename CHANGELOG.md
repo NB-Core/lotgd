@@ -18,6 +18,8 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 
 ### Fixed
 
+- Two-factor secrets are now decoded case-insensitively, as RFC 4648 defines base32. The decoder stripped before it uppercased, so a lower-case secret was silently decoded into a different, much shorter one rather than rejected. Secrets this game generates are upper-case and decode byte-for-byte as before; the change affects only secrets that arrived from elsewhere — an import or a migration — which could never have verified.
+
 - Corrected combat edge cases: resistance no longer amplifies ripostes, zero-damage rolls cannot loop forever or discard a hit on the final retry, regeneration uses its configured message, and damaging auras can remove companions while respecting `cannotdie`.
 - Restored companion experience and level gains after training, including persistence after suspended hooks resume.
 - Made warning suppression severity-aware and kept bootstrap/test diagnostics from being swallowed or overstating what they could observe.
