@@ -230,7 +230,8 @@ final class RootDbConnect
      * developer could have re-run the installer since. So it is moved aside
      * rather than deleted, and said out loud. Nothing this class touches is
      * ever destroyed to make room for something else -- that is the whole
-     * point of it.
+     * point of it, and it has to hold on the second killed run as well as the
+     * first.
      */
     private static function recoverAbandonedSidecar(string $path, string $sidecar): void
     {
@@ -239,7 +240,7 @@ final class RootDbConnect
         }
 
         if (is_file($path)) {
-            $displaced = $path . self::DISPLACED_SUFFIX;
+            $displaced = self::freeDisplacedName($path);
 
             if (!rename($path, $displaced)) {
                 throw new \RuntimeException(
@@ -262,6 +263,34 @@ final class RootDbConnect
                     . "back at $path."
             );
         }
+    }
+
+    /**
+     * A name for the displaced file that is not already taken.
+     *
+     * Reported by Copilot: a fixed name means the second killed run renames
+     * over what the first one put there, which is this class destroying a file
+     * to make room -- the one thing it must not do, however unlikely the file
+     * is to be wanted.
+     */
+    private static function freeDisplacedName(string $path): string
+    {
+        $base = $path . self::DISPLACED_SUFFIX;
+        $candidate = $base;
+
+        for ($n = 2; file_exists($candidate); $n++) {
+            if ($n > 99) {
+                throw new \RuntimeException(
+                    "There are already 99 files named like $base. Refusing to add another: "
+                        . 'clear them out, and check whether any of them is a configuration you '
+                        . 'want.'
+                );
+            }
+
+            $candidate = $base . '-' . $n;
+        }
+
+        return $candidate;
     }
 
     /**

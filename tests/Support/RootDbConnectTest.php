@@ -41,20 +41,41 @@ final class RootDbConnectTest extends TestCase
 
         // Deliberately not done with RootDbConnect: a test of a borrow that
         // borrows to set itself up cannot tell the two apart.
-        if (is_file($this->sidecar) || is_file($this->displaced) || is_file($this->stash)) {
+        if (is_file($this->sidecar) || is_file($this->stash) || glob($this->displaced . '*')) {
             self::markTestSkipped('the repository root already holds files these tests use');
         }
 
         if (is_file($this->path) && !rename($this->path, $this->stash)) {
             self::fail("Could not move $this->path aside for the duration of this test");
         }
+
+        // The same promise the class under test makes, and for the same reason:
+        // tearDown() is exactly what does not run when the process is killed,
+        // and this test moves the developer's real config aside under a name
+        // nothing else knows. Reported by Copilot -- these tests had the very
+        // defect the pull request exists to fix.
+        $stash = $this->stash;
+        $path = $this->path;
+        register_shutdown_function(static function () use ($stash, $path): void {
+            if (is_file($stash) && !is_file($path)) {
+                rename($stash, $path);
+            }
+        });
     }
 
     protected function tearDown(): void
     {
-        foreach ([$this->path, $this->sidecar, $this->displaced] as $leftover) {
-            if (is_file($leftover)) {
-                unlink($leftover);
+        // Reported failures, not ignored ones: a leftover this cannot remove
+        // is what the next test would silently run against, and it is what
+        // stops the stash going back.
+        $leftovers = array_merge(
+            [$this->path, $this->sidecar],
+            glob($this->displaced . '*') ?: []
+        );
+
+        foreach ($leftovers as $leftover) {
+            if (is_file($leftover) && !unlink($leftover)) {
+                self::fail("Could not clear $leftover after this test");
             }
         }
 
@@ -142,6 +163,27 @@ final class RootDbConnectTest extends TestCase
             'fixture',
             (string) file_get_contents($this->displaced),
             'what stood in its place is moved aside, never deleted'
+        );
+    }
+
+    public function testASecondKilledRunDoesNotOverwriteWhatTheFirstMovedAside(): void
+    {
+        file_put_contents($this->displaced, "<?php return ['from' => 'the first killed run'];\n");
+        file_put_contents($this->sidecar, "<?php return ['DB_NAME' => 'real'];\n");
+        file_put_contents($this->path, "<?php return ['from' => 'the second killed run'];\n");
+
+        $borrowed = RootDbConnect::takeOver();
+        $borrowed->restore();
+
+        self::assertStringContainsString('real', (string) file_get_contents($this->path));
+        self::assertStringContainsString(
+            'the first killed run',
+            (string) file_get_contents($this->displaced),
+            'a fixed name would have renamed over this one'
+        );
+        self::assertStringContainsString(
+            'the second killed run',
+            (string) file_get_contents($this->displaced . '-2')
         );
     }
 
