@@ -592,14 +592,13 @@ class TwoFactorAuthService
      * class nor a strict upper-case one let a single garbage decryption
      * through, and neither rejected a single real secret.
      *
-     * Lower case is in the class but decides nothing, and that is worth saying
-     * because it is easy to read the other way: base32Decode() strips before it
-     * uppercases -- `strtoupper(preg_replace('/[^A-Z2-7]/', '', $encoded))` --
-     * so lower-case letters are removed and only the digits 2-7 survive. A
-     * lower-case secret has therefore never produced the right token in this
-     * codebase, with or without this check, and what the second half answers
-     * for one is incidental. Left in the class rather than excluded so that the
-     * day base32Decode() normalises case first, this follows it.
+     * Lower case is in the class and now means what it looks like it means.
+     * It did not: base32Decode() stripped before it uppercased, so lower-case
+     * letters were deleted rather than folded and only the digits 2-7 survived.
+     * The comment here used to explain that, and ended "the day base32Decode()
+     * normalises case first, this follows it". That day has come -- the decoder
+     * folds case per RFC 4648 -- so a lower-case secret decodes to the same
+     * bytes as its upper-case twin, and this check answers the same for both.
      *
      * The second half is not redundant with the first. base32Decode() strips
      * everything outside its alphabet, so a value made only of padding,
@@ -731,9 +730,28 @@ class TwoFactorAuthService
         return $encoded;
     }
 
+    /**
+     * Decode base32, case-insensitively, as RFC 4648 defines it.
+     *
+     * The order of these two operations is the whole of it. This used to strip
+     * first and uppercase afterwards, on an input the strip had already reduced
+     * to upper case -- so every lower-case letter was *deleted* rather than
+     * folded, and only the digits 2-7 survived. `jbswy3dpehpk3pxp` did not fail
+     * to decode; it decoded to the single byte 0xde, where its upper-case twin
+     * decodes to ten. A silently different secret rather than a rejected one.
+     *
+     * Nothing this codebase writes was affected: generateSecret() emits upper
+     * case, so an enrolment made here decodes byte-for-byte as it always did.
+     * What was affected is a secret that arrived from somewhere else -- an
+     * import, a migration from another implementation, an operator pasting one
+     * into the prefs table. Those never worked, because an authenticator app
+     * folds case per the RFC and therefore held a different secret than the
+     * server did; every token mismatched. This cannot break such an account, as
+     * there is no such account that works today. It can only start working.
+     */
     private static function base32Decode(string $encoded): string
     {
-        $encoded = strtoupper(preg_replace('/[^A-Z2-7]/', '', $encoded) ?? '');
+        $encoded = preg_replace('/[^A-Z2-7]/', '', strtoupper($encoded)) ?? '';
         if ($encoded === '') {
             return '';
         }
