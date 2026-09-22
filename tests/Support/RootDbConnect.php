@@ -24,16 +24,58 @@ namespace Lotgd\Tests\Support;
  * The fifth, Stage5Test, already saved the contents and put them back. This is
  * that, extracted, so there is one copy of it and four fewer places to forget.
  *
- * Restoration also happens on shutdown, because the failure this guards against
- * is the one where tearDown() never runs.
+ * It borrows by **moving the file aside**, not by copying its contents into
+ * memory. A file holding database credentials is then never read, never
+ * rewritten, and never recreated -- it is the same inode when it comes back,
+ * with its mode, its owner and its timestamps intact. Reported by Codex against
+ * the first version, which read and rewrote it: a config a developer had
+ * deliberately set to `0600` came back `0644`, because the rewrite got whatever
+ * the umask gave it. Measured before the change and after:
+ *
+ *     vorher:  600 dbconnect.php  ->  nach borrow/restore:  644
+ *     jetzt:   600 dbconnect.php  ->  nach borrow/restore:  600
+ *
+ * Moving it aside also means the file still exists on disk while it is
+ * borrowed, so a run killed outright -- Ctrl-C, SIGKILL, anything that skips
+ * the shutdown handler below -- leaves it recoverable rather than gone. The
+ * next takeOver() puts it back.
+ *
+ * Restoration otherwise happens on shutdown, because the failure this guards
+ * against is the one where tearDown() never runs.
  */
 final class RootDbConnect
 {
+    /**
+     * Where the original waits while it is borrowed.
+     *
+     * Beside the file itself, because a rename is only atomic within one
+     * filesystem and the root is the one directory guaranteed to be on the same
+     * one. Listed in .gitignore next to `dbconnect.php`, for the crash case
+     * where it is still there afterwards.
+     */
+    private const SIDECAR_SUFFIX = '.borrowed-by-tests';
+
+    /**
+     * Where a file found in the borrowed one's place is put, rather than
+     * deleted.
+     */
+    private const DISPLACED_SUFFIX = '.left-by-killed-test-run';
+
+    /**
+     * The borrow currently in progress, if any.
+     *
+     * There is exactly one sidecar name, so two live borrows would both believe
+     * they own it and the second restore would find nothing to put back. No
+     * caller nests them; this makes the attempt say so instead of corrupting
+     * the backup.
+     */
+    private static ?self $active = null;
+
     private bool $restored = false;
 
     private function __construct(
         private readonly string $path,
-        private readonly ?string $original,
+        private readonly bool $holdsOriginal,
     ) {
     }
 
@@ -53,36 +95,51 @@ final class RootDbConnect
     }
 
     /**
-     * Take the file over: remember what was there and leave the root empty.
+     * Where a borrowed original waits.
+     */
+    public static function sidecarPath(): string
+    {
+        return self::path() . self::SIDECAR_SUFFIX;
+    }
+
+    /**
+     * Take the file over: move anything that is there aside, leaving the root
+     * empty.
      *
      * The caller is then free to write whatever fixture it needs, or to rely on
      * there being none.
      */
     public static function takeOver(): self
     {
-        $path = self::path();
-        $original = null;
-
-        if (is_file($path)) {
-            $contents = file_get_contents($path);
-            $original = $contents === false ? null : $contents;
-
-            if ($original === null) {
-                throw new \RuntimeException(
-                    "A dbconnect.php exists at $path but could not be read, and this would have to "
-                        . 'delete it to run. Refusing, because it may be a real configuration.'
-                );
-            }
-
-            if (!unlink($path)) {
-                throw new \RuntimeException(
-                    "A dbconnect.php exists at $path and could not be removed. Refusing to go on: "
-                        . 'the fixture would be written over a real configuration instead of beside it.'
-                );
-            }
+        if (self::$active !== null) {
+            throw new \RuntimeException(
+                'A dbconnect.php borrow is already in progress. Nesting them is not supported: '
+                    . 'there is one place the original is kept, and the second restore would find '
+                    . 'it already given back.'
+            );
         }
 
-        $borrowed = new self($path, $original);
+        $path = self::path();
+        $sidecar = self::sidecarPath();
+
+        self::recoverAbandonedSidecar($path, $sidecar);
+
+        $holdsOriginal = false;
+
+        if (is_file($path)) {
+            if (!rename($path, $sidecar)) {
+                throw new \RuntimeException(
+                    "A dbconnect.php exists at $path and could not be moved aside. Refusing to go "
+                        . 'on: the fixture would be written over a real configuration instead of '
+                        . 'beside it.'
+                );
+            }
+
+            $holdsOriginal = true;
+        }
+
+        $borrowed = new self($path, $holdsOriginal);
+        self::$active = $borrowed;
         $borrowed->forget();
 
         // tearDown() is exactly what does not run when a test dies, and that is
@@ -116,7 +173,8 @@ final class RootDbConnect
     }
 
     /**
-     * Put back exactly what was there -- including nothing, if there was nothing.
+     * Put back exactly what was there -- including nothing, if there was
+     * nothing.
      */
     public function restore(): void
     {
@@ -124,27 +182,86 @@ final class RootDbConnect
             return;
         }
 
-        if ($this->original === null) {
-            if (is_file($this->path) && !unlink($this->path)) {
+        if ($this->holdsOriginal) {
+            $sidecar = self::sidecarPath();
+
+            if (!is_file($sidecar)) {
                 throw new \RuntimeException(
-                    "Could not remove the dbconnect.php fixture at $this->path. The root started "
-                        . 'out with no such file and now has one.'
+                    "The borrowed dbconnect.php is no longer at $sidecar, so there is nothing to "
+                        . 'put back. Something outside these tests moved or deleted it.'
                 );
             }
-        } elseif (file_put_contents($this->path, $this->original) === false) {
-            // The one failure this class exists to prevent, so it is never
-            // silent: the borrowed contents live only in this process, and the
-            // process is on its way out.
+
+            // Replaces the fixture in one step, so the root is never briefly
+            // without a config.
+            if (!rename($sidecar, $this->path)) {
+                throw new \RuntimeException(
+                    "Could not move the borrowed dbconnect.php back from $sidecar to $this->path. "
+                        . 'It has been borrowed and not given back.'
+                );
+            }
+        } elseif (is_file($this->path) && !unlink($this->path)) {
             throw new \RuntimeException(
-                "Could not restore the original dbconnect.php at $this->path. It has been borrowed "
-                    . 'and not given back.'
+                "Could not remove the dbconnect.php fixture at $this->path. The root started out "
+                    . 'with no such file and now has one.'
             );
         }
 
         // Only now: a restore that threw is one the shutdown handler should try
         // again, not one it skips because a flag was set before the attempt.
         $this->restored = true;
+
+        if (self::$active === $this) {
+            self::$active = null;
+        }
+
         $this->forget();
+    }
+
+    /**
+     * Put back a config left behind by a run that never got to restore it.
+     *
+     * Only takeOver() ever creates the sidecar, and only from a file that was
+     * at the root before any fixture was written -- so the sidecar is the real
+     * configuration, and it wins.
+     *
+     * Whatever is at the root in that situation is almost always the fixture
+     * the killed run had just written, which is worth nothing. Almost: a
+     * developer could have re-run the installer since. So it is moved aside
+     * rather than deleted, and said out loud. Nothing this class touches is
+     * ever destroyed to make room for something else -- that is the whole
+     * point of it.
+     */
+    private static function recoverAbandonedSidecar(string $path, string $sidecar): void
+    {
+        if (!is_file($sidecar)) {
+            return;
+        }
+
+        if (is_file($path)) {
+            $displaced = $path . self::DISPLACED_SUFFIX;
+
+            if (!rename($path, $displaced)) {
+                throw new \RuntimeException(
+                    "A previous run left a borrowed dbconnect.php at $sidecar, and the file now at "
+                        . "$path could not be moved out of the way to put it back."
+                );
+            }
+
+            fwrite(
+                STDERR,
+                "RootDbConnect: a previous run was killed before it could give dbconnect.php back. "
+                    . "Restoring it. What was in its place -- almost certainly that run's fixture "
+                    . "-- is at $displaced.\n"
+            );
+        }
+
+        if (!rename($sidecar, $path)) {
+            throw new \RuntimeException(
+                "A previous run left a borrowed dbconnect.php at $sidecar and it could not be put "
+                    . "back at $path."
+            );
+        }
     }
 
     /**

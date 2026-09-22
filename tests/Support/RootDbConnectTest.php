@@ -7,27 +7,71 @@ namespace Lotgd\Tests\Support;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The helper's own two promises: it names the file the production code reads,
- * and what it borrows it gives back.
+ * The helper's own promises: it names the file the production code reads, and
+ * what it borrows it gives back -- as the same file, with the same mode, or as
+ * the same absence.
  *
- * The suite-wide property this class was written for cannot be tested here --
- * "no test deletes the developer's config" is a statement about which code the
- * other suites call, and a test of this helper passes against a tree where none
- * of them use it. That one is measured by running the suite with a real config
- * present. What *is* worth pinning is the part a reader cannot check by eye: a
- * path assembled from a directory count, which would silently point at
- * `tests/dbconnect.php` if the count were off by one, leaving every borrower
- * operating on a file nothing reads.
+ * The suite-wide property this class was written for cannot be tested here.
+ * "No test deletes the developer's config" is a statement about which code the
+ * other ten files call, and a test of this helper passes against a tree where
+ * none of them use it; that one is measured by running the suite with a real
+ * config present. What belongs here is the part of the helper a reader cannot
+ * check by eye.
+ *
+ * These tests stage the repository root themselves rather than borrowing it
+ * through the class under test, and rather than skipping when a real config is
+ * present -- which would have meant skipping in exactly the checkout where any
+ * of this matters.
  */
 final class RootDbConnectTest extends TestCase
 {
+    private const STASH_SUFFIX = '.held-by-rootdbconnecttest';
+
+    private string $path;
+    private string $sidecar;
+    private string $displaced;
+    private string $stash;
+
+    protected function setUp(): void
+    {
+        $this->path = RootDbConnect::path();
+        $this->sidecar = RootDbConnect::sidecarPath();
+        $this->displaced = $this->path . '.left-by-killed-test-run';
+        $this->stash = $this->path . self::STASH_SUFFIX;
+
+        // Deliberately not done with RootDbConnect: a test of a borrow that
+        // borrows to set itself up cannot tell the two apart.
+        if (is_file($this->sidecar) || is_file($this->displaced) || is_file($this->stash)) {
+            self::markTestSkipped('the repository root already holds files these tests use');
+        }
+
+        if (is_file($this->path) && !rename($this->path, $this->stash)) {
+            self::fail("Could not move $this->path aside for the duration of this test");
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        foreach ([$this->path, $this->sidecar, $this->displaced] as $leftover) {
+            if (is_file($leftover)) {
+                unlink($leftover);
+            }
+        }
+
+        if (is_file($this->stash) && !rename($this->stash, $this->path)) {
+            self::fail("Could not put $this->path back after this test");
+        }
+    }
+
     public function testPathIsTheRepositoryRootAndNotTheTestsDirectory(): void
     {
         $directory = dirname(RootDbConnect::path());
 
         // Derived, not restated: this file lives in tests/Support, so the root
-        // is the directory that *contains* that, which is the one assertion the
-        // off-by-one gets wrong.
+        // is the directory that *contains* that, which is the one thing an
+        // off-by-one in the level count gets wrong -- silently, since it would
+        // leave all ten borrowers operating on a file nothing reads while every
+        // test still passed.
         self::assertSame(
             realpath($directory . '/tests/Support'),
             realpath(__DIR__),
@@ -39,28 +83,78 @@ final class RootDbConnectTest extends TestCase
         self::assertSame('dbconnect.php', basename(RootDbConnect::path()));
     }
 
-    public function testWhatItBorrowsItGivesBack(): void
+    public function testTheOriginalIsMovedAsideRatherThanCopied(): void
     {
-        $path = RootDbConnect::path();
-        $existedBefore = is_file($path);
-        $before = $existedBefore ? file_get_contents($path) : null;
+        // A mode a developer would deliberately choose for a file holding
+        // database credentials, and the one the first version of this class
+        // widened to 0644 by rewriting the file instead of moving it. Reported
+        // by Codex.
+        file_put_contents($this->path, "<?php return ['DB_NAME' => 'secret'];\n");
+        chmod($this->path, 0600);
+
+        $mode = fileperms($this->path) & 0777;
+        $inode = fileinode($this->path);
+        $contents = file_get_contents($this->path);
 
         $borrowed = RootDbConnect::takeOver();
-        self::assertFileDoesNotExist($path, 'takeOver() leaves the root empty');
+        self::assertFileDoesNotExist($this->path, 'takeOver() leaves the root empty');
+        self::assertFileExists($this->sidecar, 'and the original waits on disk, not in memory');
 
         $borrowed->write("<?php return ['fixture' => true];\n");
-        self::assertSame("<?php return ['fixture' => true];\n", file_get_contents($path));
-
         $borrowed->restore();
 
-        self::assertSame($existedBefore, is_file($path), 'restore() puts back the absence too');
-        if ($existedBefore) {
-            self::assertSame($before, file_get_contents($path), 'restore() puts back the exact bytes');
+        clearstatcache();
+        self::assertSame($contents, file_get_contents($this->path), 'the exact bytes come back');
+        self::assertSame($mode, fileperms($this->path) & 0777, 'and the mode with them');
+        self::assertSame($inode, fileinode($this->path), 'as the same file, not a copy of it');
+        self::assertFileDoesNotExist($this->sidecar);
+    }
+
+    public function testAnAbsentConfigIsRestoredAsAnAbsence(): void
+    {
+        self::assertFileDoesNotExist($this->path);
+
+        $borrowed = RootDbConnect::takeOver();
+        $borrowed->write("<?php return ['fixture' => true];\n");
+        self::assertFileExists($this->path);
+
+        $borrowed->restore();
+        self::assertFileDoesNotExist($this->path, 'restore() puts back the absence too');
+
+        // The shutdown handler runs restore() again on the ordinary path, and
+        // must not resurrect the fixture.
+        $borrowed->restore();
+        self::assertFileDoesNotExist($this->path);
+    }
+
+    public function testAConfigLeftByAKilledRunIsPutBackAndNothingIsDeleted(): void
+    {
+        // Exactly what a Ctrl-C mid-borrow leaves behind: the real config at
+        // the sidecar, that run's fixture in its place.
+        file_put_contents($this->sidecar, "<?php return ['DB_NAME' => 'real'];\n");
+        file_put_contents($this->path, "<?php return ['fixture' => true];\n");
+
+        $borrowed = RootDbConnect::takeOver();
+        $borrowed->restore();
+
+        self::assertStringContainsString('real', (string) file_get_contents($this->path));
+        self::assertStringContainsString(
+            'fixture',
+            (string) file_get_contents($this->displaced),
+            'what stood in its place is moved aside, never deleted'
+        );
+    }
+
+    public function testTwoBorrowsAtOnceAreRefusedRatherThanSharingOneBackup(): void
+    {
+        $borrowed = RootDbConnect::takeOver();
+
+        try {
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessageMatches('/already in progress/');
+            RootDbConnect::takeOver();
+        } finally {
+            $borrowed->restore();
         }
-
-        // Idempotent: the shutdown handler runs restore() again on the ordinary
-        // path, and must not resurrect the fixture or delete the original.
-        $borrowed->restore();
-        self::assertSame($existedBefore, is_file($path));
     }
 }
