@@ -24,6 +24,7 @@ use Lotgd\Installer\Installer;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\DummySettings;
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -37,7 +38,7 @@ final class Stage6Test extends TestCase
     public static bool $simulateWriteFailure = false;
     private string $root;
     private string $dbconnectPath;
-    private string $dbconnectBackup;
+    private RootDbConnect $dbconnect;
     private DummySettings $settings;
     private string $originalCwd;
 
@@ -48,15 +49,8 @@ final class Stage6Test extends TestCase
         require_once dirname(__DIR__, 2) . '/install/lib/Installer.php';
 
         $this->root           = dirname(__DIR__, 2);
-        $this->dbconnectPath  = $this->root . '/dbconnect.php';
-        $this->dbconnectBackup = $this->dbconnectPath . '.bak';
-
-        if (file_exists($this->dbconnectBackup)) {
-            unlink($this->dbconnectBackup);
-        }
-        if (file_exists($this->dbconnectPath)) {
-            rename($this->dbconnectPath, $this->dbconnectBackup);
-        }
+        $this->dbconnectPath  = RootDbConnect::path();
+        $this->dbconnect      = RootDbConnect::takeOver();
 
         $this->settings = new DummySettings([
             'charset' => 'UTF-8',
@@ -88,14 +82,14 @@ final class Stage6Test extends TestCase
         putenv('LOTGD_STATE_PATH');
         chdir($this->originalCwd);
 
+        // This suite's own artefact, not the borrow's: one test puts a
+        // directory at that path to make the installer's write fail, and
+        // restore() deals in files.
         if (is_dir($this->dbconnectPath)) {
             rmdir($this->dbconnectPath);
-        } elseif (file_exists($this->dbconnectPath)) {
-            unlink($this->dbconnectPath);
         }
-        if (file_exists($this->dbconnectBackup)) {
-            rename($this->dbconnectBackup, $this->dbconnectPath);
-        }
+
+        $this->dbconnect->restore();
 
         Settings::setInstance(null);
         unset($GLOBALS['settings']);
@@ -217,7 +211,7 @@ $DB_PREFIX = 'legacy_';
 $DB_USEDATACACHE = 1;
 $DB_DATACACHEPATH = '/legacy/cache';
 PHP;
-        file_put_contents($this->dbconnectPath, $legacy);
+        $this->dbconnect->write($legacy);
 
         $installer = new Installer();
         $installer->stage6();
@@ -261,6 +255,7 @@ PHP;
         $this->assertFileExists($this->dbconnectPath);
 
         $originalContents = file_get_contents($this->dbconnectPath);
+        $this->dbconnect->forget();
         $originalConfig   = require $this->dbconnectPath;
 
         $this->settings = new DummySettings([
@@ -274,6 +269,7 @@ PHP;
 
         $this->assertFileExists($this->dbconnectPath);
         $this->assertSame($originalContents, file_get_contents($this->dbconnectPath));
+        $this->dbconnect->forget();
         $this->assertSame($originalConfig, require $this->dbconnectPath);
     }
 }

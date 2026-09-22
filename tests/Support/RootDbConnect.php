@@ -271,8 +271,14 @@ final class RootDbConnect
      * the same second would otherwise be served the previous contents wherever
      * opcache is on for the CLI. It is off by default and off in CI -- but that
      * is a setting, not a property of the code.
+     *
+     * Called for every change this class makes. Public because the installer
+     * writes this file too: a test that runs a stage and then reads the result
+     * back has to say so itself, and the alternative -- each caller repeating
+     * clearstatcache() and a function_exists() dance -- is how the four copies
+     * this class replaced came about.
      */
-    private function forget(): void
+    public function forget(): void
     {
         clearstatcache(true, $this->path);
 

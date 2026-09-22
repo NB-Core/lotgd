@@ -265,7 +265,6 @@ namespace Lotgd\Tests\Installer {
             $this->dbconnect->write(
                 "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'test_'];"
             );
-            clearstatcache();
 
             $session['dbinfo']['DB_PREFIX'] = 'test_';
 
@@ -283,10 +282,6 @@ namespace Lotgd\Tests\Installer {
             $this->dbconnect->write(
                 "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'lotgd_'];"
             );
-            clearstatcache();
-            if (function_exists('opcache_invalidate')) {
-                opcache_invalidate(RootDbConnect::path(), true);
-            }
 
             $session['dbinfo']['DB_PREFIX'] = 'lotgd_';
 
@@ -312,11 +307,9 @@ namespace Lotgd\Tests\Installer {
 
             $dbconnect = RootDbConnect::path();
 
-            file_put_contents(
-                $dbconnect,
+            $this->dbconnect->write(
                 "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'old_'];"
             );
-            clearstatcache(true, $dbconnect);
 
             $session['dbinfo']['DB_PREFIX'] = 'fresh';
 
@@ -324,15 +317,16 @@ namespace Lotgd\Tests\Installer {
             $installer->runStage(6);
 
             // Simulate stage 6 leaving the original prefix on disk (e.g., permissions restored later).
-            file_put_contents(
-                $dbconnect,
+            $this->dbconnect->write(
                 "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'old_'];"
             );
-            clearstatcache(true, $dbconnect);
 
             $installer->runStage(9);
 
-            clearstatcache(true, $dbconnect);
+            // The installer wrote it this time, so the test has to say so: the
+            // write() calls above drop what PHP remembers, this read does not
+            // follow one.
+            $this->dbconnect->forget();
             $config = require $dbconnect;
 
             $this->assertSame('fresh_', $config['DB_PREFIX']);
