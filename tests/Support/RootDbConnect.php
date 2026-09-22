@@ -39,6 +39,13 @@ final class RootDbConnect
 
     /**
      * Where the production code looks for it.
+     *
+     * This file is `tests/Support/RootDbConnect.php`, so two levels up from its
+     * own directory is the repository root -- the same place `Bootstrap`,
+     * `Settings`, `Database` and `common.php` each arrive at from their own
+     * positions. A test asserts that equality rather than restating the count,
+     * because getting it wrong would make every suite here operate on a file
+     * nothing reads.
      */
     public static function path(): string
     {
@@ -67,15 +74,31 @@ final class RootDbConnect
                 );
             }
 
-            unlink($path);
+            if (!unlink($path)) {
+                throw new \RuntimeException(
+                    "A dbconnect.php exists at $path and could not be removed. Refusing to go on: "
+                        . 'the fixture would be written over a real configuration instead of beside it.'
+                );
+            }
         }
 
         $borrowed = new self($path, $original);
+        $borrowed->forget();
 
         // tearDown() is exactly what does not run when a test dies, and that is
         // the case this guards. Idempotent, so the ordinary path still restores
         // at the ordinary time.
-        register_shutdown_function(static fn () => $borrowed->restore());
+        register_shutdown_function(static function () use ($borrowed): void {
+            try {
+                $borrowed->restore();
+            } catch (\RuntimeException $e) {
+                // Last chance, and an exception thrown here is an uncatchable
+                // fatal on top of whatever already went wrong -- which would
+                // bury the test output that says why. Say it where it can still
+                // be read instead.
+                fwrite(STDERR, $e->getMessage() . "\n");
+            }
+        });
 
         return $borrowed;
     }
@@ -88,6 +111,8 @@ final class RootDbConnect
         if (file_put_contents($this->path, $contents) === false) {
             throw new \RuntimeException("Could not write the dbconnect.php fixture to $this->path");
         }
+
+        $this->forget();
     }
 
     /**
@@ -99,16 +124,43 @@ final class RootDbConnect
             return;
         }
 
-        $this->restored = true;
-
         if ($this->original === null) {
-            if (is_file($this->path)) {
-                unlink($this->path);
+            if (is_file($this->path) && !unlink($this->path)) {
+                throw new \RuntimeException(
+                    "Could not remove the dbconnect.php fixture at $this->path. The root started "
+                        . 'out with no such file and now has one.'
+                );
             }
-
-            return;
+        } elseif (file_put_contents($this->path, $this->original) === false) {
+            // The one failure this class exists to prevent, so it is never
+            // silent: the borrowed contents live only in this process, and the
+            // process is on its way out.
+            throw new \RuntimeException(
+                "Could not restore the original dbconnect.php at $this->path. It has been borrowed "
+                    . 'and not given back.'
+            );
         }
 
-        file_put_contents($this->path, $this->original);
+        // Only now: a restore that threw is one the shutdown handler should try
+        // again, not one it skips because a flag was set before the attempt.
+        $this->restored = true;
+        $this->forget();
+    }
+
+    /**
+     * Drop anything remembered about the file at that path.
+     *
+     * The production code `require`s it, and a suite that rewrites it within
+     * the same second would otherwise be served the previous contents wherever
+     * opcache is on for the CLI. It is off by default and off in CI -- but that
+     * is a setting, not a property of the code.
+     */
+    private function forget(): void
+    {
+        clearstatcache(true, $this->path);
+
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate($this->path, true);
+        }
     }
 }
