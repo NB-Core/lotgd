@@ -393,7 +393,7 @@ class TwoFactorAuthServiceTest extends TestCase
         self::assertSame(
             $expected,
             $decode->invoke(null, 'jbswy3dpehpk3pxp'),
-            'lower case used to give one byte instead of ten'
+            'lower case must fold to the same bytes as upper case'
         );
         self::assertSame(
             $expected,
