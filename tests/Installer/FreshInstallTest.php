@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Installer;
 
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 final class FreshInstallTest extends TestCase
@@ -13,12 +14,20 @@ final class FreshInstallTest extends TestCase
     private const DB_PASS = '';
     private const DB_NAME = 'lotgd_test';
 
+    private static ?RootDbConnect $dbconnect = null;
+
+    public static function setUpBeforeClass(): void
+    {
+        // This test installs a game, which writes dbconnect.php at the root.
+        // Borrowed for the class rather than deleted afterwards: the delete
+        // took whatever was already there with it.
+        self::$dbconnect = RootDbConnect::takeOver();
+    }
+
     public static function tearDownAfterClass(): void
     {
-        $file = __DIR__ . '/../../dbconnect.php';
-        if (is_file($file)) {
-            unlink($file);
-        }
+        self::$dbconnect?->restore();
+        self::$dbconnect = null;
     }
 
     public function testFreshInstall(): void

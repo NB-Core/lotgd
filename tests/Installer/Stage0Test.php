@@ -4,31 +4,23 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Installer;
 
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 final class Stage0Test extends TestCase
 {
     private string $config;
-    private string $backup;
+    private RootDbConnect $dbconnect;
 
     protected function setUp(): void
     {
-        $root          = dirname(__DIR__, 2);
-        $this->config  = $root . '/dbconnect.php';
-        $this->backup  = $this->config . '.bak';
-
-        if (file_exists($this->config)) {
-            rename($this->config, $this->backup);
-        }
+        $this->config = RootDbConnect::path();
+        $this->dbconnect = RootDbConnect::takeOver();
     }
 
     protected function tearDown(): void
     {
-        if (file_exists($this->backup)) {
-            rename($this->backup, $this->config);
-        } elseif (file_exists($this->config)) {
-            unlink($this->config);
-        }
+        $this->dbconnect->restore();
     }
 
     public function testInstallerOutputsDefaultFavicon(): void

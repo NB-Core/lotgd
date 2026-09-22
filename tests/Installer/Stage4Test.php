@@ -8,10 +8,12 @@ use Lotgd\Installer\Installer;
 use Lotgd\MySQL\Database;
 use Lotgd\Output;
 use Lotgd\Tests\Stubs\DbMysqli;
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 final class Stage4Test extends TestCase
 {
+    private RootDbConnect $dbconnect;
     private string $configDir;
     private string $configBackup;
 
@@ -26,8 +28,10 @@ final class Stage4Test extends TestCase
         Database::$instance = null;
         Database::$doctrineConnection = null;
 
-        // Remove any existing dbconnect.php to ensure a clean state
-        @unlink(dirname(__DIR__, 2) . '/dbconnect.php');
+        // Borrowed rather than deleted: in a checkout that is also an
+        // installed game this is the database configuration, and `@unlink`
+        // both destroyed it and hid any reason the delete failed.
+        $this->dbconnect = RootDbConnect::takeOver();
 
         // Swap config directory with an empty one
         $this->configDir = dirname(__DIR__, 2) . '/config';
@@ -49,8 +53,8 @@ final class Stage4Test extends TestCase
             rename($this->configBackup, $this->configDir);
         }
 
-        // Clean up dbconnect.php created during the test run
-        @unlink(dirname(__DIR__, 2) . '/dbconnect.php');
+        // Puts back whatever was there, including nothing.
+        $this->dbconnect->restore();
 
         parent::tearDown();
     }
@@ -97,7 +101,7 @@ final class Stage4Test extends TestCase
         $installer->runStage(4);
 
         $this->assertTrue(defined('DB_INSTALLER_STAGE4'));
-        $this->assertFileDoesNotExist(dirname(__DIR__, 2) . '/dbconnect.php');
+        $this->assertFileDoesNotExist(RootDbConnect::path());
 
         $instance = Database::getInstance();
         $this->assertInstanceOf(DbMysqli::class, $instance);

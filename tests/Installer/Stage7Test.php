@@ -28,6 +28,7 @@ namespace Lotgd\Tests\Installer {
     use Lotgd\Settings;
     use Lotgd\Tests\Stubs\Database;
     use Lotgd\Tests\Stubs\DummySettings;
+    use Lotgd\Tests\Support\RootDbConnect;
     use PHPUnit\Framework\TestCase;
 
     /**
@@ -38,7 +39,7 @@ namespace Lotgd\Tests\Installer {
     #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     final class Stage7Test extends TestCase
     {
-        private string $dbconnectPath;
+        private RootDbConnect $dbconnect;
 
         protected function setUp(): void
         {
@@ -51,10 +52,7 @@ namespace Lotgd\Tests\Installer {
             $output   = Output::getInstance();
             $settings = null;
 
-            $this->dbconnectPath = dirname(__DIR__, 2) . '/dbconnect.php';
-            if (file_exists($this->dbconnectPath)) {
-                unlink($this->dbconnectPath);
-            }
+            $this->dbconnect = RootDbConnect::takeOver();
 
             Database::$settings_table = [];
             Database::$settings_extended_table = [];
@@ -83,8 +81,8 @@ namespace Lotgd\Tests\Installer {
 
         protected function tearDown(): void
         {
-            if (isset($this->dbconnectPath) && file_exists($this->dbconnectPath)) {
-                unlink($this->dbconnectPath);
+            if (isset($this->dbconnect)) {
+                $this->dbconnect->restore();
             }
 
             Settings::setInstance(null);
@@ -405,10 +403,7 @@ namespace Lotgd\Tests\Installer {
                 'DB_PREFIX' => 'lotgd_',
             ];
 
-            file_put_contents(
-                $this->dbconnectPath,
-                "<?php\nreturn " . var_export($config, true) . ";\n"
-            );
+            $this->dbconnect->write("<?php\nreturn " . var_export($config, true) . ";\n");
 
             Database::$mockResults = [
                 [

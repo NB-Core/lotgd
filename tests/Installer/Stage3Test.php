@@ -8,6 +8,7 @@ use Lotgd\Installer\Installer;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\DummySettings;
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -23,10 +24,20 @@ final class Stage3Test extends TestCase
     /** @var array<string, string|null> */
     private array $envArrayBackup = [];
     private DummySettings $settings;
+    private RootDbConnect $dbconnect;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        // stage3() deliberately skips the fresh-install branch when a
+        // dbconnect.php is present -- an installed site must not have its
+        // database details overwritten from the environment. These tests
+        // exercise that branch, so the absence of the file is a precondition
+        // they have, and it used to be satisfied by accident: other suites
+        // deleted the developer's real one. Borrowed here so the precondition
+        // is the test's own and holds in any checkout.
+        $this->dbconnect = RootDbConnect::takeOver();
 
         require_once dirname(__DIR__, 2) . '/install/lib/Installer.php';
 
@@ -63,6 +74,8 @@ final class Stage3Test extends TestCase
 
     protected function tearDown(): void
     {
+        $this->dbconnect->restore();
+
         foreach ($this->envBackup as $key => $value) {
             if ($value === null) {
                 putenv($key);

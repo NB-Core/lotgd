@@ -132,12 +132,15 @@ namespace Lotgd\Tests\Installer {
     use Lotgd\Settings;
     use Lotgd\Tests\Stubs\DummySettings;
     use Lotgd\Tests\Stubs\DoctrineBootstrap;
+    use Lotgd\Tests\Support\RootDbConnect;
     use PHPUnit\Framework\TestCase;
 
     require_once __DIR__ . '/../Stubs/DoctrineBootstrap.php';
 
     class Stage9Test extends TestCase
     {
+        private RootDbConnect $dbconnect;
+
         protected function setUp(): void
         {
             global $session, $logd_version, $recommended_modules, $noinstallnavs,
@@ -175,19 +178,15 @@ namespace Lotgd\Tests\Installer {
             $GLOBALS['settings'] = $settings;
             Output::setInstance(new Output());
 
-            file_put_contents(
-                __DIR__ . '/../../dbconnect.php',
+            $this->dbconnect = RootDbConnect::takeOver();
+            $this->dbconnect->write(
                 "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>''];"
             );
         }
 
         protected function tearDown(): void
         {
-            $config = __DIR__ . '/../../dbconnect.php';
-
-            if (file_exists($config)) {
-                unlink($config);
-            }
+            $this->dbconnect->restore();
 
             Database::setPrefix('');
             Database::$doctrineConnection = null;
@@ -263,8 +262,7 @@ namespace Lotgd\Tests\Installer {
         {
             global $session;
 
-            file_put_contents(
-                __DIR__ . '/../../dbconnect.php',
+            $this->dbconnect->write(
                 "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'test_'];"
             );
             clearstatcache();
@@ -282,13 +280,12 @@ namespace Lotgd\Tests\Installer {
         {
             global $session;
 
-            file_put_contents(
-                __DIR__ . '/../../dbconnect.php',
+            $this->dbconnect->write(
                 "<?php return ['DB_HOST'=>'localhost','DB_USER'=>'user','DB_PASS'=>'pass','DB_NAME'=>'lotgd','DB_PREFIX'=>'lotgd_'];"
             );
             clearstatcache();
             if (function_exists('opcache_invalidate')) {
-                opcache_invalidate(__DIR__ . '/../../dbconnect.php', true);
+                opcache_invalidate(RootDbConnect::path(), true);
             }
 
             $session['dbinfo']['DB_PREFIX'] = 'lotgd_';
@@ -313,7 +310,7 @@ namespace Lotgd\Tests\Installer {
         {
             global $session;
 
-            $dbconnect = __DIR__ . '/../../dbconnect.php';
+            $dbconnect = RootDbConnect::path();
 
             file_put_contents(
                 $dbconnect,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Common;
 
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 final class CharsetFailureTest extends TestCase
@@ -11,9 +12,8 @@ final class CharsetFailureTest extends TestCase
     public function testCommonExitsOnCharsetFailure(): void
     {
         $root = dirname(__DIR__, 2);
-        $dbconnect = $root . '/dbconnect.php';
-        file_put_contents(
-            $dbconnect,
+        $dbconnect = RootDbConnect::takeOver();
+        $dbconnect->write(
             "<?php return ['DB_HOST'=>'','DB_USER'=>'','DB_PASS'=>'','DB_NAME'=>'','DB_PREFIX'=>''];"
         );
 
@@ -35,7 +35,7 @@ PHP;
         exec($cmd, $output, $status);
 
         unlink($scriptFile);
-        unlink($dbconnect);
+        $dbconnect->restore();
 
         $outputText = implode("", $output);
 

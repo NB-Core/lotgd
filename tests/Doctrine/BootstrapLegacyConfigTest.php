@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Doctrine;
 
 use Lotgd\Doctrine\Bootstrap;
+use Lotgd\Tests\Support\RootDbConnect;
 use PHPUnit\Framework\TestCase;
 
 final class BootstrapLegacyConfigTest extends TestCase
 {
-    private string $dbConfig;
+    private RootDbConnect $dbConfig;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->dbConfig = dirname(__DIR__, 2) . '/dbconnect.php';
+        $this->dbConfig = RootDbConnect::takeOver();
         $cachePath = sys_get_temp_dir();
         $legacyConfig = <<<PHP
 <?php
@@ -27,14 +28,12 @@ final class BootstrapLegacyConfigTest extends TestCase
 \$DB_USEDATACACHE = 1;
 \$DB_DATACACHEPATH = %s;
 PHP;
-        file_put_contents($this->dbConfig, sprintf($legacyConfig, var_export($cachePath, true)));
+        $this->dbConfig->write(sprintf($legacyConfig, var_export($cachePath, true)));
     }
 
     protected function tearDown(): void
     {
-        if (file_exists($this->dbConfig)) {
-            unlink($this->dbConfig);
-        }
+        $this->dbConfig->restore();
 
         unset(
             $GLOBALS['DB_HOST'],
