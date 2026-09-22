@@ -103,8 +103,8 @@ final class RootDbConnect
     }
 
     /**
-     * Take the file over: move anything that is there aside, leaving the root
-     * empty.
+     * Take the file over: move anything that is there aside -- a file, or a
+     * directory some earlier wreckage left -- so the root really is empty.
      *
      * The caller is then free to write whatever fixture it needs, or to rely on
      * there being none.
@@ -126,7 +126,13 @@ final class RootDbConnect
 
         $holdsOriginal = false;
 
-        if (is_file($path)) {
+        // file_exists(), for the same reason the recovery below uses it: what
+        // is standing here need not be a regular file, and "leaves the root
+        // empty" has to mean empty. A directory left there reads as present to
+        // Installer::stage3(), which checks file_exists() -- so a borrower that
+        // needs the root bare would have taken the wrong branch while this
+        // class reported success. Reported by Copilot.
+        if (file_exists($path)) {
             if (!rename($path, $sidecar)) {
                 throw new \RuntimeException(
                     "A dbconnect.php exists at $path and could not be moved aside. Refusing to go "
@@ -185,7 +191,7 @@ final class RootDbConnect
         if ($this->holdsOriginal) {
             $sidecar = self::sidecarPath();
 
-            if (!is_file($sidecar)) {
+            if (!file_exists($sidecar)) {
                 throw new \RuntimeException(
                     "The borrowed dbconnect.php is no longer at $sidecar, so there is nothing to "
                         . 'put back. Something outside these tests moved or deleted it.'
@@ -200,11 +206,18 @@ final class RootDbConnect
                         . 'It has been borrowed and not given back.'
                 );
             }
-        } elseif (is_file($this->path) && !unlink($this->path)) {
-            throw new \RuntimeException(
-                "Could not remove the dbconnect.php fixture at $this->path. The root started out "
-                    . 'with no such file and now has one.'
-            );
+        } else {
+            // is_file() here on purpose, unlike everywhere else in this class:
+            // what this removes is the *fixture*, and a directory at that path
+            // during a borrow was put there by the caller -- Stage6Test's
+            // teardown removes its own. Taking it would be this class deleting
+            // something it never borrowed.
+            if (is_file($this->path) && !unlink($this->path)) {
+                throw new \RuntimeException(
+                    "Could not remove the dbconnect.php fixture at $this->path. The root started "
+                        . 'out with no such file and now has one.'
+                );
+            }
         }
 
         // Only now: a restore that threw is one the shutdown handler should try
@@ -236,7 +249,7 @@ final class RootDbConnect
      */
     private static function recoverAbandonedSidecar(string $path, string $sidecar): void
     {
-        if (!is_file($sidecar)) {
+        if (!file_exists($sidecar)) {
             return;
         }
 

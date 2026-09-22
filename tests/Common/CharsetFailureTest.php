@@ -29,13 +29,25 @@ include __DIR__ . '/common.php';
 echo "AFTER\n";
 PHP;
         $scriptFile = $root . '/charset_failure_runner.php';
-        file_put_contents($scriptFile, $script);
 
-        $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($scriptFile) . ' 2>&1';
-        exec($cmd, $output, $status);
+        // Both of these live at the repository root, and both are given back
+        // whatever happens in between. The assertions below already run after
+        // the restore, so a failing one was never the risk -- a throw from
+        // file_put_contents() or exec() was, and it would have left the borrow
+        // open, which makes the *next* takeOver() refuse rather than this test
+        // report.
+        try {
+            file_put_contents($scriptFile, $script);
 
-        unlink($scriptFile);
-        $dbconnect->restore();
+            $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($scriptFile) . ' 2>&1';
+            exec($cmd, $output, $status);
+        } finally {
+            if (is_file($scriptFile)) {
+                unlink($scriptFile);
+            }
+
+            $dbconnect->restore();
+        }
 
         $outputText = implode("", $output);
 

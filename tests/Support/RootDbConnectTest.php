@@ -195,6 +195,24 @@ final class RootDbConnectTest extends TestCase
         );
     }
 
+    public function testTakeOverEmptiesTheRootEvenWhenWhatIsThereIsNotAFile(): void
+    {
+        // "Leaves the root empty" has to mean empty. Installer::stage3() asks
+        // file_exists(), so a directory left standing reads as a config being
+        // present and sends a borrower that needs the root bare down the wrong
+        // branch -- while this class reported success.
+        mkdir($this->path);
+
+        $borrowed = RootDbConnect::takeOver();
+
+        self::assertFalse(file_exists($this->path), 'nothing is left at the root, of any shape');
+        self::assertDirectoryExists($this->sidecar);
+
+        $borrowed->restore();
+
+        self::assertDirectoryExists($this->path, 'and what was borrowed comes back');
+    }
+
     public function testADirectoryLeftByAKilledRunDoesNotStrandTheConfig(): void
     {
         // A killed run can leave a directory at that path -- nothing stops one
