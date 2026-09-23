@@ -21,35 +21,28 @@ define("ALLOW_ANONYMOUS", true);
 define("OVERRIDE_FORCED_NAV", true);
 define("IS_INSTALLER", true);
 
-//PHP 8.3 or higher is required for this version
-//MySQL 5.0.3 and the mysqli extension are required for this version
-$requirements_met = true;
-$php_met = true;
-$mysql_met = true;
-
-if (version_compare(PHP_VERSION, '8.3.0') < 0) {
-        $requirements_met = false;
-        $php_met = false;
-} elseif (!extension_loaded('mysqli')) {
-        $requirements_met = false;
-        $mysql_met = false;
-} elseif (function_exists('mysqli_get_client_version') && mysqli_get_client_version() < 50003) {
-        $requirements_met = false;
-        $mysql_met = false;
+// Checked before common.php: without these the game cannot even report
+// what is wrong. See Lotgd\Installer\Requirements for why it is loaded by
+// hand rather than through Composer.
+require_once __DIR__ . '/install/lib/Requirements.php';
+$unmetRequirements = \Lotgd\Installer\Requirements::unmet();
+if (
+    $unmetRequirements === []
+    && function_exists('mysqli_get_client_version') && mysqli_get_client_version() < 50003
+) {
+    $unmetRequirements[] = sprintf(
+        'MySQL client library 5.0.3 or higher is required; this server has %s.',
+        mysqli_get_client_info()
+    );
 }
 
-if (!$requirements_met) {
+if ($unmetRequirements !== []) {
     //we have NO output object possibly :( hence no nice formatting
-    echo "<h1>Requirements not sufficient<br/><br/>";
-    if (!$php_met) {
-        echo sprintf("You need PHP 8.3 or higher to install this version. Please upgrade from your existing PHP version %s.<br/>", PHP_VERSION);
+    echo '<h1>Requirements not met</h1><ul>';
+    foreach ($unmetRequirements as $message) {
+        echo '<li>' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</li>';
     }
-    if (!$mysql_met && extension_loaded('mysqli') === false) {
-        echo "The mysqli extension is missing. You need to enable the mysqli extension to install this version.<br/>";
-    }
-    if (!$mysql_met && function_exists('mysqli_get_client_info')) {
-        echo sprintf("You need MySQL 5.0 or higher to install this version. Your current MySQL client version is %s.<br/>", mysqli_get_client_info());
-    }
+    echo '</ul>';
     exit(1);
 }
 
