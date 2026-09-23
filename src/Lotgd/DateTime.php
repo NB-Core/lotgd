@@ -92,7 +92,7 @@ class DateTime
             $laston = Translator::translateInline('Never');
         } else {
             $laston = Translator::sprintfTranslate('%s days', round((strtotime('now') - strtotime($indate)) / 86400, 0));
-            Output::getInstance()->rawOutput(Translator::tlbuttonClear());
+            Output::getInstance()->rawOutput(Translator::clearButton());
         }
         Translator::getInstance()->setSchema();
         return $laston;

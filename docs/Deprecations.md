@@ -62,9 +62,14 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Replacement: The polling client emitted inline by `async/setup.php`
   - Migration: Custom templates or modules that still add a `<script>` tag for this file must drop it. The asset had not been loaded by core for some time; loading it after `async/setup.php` started a second polling loop.
 - `Lotgd\UserLookup::lookup()`
-  - Status: Deprecated in 2.9.0
+  - Status: Deprecated in 2.0.4
   - Replacement: `Lotgd\PlayerSearch::legacyLookup()` and other `PlayerSearch` helpers
   - Migration: Inject or instantiate `PlayerSearch` directly and call `legacyLookup()` (or a more specific finder), removing usage of the legacy array/SQL wrapper.
+
+- `Lotgd\Translator::tlbuttonClear()`
+  - Status: Deprecated in 2.0.4, still supported in 2.x
+  - Replacement: `Lotgd\Translator::clearButton()` (identical behaviour)
+  - Migration: Rename the call.
 
 - Legacy HTTP wrappers `httpget()` / `httppost()` in core/refactored paths
   - Status: Deprecated in 2.x for core and refactored modules (legacy compatibility only)

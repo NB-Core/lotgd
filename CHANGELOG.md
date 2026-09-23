@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 This project follows semantic versioning (MAJOR.MINOR.PATCH) starting from 2.0.0.  
 
 The last **official 1.x release** was [`v1.3.2`](https://github.com/NB-Core/lotgd/commit/2be7254fc2b68bf91e86d71361556667e826ecf1) (2025-06-02).  
-Everything below reflects the path from 1.3.2 → 2.0 RCs.  
+Everything below covers the path from 1.3.2 through the 2.0 release candidates and the 2.0.x releases.  
 
 ---
 
@@ -19,7 +19,6 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 ### Fixed
 
 - Two-factor secrets are now decoded case-insensitively, as RFC 4648 defines base32. The decoder stripped before it uppercased, so a lower-case secret was silently decoded into a different, much shorter one rather than rejected. Secrets this game generates are upper-case and decode byte-for-byte as before; the change affects only secrets that arrived from elsewhere — an import or a migration — which could never have verified.
-
 - Corrected combat edge cases: resistance no longer amplifies ripostes, zero-damage rolls cannot loop forever or discard a hit on the final retry, regeneration uses its configured message, and damaging auras can remove companions while respecting `cannotdie`.
 - Restored companion experience and level gains after training, including persistence after suspended hooks resume.
 - Made warning suppression severity-aware and kept bootstrap/test diagnostics from being swallowed or overstating what they could observe.
@@ -41,10 +40,13 @@ Everything below reflects the path from 1.3.2 → 2.0 RCs.
 - Isolated cron exception fixtures and bootstrap logs in per-test temporary trees, protected the checkout from concurrent or interrupted runs, and report subprocess and cleanup failures precisely.
 - Improved diagnostics for flaky environment-dependent tests so skips and failures state what was actually detected rather than guessing at the cause.
 - Added stylesheet scanners that verify every generated button/action class is usable in every bundled theme and correctly parse nested rules, composed classes, and both quote styles.
+- The suite no longer deletes a developer's `dbconnect.php`. Eleven suites resolved the repository-root file and removed it, so an ordinary `composer test` in an installed checkout destroyed its database configuration. They now borrow it by moving it aside and back, which preserves its contents, mode and owner, and a run that is killed outright leaves it recoverable: the next run puts it back.
+- `LegacyRollDamageTest`'s god-mode check no longer fails at random. It asserted over a single random round, and `BellRand` clamps at about three sigma, so a roll against any range comes back at exactly zero about once in 750 and the "hopeless" control creature occasionally won; it now counts over thirty rounds.
 
 ### Docs
 
 - Documented the combat, companion-aura, mail action hook, CSRF execution harness, and custom-theme action-row behavior introduced above.
+- Corrected the deprecation version of `Lotgd\UserLookup::lookup()` from 2.9.0, a release that does not exist, to 2.0.4, where it shipped — in `docs/Deprecations.md`, its docblock, and the runtime deprecation notice modules see. Added the missing entry for `Lotgd\Translator::tlbuttonClear()`, also deprecated in 2.0.4, and core no longer calls it.
 
 ## [2.0.7] – 2026-09-09
 

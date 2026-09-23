@@ -52,7 +52,7 @@ namespace Lotgd {
                 return '';
             }
 
-            public static function tlbuttonClear(): string
+            public static function clearButton(): string
             {
                 return '';
             }
