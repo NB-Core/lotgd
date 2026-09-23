@@ -34,6 +34,7 @@ use Lotgd\ErrorHandler;
 use Lotgd\Page;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Security\RuntimeHardening;
+use Lotgd\Security\Escape;
 
 BootstrapErrorHandler::register();
 // translator ready
@@ -440,7 +441,10 @@ if (!AJAX_MODE && isset($settings) && ($GLOBALS['__DATACACHE_EXPOSURE_PATH__'] ?
         Translator::translatorSetup();
         $output->output(
             "`c`4Security Warning:`0 The data cache directory (%s) is inside the web root. Cache files contain game settings, including stored mail credentials. Move 'DB_DATACACHEPATH' in dbconnect.php to a directory outside the web root and delete the old directory; see UPGRADING.md.`c`n",
-            $GLOBALS['__DATACACHE_EXPOSURE_PATH__']
+            // Privileged, like the warning above, so holiday text cannot
+            // rewrite a file path; the path is escaped here instead.
+            Escape::html($GLOBALS['__DATACACHE_EXPOSURE_PATH__']),
+            true
         );
     }
 }
