@@ -9,6 +9,10 @@ The 2.0 line introduces major architectural changes (Composer, PSR-4, Doctrine, 
 
 - **PHP 8.3** (minimum)
   Earlier PHP versions are not supported.
+- PHP extensions `mysqli`, `pdo_mysql` and `mbstring`. `installer.php` now
+  checks all three before anything else and stops with the missing names;
+  previously a server without `pdo_mysql` passed the connection test and
+  failed later with "could not find driver".
 - Database: MySQL 8.x or MariaDB 10.6+ recommended.  
 - Composer installed (`composer --version`).
 - A writable cache directory (for Twig templates and async operations).
