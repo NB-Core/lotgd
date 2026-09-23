@@ -26,13 +26,10 @@ define("IS_INSTALLER", true);
 // hand rather than through Composer.
 require_once __DIR__ . '/install/lib/Requirements.php';
 $unmetRequirements = \Lotgd\Installer\Requirements::unmet();
-if (
-    $unmetRequirements === []
-    && function_exists('mysqli_get_client_version') && mysqli_get_client_version() < 50003
-) {
+if (function_exists('mysqli_get_client_version') && mysqli_get_client_version() < 50003) {
     $unmetRequirements[] = sprintf(
         'MySQL client library 5.0.3 or higher is required; this server has %s.',
-        mysqli_get_client_info()
+        function_exists('mysqli_get_client_info') ? mysqli_get_client_info() : (string) mysqli_get_client_version()
     );
 }
 

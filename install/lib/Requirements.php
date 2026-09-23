@@ -10,8 +10,9 @@ namespace Lotgd\Installer;
  * installer.php requires this file directly, before the Composer autoloader:
  * the autoloader's own platform check would stop an unsupported PHP with a
  * message about Composer rather than about the game. Keep the syntax to what
- * an old PHP can parse, so the version message is the one such a server
- * shows.
+ * PHP 7.0 can parse, as installer.php does, so the version message is the
+ * one such a server shows: no nullable or constant-visibility syntax (7.1),
+ * which is why the parameters below are typed in the docblock only.
  *
  * Both database extensions are needed. The legacy layer talks to MySQL
  * through mysqli, and Doctrine (migrations, entities) through PDO. A server
@@ -21,19 +22,21 @@ namespace Lotgd\Installer;
  */
 final class Requirements
 {
-    public const MIN_PHP_VERSION = '8.3.0';
+    // phpcs:disable PSR12.Properties.ConstantVisibility -- PHP 7.0 must parse this file.
+    const MIN_PHP_VERSION = '8.3.0';
 
     /**
      * Extensions the game cannot run without, with the component that uses
      * each one.
      */
-    public const REQUIRED_EXTENSIONS = [
+    const REQUIRED_EXTENSIONS = [
         'mysqli' => 'the game\'s database layer',
         'pdo_mysql' => 'database migrations and Doctrine',
         // Composer's polyfill covers most mb_* functions, but not the
         // mb_ereg_replace() that commentary uses to break long words.
         'mbstring' => 'commentary and other multibyte text',
     ];
+    // phpcs:enable PSR12.Properties.ConstantVisibility
 
     /**
      * Describe every requirement the server does not meet.
@@ -44,10 +47,10 @@ final class Requirements
      *
      * @return list<string> Plain-text messages, empty when everything is met
      */
-    public static function unmet(?string $phpVersion = null, ?callable $extensionLoaded = null): array
+    public static function unmet($phpVersion = null, $extensionLoaded = null): array
     {
-        $phpVersion = $phpVersion ?? PHP_VERSION;
-        $extensionLoaded = $extensionLoaded ?? 'extension_loaded';
+        $phpVersion = $phpVersion === null ? PHP_VERSION : (string) $phpVersion;
+        $extensionLoaded = $extensionLoaded === null ? 'extension_loaded' : $extensionLoaded;
 
         $messages = [];
         if (version_compare($phpVersion, self::MIN_PHP_VERSION, '<')) {
