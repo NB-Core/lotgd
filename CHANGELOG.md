@@ -18,6 +18,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- `installer.php` checks for the PHP extensions `mysqli`, `pdo_mysql` and `mbstring` before anything else and lists every missing one with a hint where hosting panels enable it. A server without `pdo_mysql` used to pass the database connection test and then stop at the migration stage with Doctrine's "could not find driver", which named neither the extension nor the fix. The check lives in `Lotgd\Installer\Requirements`.
 - Two-factor secrets are now decoded case-insensitively, as RFC 4648 defines base32. The decoder stripped before it uppercased, so a lower-case secret was silently decoded into a different, much shorter one rather than rejected. Secrets this game generates are upper-case and decode byte-for-byte as before; the change affects only secrets that arrived from elsewhere — an import or a migration — which could never have verified.
 - Corrected combat edge cases: resistance no longer amplifies ripostes, zero-damage rolls cannot loop forever or discard a hit on the final retry, regeneration uses its configured message, and damaging auras can remove companions while respecting `cannotdie`.
 - Restored companion experience and level gains after training, including persistence after suspended hooks resume.
@@ -34,6 +35,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 - Added executable CSRF coverage for guarded core pages and tightened bank request validation without blocking module-owned operations.
 - Strengthened SQL-interpolation and request-normalization analysis so concatenation, helper-returned queries, comments, definitions, nullsafe calls, and token edge cases cannot hide unsafe request values.
 - Added behavior-based coverage for automatic login bans without recording attacker-controlled failures as unlimited persistent log rows.
+- The data cache is now documented, and recommended by the installer, as a directory outside the web root; earlier documentation suggested `data/cache` inside the game directory. The shipped `.htaccess` and the Docker virtual host deny the `data/` directory and every `datacache-*` file, the installer warns when the chosen directory is inside the web root and no longer suggests `chmod 777`, and admins with configuration rights see a security warning in the game while the configured cache directory is inside the web root, also with the cache switched off, since that does not remove entries already written. `tests/Webserver/htaccess.sh` runs the `.htaccess` rules against a real Apache in CI, at the document root and in a subdirectory. See `UPGRADING.md`.
 
 ### Tests
 

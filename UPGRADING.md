@@ -9,6 +9,10 @@ The 2.0 line introduces major architectural changes (Composer, PSR-4, Doctrine, 
 
 - **PHP 8.3** (minimum)
   Earlier PHP versions are not supported.
+- PHP extensions `mysqli`, `pdo_mysql` and `mbstring`. `installer.php` now
+  checks all three before anything else and stops with the missing names;
+  previously a server without `pdo_mysql` passed the connection test and
+  failed later with "could not find driver".
 - Database: MySQL 8.x or MariaDB 10.6+ recommended.  
 - Composer installed (`composer --version`).
 - A writable cache directory (for Twig templates and async operations).
@@ -102,6 +106,29 @@ before the upgraded web container starts. Follow the complete, backup-aware
 procedure in [Docker deployment: Rotating legacy Docker example
 passwords](docs/Docker.md#rotating-legacy-docker-example-passwords); changing
 only `.env` will leave the application unable to connect.
+
+### Data cache directory inside the web root
+
+The data cache (`DB_DATACACHEPATH` in `dbconnect.php`) stores whole settings
+tables as plain files, including the SMTP password and other values entered
+in the game settings. Earlier documentation suggested `data/cache` inside the
+game directory. It belongs outside the web root:
+
+1. Create a directory next to the web root, for example
+   `/home/you/lotgd-cache` beside `/home/you/public_html`, writable by the
+   user PHP runs as. Do not make it writable by everyone (`chmod 777`).
+2. Set `'DB_DATACACHEPATH'` in `dbconnect.php` to that directory (no trailing
+   slash) and delete the old cache directory. The cache refills itself.
+
+The shipped `.htaccess` now denies the `data/` directory and every
+`datacache-*` file, and the Docker virtual host does the same, so a cache that
+cannot move is still protected where the server reads those rules. Admins with
+configuration rights see a security warning in the game while the cache is
+inside the web root.
+
+If the cache was inside the web root on a server that did not deny it (Nginx
+without the ported rules, or Apache with `AllowOverride None`), change the
+credentials stored in the game settings, starting with the SMTP password.
 
 ---
 
@@ -924,6 +951,6 @@ As of this policy, static QA enforcement runs during `composer static` and fails
 After upgrade and smoke tests, run this operator-focused hardening pass:
 
 - Verify HTTPS termination correctness end-to-end (TLS at edge/proxy, forwarded scheme handling, and no mixed-content/login downgrade paths).
-- Re-check cache path permissions (`DB_DATACACHEPATH` and Twig cache path) and confirm directories are writable by the runtime user only as needed.
+- Re-check cache path location and permissions (`DB_DATACACHEPATH` and Twig cache path): the directory lies outside the web root and is writable by the runtime user only as needed.
 - Verify cookie and session behavior in production-like conditions (secure transport, expected login/session persistence, logout invalidation, and async/session continuity).
 - Run post-upgrade admin endpoint smoke checks (superuser login, key admin pages, and at least one state-changing admin action with expected auth/CSRF behavior).
