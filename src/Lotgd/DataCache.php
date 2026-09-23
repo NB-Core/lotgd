@@ -250,6 +250,88 @@ class DataCache
         return $fullname;
     }
 
+    /**
+     * Whether a path lies at or below a directory once both are resolved.
+     *
+     * Cache entries are plain files, and a web server serves whatever lies
+     * below its document root unless a rule says otherwise. This lets the
+     * installer and the admin warning tell whether DB_DATACACHEPATH points
+     * into the web root. A path that does not exist yet is resolved through
+     * its nearest existing parent, so the check also works before the cache
+     * directory has been created. Relative paths resolve against the current
+     * working directory, as the cache itself resolves them.
+     *
+     * @param string $path      Path to test, typically DB_DATACACHEPATH
+     * @param string $directory Directory it must not be inside, typically the
+     *                          game root or the document root
+     *
+     * @return bool False when either path is empty or cannot be resolved
+     */
+    public static function isPathInside(string $path, string $directory): bool
+    {
+        $resolvedPath = self::resolveThroughExistingParent($path);
+        $resolvedDirectory = self::resolveThroughExistingParent($directory);
+        if ($resolvedPath === null || $resolvedDirectory === null) {
+            return false;
+        }
+
+        if ($resolvedPath === $resolvedDirectory) {
+            return true;
+        }
+
+        $prefix = rtrim($resolvedDirectory, '/\\') . DIRECTORY_SEPARATOR;
+
+        return str_starts_with($resolvedPath, $prefix);
+    }
+
+    /**
+     * Canonicalise a path that may not exist yet.
+     *
+     * realpath() resolves the longest existing prefix, including symlinks;
+     * the missing remainder is appended segment by segment, with "." and
+     * ".." applied lexically.
+     */
+    private static function resolveThroughExistingParent(string $path): ?string
+    {
+        if ($path === '') {
+            return null;
+        }
+
+        $isAbsolute = $path[0] === '/' || $path[0] === '\\'
+            || preg_match('/^[A-Za-z]:[\\\\\/]/', $path) === 1;
+        if (!$isAbsolute) {
+            $cwd = getcwd();
+            if ($cwd === false) {
+                return null;
+            }
+            $path = $cwd . DIRECTORY_SEPARATOR . $path;
+        }
+
+        $missing = [];
+        $current = $path;
+        while (($resolved = realpath($current)) === false) {
+            $parent = dirname($current);
+            if ($parent === $current) {
+                return null;
+            }
+            array_unshift($missing, basename($current));
+            $current = $parent;
+        }
+
+        foreach ($missing as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+            if ($segment === '..') {
+                $resolved = dirname($resolved);
+                continue;
+            }
+            $resolved = rtrim($resolved, '/\\') . DIRECTORY_SEPARATOR . $segment;
+        }
+
+        return $resolved;
+    }
+
     private function resolveCachePath(Settings $settings): string
     {
         $path = $settings->getSetting('datacachepath', sys_get_temp_dir());

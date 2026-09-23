@@ -207,8 +207,8 @@ again. You can also delete the row from the `translations` table to fall back to
   online. Adjust the threshold in game settings or lower server load.
 - **Encoding issues** – ensure the MySQL connection uses UTF‑8 (`utf8mb4`). Set the collation
   in `config/configuration.php` and verify that your terminal/editor uses the same encoding.
-- **Cached old text** – clear `data/cache` or use the superuser cache clearing tool after
-  editing translations directly in the database.
+- **Cached old text** – clear the data cache directory (`DB_DATACACHEPATH` in `dbconnect.php`)
+  or use the superuser cache clearing tool after editing translations directly in the database.
 - **Missing translator flag** – only accounts with the Translator flag see the tools. Grant it
   via the superuser editor.
 

@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Lotgd\Installer;
 
 use Lotgd\MySQL\Database;
+use Lotgd\DataCache;
 use Lotgd\Output;
 use Lotgd\Http;
 use Lotgd\Nav;
@@ -475,7 +476,7 @@ if ($installerIsAncient) {
 
             $this->output->output("`nIf yes, what is the path to the datacache directory?`n");
             $this->output->rawOutput("<input name='DB_DATACACHEPATH' value=\"" . htmlentities((string)($session['dbinfo']['DB_DATACACHEPATH'] ?? ''), ENT_COMPAT, $this->getSetting("charset", "UTF-8")) . "\">");
-            $this->tip("If you have chosen to use the datacache function, you have to enter a path here to where temporary files may be stored. Verify that you have the proper permission (777) set to this folder, else you will have lots of errors. Do NOT end with a slash / ... just enter the dir");
+            $this->tip("If you have chosen to use the datacache function, enter the full path of a directory the web server can write to. Choose a directory outside the web root (the folder your web address points to), for example one next to it: the cache stores game settings, including mail credentials, as plain files. The directory only needs to be writable by the web server's user; do not make it writable by everyone (777). Do NOT end with a slash / ... just enter the dir");
 
             /*
                 $yes = Translator::translateInline("Yes");
@@ -747,6 +748,14 @@ if ($installerIsAncient) {
                                     $session['stagecompleted'] = 3;
                         }
                     }
+                    if (is_dir($datacache) && $this->isInsideWebRoot($datacache)) {
+                        // A warning, not a failure: the shipped .htaccess
+                        // denies the cache files on Apache, and a host
+                        // without space outside the web root must still be
+                        // able to install. Kept out of $issues, whose
+                        // summary is about database permissions.
+                        $this->output->output("`^Warning:`2 The datacache directory is inside the web root. It stores game settings, including mail credentials, as plain files, and only a web server rule keeps them from being downloaded. If your hosting allows it, go back and choose a directory outside the web root.`n");
+                    }
                 }
                 $this->output->output("`n`^Overall results:`2`n");
                 if (count($issues) == 0) {
@@ -767,6 +776,15 @@ if ($installerIsAncient) {
     /**
      * Stage 5 - Detect existing tables and gather table prefix.
      */
+    /**
+     * Whether a path lies inside the game directory or the document root.
+     */
+    private function isInsideWebRoot(string $path): bool
+    {
+        return DataCache::isPathInside($path, dirname(__DIR__, 2))
+            || DataCache::isPathInside($path, (string) ($_SERVER['DOCUMENT_ROOT'] ?? ''));
+    }
+
     public function stage5(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;
