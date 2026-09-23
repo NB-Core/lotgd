@@ -22,15 +22,25 @@ set -eu
 
 APACHE_BIN="${APACHE_BIN:-/usr/sbin/apache2}"
 APACHE_MODULES="${APACHE_MODULES:-/usr/lib/apache2/modules}"
-PORT="${LOTGD_HTACCESS_PORT:-18090}"
+# An unused port chosen by the kernel, so a busy runner or a second run
+# cannot collide with a fixed one.
+PORT="${LOTGD_HTACCESS_PORT:-$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')}"
 
 repo=$(cd "$(dirname "$0")/../.." && pwd)
 work=$(mktemp -d)
 pidfile="$work/httpd.pid"
+conf="$work/httpd.conf"
 
 cleanup() {
     if [ -f "$pidfile" ]; then
-        kill "$(cat "$pidfile")" 2>/dev/null || true
+        # Apache's own shutdown stops the children too; wait for it to finish
+        # before the tree it serves from is removed.
+        "$APACHE_BIN" -f "$conf" -k stop 2>/dev/null || true
+        waited=0
+        while [ -f "$pidfile" ] && [ "$waited" -lt 20 ]; do
+            sleep 0.5
+            waited=$((waited + 1))
+        done
     fi
     rm -rf "$work"
 }
@@ -84,7 +94,6 @@ make_fixtures "$docroot/lotgd"
 # directories are private to their owner.
 chmod -R a+rX "$work"
 
-conf="$work/httpd.conf"
 cat > "$conf" <<EOF
 ServerRoot "$work"
 ServerName 127.0.0.1

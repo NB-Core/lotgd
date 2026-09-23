@@ -774,9 +774,6 @@ if ($installerIsAncient) {
     }
 
     /**
-     * Stage 5 - Detect existing tables and gather table prefix.
-     */
-    /**
      * Whether a path lies inside the game directory or the document root.
      */
     private function isInsideWebRoot(string $path): bool
@@ -785,6 +782,9 @@ if ($installerIsAncient) {
             || DataCache::isPathInside($path, (string) ($_SERVER['DOCUMENT_ROOT'] ?? ''));
     }
 
+    /**
+     * Stage 5 - Detect existing tables and gather table prefix.
+     */
     public function stage5(): void
     {
         global $session, $logd_version, $recommended_modules, $noinstallnavs, $stage, $DB_USEDATACACHE;

@@ -176,9 +176,18 @@ them separate from the core. After installation you can edit `dbconnect.php` to
 point the cache at a writable directory:
 
 ```php
+<?php
+
+return [
+    // ... database settings written by the installer ...
     'DB_USEDATACACHE' => 1,
     'DB_DATACACHEPATH' => '/home/you/lotgd-cache', // without trailing slash
+    // ... further entries unchanged ...
+];
 ```
+
+Change only these two entries and leave the rest of the file as the installer
+wrote it.
 
 A valid `datacachepath` enables Twig caching—without it pages must be
 recompiled and the game runs noticeably slower.

@@ -261,18 +261,27 @@ class DataCache
      * directory has been created. Relative paths resolve against the current
      * working directory, as the cache itself resolves them.
      *
-     * @param string $path      Path to test, typically DB_DATACACHEPATH
-     * @param string $directory Directory it must not be inside, typically the
-     *                          game root or the document root
+     * @param string    $path            Path to test, typically DB_DATACACHEPATH
+     * @param string    $directory       Directory it must not be inside, typically
+     *                                   the game root or the document root
+     * @param bool|null $caseInsensitive Compare ignoring case; defaults to true
+     *                                   on Windows only
      *
      * @return bool False when either path is empty or cannot be resolved
      */
-    public static function isPathInside(string $path, string $directory): bool
+    public static function isPathInside(string $path, string $directory, ?bool $caseInsensitive = null): bool
     {
         $resolvedPath = self::resolveThroughExistingParent($path);
         $resolvedDirectory = self::resolveThroughExistingParent($directory);
         if ($resolvedPath === null || $resolvedDirectory === null) {
             return false;
+        }
+
+        // Windows file systems ignore case, and realpath() only fixes the case
+        // of the part that exists, so compare case-insensitively there.
+        if ($caseInsensitive ?? (PHP_OS_FAMILY === 'Windows')) {
+            $resolvedPath = strtolower($resolvedPath);
+            $resolvedDirectory = strtolower($resolvedDirectory);
         }
 
         if ($resolvedPath === $resolvedDirectory) {

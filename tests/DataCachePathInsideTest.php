@@ -90,6 +90,26 @@ final class DataCachePathInsideTest extends TestCase
         self::assertTrue(DataCache::isPathInside($link, $this->root));
     }
 
+    public function testCaseInsensitiveComparisonCatchesDifferentlyCasedPath(): void
+    {
+        // "GAME" does not exist on a case-sensitive file system, so realpath()
+        // cannot fix its case; only the comparison can.
+        $differentlyCased = $this->base . '/GAME/data/cache';
+
+        self::assertTrue(DataCache::isPathInside($differentlyCased, $this->root, true));
+        if (is_dir($this->base . '/GAME')) {
+            // A case-insensitive file system (Windows, macOS by default) finds
+            // the directory, so the case-sensitive answer is not "outside".
+            return;
+        }
+        self::assertFalse(DataCache::isPathInside($differentlyCased, $this->root, false));
+    }
+
+    public function testCaseInsensitiveComparisonStillRespectsSegmentBoundaries(): void
+    {
+        self::assertFalse(DataCache::isPathInside($this->base . '/GAME-cache', $this->root, true));
+    }
+
     public function testEmptyPathIsNeverInside(): void
     {
         self::assertFalse(DataCache::isPathInside('', $this->root));

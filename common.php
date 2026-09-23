@@ -275,17 +275,19 @@ if (file_exists("dbconnect.php")) {
         if ($invalid) {
             $GLOBALS['__DATACACHE_WARNING__'] = "Data cache is enabled but the configured path is missing or not writable. Set 'DB_DATACACHEPATH' to a writable directory or disable 'DB_USEDATACACHE'.";
         }
-        // Cache entries hold whole settings tables, stored credentials
-        // included, as plain files. Inside the web root only a web server
-        // rule stands between them and a browser, and not every server reads
-        // the shipped .htaccess.
-        if (
-            !$invalid
-            && (DataCache::isPathInside($cachePath, __DIR__)
-                || DataCache::isPathInside($cachePath, (string) ($_SERVER['DOCUMENT_ROOT'] ?? '')))
-        ) {
-            $GLOBALS['__DATACACHE_EXPOSURE_PATH__'] = $cachePath;
-        }
+    }
+    // Cache entries hold whole settings tables, stored credentials included,
+    // as plain files. Inside the web root only a web server rule stands
+    // between them and a browser, and not every server reads the shipped
+    // .htaccess. Checked whether or not the cache is enabled: switching it
+    // off does not remove the entries already written.
+    $cachePath = (string) $DB_DATACACHEPATH;
+    if (
+        $cachePath !== '' && is_dir($cachePath)
+        && (DataCache::isPathInside($cachePath, __DIR__)
+            || DataCache::isPathInside($cachePath, (string) ($_SERVER['DOCUMENT_ROOT'] ?? '')))
+    ) {
+        $GLOBALS['__DATACACHE_EXPOSURE_PATH__'] = $cachePath;
     }
 } else {
     if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
@@ -437,7 +439,7 @@ if (!AJAX_MODE && isset($settings) && ($GLOBALS['__DATACACHE_EXPOSURE_PATH__'] ?
     if ((($session['user']['superuser'] ?? 0) & SU_EDIT_CONFIG) == SU_EDIT_CONFIG) {
         Translator::translatorSetup();
         $output->output(
-            "`c`4Security Warning:`0 The data cache directory (%s) is inside the web root. Cache files contain game settings, including stored mail credentials. Move 'DB_DATACACHEPATH' in dbconnect.php to a directory outside the web root; see UPGRADING.md.`c`n",
+            "`c`4Security Warning:`0 The data cache directory (%s) is inside the web root. Cache files contain game settings, including stored mail credentials. Move 'DB_DATACACHEPATH' in dbconnect.php to a directory outside the web root and delete the old directory; see UPGRADING.md.`c`n",
             $GLOBALS['__DATACACHE_EXPOSURE_PATH__']
         );
     }
