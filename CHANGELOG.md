@@ -35,6 +35,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 - Added executable CSRF coverage for guarded core pages and tightened bank request validation without blocking module-owned operations.
 - Strengthened SQL-interpolation and request-normalization analysis so concatenation, helper-returned queries, comments, definitions, nullsafe calls, and token edge cases cannot hide unsafe request values.
 - Added behavior-based coverage for automatic login bans without recording attacker-controlled failures as unlimited persistent log rows.
+- The data cache is now documented, and recommended by the installer, as a directory outside the web root; earlier documentation suggested `data/cache` inside the game directory. The shipped `.htaccess` and the Docker virtual host deny the `data/` directory and every `datacache-*` file, the installer warns when the chosen directory is inside the web root and no longer suggests `chmod 777`, and admins with configuration rights see a security warning in the game while the configured cache directory is inside the web root, also with the cache switched off, since that does not remove entries already written. `tests/Webserver/htaccess.sh` runs the `.htaccess` rules against a real Apache in CI, at the document root and in a subdirectory. See `UPGRADING.md`.
 
 ### Tests
 

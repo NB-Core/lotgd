@@ -98,7 +98,7 @@ To run Legend of the Green Dragon on a typical web host you will need:
 ## Getting Started
 1. Clone the repository.
 2. Run `composer install`.
-3. Open `installer.php` in your browser and follow the prompts. When asked for a cache directory, set `DB_DATACACHEPATH` to a writable path such as `data/cache`.
+3. Open `installer.php` in your browser and follow the prompts. When asked for a cache directory, enter a writable directory **outside the web root**, for example `/home/you/lotgd-cache` next to the folder that holds the game (see [Data cache location](#data-cache-location)).
 4. (Optional) Use Docker—see [docs/Docker.md](docs/Docker.md).
 
 ## Maintenance
@@ -173,18 +173,51 @@ settings in plain PHP. It is the only core file not overwritten during updates
 and remains the primary place for these settings. Site-specific overrides can
 be placed in the `config/` directory (e.g., `config/configuration.php`) to keep
 them separate from the core. After installation you can edit `dbconnect.php` to
-point the `datacachepath` setting at a writable directory:
+point the cache at a writable directory:
 
 ```php
-$DB_USEDATACACHE  = 1;
-$DB_DATACACHEPATH = "/path/to/lotgd/data/cache"; // without trailing slash
+<?php
+
+return [
+    // ... database settings written by the installer ...
+    'DB_USEDATACACHE' => 1,
+    'DB_DATACACHEPATH' => '/home/you/lotgd-cache', // without trailing slash
+    // ... further entries unchanged ...
+];
 ```
 
-Common locations include a `data/cache` folder within the project or a
-dedicated directory such as `/tmp/lotgd`. Give the web server write access
-with a command like `chmod 775 data/cache` (or adjust as required by your
-hosting environment). A valid `datacachepath` enables Twig caching—without it
-pages must be recompiled and the game runs noticeably slower.
+Change only these two entries and leave the rest of the file as the installer
+wrote it.
+
+A valid `datacachepath` enables Twig caching—without it pages must be
+recompiled and the game runs noticeably slower.
+
+### Data cache location
+
+The data cache stores whole settings tables as plain files, including the
+SMTP password and other credentials entered in the game settings. Put it
+**outside the web root**, the directory your web address points to, so the
+web server has no URL for it:
+
+```text
+/home/you/
+├── public_html/        <- web root: the game lives here
+└── lotgd-cache/        <- data cache: next to it, not inside
+```
+
+Most hosting panels let you create a folder next to `public_html` (or `htdocs`,
+`www`). The directory only needs to be writable by the user PHP runs as—on
+shared hosting that is usually your own account, so the default permissions
+work. Do not make it writable by everyone (`chmod 777`).
+
+If your hosting gives you no directory outside the web root, a cache inside it
+is still protected on Apache by the shipped `.htaccess`, which denies the
+`data/` directory and every `datacache-*` file. That depends on the server
+reading `.htaccess`: check it by opening
+`https://your.game/data/cache/datacache-gamesettings` in a browser after the
+game has run for a moment—the answer must be **403 Forbidden**. Admins with
+configuration rights see a security warning in the game while the cache is
+inside the web root.
 
 ## Install from Release Archive
 

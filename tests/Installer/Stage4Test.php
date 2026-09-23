@@ -166,4 +166,74 @@ final class Stage4Test extends TestCase
         $this->assertStringContainsString("Blast!  I wasn't able to connect", $rawOutput);
         $this->assertStringContainsString($errorMessage, $rawOutput);
     }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+    public function testStage4WarnsWhenDatacacheIsInsideTheGameDirectory(): void
+    {
+        $cacheDir = dirname(__DIR__, 2) . '/stage4-cache-' . uniqid();
+        mkdir($cacheDir, 0700);
+        try {
+            $rawOutput = $this->runStage4WithDatacache($cacheDir);
+        } finally {
+            rmdir($cacheDir);
+        }
+
+        $this->assertStringContainsString('datacache directory is inside the web root', $rawOutput);
+        $this->assertTrue(defined('DB_INSTALLER_STAGE4'));
+        $this->assertStringContainsString("You've passed all the tests", $rawOutput);
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+    public function testStage4DoesNotWarnWhenDatacacheIsOutsideTheGameDirectory(): void
+    {
+        $cacheDir = sys_get_temp_dir() . '/lotgd-stage4-cache-' . uniqid();
+        mkdir($cacheDir, 0700);
+        try {
+            $rawOutput = $this->runStage4WithDatacache($cacheDir);
+        } finally {
+            rmdir($cacheDir);
+        }
+
+        // Guards the positive test: the check ran and passed here, so the
+        // warning's absence is a decision, not a skipped branch.
+        $this->assertStringContainsString('Checking datacache', $rawOutput);
+        $this->assertStringNotContainsString('inside the web root', $rawOutput);
+    }
+
+    private function runStage4WithDatacache(string $cacheDir): string
+    {
+        global $session;
+        $session = [
+            'dbinfo' => [
+                'DB_HOST' => 'localhost',
+                'DB_USER' => 'user',
+                'DB_PASS' => 'pass',
+                'DB_NAME' => 'lotgd',
+                'DB_USEDATACACHE' => true,
+                'DB_DATACACHEPATH' => $cacheDir,
+            ],
+        ];
+        // A CLI run has no document root; only the game directory counts.
+        unset($_SERVER['DOCUMENT_ROOT']);
+
+        $output = Output::getInstance();
+
+        require_once dirname(__DIR__, 2) . '/install/lib/Installer.php';
+        ob_start();
+        $installer = new Installer();
+        $installer->runStage(4);
+        ob_end_clean();
+
+        return $output->getRawOutput();
+    }
 }

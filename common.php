@@ -26,6 +26,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Redirect;
 use Lotgd\Template;
 use Lotgd\MySQL\Database;
+use Lotgd\DataCache;
 use Lotgd\RefererLogger;
 use Lotgd\DateTime;
 use Lotgd\Cookies;
@@ -33,6 +34,7 @@ use Lotgd\ErrorHandler;
 use Lotgd\Page;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Security\RuntimeHardening;
+use Lotgd\Security\Escape;
 
 BootstrapErrorHandler::register();
 // translator ready
@@ -264,6 +266,7 @@ if (file_exists("dbconnect.php")) {
     $DB_DATACACHEPATH = $config['DB_DATACACHEPATH'] ?? '';
     // Validate cache path early and prepare an admin-facing warning if needed
     $GLOBALS['__DATACACHE_WARNING__'] = '';
+    $GLOBALS['__DATACACHE_EXPOSURE_PATH__'] = '';
     if (!empty($DB_USEDATACACHE)) {
         $cachePath = (string) $DB_DATACACHEPATH;
         $invalid = ($cachePath === '')
@@ -273,6 +276,19 @@ if (file_exists("dbconnect.php")) {
         if ($invalid) {
             $GLOBALS['__DATACACHE_WARNING__'] = "Data cache is enabled but the configured path is missing or not writable. Set 'DB_DATACACHEPATH' to a writable directory or disable 'DB_USEDATACACHE'.";
         }
+    }
+    // Cache entries hold whole settings tables, stored credentials included,
+    // as plain files. Inside the web root only a web server rule stands
+    // between them and a browser, and not every server reads the shipped
+    // .htaccess. Checked whether or not the cache is enabled: switching it
+    // off does not remove the entries already written.
+    $cachePath = (string) $DB_DATACACHEPATH;
+    if (
+        $cachePath !== '' && is_dir($cachePath)
+        && (DataCache::isPathInside($cachePath, __DIR__)
+            || DataCache::isPathInside($cachePath, (string) ($_SERVER['DOCUMENT_ROOT'] ?? '')))
+    ) {
+        $GLOBALS['__DATACACHE_EXPOSURE_PATH__'] = $cachePath;
     }
 } else {
     if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
@@ -418,6 +434,18 @@ if (!AJAX_MODE && isset($settings) && ($GLOBALS['__DATACACHE_WARNING__'] ?? '') 
     if ((($session['user']['superuser'] ?? 0) & SU_EDIT_CONFIG) == SU_EDIT_CONFIG) {
         Translator::translatorSetup();
         $output->output("`c`4Performance Warning:`0 %s`c`n", $GLOBALS['__DATACACHE_WARNING__'], true);
+    }
+}
+if (!AJAX_MODE && isset($settings) && ($GLOBALS['__DATACACHE_EXPOSURE_PATH__'] ?? '') !== '') {
+    if ((($session['user']['superuser'] ?? 0) & SU_EDIT_CONFIG) == SU_EDIT_CONFIG) {
+        Translator::translatorSetup();
+        $output->output(
+            "`c`4Security Warning:`0 The data cache directory (%s) is inside the web root. Cache files contain game settings, including stored mail credentials. Move 'DB_DATACACHEPATH' in dbconnect.php to a directory outside the web root and delete the old directory; see UPGRADING.md.`c`n",
+            // Privileged, like the warning above, so holiday text cannot
+            // rewrite a file path; the path is escaped here instead.
+            Escape::html($GLOBALS['__DATACACHE_EXPOSURE_PATH__']),
+            true
+        );
     }
 }
 

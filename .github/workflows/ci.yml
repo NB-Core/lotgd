@@ -79,6 +79,21 @@ jobs:
           git fetch --quiet origin "${{ github.base_ref || github.event.repository.default_branch }}"
           php scripts/check-sql-value-interpolation.php --changed-since="$base"
 
+  htaccess:
+    # Shared hosting reads the root .htaccess and nothing else, and the Docker
+    # smoke test cannot see it (that vhost sets AllowOverride None). Run the
+    # rules against a real Apache, at the document root and in a subdirectory.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Install Apache
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends apache2
+      - name: Verify .htaccess access rules
+        run: sh tests/Webserver/htaccess.sh
+
   docker:
     runs-on: ubuntu-latest
     steps:
