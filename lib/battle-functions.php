@@ -2,14 +2,21 @@
 
 namespace Lotgd {
 
-    if (! class_exists(__NAMESPACE__ . '\\Fightbar', false)) {
-        class Fightbar extends FightBar
-        {
-        }
-    }
+    // What this block is for: the 1.x global name `fightbar`, and the
+    // `Lotgd\Fightbar` spelling some modules use. PHP class names are
+    // case-insensitive, so that spelling *is* Lotgd\FightBar once the class is
+    // loaded -- but the autoloader maps it to src/Lotgd/Fightbar.php, which on
+    // a case-sensitive filesystem does not exist. Loading the real class first
+    // is therefore all it takes.
+    //
+    // It used to declare `class Fightbar extends FightBar` instead: a class
+    // extending itself, since the names are one name. Behind a class_exists()
+    // guard that skipped it whenever FightBar was already loaded, which hid
+    // it; with FightBar not yet loaded, the file died on "not found".
+    \class_exists(FightBar::class);
 
-    if (! class_exists('fightbar', false)) {
-        \class_alias(Fightbar::class, 'fightbar');
+    if (! \class_exists('fightbar', false)) {
+        \class_alias(FightBar::class, 'fightbar');
     }
 }
 
