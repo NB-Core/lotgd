@@ -100,11 +100,12 @@ Open `installer.php` in your browser, for example
 4. **Writing your dbconnect.php file:** the installer saves the database
    settings in `dbconnect.php` in the game folder. On most shared hosting PHP
    runs as your own account and this just works. If the installer reports
-   *Database configuration target not writable*, create an empty file named
-   `dbconnect.php` in the game folder with your FTP program, set its
-   permissions to `666` (FileZilla: right-click → **File permissions**), and
-   reload the page. Once the installation is finished, set it back to `644`.
-   Do not make the whole game folder writable by everyone.
+   *Database configuration target not writable*, give the game folder write
+   permission with your FTP program (FileZilla: right-click the folder →
+   **File permissions** → `775`; only if that does not help, `777`) and
+   reload the page. As soon as the installer has written `dbconnect.php`,
+   set the folder back to `755`. Do not upload an empty `dbconnect.php`
+   instead: the installer then assumes the database is already configured.
 5. **Confirmation, Manage Modules:** keep the suggested choices unless you
    know you want something else. Modules can be switched on and off later in
    the game.
