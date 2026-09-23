@@ -128,11 +128,18 @@ one must answer **403 Forbidden** (or your host's "Access denied" page):
 - `https://game.example.com/vendor/autoload.php`
 - `https://game.example.com/cron.php`
 
-If any of them shows content or offers a download, your server is not
-reading `.htaccess`. Check that the file was uploaded (step 3). If it was,
-ask your provider to allow `.htaccess` overrides (`AllowOverride All`) for
-your web space. Do not open the game to players until these addresses are
-blocked.
+If one of them shows content, offers a download or shows a blank page, it
+is not blocked:
+
+- **`composer.json` or `cron.php` not blocked:** your server is not reading
+  `.htaccess`. Check that the file was uploaded (step 3). If it was, ask your
+  provider to allow `.htaccess` overrides (`AllowOverride All`) for your web
+  space.
+- **Only `vendor/autoload.php` not blocked:** `.htaccess` is read, but the
+  Apache module `mod_rewrite`, which the folder rules need, is switched off.
+  Ask your provider to enable it.
+
+Do not open the game to players until all three addresses are blocked.
 
 ## 6. First settings
 
