@@ -28,7 +28,8 @@ On the [project page](https://github.com/NB-Core/lotgd), click the green
 current version, including everything the game needs to run. You do not need
 a release or Composer.
 
-Unpack the ZIP on your computer. You get a folder named `lotgd-master`. The
+Unpack the ZIP on your computer. You get one folder, named after the project
+and the branch you downloaded (`lotgd-master` for the default branch). The
 files inside it are the game.
 
 > **Do not delete anything, especially not from `vendor/`.** That folder holds
@@ -63,12 +64,12 @@ off during installation. The game works without it, only somewhat slower.
 
 ## 3. Upload
 
-Upload the **contents** of `lotgd-master`, not the folder itself, into the
+Upload the **contents** of that folder, not the folder itself, into the
 game folder.
 
 - **Fastest:** if your hosting panel's file manager can extract ZIP files,
   upload the ZIP and extract it there, then move the contents of
-  `lotgd-master` up one level.
+  the unpacked folder up one level.
 - **With FTP:** upload the contents of the folder. There are several thousand
   small files, so this takes a while. When it finishes, check FileZilla's
   **Failed transfers** tab. It must be empty. If it is not, upload those
