@@ -18,6 +18,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- `installer.php` checks for the PHP extensions `mysqli`, `pdo_mysql` and `mbstring` before anything else and lists every missing one with a hint where hosting panels enable it. A server without `pdo_mysql` used to pass the database connection test and then stop at the migration stage with Doctrine's "could not find driver", which named neither the extension nor the fix. The check lives in `Lotgd\Installer\Requirements`.
 - Two-factor secrets are now decoded case-insensitively, as RFC 4648 defines base32. The decoder stripped before it uppercased, so a lower-case secret was silently decoded into a different, much shorter one rather than rejected. Secrets this game generates are upper-case and decode byte-for-byte as before; the change affects only secrets that arrived from elsewhere — an import or a migration — which could never have verified.
 - Corrected combat edge cases: resistance no longer amplifies ripostes, zero-damage rolls cannot loop forever or discard a hit on the final retry, regeneration uses its configured message, and damaging auras can remove companions while respecting `cannotdie`.
 - Restored companion experience and level gains after training, including persistence after suspended hooks resume.
