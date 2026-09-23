@@ -62,7 +62,7 @@ See [AGENTS.md](AGENTS.md) for full contributor guidelines. Highlights:
 - [What’s new in 2.0](#whats-new-in-20)
 - [Further Reading](#further-reading)
 - [Twig Templates](#twig-templates)
-- [Install from Release Archive](#install-from-release-archive)
+- [Install on Shared Webspace](#install-on-shared-webspace)
 - [Release Workflow](#release-workflow)
 - [Cron Job Setup](#cron-job-setup)
 - [SMTP Mail Setup](#smtp-mail-setup)
@@ -96,6 +96,11 @@ To run Legend of the Green Dragon on a typical web host you will need:
 - The web server must be able to deny access to files that are not entry points. The shipped `.htaccess` does this on Apache when `AllowOverride` permits it; on Nginx or a locked-down Apache, port the rules from the comment block at the end of `.htaccess`.
 
 ## Getting Started
+
+Installing on shared hosting with FTP and a control panel? Follow the
+step-by-step [webspace guide](docs/InstallWebspace.md) instead; it needs no
+command line.
+
 1. Clone the repository.
 2. Run `composer install`.
 3. Open `installer.php` in your browser and follow the prompts. When asked for a cache directory, set `DB_DATACACHEPATH` to a writable path such as `data/cache`.
@@ -107,7 +112,7 @@ Regular upkeep tasks:
 
 - Run `composer update` to update dependencies.
 - Run `composer test` to execute the unit tests and `composer static` to run PHPStan or other static analyzers; ensure both pass before committing.
-- Schedule `cron.php` via cron for automated jobs.
+- Optionally schedule `cron.php` via cron for automated jobs; without it, the daily maintenance runs when the first player of the day arrives.
 - Configure SMTP settings in the in-game settings editor (`configuration.php`, Superuser navigation); they are stored as game settings, not in a file.
 - If you change `DB_PREFIX`, clear the cache directory to avoid reusing metadata from the previous prefix.
 
@@ -186,13 +191,13 @@ with a command like `chmod 775 data/cache` (or adjust as required by your
 hosting environment). A valid `datacachepath` enables Twig caching—without it
 pages must be recompiled and the game runs noticeably slower.
 
-## Install from Release Archive
+## Install on Shared Webspace
 
-Official releases include the `vendor/` directory so no additional commands are
-required. Download `lotgd-<version>.tar.gz` or `lotgd-<version>.zip` from the
-[Releases](https://github.com/NB-Core/lotgd/releases) page, upload the contents
-to your web server and open `installer.php` in your browser. The installer
-will guide you through the setup.
+No command line or Composer is needed: the repository includes the `vendor/`
+directory. On the [project page](https://github.com/NB-Core/lotgd), use
+**Code → Download ZIP**, upload the contents to your web space and open
+`installer.php` in your browser. [docs/InstallWebspace.md](docs/InstallWebspace.md)
+walks through every step, including the checks to run afterwards.
 
 ## Release Workflow
 
@@ -245,17 +250,24 @@ Enable the `newdaycron` flag in the admin settings (or set `newdaycron` to `1` i
 
 ## SMTP Mail Setup
 
-LOTGD uses **PHPMailer** for all outgoing mail. Open the admin settings (or edit
-`config/configuration.php`) and fill in the options under **SMTP Mail Settings**:
+LOTGD uses **PHPMailer** for all outgoing mail. Open **Game Settings** in the
+Superuser Grotto (`configuration.php`) and fill in the options under **SMTP Mail
+Settings**. They are stored as game settings, not in a file:
 
 ```php
 "gamemailhost"       => "SMTP Hostname",
-"gamailsmtpauth"    => "SMTP Auth, bool",
+"gamemailsmtpauth"   => "SMTP Auth, bool",
 "gamemailusername"   => "SMTP Username",
 "gamemailpassword"   => "SMTP Password",
 "gamemailsmtpsecure" => "SMTP Secure mechanism, enum: [starttls, STARTTLS, tls, TLS]",
 "gamemailsmtpport"   => "SMTP port to use,int",
 ```
+
+SMTP is used only when **SMTP Password** is set; without it, mail goes through
+the server's local `sendmail`. **SMTP Secure mechanism** and **SMTP port** take
+effect only with **SMTP Auth** enabled, so a typical mailbox needs all of host,
+user name, password, auth on, `tls` and port `587`. **Test SMTP settings** in
+the Game Settings menu sends a test mail to the admin address.
 
 Enable `notify_on_warn` or `notify_on_error` and set `notify_address` in the
 **Error Notification** section to receive site warnings or errors via email.
