@@ -35,7 +35,7 @@ Before doing anything:
 
 ## 3. Update Codebase
 
-1. Replace your old code with the new release (download or `git pull`).  
+1. Replace your old code with the new release (download or `git pull`). On shared webspace without a command line, follow [Updating later](docs/InstallWebspace.md#updating-later) instead of the Composer and CLI steps below.  
 2. Keep your `config` folder (but update as noted below).  
 3. Run `composer install` to pull required dependencies.
 

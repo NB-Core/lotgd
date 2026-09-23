@@ -48,6 +48,8 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Docs
 
+- Added `docs/InstallWebspace.md`, a step-by-step guide for shared hosting with FTP and a control panel: downloading the code from GitHub (Code → Download ZIP), where the game and its data cache go, the upload (keep `vendor/`, check `.htaccess` arrived), each installer stage, deleting `installer.php`, checking in a browser that internal files answer 403, first settings including mail, and updating. README's "Install from Release Archive" section, which pointed at release downloads that are not published, now points to it.
+- Corrected the README's SMTP section: the settings are edited under Game Settings, not in `config/configuration.php`; the auth key is `gamemailsmtpauth`, not `gamailsmtpauth`; and it now says that SMTP is used only when a password is set and that port and encryption apply only with SMTP Auth on. Cron is described as optional, which it is.
 - Documented the combat, companion-aura, mail action hook, CSRF execution harness, and custom-theme action-row behavior introduced above.
 - Corrected the deprecation version of `Lotgd\UserLookup::lookup()` from 2.9.0, a release that does not exist, to 2.0.4, where it shipped — in `docs/Deprecations.md`, its docblock, and the runtime deprecation notice modules see. Added the missing entry for `Lotgd\Translator::tlbuttonClear()`, also deprecated in 2.0.4, and core no longer calls it.
 
