@@ -112,6 +112,14 @@ PHP);
 
         self::assertNotEmpty($files, 'found no lib/*.php files to load');
 
+        // glob() already sorts, but through the C library, whose comparison
+        // follows LC_COLLATE. PHP leaves that at "C" and nothing here changes
+        // it, so the order is stable today -- as a default rather than as a
+        // property of this test. SORT_STRING is a byte comparison and ignores
+        // the locale, so a failure seen in one environment is the same failure
+        // in another. Raised by Copilot.
+        sort($files, SORT_STRING);
+
         return $files;
     }
 
