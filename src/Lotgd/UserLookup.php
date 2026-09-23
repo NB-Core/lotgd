@@ -35,12 +35,12 @@ class UserLookup
      *
      * @return array{0:mixed,1:string} Database result resource and error message
      *
-     * @deprecated since 2.9.0. Use {@see PlayerSearch::legacyLookup()} or dedicated
+     * @deprecated since 2.0.4. Use {@see PlayerSearch::legacyLookup()} or dedicated
      *             PlayerSearch helpers directly.
      */
     public static function lookup(string|false $query = false, string|false $order = false, string|false $fields = false, string|false $where = false): array
     {
-        trigger_deprecation('lotgd/core', '2.9.0', 'Lotgd\\UserLookup::lookup() is deprecated. Use Lotgd\\PlayerSearch::legacyLookup() instead.');
+        trigger_deprecation('lotgd/core', '2.0.4', 'Lotgd\\UserLookup::lookup() is deprecated. Use Lotgd\\PlayerSearch::legacyLookup() instead.');
 
         if ($query === false) {
             return [false, ''];

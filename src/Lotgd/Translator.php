@@ -625,7 +625,7 @@ class Translator
     }
 
     /**
-     * @deprecated Use clearButton() instead.
+     * @deprecated since 2.0.4. Use clearButton() instead.
      */
     public static function tlbuttonClear(): string
     {
