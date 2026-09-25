@@ -116,7 +116,9 @@ final class ServerFunctionsTest extends TestCase
         $_SERVER = $request + ['REMOTE_ADDR' => '203.0.113.7'];
         $this->assertFalse(ServerFunctions::isHttpsRequest());
 
-        $_SERVER = $request + ['REMOTE_ADDR' => '2001:db8::1'];
+        // Routable, unlike the 2001:db8::/32 documentation prefix, which
+        // PHP 8.3.6 treats as a reserved (and therefore trusted) range.
+        $_SERVER = $request + ['REMOTE_ADDR' => '2606:4700:4700::1111'];
         $this->assertFalse(ServerFunctions::isHttpsRequest());
 
         // A request without a peer address cannot be attributed to a proxy.

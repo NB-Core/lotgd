@@ -134,7 +134,10 @@ class RuntimeHardeningTest extends TestCase
             'IPv6 loopback' => ['::1', true],
             'IPv6 unique local' => ['fd00::1', true],
             'public IPv4 client' => ['203.0.113.7', false],
-            'public IPv6 client' => ['2001:db8::1', false],
+            // A routable address, not the 2001:db8::/32 documentation prefix:
+            // PHP 8.3.6 counts that prefix as reserved, so it would pass as a
+            // private peer there and fail here, while later releases do not.
+            'public IPv6 client' => ['2606:4700:4700::1111', false],
             'missing address' => ['', false],
             'not an address' => ['not-an-ip', false],
         ];
