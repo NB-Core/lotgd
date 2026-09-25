@@ -110,9 +110,9 @@ be either. Treat it as scheduled maintenance in its own PR:
    path still holds — see [PHP runtime image](#php-runtime-image) for the
    assumptions this deployment makes and what broke last time.
 5. If the PHP major/minor version changes, run the test suite on it locally
-   (`php vendor/bin/phpunit`, `php vendor/bin/phpstan analyse`) and add the
+   (`composer tools:install`, then `composer test` and `composer static`) and add the
    version to the CI matrix in `.github/workflows/ci.yml`. Leave
-   `config.platform.php` in `composer.json` at the **lowest** supported
+   `config.platform.php` in `composer.json` and `tools/composer.json` at the **lowest** supported
    version: it is the floor for non-Docker installations, not the runtime
    version.
 6. Run the full Docker CI path: `docker build`, `tests/Docker/smoke.sh`,

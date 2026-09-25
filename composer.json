@@ -1,5 +1,6 @@
 {
     "require": {
+        "php": ">=8.3",
         "doctrine/dbal": "^4.4",
         "doctrine/migrations": "^3.9",
         "doctrine/orm": "^3.6",
@@ -10,36 +11,27 @@
         "twig/twig": "^3.23",
         "wikimedia/composer-merge-plugin": "^2.1"
     },
-    "require-dev": {
-        "phpstan/phpstan-doctrine": "^2.0",
-        "phpstan/phpstan": "^2.2",
-        "phpunit/phpunit": "^12.0",
-        "squizlabs/php_codesniffer": "^4.0"
-    },
     "autoload": {
         "psr-4": {
             "Lotgd\\": "src/Lotgd/",
             "Lotgd\\Installer\\": "install/lib/"
         }
     },
-    "autoload-dev": {
-        "psr-4": {
-            "Lotgd\\Tests\\": "tests/",
-            "Lotgd\\Tests\\Stubs\\": "tests/Stubs/"
-        }
-    },
     "scripts": {
+        "tools:install": "@composer install --working-dir=tools --no-interaction",
         "qa:http-wrappers": "php scripts/check-legacy-http-wrappers.php",
         "qa:sql-addslashes": "php scripts/check-sql-addslashes.php",
         "qa:sql-interpolation": "php scripts/check-sql-value-interpolation.php",
+        "qa:vendor-production": "php scripts/check-vendor-production.php",
         "static": [
             "@qa:http-wrappers",
             "@qa:sql-addslashes",
-            "phpstan analyse --configuration phpstan.neon --memory-limit=512M"
+            "@qa:vendor-production",
+            "@php tools/vendor/bin/phpstan analyse --configuration phpstan.neon --memory-limit=512M"
         ],
-        "test": "phpunit --configuration phpunit.xml",
-        "lint": "phpcs .",
-        "lint:fix": "phpcbf ."
+        "test": "@php tools/vendor/bin/phpunit --configuration phpunit.xml",
+        "lint": "@php tools/vendor/bin/phpcs .",
+        "lint:fix": "@php tools/vendor/bin/phpcbf ."
     },
     "extra": {
         "merge-plugin": {

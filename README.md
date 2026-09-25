@@ -101,8 +101,15 @@ Installing on shared hosting with FTP and a control panel? Follow the
 step-by-step [webspace guide](docs/InstallWebspace.md) instead; it needs no
 command line.
 
-1. Clone the repository.
-2. Run `composer install`.
+1. Clone the repository. The production dependencies are committed under
+   `vendor/`, so the game runs without Composer.
+2. For development or a test server, run `composer tools:install`. It installs
+   PHPUnit, PHPStan and PHP_CodeSniffer into `tools/vendor/`, which is never
+   committed or deployed. In a container that runs as root, Composer refuses
+   every command in the root project because of its merge plugin: use
+   `composer install --working-dir=tools` instead, which is the same install,
+   and set `COMPOSER_ALLOW_SUPERUSER=1` for `composer test` and
+   `composer static`.
 3. Open `installer.php` in your browser and follow the prompts. When asked for a cache directory, enter a writable directory **outside the web root**, for example `/home/you/lotgd-cache` next to the folder that holds the game (see [Data cache location](#data-cache-location)).
 4. (Optional) Use Docker—see [docs/Docker.md](docs/Docker.md).
 
@@ -110,8 +117,9 @@ command line.
 
 Regular upkeep tasks:
 
-- Run `composer update` to update dependencies.
-- Run `composer test` to execute the unit tests and `composer static` to run PHPStan or other static analyzers; ensure both pass before committing.
+- Run `composer update` to update dependencies and commit `vendor/` with it. `vendor/` holds production packages only; `composer static` (and CI) fails if it no longer matches `composer.lock` or a development package ends up in it.
+- Update the development tools with `composer update --working-dir=tools` and commit `tools/composer.lock`.
+- Run `composer test` to execute the unit tests and `composer static` to run PHPStan or other static analyzers; ensure both pass before committing. Both need `composer tools:install` once.
 - Optionally schedule `cron.php` via cron for automated jobs; without it, the daily maintenance runs when the first player of the day arrives.
 - Configure SMTP settings in the in-game settings editor (`configuration.php`, Superuser navigation); they are stored as game settings, not in a file.
 - If you change `DB_PREFIX`, clear the cache directory to avoid reusing metadata from the previous prefix.

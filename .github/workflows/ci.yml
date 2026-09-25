@@ -31,22 +31,30 @@ jobs:
         with:
           php-version: ${{ env.PHP_VERSION }}
           tools: composer
+      # vendor/ is committed with the production packages only; the tests
+      # run against exactly that. PHPUnit, PHPStan and PHPCS come from
+      # tools/, installed here and never committed. Ask Composer where its
+      # download cache is rather than assuming a path: a wrong path restores
+      # nothing and every run downloads the tools again.
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
       - name: Cache Composer files
         uses: actions/cache@v6
         with:
-          path: ~/.composer/cache/files
-          key: ${{ runner.os }}-php-${{ env.PHP_VERSION }}-composer-${{ hashFiles('**/composer.lock') }}
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php-${{ env.PHP_VERSION }}-composer-${{ hashFiles('tools/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-php-${{ env.PHP_VERSION }}-composer-
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction
+      - name: Install development tools
+        run: composer install --working-dir=tools --prefer-dist --no-progress --no-interaction
       - name: Run static analysis
         run: composer static
 #      - name: Run PHPCS
 #        run: composer lint
       - name: Lint PHP files
         run: |
-          find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
+          find . \( -path ./vendor -o -path ./tools/vendor \) -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Run tests
         run: composer test
       - name: Run tests in a randomised order
@@ -73,6 +81,10 @@ jobs:
       # Only the lines this change adds are examined, so the historical
       # findings in untouched code do not block anything and the job costs
       # a git diff plus a tokenizer pass over the changed files.
+      # Cheap and needs nothing installed: the committed vendor/ must match
+      # composer.lock and hold no development packages.
+      - name: Verify vendor/ holds the locked production packages only
+        run: php scripts/check-vendor-production.php
       - name: Reject new SQL value interpolation
         run: |
           base="origin/${{ github.base_ref || github.event.repository.default_branch }}"

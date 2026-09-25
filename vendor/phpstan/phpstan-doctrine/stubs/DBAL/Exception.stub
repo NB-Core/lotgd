@@ -1,8 +1,0 @@
-<?php
-
-namespace Doctrine\DBAL;
-
-class Exception extends \Exception
-{
-
-}

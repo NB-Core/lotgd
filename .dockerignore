@@ -10,6 +10,7 @@ coverage/
 .phpunit.result.cache
 phpunit.xml
 tests/
+tools/
 vendor/
 data/cache/
 var/cache/

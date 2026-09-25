@@ -10,7 +10,7 @@ This repository uses PHP with Composer and PHPUnit. To ensure quality and consis
 
 ## Testing
 
-- Install dependencies with `composer install` before running tests.
+- Production dependencies are committed in `vendor/`, which holds production packages only. Install the test and analysis tools with `composer tools:install` (into `tools/vendor/`, never committed) before running tests; when running as root, use `composer install --working-dir=tools` and set `COMPOSER_ALLOW_SUPERUSER=1` for the root project's scripts, which Composer otherwise refuses because of the merge plugin. Development packages go into `tools/composer.json`, never into the root `require-dev`.
 - Execute the full test suite using `composer test`.
 - New or changed features should include appropriate tests under the `tests/` directory.
 - Run static analysis locally with `composer static`; fix high/medium findings before opening a PR.

@@ -13,3 +13,6 @@ dbconnect.php.left-by-killed-test-run*
 dbconnect.php.held-by-rootdbconnecttest
 
 logs/*.log
+
+# Development tools (composer tools:install); never deployed or committed.
+tools/vendor/
