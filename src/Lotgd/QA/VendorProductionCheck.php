@@ -42,7 +42,15 @@ final class VendorProductionCheck
         }
 
         $lock = json_decode((string) file_get_contents($lockFile), true);
-        $installed = require $installedFile;
+        try {
+            // A half-uploaded vendor/ can leave this file truncated; that is
+            // a finding to report, not a reason for the check to die.
+            $installed = require $installedFile;
+        } catch (\Throwable $e) {
+            fwrite($err, sprintf("vendor/composer/installed.php could not be read: %s\n", $e->getMessage()));
+
+            return 1;
+        }
         if (!is_array($lock) || !is_array($installed)) {
             fwrite($err, "composer.lock or vendor/composer/installed.php could not be read.\n");
 

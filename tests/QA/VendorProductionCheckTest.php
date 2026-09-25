@@ -14,6 +14,11 @@ use PHPUnit\Framework\TestCase;
  */
 final class VendorProductionCheckTest extends TestCase
 {
+    /**
+     * @var list<string>
+     */
+    private array $fixtureRoots = [];
+
     public function testConsistentProductionInstallHasNoProblems(): void
     {
         self::assertSame([], $this->check($this->lock(), $this->installed(), ['acme/lib', 'acme/util']));
@@ -110,6 +115,108 @@ final class VendorProductionCheckTest extends TestCase
         rewind($err);
 
         self::assertSame(0, $exit, (string) stream_get_contents($err));
+    }
+
+    public function testMissingVendorIsReportedAsAProblem(): void
+    {
+        $root = $this->fixtureRoot();
+
+        [$exit, $stderr] = $this->runOn($root);
+
+        self::assertSame(1, $exit);
+        self::assertStringContainsString('vendor/composer/installed.php is missing', $stderr);
+    }
+
+    public function testCorruptInstallRecordIsReportedAsAProblem(): void
+    {
+        // A half-uploaded vendor/ leaves exactly this behind. The check must
+        // say so rather than die on the parse error.
+        $root = $this->fixtureRoot();
+        mkdir($root . '/vendor/composer', 0700, true);
+        file_put_contents($root . '/vendor/composer/installed.php', "<?php return array(\n    'root' => array(\n");
+
+        [$exit, $stderr] = $this->runOn($root);
+
+        self::assertSame(1, $exit);
+        self::assertStringContainsString('vendor/composer/installed.php could not be read', $stderr);
+    }
+
+    public function testTheScriptReportsWithoutAWorkingAutoloader(): void
+    {
+        // The script checks vendor/, so it must not need vendor/ to start.
+        $root = $this->fixtureRoot();
+        mkdir($root . '/scripts', 0700, true);
+        mkdir($root . '/src/Lotgd/QA', 0700, true);
+        $repo = dirname(__DIR__, 2);
+        copy($repo . '/scripts/check-vendor-production.php', $root . '/scripts/check-vendor-production.php');
+        copy($repo . '/src/Lotgd/QA/VendorProductionCheck.php', $root . '/src/Lotgd/QA/VendorProductionCheck.php');
+
+        $process = proc_open(
+            [PHP_BINARY, $root . '/scripts/check-vendor-production.php'],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes
+        );
+        self::assertIsResource($process);
+        $stdout = (string) stream_get_contents($pipes[1]);
+        $stderr = (string) stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exit = proc_close($process);
+
+        self::assertSame(1, $exit, $stdout . $stderr);
+        self::assertStringContainsString('vendor/composer/installed.php is missing', $stderr);
+    }
+
+    protected function tearDown(): void
+    {
+        foreach ($this->fixtureRoots as $root) {
+            $this->removeTree($root);
+        }
+        $this->fixtureRoots = [];
+    }
+
+    /**
+     * A repository root holding only composer.lock.
+     */
+    private function fixtureRoot(): string
+    {
+        $root = sys_get_temp_dir() . '/lotgd_vendor_check_' . uniqid();
+        mkdir($root, 0700);
+        file_put_contents($root . '/composer.lock', (string) json_encode($this->lock()));
+        $this->fixtureRoots[] = $root;
+
+        return $root;
+    }
+
+    /**
+     * @return array{0:int,1:string} Exit code and error output
+     */
+    private function runOn(string $root): array
+    {
+        $out = fopen('php://memory', 'w+');
+        $err = fopen('php://memory', 'w+');
+        $exit = (new VendorProductionCheck())->run($root, $out, $err);
+        rewind($err);
+
+        return [$exit, (string) stream_get_contents($err)];
+    }
+
+    private function removeTree(string $path): void
+    {
+        if (is_file($path) || is_link($path)) {
+            unlink($path);
+
+            return;
+        }
+        if (!is_dir($path)) {
+            return;
+        }
+        foreach (scandir($path) ?: [] as $entry) {
+            if ($entry !== '.' && $entry !== '..') {
+                $this->removeTree($path . '/' . $entry);
+            }
+        }
+        rmdir($path);
     }
 
     /**
