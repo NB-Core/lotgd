@@ -8,7 +8,10 @@ The 2.0 line introduces major architectural changes (Composer, PSR-4, Doctrine, 
 ## 1. Requirements
 
 - **PHP 8.3** (minimum)
-  Earlier PHP versions are not supported.
+  Earlier PHP versions are not supported. `composer.json` now requires it as
+  well, so Composer's platform check in `vendor/` stops every page on PHP 8.2
+  with "Your Composer dependencies require a PHP version >= 8.3.0". Before,
+  that check accepted 8.2 and the game ran there untested.
 - PHP extensions `mysqli`, `pdo_mysql` and `mbstring`. `installer.php` now
   checks all three before anything else and stops with the missing names;
   previously a server without `pdo_mysql` passed the connection test and
