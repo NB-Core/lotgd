@@ -140,7 +140,8 @@ or deployed. A live installation needs nothing: the download is about 30 MB and
 
 On a development machine or test server:
 
-1. `composer tools:install` once after pulling this change. `composer test`,
+1. `composer tools:install` once after pulling this change (as root:
+   `composer install --working-dir=tools`, see README). `composer test`,
    `composer static` and `composer lint` work as before.
 2. Old copies of the development packages under `vendor/` disappear with the
    pull. Directories git does not track are left behind; `composer static`
