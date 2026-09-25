@@ -28,11 +28,11 @@ jobs:
         run: |
           VERSION=${{ steps.vars.outputs.VERSION }}
           mkdir dist
-          tar --exclude='.git*' --exclude='.github' --exclude='tests' \
+          tar --exclude='.git*' --exclude='.github' --exclude='tests' --exclude='./tools' \
               --exclude='phpunit.xml' --exclude='.phpunit.result.cache' \
               --exclude='dist' -czf "dist/lotgd-${VERSION}.tar.gz" .
           zip -r "dist/lotgd-${VERSION}.zip" . \
-              -x '*.git*' -x '.github/*' -x 'tests/*' -x 'phpunit.xml' -x '.phpunit.result.cache' -x 'dist/*'
+              -x '*.git*' -x '.github/*' -x 'tests/*' -x 'tools/*' -x 'phpunit.xml' -x '.phpunit.result.cache' -x 'dist/*'
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:

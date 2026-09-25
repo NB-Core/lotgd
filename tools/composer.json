@@ -1,0 +1,15 @@
+{
+    "description": "Test and analysis tools for development and CI. Installed into tools/vendor/, never deployed and never committed.",
+    "require": {
+        "phpstan/phpstan": "^2.2",
+        "phpstan/phpstan-doctrine": "^2.0",
+        "phpunit/phpunit": "^12.0",
+        "squizlabs/php_codesniffer": "^4.0"
+    },
+    "config": {
+        "platform": {
+            "php": "8.3.0"
+        },
+        "sort-packages": true
+    }
+}

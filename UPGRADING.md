@@ -130,6 +130,28 @@ If the cache was inside the web root on a server that did not deny it (Nginx
 without the ported rules, or Apache with `AllowOverride None`), change the
 credentials stored in the game settings, starting with the SMTP password.
 
+### Development tools moved to tools/
+
+`vendor/` now holds the production packages only. PHPUnit, PHPStan and
+PHP_CodeSniffer, with their dependencies, moved to a separate Composer project
+in `tools/`, installed into `tools/vendor/`. That directory is never committed
+or deployed. A live installation needs nothing: the download is about 30 MB and
+2,400 files smaller, and no test tooling sits in the web root any more.
+
+On a development machine or test server:
+
+1. `composer tools:install` once after pulling this change. `composer test`,
+   `composer static` and `composer lint` work as before.
+2. Old copies of the development packages under `vendor/` disappear with the
+   pull. Directories git does not track are left behind; `composer static`
+   names any that remain so they can be deleted. If `git pull` refuses
+   because of local changes under `vendor/composer/` (left by an earlier
+   `composer install` on that machine), discard them with
+   `git checkout -- vendor/` and pull again.
+3. Test classes are no longer registered through `autoload-dev`. A script of
+   your own that uses `Lotgd\Tests\` classes requires `tests/autoload.php`
+   instead of the root `autoload.php`.
+
 ---
 
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
@@ -917,9 +939,9 @@ As of this policy, static QA enforcement runs during `composer static` and fails
 
 ## 9. Optional for Developers
 
-- Run PHPUnit tests:
+- Run PHPUnit tests (install the tools once with `composer tools:install`):
   ```bash
-  vendor/bin/phpunit
+  composer test
   ```
 - Explore new namespaces under `src/Lotgd/`.
 - Review `CHANGELOG.md` for feature-by-feature changes.

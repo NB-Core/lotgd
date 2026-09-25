@@ -1,6 +1,6 @@
 includes:
-    - vendor/phpstan/phpstan-doctrine/extension.neon
-    - vendor/phpstan/phpstan-doctrine/rules.neon
+    - tools/vendor/phpstan/phpstan-doctrine/extension.neon
+    - tools/vendor/phpstan/phpstan-doctrine/rules.neon
     - phpstan-baseline.neon
 
 parameters:

@@ -59,7 +59,7 @@ Options -Indexes
     # where earlier documentation suggested putting the data cache. Patterns
     # are relative to this directory and therefore also work when the game is
     # installed in a subdirectory.
-    RewriteRule ^(bin|config|data|docker|docs|logs|migrations|scripts|src|tests|vendor)(/|$) - [F,L]
+    RewriteRule ^(bin|config|data|docker|docs|logs|migrations|scripts|src|tests|tools|vendor)(/|$) - [F,L]
 
     # Page fragments and async includes are loaded by entry points, never
     # requested directly. Non-PHP assets in those trees stay reachable.
@@ -79,7 +79,7 @@ Options -Indexes
 #       if (!-f $document_root/installer.php) { return 403; }
 #   }
 #   location ~ ^/src/.*\.js$ { }   # EDom/md5 browser scripts stay reachable
-#   location ~ ^/(bin|config|data|docker|docs|logs|migrations|scripts|src|tests|vendor)(/|$) { return 403; }
+#   location ~ ^/(bin|config|data|docker|docs|logs|migrations|scripts|src|tests|tools|vendor)(/|$) { return 403; }
 #   location ~ ^/(lib|modules|pages|async/common)/.*\.php$ { return 403; }
 #   location = /cron.php { return 403; }
 #   location ~ /datacache-[^/]*$ { return 403; }

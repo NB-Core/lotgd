@@ -34,7 +34,7 @@ Before opening (or updating) a PR, verify each item:
 
 ## Setup & Tooling
 
-- Start with the [Getting Started instructions](README.md#getting-started) to install dependencies (`composer install`) and configure the game locally.
+- Start with the [Getting Started instructions](README.md#getting-started) to install the development tools (`composer tools:install`) and configure the game locally.
 - Prefer containerised development? Follow [docs/Docker.md](docs/Docker.md) for environment setup.
 - Use the lint helpers before pushing:
   - `composer lint` to check formatting and coding standards.

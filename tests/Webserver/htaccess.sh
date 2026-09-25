@@ -61,6 +61,8 @@ dbconnect.php.bak
 config/async.settings.php.dist
 logs/bootstrap.log
 vendor/autoload.php
+tools/vendor/autoload.php
+tools/composer.json
 src/Lotgd/Settings.php
 docs/AdminGuide.md
 README.md

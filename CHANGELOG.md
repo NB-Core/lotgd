@@ -12,6 +12,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Changed
 
+- `vendor/` holds the production packages only. PHPUnit, PHPStan and PHP_CodeSniffer moved to a separate Composer project in `tools/` (`composer tools:install`, installed into the uncommitted `tools/vendor/`), which removes 28 packages, about 30 MB and 2,400 files from every download and from the web root, and stops every request from loading PHPUnit's assertion functions and PHPStan's autoloader through `vendor/composer/autoload_files.php`. `scripts/check-vendor-production.php`, run by `composer static` and CI, fails when `vendor/` no longer matches `composer.lock` or holds a development package. `.htaccess` and the Docker virtual host deny `tools/`. See `UPGRADING.md`.
 - Reworked mail controls and administration edit/delete rows into reusable, wrapping action bars. Modules can add mail read actions through `mail-read-actions`, and all bundled classic and Twig themes now give links, buttons, disabled controls, sidebars, and action rows consistent styling.
 - Refactored combat damage, banking, character level-up, companion level-up, and companion death reporting into focused, testable services while preserving their legacy entry points.
 - Improved the mail read view's action grouping, confirmation behavior, escaping, feedback, and vertical spacing; restored consistent Inbox/Write navigation and made module-provided labels safe to render.

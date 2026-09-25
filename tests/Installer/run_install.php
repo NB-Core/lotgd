@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace {
     require __DIR__ . '/../Stubs/DoctrineBootstrap.php';
-    require __DIR__ . '/../../autoload.php';
+    require __DIR__ . '/../autoload.php';
     require __DIR__ . '/../../src/Lotgd/Config/constants.php';
     require __DIR__ . '/../Stubs/Functions.php';
 
