@@ -390,9 +390,10 @@ if [ -z "$code_version" ]; then
     exit 1
 fi
 
-# index.php forwards to home.php, so a redirect is the normal answer. The
-# status only rules out a crash; the database below proves the upgrade.
-status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${LOTGD_HTTP_PORT}/index.php")
+# home.php, not index.php: index.php only forwards there and never loads the
+# game. The status only rules out a crash; the database below proves the
+# upgrade.
+status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${LOTGD_HTTP_PORT}/home.php")
 case "$status" in
     200|302) ;;
     *)
