@@ -45,7 +45,8 @@ repository_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
 
 # Emit "<image reference>" for every pinned external image.
 collect_pins() {
-    sed -n 's/^FROM \([^ ]*@sha256:[0-9a-f]\{64\}\).*$/\1/p' "$repository_root/Dockerfile"
+    # A build stage may name its platform first: FROM --platform=... image.
+    sed -n 's/^FROM \(--platform=[^ ]* \)\{0,1\}\([^ ]*@sha256:[0-9a-f]\{64\}\).*$/\2/p' "$repository_root/Dockerfile"
     sed -n 's/^[[:space:]]*image:[[:space:]]*\([^ ]*@sha256:[0-9a-f]\{64\}\).*$/\1/p' \
         "$repository_root/docker-compose.yml"
 }

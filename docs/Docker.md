@@ -9,7 +9,8 @@ dependencies, and MySQL 8.4.
 Both containers drop every default capability, run with `no-new-privileges`,
 publish only on loopback, and serve a document root that is read-only to the web
 user. Start with [Initial configuration](#initial-configuration) for a new
-deployment; if you are auditing an existing one, the two sections worth reading
+deployment, and see [Prebuilt image](#prebuilt-image) to pull the image
+instead of building it; if you are auditing an existing one, the two sections worth reading
 first are [Status as of 2026-09](#status-as-of-2026-09) (how current the pinned
 images are) and [HTTP access boundary](#http-access-boundary) (what the web
 server refuses to serve).
@@ -198,6 +199,66 @@ The Docker CI job has a target wall-clock budget of **at most five minutes**.
 It therefore builds and loads the AMD64 application image once, passes that
 exact image to the production smoke test, and checks ARM64 availability from
 the already-published runtime manifest without QEMU or emulated compilation.
+
+## Prebuilt image
+
+Every push to `master` publishes the production image to GitHub Container
+Registry, for `linux/amd64` and `linux/arm64`, after it passed the same smoke
+test CI runs. A server can pull it instead of building it, which saves the
+build time and the Composer download on every update. On a Raspberry Pi that is
+most of the update time.
+
+| Tag | What it is | Use it for |
+| --- | --- | --- |
+| `ghcr.io/nb-core/lotgd:master` | The current state of `master`, moved on every push | Following development, which is what most deployments of this game do |
+| `ghcr.io/nb-core/lotgd:X.Y.Z`, `:X.Y`, `:latest` | A version tag `vX.Y.Z` | Staying on a release; created only when a version is tagged |
+| `ghcr.io/nb-core/lotgd:sha-<commit>` | One exact commit, never moved | Pinning, and rolling back to what ran before |
+
+The Compose file builds locally unless told otherwise. Select the prebuilt
+image in `.env`:
+
+```bash
+echo 'LOTGD_WEB_IMAGE=ghcr.io/nb-core/lotgd:master' >> .env
+```
+
+and then pull instead of build wherever this guide says `--build`:
+
+```bash
+docker compose pull web
+docker compose up -d --no-build
+```
+
+`--no-build` matters: the Compose file keeps its `build:` entry for the local
+route, and `--build` would build from the checkout and tag the result with the
+registry name, which hides that the pulled image was never used.
+
+Keep the checkout, and keep it on the same commit as the image: the image
+carries the application, but `docker-compose.yml` and this guide come from the
+checkout, and an update can change both. `git pull` on `master` with the
+`master` image does that without further thought.
+
+Your own modules or themes are not in the published image. Build a small image
+on top of it instead of mounting them into the read-only document root:
+
+```dockerfile
+FROM ghcr.io/nb-core/lotgd:master
+COPY --chown=root:root modules/ /var/www/html/modules/
+```
+
+and point `LOTGD_WEB_IMAGE` at the name you build it as. Rebuild it whenever
+you pull a new base image.
+
+The image records how it was built: `docker buildx imagetools inspect
+ghcr.io/nb-core/lotgd:master` lists both architectures, and the attached
+provenance names the commit and the workflow run that produced it.
+
+For maintainers: `.github/workflows/image.yml` publishes the image. A pull
+request that changes the image (`Dockerfile`, `docker/`, the Composer files or
+the workflow itself) builds it for both architectures without pushing, so an
+ARM64-only failure shows up before merge. GHCR creates a new package as
+private; after the first publish, the repository owner sets the `lotgd`
+package to public under the organization's **Packages → Package settings**,
+once.
 
 ## Initial configuration
 
@@ -775,6 +836,8 @@ timestamps.
 git pull
 # 2. Rebuild and restart. Only the web service changes; the database keeps running.
 docker compose up -d --build web
+#    With the prebuilt image, pull instead:
+#    docker compose pull web && docker compose up -d --no-build web
 # 3. Apply schema changes.
 docker compose exec -T --user www-data web php bin/doctrine migrations:migrate --no-interaction
 # 4. Confirm the container reports healthy again.
@@ -788,7 +851,17 @@ Base-image and dependency updates follow the separate, deliberate path in
 [Pinned multi-architecture images](#pinned-multi-architecture-images); do not
 fold them into an application update.
 
-To roll back, check out the previous tag and rebuild. A schema migration that
+To roll back, check out the previous tag and rebuild. With the prebuilt image,
+set `LOTGD_WEB_IMAGE` to the `sha-<commit>` tag of the commit that ran before
+and pull that. Note the commit down before an update; the running image
+records it:
+
+```bash
+docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' \
+    "$(docker compose ps -q web)"
+```
+
+The tag is `sha-` followed by the first seven characters. A schema migration that
 has already run is *not* undone by rebuilding an older image, which is why the
 database backup in step 1 is not optional.
 

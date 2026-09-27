@@ -415,6 +415,13 @@ Build and start the default production configuration:
 docker compose up -d --build
 ```
 
+Or skip the build: every push to `master` publishes the image for AMD64 and
+ARM64 to `ghcr.io/nb-core/lotgd`. Select it with
+`LOTGD_WEB_IMAGE=ghcr.io/nb-core/lotgd:master` in `.env`, then run
+`docker compose pull web && docker compose up -d --no-build`. See
+[Prebuilt image](docs/Docker.md#prebuilt-image) for the available tags and for
+adding your own modules.
+
 For development, layer the override onto the same base configuration:
 
 ```bash

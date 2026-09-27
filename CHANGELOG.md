@@ -10,6 +10,10 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ## [Unreleased]
 
+### Added
+
+- The production Docker image is published to GitHub Container Registry as `ghcr.io/nb-core/lotgd` for AMD64 and ARM64, on every push to `master` (`:master`, `:sha-<commit>`) and for version tags (`:X.Y.Z`, `:X.Y`, `:latest`), each only after passing the production smoke test. A deployment selects it with `LOTGD_WEB_IMAGE` in `.env` and pulls instead of building; a Raspberry Pi no longer builds anything. Building locally stays the default. The Composer build stage now runs on the build machine's own platform, so a cross-architecture build no longer runs Composer under emulation. See `docs/Docker.md#prebuilt-image`.
+
 ### Changed
 
 - `composer.json` requires PHP 8.3, the documented minimum. Composer's platform check in `vendor/` accepted PHP 8.2 because only the dependencies' own floor applied; a PHP 8.2 server now stops with Composer's version message instead of running the game untested. The installer already checked for 8.3.

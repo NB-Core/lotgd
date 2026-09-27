@@ -4,7 +4,11 @@
 # changes retain the expensive Composer download layer.
 # Keep the readable release line while pinning the reviewed multi-architecture
 # index; Dependabot proposes digest refreshes without silently changing builds.
-FROM composer:2@sha256:d8f6343d3fae98107426bc49163ccad46ef85aabd4a27d80a74401fab4aba332 AS composer
+#
+# This stage produces only PHP source and autoload maps, which are identical on
+# every architecture, so it runs on the build machine's own platform. An ARM64
+# image built on an AMD64 runner would otherwise run Composer under emulation.
+FROM --platform=$BUILDPLATFORM composer:2@sha256:d8f6343d3fae98107426bc49163ccad46ef85aabd4a27d80a74401fab4aba332 AS composer
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install \

@@ -1,0 +1,111 @@
+name: Container image
+
+# Publishes the production image to GitHub Container Registry, so a Docker
+# deployment can pull it instead of building it on the host. A Raspberry Pi in
+# particular no longer has to build anything.
+#
+#   ghcr.io/nb-core/lotgd:master   every push to master
+#   ghcr.io/nb-core/lotgd:X.Y.Z    a version tag vX.Y.Z (also X.Y and latest)
+#   ghcr.io/nb-core/lotgd:sha-...  every published commit, for pinning
+#
+# The image is published only after it passed the same smoke test the CI job
+# runs. Pull requests that touch the image build it for both architectures to
+# catch an ARM64-only failure before merge, but never push; ordinary pull
+# requests do not run this workflow at all.
+on:
+  push:
+    branches: [ "master" ]
+    tags: [ "v*" ]
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'docker/**'
+      - 'composer.json'
+      - 'composer.lock'
+      - '.github/workflows/image.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A newer push to master supersedes an older one still building; the
+  # superseded commit keeps its CI run, it just is not published.
+  group: image-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # GHCR requires lower-case repository names.
+  IMAGE: ghcr.io/nb-core/lotgd
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # Only master and version tags are published. A manual run on any other
+      # branch builds and discards, like a pull request.
+      PUBLISH: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Set up QEMU for the ARM64 runtime stage
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # CI already smoke-tests every pull request, so this gate runs only
+      # where it decides what gets published.
+      - name: Build AMD64 image for the smoke test
+        if: env.PUBLISH == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: lotgd-image:${{ github.sha }}
+          push: false
+          cache-from: type=gha,scope=lotgd-amd64
+      - name: Run production smoke test
+        if: env.PUBLISH == 'true'
+        run: tests/Docker/smoke.sh lotgd-image:${{ github.sha }}
+
+      - name: Derive tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+          flavor: |
+            latest=auto
+      - name: Log in to GitHub Container Registry
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build AMD64 and ARM64 image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          provenance: mode=max
+          sbom: true
+          cache-from: |
+            type=gha,scope=lotgd-amd64
+            type=gha,scope=lotgd-arm64
+          cache-to: type=gha,mode=max,scope=lotgd-arm64
