@@ -390,16 +390,22 @@ if [ -z "$code_version" ]; then
     exit 1
 fi
 
+# index.php forwards to home.php, so a redirect is the normal answer. The
+# status only rules out a crash; the database below proves the upgrade.
 status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${LOTGD_HTTP_PORT}/index.php")
-if [ "$status" != "200" ]; then
-    echo "The first request after the update answered $status instead of upgrading and serving the page" >&2
-    docker compose logs web
-    exit 1
-fi
+case "$status" in
+    200|302) ;;
+    *)
+        echo "The first request after the update answered $status" >&2
+        docker compose logs web
+        exit 1
+        ;;
+esac
 
 installed_version=$(db_sql "SELECT value FROM settings WHERE setting = 'installer_version'")
 if [ "$installed_version" != "$code_version" ]; then
     echo "The game did not record its upgrade: installer_version is '$installed_version', expected '$code_version'" >&2
+    db_sql "SELECT date, severity, message FROM gamelog WHERE category = 'maintenance' ORDER BY logid DESC LIMIT 5" >&2 || true
     docker compose logs web
     exit 1
 fi
