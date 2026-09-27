@@ -167,6 +167,41 @@ final class SchemaUpgrade
     }
 
     /**
+     * The page every other request gets until the upgrade has completed.
+     *
+     * Standalone on purpose, without templates, translations or the session:
+     * the tables those read are what a migration may be changing, so the page
+     * must not touch the database at all. It reloads itself, and the game
+     * continues on the first reload after the upgrade.
+     *
+     * @param string $outcome            {@see self::BUSY}, {@see self::WAITING} or {@see self::FAILED}
+     * @param bool   $installerAvailable Whether installer.php is present to finish a stuck upgrade
+     */
+    public static function unavailablePage(string $outcome, bool $installerAvailable): string
+    {
+        if ($outcome === self::BUSY) {
+            $reload = 10;
+            $detail = '<p>The database is being brought up to date right now. This page reloads by itself.</p>';
+        } else {
+            $reload = self::RETRY_AFTER_SECONDS;
+            $detail = '<p>The automatic database upgrade did not complete. It is tried again in a minute; this page reloads by itself.</p>'
+                . '<p>Administrators find the reason in the game log (category maintenance) and in the PHP error log of the server.'
+                . ($installerAvailable ? ' The installer (installer.php) can also finish the upgrade.' : '')
+                . '</p>';
+        }
+
+        return "<!DOCTYPE html>\n<html lang='en'><head><meta charset='UTF-8'>"
+            . "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+            . "<meta http-equiv='refresh' content='" . $reload . "'>"
+            . '<title>Upgrade in progress</title>'
+            . '<style>body{font-family:sans-serif;max-width:40em;margin:3em auto;padding:0 1em;line-height:1.5}</style>'
+            . '</head><body><h1>Upgrade in progress</h1>'
+            . '<p>The game is being updated and will be back in a moment.</p>'
+            . $detail
+            . "</body></html>\n";
+    }
+
+    /**
      * Apply whatever migrations are pending, at an administrator's request.
      *
      * For the case {@see self::run()} cannot see: the version already matches,

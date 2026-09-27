@@ -424,11 +424,28 @@ if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 // An installation that already uses Doctrine migrations upgrades itself on the
 // first request after an update, before anything below reads a game table.
 // A fresh install and a 1.x database still go through the installer.
-$schemaUpgradeOutcome = null;
-if (isset($settings) && !AJAX_MODE && (!defined('IS_INSTALLER') || !IS_INSTALLER)) {
+//
+// Until the upgrade has completed, no request gets past this point: navigation,
+// module hooks and AJAX handlers below would read and write tables a migration
+// may be changing at that moment. AJAX requests never start the upgrade; a
+// page request does, and everything else is answered here and ends.
+if (isset($settings) && (!defined('IS_INSTALLER') || !IS_INSTALLER)) {
     $installedVersion = (string) $settings->getSetting('installer_version', '-1');
     if (SchemaUpgrade::canUpgradeItself($logd_version, $installedVersion, [SchemaUpgrade::class, 'hasMigrationTable'])) {
-        $schemaUpgradeOutcome = SchemaUpgrade::forGame($settings)->run($logd_version);
+        $schemaUpgradeOutcome = AJAX_MODE ? SchemaUpgrade::BUSY : SchemaUpgrade::forGame($settings)->run($logd_version);
+        if ($schemaUpgradeOutcome !== SchemaUpgrade::UPGRADED) {
+            http_response_code(503);
+            header('Retry-After: ' . SchemaUpgrade::RETRY_AFTER_SECONDS);
+            header('Cache-Control: no-store');
+            if (AJAX_MODE) {
+                header('Content-Type: text/plain; charset=UTF-8');
+                echo "The game is being upgraded. Try again shortly.\n";
+            } else {
+                header('Content-Type: text/html; charset=UTF-8');
+                echo SchemaUpgrade::unavailablePage($schemaUpgradeOutcome, file_exists(__DIR__ . '/installer.php'));
+            }
+            exit;
+        }
     }
 }
 
@@ -525,21 +542,11 @@ if (isset($settings) && $logd_version != $settings->getSetting('installer_versio
     if (!AJAX_MODE) {
             Header::pageHeader("Upgrade Needed");
             $output->output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
-        if ($schemaUpgradeOutcome === SchemaUpgrade::BUSY) {
-            $output->output("The database is being upgraded right now.`n`n");
-        } elseif ($schemaUpgradeOutcome !== null) {
-            // Failed now or recently; SchemaUpgrade logged the reason.
-            $output->output("The automatic database upgrade did not complete and is retried shortly.");
-            $output->output("Admins find the reason in the game log (category maintenance) and in the server's PHP error log.`n`n");
-        } else {
             $output->output("In order to perform the upgrade, an admin will have to run through the installer.");
-            $output->output("If you are an admin, please <a href='installer.php'>visit the Installer</a> and complete the upgrade process.`n`n", true);
-        }
+        $output->output("If you are an admin, please <a href='installer.php'>visit the Installer</a> and complete the upgrade process.`n`n", true);
             $output->output("`@If you don't know what this all means, just sit tight, we're doing an upgrade and will be done soon, you will be automatically returned to the game when the upgrade is complete.");
             $output->rawOutput("<meta http-equiv='refresh' content='30; url={$session['user']['restorepage']}'>");
-        if ($schemaUpgradeOutcome === null) {
-            Nav::add("Installer (Admins only!)", "installer.php");
-        }
+        Nav::add("Installer (Admins only!)", "installer.php");
             Footer::pageFooter();
     }
         define("NO_SAVE_USER", true);

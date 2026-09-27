@@ -181,6 +181,29 @@ final class SchemaUpgradeTest extends TestCase
         self::assertSame(SchemaUpgrade::BUSY, $this->upgrade(new DummySettings(), $runner, $this->lock(false))->applyPending());
     }
 
+    public function testTheWaitingPageReloadsAndTouchesNothing(): void
+    {
+        $page = SchemaUpgrade::unavailablePage(SchemaUpgrade::BUSY, false);
+
+        self::assertStringContainsString("http-equiv='refresh' content='10'", $page);
+        self::assertStringContainsString('being brought up to date', $page);
+        self::assertStringNotContainsString('installer.php', $page);
+    }
+
+    public function testTheFailurePageNamesTheLogsAndTheInstallerOnlyWhenPresent(): void
+    {
+        $withInstaller = SchemaUpgrade::unavailablePage(SchemaUpgrade::FAILED, true);
+        $withoutInstaller = SchemaUpgrade::unavailablePage(SchemaUpgrade::WAITING, false);
+
+        self::assertStringContainsString('game log', $withInstaller);
+        self::assertStringContainsString('installer.php', $withInstaller);
+        self::assertStringNotContainsString('installer.php', $withoutInstaller);
+        self::assertStringContainsString(
+            "content='" . SchemaUpgrade::RETRY_AFTER_SECONDS . "'",
+            $withoutInstaller
+        );
+    }
+
     private function upgrade(DummySettings $settings, MigrationRunner $runner, SchemaUpgradeLock $lock): SchemaUpgrade
     {
         return new SchemaUpgrade(
