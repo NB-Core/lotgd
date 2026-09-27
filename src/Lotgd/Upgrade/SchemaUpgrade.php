@@ -8,6 +8,7 @@ use Closure;
 use Lotgd\Doctrine\MigrationRunner;
 use Lotgd\GameLog;
 use Lotgd\MySQL\Database;
+use Lotgd\Security\Escape;
 use Lotgd\Settings;
 
 /**
@@ -35,6 +36,8 @@ final class SchemaUpgrade
     /** The last attempt failed recently; the next one waits. */
     public const WAITING = 'waiting';
     public const FAILED = 'failed';
+    /** Required files are missing; migrating now could record a version whose migrations never arrived. */
+    public const INCOMPLETE = 'incomplete';
 
     public const RETRY_AFTER_SECONDS = 60;
 
@@ -43,20 +46,30 @@ final class SchemaUpgrade
 
     private Closure $log;
     private Closure $clock;
+    private Closure $missingFiles;
+
+    /** @var list<string> What the last {@see self::run()} found missing. */
+    private array $lastMissing = [];
 
     /**
-     * @param (callable(string, string): void)|null $log   Receives a message and a GameLog severity
-     * @param (callable(): int)|null                $clock Current Unix time
+     * @param (callable(string, string): void)|null $log          Receives a message and a GameLog severity
+     * @param (callable(): int)|null                $clock        Current Unix time
+     * @param (callable(string): list<string>)|null  $missingFiles Required files absent for the given code
+     *                                                            version. Defaults to {@see ShippedFiles}
      */
     public function __construct(
         private Settings $settings,
         private MigrationRunner $runner,
         private SchemaUpgradeLock $lock,
         ?callable $log = null,
-        ?callable $clock = null
+        ?callable $clock = null,
+        ?callable $missingFiles = null
     ) {
         $this->log = Closure::fromCallable($log ?? [self::class, 'logToGameAndErrorLog']);
         $this->clock = Closure::fromCallable($clock ?? 'time');
+        $this->missingFiles = Closure::fromCallable($missingFiles ?? static fn (string $codeVersion): array => ShippedFiles::applies()
+            ? ShippedFiles::missing(dirname(__DIR__, 3), $codeVersion)
+            : []);
     }
 
     /**
@@ -109,6 +122,15 @@ final class SchemaUpgrade
         $failedAt = (int) $this->settings->getSetting(self::FAILED_AT_SETTING, 0);
         if ($failedAt > 0 && ($this->clock)() - $failedAt < self::RETRY_AFTER_SECONDS) {
             return self::WAITING;
+        }
+
+        // An upload in progress, or one that skipped files. Migrating now
+        // could record the new version while one of its migrations is still
+        // on its way, and nothing would run it afterwards. Nothing is logged:
+        // this is asked on every request until the upload is complete.
+        $this->lastMissing = ($this->missingFiles)($codeVersion);
+        if ($this->lastMissing !== []) {
+            return self::INCOMPLETE;
         }
 
         if (!$this->lock->acquire()) {
@@ -167,6 +189,16 @@ final class SchemaUpgrade
     }
 
     /**
+     * The required files the last {@see self::run()} found missing.
+     *
+     * @return list<string>
+     */
+    public function lastMissing(): array
+    {
+        return $this->lastMissing;
+    }
+
+    /**
      * The page every other request gets until the upgrade has completed.
      *
      * Standalone on purpose, without templates, translations or the session:
@@ -174,12 +206,20 @@ final class SchemaUpgrade
      * must not touch the database at all. It reloads itself, and the game
      * continues on the first reload after the upgrade.
      *
-     * @param string $outcome            {@see self::BUSY}, {@see self::WAITING} or {@see self::FAILED}
-     * @param bool   $installerAvailable Whether installer.php is present to finish a stuck upgrade
+     * @param string       $outcome            {@see self::BUSY}, {@see self::WAITING}, {@see self::FAILED}
+     *                                         or {@see self::INCOMPLETE}
+     * @param bool         $installerAvailable Whether installer.php is present to finish a stuck upgrade
+     * @param list<string> $missing            For {@see self::INCOMPLETE}: the files that are absent
      */
-    public static function unavailablePage(string $outcome, bool $installerAvailable): string
+    public static function unavailablePage(string $outcome, bool $installerAvailable, array $missing = []): string
     {
-        if ($outcome === self::BUSY) {
+        if ($outcome === self::INCOMPLETE) {
+            $reload = self::RETRY_AFTER_SECONDS;
+            $detail = '<p>' . count($missing) . ' file(s) of the new version are not on the server yet, so the database is not upgraded.'
+                . ' If an upload is still running, this page continues by itself once it has finished.'
+                . ' Otherwise upload these files again (in FileZilla, check the "Failed transfers" tab):</p>'
+                . '<p><code>' . Escape::html(ShippedFiles::summarize($missing)) . '</code></p>';
+        } elseif ($outcome === self::BUSY) {
             $reload = 10;
             $detail = '<p>The database is being brought up to date right now. This page reloads by itself.</p>';
         } else {

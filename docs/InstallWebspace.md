@@ -74,7 +74,8 @@ game folder.
   small files, so this takes a while. When it finishes, check FileZilla's
   **Failed transfers** tab. It must be empty. If it is not, upload those
   files again. A single missing file breaks the game in ways that are hard to
-  trace.
+  trace. The installer checks this too: if a file the game needs is missing,
+  its first page names it instead of starting.
 
 Make sure `.htaccess` arrived. Files whose names start with a dot are hidden
 by many programs. In FileZilla, use **Server → Force showing hidden files**
@@ -183,8 +184,11 @@ Log in with the administrator account. In the **Superuser Grotto**, open
    date by itself, which can take a moment; anyone else who visits meanwhile
    sees a short "upgrade in progress" page. The superuser **Diagnostics** page
    shows under *Pending migrations* whether anything is left, and can apply it.
-   That covers an FTP upload that delivered the new version before one of the
-   files in `migrations/`.
+
+   If the upload is not complete yet, or skipped files, the game does not
+   touch the database. Visitors see the "upgrade in progress" page, which
+   names the missing files, and the game continues by itself once they have
+   arrived. The **Diagnostics** page shows the same under *Shipped files*.
 
 Updating from a 1.x version is different: that still goes through
 `installer.php`, which converts the old database. See

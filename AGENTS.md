@@ -11,6 +11,7 @@ This repository uses PHP with Composer and PHPUnit. To ensure quality and consis
 ## Testing
 
 - Production dependencies are committed in `vendor/`, which holds production packages only. Install the test and analysis tools with `composer tools:install` (into `tools/vendor/`, never committed) before running tests; when running as root, use `composer install --working-dir=tools` and set `COMPOSER_ALLOW_SUPERUSER=1` for the root project's scripts, which Composer otherwise refuses because of the merge plugin. Development packages go into `tools/composer.json`, never into the root `require-dev`.
+- `src/Lotgd/Upgrade/shipped-files.txt` lists the files every installation needs, so the installer and the self-upgrade can detect an incomplete upload. A workflow regenerates it on every push to master; do not edit it by hand (`composer shipped-files` regenerates it locally). The one time to run that yourself is a version bump, see the release process below.
 - Execute the full test suite using `composer test`.
 - New or changed features should include appropriate tests under the `tests/` directory.
 - Run static analysis locally with `composer static`; fix high/medium findings before opening a PR.
@@ -84,7 +85,7 @@ These rules apply to all directories unless a more specific file overrides them.
 
 ## Release Process (summary)
 
-- When ready: bump version in `common.php`, tag `vX.Y.Z`, push the tag. GitHub Actions builds release artifacts.
+- When ready: bump version in `common.php`, run `composer shipped-files` in the same commit (CI checks that the list names the new version), tag `vX.Y.Z`, push the tag. GitHub Actions builds release artifacts.
 - Ensure `README.md` and `UPGRADING.md` reflect notable changes.
 
 ## Additional Guidance

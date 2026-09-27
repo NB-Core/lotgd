@@ -432,7 +432,8 @@ if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 if (isset($settings) && (!defined('IS_INSTALLER') || !IS_INSTALLER)) {
     $installedVersion = (string) $settings->getSetting('installer_version', '-1');
     if (SchemaUpgrade::canUpgradeItself($logd_version, $installedVersion, [SchemaUpgrade::class, 'hasMigrationTable'])) {
-        $schemaUpgradeOutcome = AJAX_MODE ? SchemaUpgrade::BUSY : SchemaUpgrade::forGame($settings)->run($logd_version);
+        $schemaUpgrade = AJAX_MODE ? null : SchemaUpgrade::forGame($settings);
+        $schemaUpgradeOutcome = $schemaUpgrade === null ? SchemaUpgrade::BUSY : $schemaUpgrade->run($logd_version);
         if ($schemaUpgradeOutcome !== SchemaUpgrade::UPGRADED) {
             http_response_code(503);
             header('Retry-After: ' . SchemaUpgrade::RETRY_AFTER_SECONDS);
@@ -442,7 +443,11 @@ if (isset($settings) && (!defined('IS_INSTALLER') || !IS_INSTALLER)) {
                 echo "The game is being upgraded. Try again shortly.\n";
             } else {
                 header('Content-Type: text/html; charset=UTF-8');
-                echo SchemaUpgrade::unavailablePage($schemaUpgradeOutcome, file_exists(__DIR__ . '/installer.php'));
+                echo SchemaUpgrade::unavailablePage(
+                    $schemaUpgradeOutcome,
+                    file_exists(__DIR__ . '/installer.php'),
+                    $schemaUpgrade?->lastMissing() ?? []
+                );
             }
             exit;
         }

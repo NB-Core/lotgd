@@ -23,7 +23,7 @@ final class DiagnosticsTest extends TestCase
         Database::$tablePrefix = '';
         Database::resetDoctrineConnection();
 
-        $this->diagnostics = new Diagnostics(static fn (): array => []);
+        $this->diagnostics = new Diagnostics(static fn (): array => [], static fn (string $version): array => []);
     }
 
     protected function tearDown(): void
@@ -389,6 +389,24 @@ final class DiagnosticsTest extends TestCase
     public function testNoPendingMigrationsIsReportedAsOk(): void
     {
         $this->assertSame('ok', $this->versionRow($this->diagnostics, 'Pending migrations')['status']);
+    }
+
+    public function testMissingShippedFilesAreReportedAsAWarning(): void
+    {
+        $diagnostics = new Diagnostics(static fn (): array => [], static fn (string $version): array => ['src/Lotgd/Settings.php']);
+
+        $row = $this->versionRow($diagnostics, 'Shipped files');
+
+        $this->assertSame('warn', $row['status']);
+        $this->assertSame([1, 'src/Lotgd/Settings.php'], $row['args']);
+    }
+
+    public function testShippedFilesStates(): void
+    {
+        $this->assertSame('all present', $this->versionRow($this->diagnostics, 'Shipped files')['value']);
+
+        $container = new Diagnostics(static fn (): array => [], static fn (string $version): bool => false);
+        $this->assertStringContainsString('container', $this->versionRow($container, 'Shipped files')['value']);
     }
 
     public function testAnUnreadableMigrationStateIsReportedAsUnknown(): void

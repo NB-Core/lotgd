@@ -23,6 +23,7 @@
         "qa:sql-addslashes": "php scripts/check-sql-addslashes.php",
         "qa:sql-interpolation": "php scripts/check-sql-value-interpolation.php",
         "qa:vendor-production": "php scripts/check-vendor-production.php",
+        "shipped-files": "php scripts/build-shipped-files.php",
         "static": [
             "@qa:http-wrappers",
             "@qa:sql-addslashes",

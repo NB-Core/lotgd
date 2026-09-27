@@ -181,6 +181,32 @@ final class SchemaUpgradeTest extends TestCase
         self::assertSame(SchemaUpgrade::BUSY, $this->upgrade(new DummySettings(), $runner, $this->lock(false))->applyPending());
     }
 
+    public function testAnIncompleteUploadIsNotMigrated(): void
+    {
+        // The version number arrived before one of the migrations: recording
+        // it now would leave that migration unapplied for good.
+        $settings = new DummySettings(['installer_version' => self::INSTALLED]);
+        $runner = $this->createMock(MigrationRunner::class);
+        $runner->expects(self::never())->method('migrate');
+        $lock = $this->lock(true);
+        $upgrade = $this->upgrade($settings, $runner, $lock, ['migrations/Version20260101000000.php']);
+
+        self::assertSame(SchemaUpgrade::INCOMPLETE, $upgrade->run(self::CODE));
+        self::assertSame(['migrations/Version20260101000000.php'], $upgrade->lastMissing());
+        self::assertSame(self::INSTALLED, $settings->getSetting('installer_version'));
+        self::assertSame(0, $lock->acquired);
+        self::assertSame([], $this->logged, 'asked on every request until the upload completes; not worth a log line each');
+    }
+
+    public function testTheIncompletePageNamesTheFilesEscaped(): void
+    {
+        $page = SchemaUpgrade::unavailablePage(SchemaUpgrade::INCOMPLETE, false, ['src/<b>.php', 'vendor/a.php']);
+
+        self::assertStringContainsString('2 file(s)', $page);
+        self::assertStringContainsString('src/&lt;b&gt;.php, vendor/a.php', $page);
+        self::assertStringNotContainsString('<b>', $page);
+    }
+
     public function testTheWaitingPageReloadsAndTouchesNothing(): void
     {
         $page = SchemaUpgrade::unavailablePage(SchemaUpgrade::BUSY, false);
@@ -204,8 +230,15 @@ final class SchemaUpgradeTest extends TestCase
         );
     }
 
-    private function upgrade(DummySettings $settings, MigrationRunner $runner, SchemaUpgradeLock $lock): SchemaUpgrade
-    {
+    /**
+     * @param list<string> $missing Required files absent from the installation
+     */
+    private function upgrade(
+        DummySettings $settings,
+        MigrationRunner $runner,
+        SchemaUpgradeLock $lock,
+        array $missing = []
+    ): SchemaUpgrade {
         return new SchemaUpgrade(
             $settings,
             $runner,
@@ -213,7 +246,12 @@ final class SchemaUpgradeTest extends TestCase
             function (string $message, string $severity): void {
                 $this->logged[] = [$message, $severity];
             },
-            fn (): int => $this->now
+            fn (): int => $this->now,
+            static function (string $codeVersion) use ($missing): array {
+                self::assertSame(self::CODE, $codeVersion, 'the check compares the list with the new version');
+
+                return $missing;
+            }
         );
     }
 
