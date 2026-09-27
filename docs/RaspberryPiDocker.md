@@ -37,15 +37,23 @@ chmod 600 .env
 sed -i "s|^MYSQL_PASSWORD=$|MYSQL_PASSWORD=$(openssl rand -base64 32)|" .env
 sed -i "s|^MYSQL_ROOT_PASSWORD=$|MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)|" .env
 sed -i 's/^LOTGD_INSTALL_ENABLED=.*/LOTGD_INSTALL_ENABLED=1/' .env
+echo 'LOTGD_WEB_IMAGE=ghcr.io/nb-core/lotgd:master' >> .env
 ```
 
 Use two independently generated secrets; do not reuse either password or
 commit `.env`. Keep the installer flag at `1` only for initial setup.
 
+The last line selects the [prebuilt image](Docker.md#prebuilt-image), which is
+published for ARM64. The Pi then downloads the finished image instead of
+building it, which is slow on a Pi and repeats the Composer download on every
+update. Leave the line out to build locally instead, and use `--build` where
+this guide says `--no-build`.
+
 ## 3. Start the private installer
 
 ```bash
-docker compose up -d --build
+docker compose pull web
+docker compose up -d --no-build
 ```
 
 Compose publishes the selected `${LOTGD_HTTP_PORT}` (8080 by default) on
@@ -83,7 +91,7 @@ covered in [Docker deployment](Docker.md).
 
 ```bash
 docker compose logs -f web db
-docker compose up -d --build       # rebuild after image/PHP changes
+docker compose pull web && docker compose up -d --no-build   # update the image
 docker compose exec web sh         # diagnostic shell
 ```
 
