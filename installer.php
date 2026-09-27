@@ -40,10 +40,15 @@ if (function_exists('mysqli_get_client_version') && mysqli_get_client_version() 
 $shippedFilesClass = __DIR__ . '/src/Lotgd/Upgrade/ShippedFiles.php';
 if ($unmetRequirements === [] && is_file($shippedFilesClass)) {
     require_once $shippedFilesClass;
+    // The installer's own files count here, unlike for a running game.
     $missingFiles = \Lotgd\Upgrade\ShippedFiles::applies()
-        ? \Lotgd\Upgrade\ShippedFiles::missing(__DIR__)
+        ? \Lotgd\Upgrade\ShippedFiles::missing(
+            __DIR__,
+            \Lotgd\Upgrade\ShippedFiles::versionOf(__DIR__ . '/common.php'),
+            true
+        )
         : [];
-    if ($missingFiles !== null && $missingFiles !== []) {
+    if ($missingFiles !== []) {
         $unmetRequirements[] = sprintf(
             '%d file(s) of the game are missing, most likely from an incomplete upload: %s. Upload them again (in FileZilla, check the "Failed transfers" tab), then reload this page.',
             count($missingFiles),

@@ -54,9 +54,8 @@ final class SchemaUpgrade
     /**
      * @param (callable(string, string): void)|null $log          Receives a message and a GameLog severity
      * @param (callable(): int)|null                $clock        Current Unix time
-     * @param (callable(): (list<string>|null))|null $missingFiles Required files that are absent; null when
-     *                                                            that cannot be told. Defaults to
-     *                                                            {@see ShippedFiles}
+     * @param (callable(string): list<string>)|null  $missingFiles Required files absent for the given code
+     *                                                            version. Defaults to {@see ShippedFiles}
      */
     public function __construct(
         private Settings $settings,
@@ -68,8 +67,8 @@ final class SchemaUpgrade
     ) {
         $this->log = Closure::fromCallable($log ?? [self::class, 'logToGameAndErrorLog']);
         $this->clock = Closure::fromCallable($clock ?? 'time');
-        $this->missingFiles = Closure::fromCallable($missingFiles ?? static fn (): ?array => ShippedFiles::applies()
-            ? ShippedFiles::missing(dirname(__DIR__, 3))
+        $this->missingFiles = Closure::fromCallable($missingFiles ?? static fn (string $codeVersion): array => ShippedFiles::applies()
+            ? ShippedFiles::missing(dirname(__DIR__, 3), $codeVersion)
             : []);
     }
 
@@ -129,7 +128,7 @@ final class SchemaUpgrade
         // could record the new version while one of its migrations is still
         // on its way, and nothing would run it afterwards. Nothing is logged:
         // this is asked on every request until the upload is complete.
-        $this->lastMissing = ($this->missingFiles)() ?? [];
+        $this->lastMissing = ($this->missingFiles)($codeVersion);
         if ($this->lastMissing !== []) {
             return self::INCOMPLETE;
         }

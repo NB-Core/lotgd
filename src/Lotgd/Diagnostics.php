@@ -49,16 +49,16 @@ class Diagnostics
     /** @var Closure(): list<string> */
     private Closure $pendingMigrations;
 
-    /** @var Closure(): (list<string>|null|false) */
+    /** @var Closure(string): (list<string>|false) */
     private Closure $missingFiles;
 
     /**
      * @param (callable(): list<string>)|null              $pendingMigrations Lists the migrations the database has
      *                                                                        not run; defaults to asking Doctrine
      *                                                                        Migrations
-     * @param (callable(): (list<string>|null|false))|null $missingFiles      Required files that are absent: null
-     *                                                                        when the list is missing, false where
-     *                                                                        the check does not apply; defaults to
+     * @param (callable(string): (list<string>|false))|null $missingFiles    Required files absent for the given
+     *                                                                        code version, false where the check
+     *                                                                        does not apply; defaults to
      *                                                                        {@see ShippedFiles}
      */
     public function __construct(?callable $pendingMigrations = null, ?callable $missingFiles = null)
@@ -67,8 +67,8 @@ class Diagnostics
             $pendingMigrations ?? static fn (): array => (new MigrationRunner())->pending()
         );
         $this->missingFiles = Closure::fromCallable(
-            $missingFiles ?? static fn (): array|false|null => ShippedFiles::applies()
-                ? ShippedFiles::missing(dirname(__DIR__, 2))
+            $missingFiles ?? static fn (string $codeVersion): array|false => ShippedFiles::applies()
+                ? ShippedFiles::missing(dirname(__DIR__, 2), $codeVersion)
                 : false
         );
     }
@@ -520,11 +520,9 @@ class Diagnostics
             $rows[] = $this->row('Pending migrations', '%s not applied: %s', 'warn', [count($pending), implode(', ', $pending)]);
         }
 
-        $missing = ($this->missingFiles)();
+        $missing = ($this->missingFiles)($code);
         if ($missing === false) {
             $rows[] = $this->row('Shipped files', 'not checked: a container runs a complete image');
-        } elseif ($missing === null) {
-            $rows[] = $this->row('Shipped files', 'unknown: src/Lotgd/Upgrade/shipped-files.txt is missing', 'unknown');
         } elseif ($missing === []) {
             $rows[] = $this->row('Shipped files', 'all present');
         } else {

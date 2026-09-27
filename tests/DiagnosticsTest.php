@@ -23,7 +23,7 @@ final class DiagnosticsTest extends TestCase
         Database::$tablePrefix = '';
         Database::resetDoctrineConnection();
 
-        $this->diagnostics = new Diagnostics(static fn (): array => [], static fn (): array => []);
+        $this->diagnostics = new Diagnostics(static fn (): array => [], static fn (string $version): array => []);
     }
 
     protected function tearDown(): void
@@ -393,7 +393,7 @@ final class DiagnosticsTest extends TestCase
 
     public function testMissingShippedFilesAreReportedAsAWarning(): void
     {
-        $diagnostics = new Diagnostics(static fn (): array => [], static fn (): array => ['src/Lotgd/Settings.php']);
+        $diagnostics = new Diagnostics(static fn (): array => [], static fn (string $version): array => ['src/Lotgd/Settings.php']);
 
         $row = $this->versionRow($diagnostics, 'Shipped files');
 
@@ -405,10 +405,7 @@ final class DiagnosticsTest extends TestCase
     {
         $this->assertSame('all present', $this->versionRow($this->diagnostics, 'Shipped files')['value']);
 
-        $withoutList = new Diagnostics(static fn (): array => [], static fn (): ?array => null);
-        $this->assertSame('unknown', $this->versionRow($withoutList, 'Shipped files')['status']);
-
-        $container = new Diagnostics(static fn (): array => [], static fn (): bool => false);
+        $container = new Diagnostics(static fn (): array => [], static fn (string $version): bool => false);
         $this->assertStringContainsString('container', $this->versionRow($container, 'Shipped files')['value']);
     }
 

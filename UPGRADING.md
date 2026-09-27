@@ -189,6 +189,8 @@ one is missing:
   file;
 - the Diagnostics page reports it under *Shipped files*.
 
+The list names the game version it belongs to, so an old list left over
+from the previous version does not count until the new one has arrived.
 Containers skip the check, because an image is always complete.
 
 The database user needs the rights to change the schema (`CREATE`, `ALTER`,

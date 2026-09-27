@@ -45,6 +45,7 @@ final class ShippedFilesTest extends TestCase
         yield 'bootstrap' => ['common.php', true];
         yield 'access rules' => ['.htaccess', true];
         yield 'installer, deleted after installing' => ['installer.php', false];
+        yield 'installer library' => ['install/lib/Installer.php', false];
         yield 'core class' => ['src/Lotgd/Settings.php', true];
         yield 'browser script under src' => ['src/Lotgd/e_dom.js', true];
         yield 'legacy wrapper' => ['lib/addnav.php', true];
@@ -67,44 +68,84 @@ final class ShippedFilesTest extends TestCase
         self::assertSame($required, ShippedFiles::isRequired($path));
     }
 
-    public function testAListingIsFilteredSortedAndDeduplicated(): void
+    public function testTheInstallerIsListedButRecognizedAsOptional(): void
     {
-        $listing = ['src/b.php', 'README.md', 'common.php', '', 'src/b.php', 'modules/x.php', 'lib\\a.php'];
-
-        self::assertSame(['common.php', 'lib/a.php', 'src/b.php'], ShippedFiles::fromListing($listing));
+        self::assertTrue(ShippedFiles::isInstallerFile('installer.php'));
+        self::assertTrue(ShippedFiles::isInstallerFile('install/lib/Requirements.php'));
+        self::assertFalse(ShippedFiles::isInstallerFile('src/Lotgd/Installer/x.php'));
     }
 
-    public function testTheRenderedListReadsBackWithoutItsComments(): void
+    public function testAListingIsFilteredSortedAndDeduplicated(): void
+    {
+        $listing = ['src/b.php', 'README.md', 'common.php', '', 'src/b.php', 'modules/x.php', 'lib\\a.php', 'installer.php'];
+
+        self::assertSame(['common.php', 'installer.php', 'lib/a.php', 'src/b.php'], ShippedFiles::fromListing($listing));
+    }
+
+    public function testTheRenderedListReadsBackWithItsVersion(): void
     {
         $file = $this->root() . '/list.txt';
-        file_put_contents($file, ShippedFiles::render(['common.php', 'src/a.php']));
+        file_put_contents($file, ShippedFiles::render(['common.php', 'src/a.php'], '2.1.0 +nb Edition'));
 
-        self::assertSame(['common.php', 'src/a.php'], ShippedFiles::read($file));
+        self::assertSame(
+            ['version' => '2.1.0 +nb Edition', 'paths' => ['common.php', 'src/a.php']],
+            ShippedFiles::read($file)
+        );
     }
 
     public function testMissingFilesAreNamed(): void
     {
-        $root = $this->root();
-        mkdir($root . '/src', 0700, true);
-        touch($root . '/common.php');
-        touch($root . '/src/a.php');
-        file_put_contents($root . '/list.txt', ShippedFiles::render(['common.php', 'migrations/V2.php', 'src/a.php', 'src/b.php']));
+        $root = $this->uploadWith(['common.php', 'src/a.php'], ['common.php', 'migrations/V2.php', 'src/a.php', 'src/b.php']);
 
-        self::assertSame(['migrations/V2.php', 'src/b.php'], ShippedFiles::missing($root, $root . '/list.txt'));
+        self::assertSame(['migrations/V2.php', 'src/b.php'], ShippedFiles::missing($root, 'v2', false, $root . '/list.txt'));
     }
 
     public function testACompleteUploadHasNothingMissing(): void
     {
-        $root = $this->root();
-        touch($root . '/common.php');
-        file_put_contents($root . '/list.txt', ShippedFiles::render(['common.php']));
+        $root = $this->uploadWith(['common.php'], ['common.php']);
 
-        self::assertSame([], ShippedFiles::missing($root, $root . '/list.txt'));
+        self::assertSame([], ShippedFiles::missing($root, 'v2', false, $root . '/list.txt'));
     }
 
-    public function testWithoutTheListNothingCanBeSaid(): void
+    public function testAMissingListIsItselfAMissingFile(): void
     {
-        self::assertNull(ShippedFiles::missing($this->root(), $this->root() . '/absent.txt'));
+        // It ships with the game; without it the upload is incomplete by
+        // definition, and nothing else can be said.
+        self::assertSame(
+            [ShippedFiles::LIST_PATH],
+            ShippedFiles::missing($this->root(), 'v2', false, $this->root() . '/absent.txt')
+        );
+    }
+
+    public function testAListFromAnotherVersionCountsAsMissing(): void
+    {
+        // The new common.php arrived, the new list and a new migration have
+        // not: the old list would call the upload complete.
+        $root = $this->uploadWith(['common.php'], ['common.php'], 'v1');
+
+        self::assertSame([ShippedFiles::LIST_PATH], ShippedFiles::missing($root, 'v2', false, $root . '/list.txt'));
+        self::assertSame([], ShippedFiles::missing($root, null, false, $root . '/list.txt'), 'null skips the comparison');
+    }
+
+    public function testTheInstallerFilesCountOnlyForTheInstaller(): void
+    {
+        $root = $this->uploadWith(['common.php'], ['common.php', 'install/lib/Requirements.php', 'installer.php']);
+
+        self::assertSame([], ShippedFiles::missing($root, 'v2', false, $root . '/list.txt'));
+        self::assertSame(
+            ['install/lib/Requirements.php', 'installer.php'],
+            ShippedFiles::missing($root, 'v2', true, $root . '/list.txt')
+        );
+    }
+
+    public function testTheVersionIsReadFromCommonPhpWithoutRunningIt(): void
+    {
+        $file = $this->root() . '/common.php';
+        file_put_contents($file, "<?php\n\$x = 1;\n\$logd_version = \"2.0.7 +nb Edition\";\nexit;\n");
+
+        self::assertSame('2.0.7 +nb Edition', ShippedFiles::versionOf($file));
+        self::assertNull(ShippedFiles::versionOf($this->root() . '/absent.php'));
+        self::assertSame(ShippedFiles::versionOf(dirname(__DIR__, 2) . '/common.php'), ShippedFiles::read()['version'] ?? null);
     }
 
     public function testTheCheckDoesNotApplyInAContainer(): void
@@ -126,12 +167,33 @@ final class ShippedFilesTest extends TestCase
     {
         // Whether it is current is the workflow's business: it regenerates the
         // list on master after every push. This only guards the file itself.
-        $paths = ShippedFiles::read();
+        $list = ShippedFiles::read();
+        self::assertNotNull($list, 'src/Lotgd/Upgrade/shipped-files.txt is missing');
+        $paths = $list['paths'];
 
-        self::assertNotNull($paths, 'src/Lotgd/Upgrade/shipped-files.txt is missing');
         self::assertContains('common.php', $paths);
         self::assertContains('vendor/autoload.php', $paths);
         self::assertSame($paths, ShippedFiles::fromListing($paths), 'the list holds only required paths, sorted');
+    }
+
+    /**
+     * A game directory holding $present and a list naming $listed.
+     *
+     * @param list<string> $present
+     * @param list<string> $listed
+     */
+    private function uploadWith(array $present, array $listed, string $version = 'v2'): string
+    {
+        $root = $this->root();
+        foreach ($present as $path) {
+            if (!is_dir(dirname($root . '/' . $path))) {
+                mkdir(dirname($root . '/' . $path), 0700, true);
+            }
+            touch($root . '/' . $path);
+        }
+        file_put_contents($root . '/list.txt', ShippedFiles::render($listed, $version));
+
+        return $root;
     }
 
     private function root(): string

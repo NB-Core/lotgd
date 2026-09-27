@@ -198,17 +198,6 @@ final class SchemaUpgradeTest extends TestCase
         self::assertSame([], $this->logged, 'asked on every request until the upload completes; not worth a log line each');
     }
 
-    public function testAnUncheckableInstallationIsUpgraded(): void
-    {
-        // Without the list nothing can be said, and refusing would lock the
-        // game for good.
-        $settings = new DummySettings(['installer_version' => self::INSTALLED]);
-
-        $outcome = $this->upgrade($settings, $this->runner([]), $this->lock(true), null)->run(self::CODE);
-
-        self::assertSame(SchemaUpgrade::UPGRADED, $outcome);
-    }
-
     public function testTheIncompletePageNamesTheFilesEscaped(): void
     {
         $page = SchemaUpgrade::unavailablePage(SchemaUpgrade::INCOMPLETE, false, ['src/<b>.php', 'vendor/a.php']);
@@ -242,13 +231,13 @@ final class SchemaUpgradeTest extends TestCase
     }
 
     /**
-     * @param list<string>|null $missing Required files absent from the installation
+     * @param list<string> $missing Required files absent from the installation
      */
     private function upgrade(
         DummySettings $settings,
         MigrationRunner $runner,
         SchemaUpgradeLock $lock,
-        ?array $missing = []
+        array $missing = []
     ): SchemaUpgrade {
         return new SchemaUpgrade(
             $settings,
@@ -258,7 +247,11 @@ final class SchemaUpgradeTest extends TestCase
                 $this->logged[] = [$message, $severity];
             },
             fn (): int => $this->now,
-            static fn (): ?array => $missing
+            static function (string $codeVersion) use ($missing): array {
+                self::assertSame(self::CODE, $codeVersion, 'the check compares the list with the new version');
+
+                return $missing;
+            }
         );
     }
 

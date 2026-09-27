@@ -85,6 +85,12 @@ jobs:
       # composer.lock and hold no development packages.
       - name: Verify vendor/ holds the locked production packages only
         run: php scripts/check-vendor-production.php
+      # The file list itself is regenerated on master by shipped-files.yml.
+      # Its version line cannot wait for that: an installation treats a list
+      # for another version as an incomplete upload, so the commit that bumps
+      # $logd_version (and any tag on it) must carry the matching list.
+      - name: Verify the shipped files list names the current version
+        run: php scripts/build-shipped-files.php --check-version
       - name: Reject new SQL value interpolation
         run: |
           base="origin/${{ github.base_ref || github.event.repository.default_branch }}"
