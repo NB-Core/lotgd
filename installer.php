@@ -33,6 +33,25 @@ if (function_exists('mysqli_get_client_version') && mysqli_get_client_version() 
     );
 }
 
+// An FTP upload that skipped files. Also before common.php, whose autoloader a
+// missing vendor/ file would stop without saying which. Only once PHP itself
+// is new enough: the class uses syntax an older PHP cannot parse, and that
+// PHP already has its message above.
+$shippedFilesClass = __DIR__ . '/src/Lotgd/Upgrade/ShippedFiles.php';
+if ($unmetRequirements === [] && is_file($shippedFilesClass)) {
+    require_once $shippedFilesClass;
+    $missingFiles = \Lotgd\Upgrade\ShippedFiles::applies()
+        ? \Lotgd\Upgrade\ShippedFiles::missing(__DIR__)
+        : [];
+    if ($missingFiles !== null && $missingFiles !== []) {
+        $unmetRequirements[] = sprintf(
+            '%d file(s) of the game are missing, most likely from an incomplete upload: %s. Upload them again (in FileZilla, check the "Failed transfers" tab), then reload this page.',
+            count($missingFiles),
+            \Lotgd\Upgrade\ShippedFiles::summarize($missingFiles, 20)
+        );
+    }
+}
+
 if ($unmetRequirements !== []) {
     //we have NO output object possibly :( hence no nice formatting
     echo '<h1>Requirements not met</h1><ul>';

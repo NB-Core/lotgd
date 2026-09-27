@@ -180,6 +180,17 @@ PHP's error log, and is retried at most once a minute.
 Upgrades from **1.x**, which have no Doctrine migrations table yet, and fresh
 installations still go through `installer.php`.
 
+The game also checks that the upload is complete. It ships a list of the
+files every installation needs (`src/Lotgd/Upgrade/shipped-files.txt`;
+modules, themes and images are not on it, since you may remove those). When
+one is missing:
+- the installer names it instead of starting;
+- the automatic upgrade waits instead of migrating, and its page names the
+  file;
+- the Diagnostics page reports it under *Shipped files*.
+
+Containers skip the check, because an image is always complete.
+
 The database user needs the rights to change the schema (`CREATE`, `ALTER`,
 `INDEX`, `DROP`), which the installer already required. On shared hosting the
 database user normally has them.
