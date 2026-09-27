@@ -250,8 +250,7 @@ you can complete the upgrade purely from the command line:
    is needed. Step 3 is optional as well: without it, that first request applies
    the migrations itself.
 
-Replace `2.x.y` with the exact value of `$logd_version` from your current
-`common.php`. Skipping the browser installer is **only** safe when you already
+Skipping the browser installer is **only** safe when you already
 have an upgraded **2.x** database; fresh installs and legacy bridge upgrades
 still need the web installer to seed legacy SQL data and verify required
 modules.
