@@ -255,10 +255,11 @@ provenance names the commit and the workflow run that produced it.
 For maintainers: `.github/workflows/image.yml` publishes the image. A pull
 request that changes the image (`Dockerfile`, `docker/`, the Composer files or
 the workflow itself) builds it for both architectures without pushing, so an
-ARM64-only failure shows up before merge. GHCR creates a new package as
-private; after the first publish, the repository owner sets the `lotgd`
-package to public under the organization's **Packages → Package settings**,
-once.
+ARM64-only failure shows up before merge. The `lotgd` package is linked to
+this repository through the image's `org.opencontainers.image.source` label
+and is public like the repository, so pulling needs no login. If a pull ever
+asks for credentials, check the package's visibility under the owner's
+**Packages → lotgd → Package settings**.
 
 ## Initial configuration
 
