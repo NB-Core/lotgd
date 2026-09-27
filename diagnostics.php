@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lotgd\Diagnostics;
+use Lotgd\Forms;
 use Lotgd\GameLog;
 use Lotgd\Http;
 use Lotgd\Nav;
@@ -11,8 +12,10 @@ use Lotgd\Output;
 use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\Sanitize;
+use Lotgd\Settings;
 use Lotgd\SuAccess;
 use Lotgd\Translator;
+use Lotgd\Upgrade\SchemaUpgrade;
 
 // translator ready
 // addnews ready
@@ -31,6 +34,16 @@ Translator::getInstance()->setSchema("diagnostics");
 // Stricter than the other operational pages, which use SU_EDIT_CONFIG: this one
 // puts their contents plus IP addresses plus environment detail on one screen.
 SuAccess::check(SU_MEGAUSER);
+
+// The one operation here that writes: applying migrations the automatic
+// upgrade in common.php did not see. Everything else on this page reads. An
+// $op this page does not implement belongs to a module and passes through.
+$op = (string) Http::get('op');
+if (Forms::isUnverifiedCoreOp($op, ['migrate'])) {
+    http_response_code(400);
+    $op = '';
+    $_POST = [];
+}
 
 $hours = Diagnostics::normalizeHours(Http::get('hours'));
 $severity = Diagnostics::normalizeSeverity(Http::get('severity'));
@@ -156,6 +169,17 @@ if (!function_exists('diagnosticsSeverityColour')) {
 $diagnostics = new Diagnostics();
 $counts = $diagnostics->counts($hours, $severity);
 
+if ($op === 'migrate') {
+    $outcome = SchemaUpgrade::forGame(Settings::getInstance())->applyPending();
+    if ($outcome === SchemaUpgrade::UPGRADED) {
+        $output->output("`@The pending migrations have been applied.`0`n");
+    } elseif ($outcome === SchemaUpgrade::BUSY) {
+        $output->output("`\$Another request is applying migrations right now. Refresh in a moment.`0`n");
+    } else {
+        $output->output("`\$Applying the pending migrations failed. The reason is in the game log (category maintenance) and in the PHP error log.`0`n");
+    }
+}
+
 $output->rawOutput("<div class='diagnostics'>");
 $output->outputNotl(
     "`n`b`&%s`0`b `7(%s)`0`n`n",
@@ -193,6 +217,19 @@ foreach ($diagnostics->runtime() as $group => $entries) {
     }
     $output->outputNotl("`n`b%s`b`n", Sanitize::sanitize((string) Translator::translate((string) $group, 'diagnostics')));
     diagnosticsTable(['Item', 'Value'], $rows);
+}
+
+$pendingMigrations = $diagnostics->pendingMigrations();
+if ($pendingMigrations !== null && $pendingMigrations !== []) {
+    $migrateUrl = "diagnostics.php?op=migrate&hours=$hours$severityParam";
+    Nav::add("", $migrateUrl);
+    $output->outputNotl("`n");
+    $output->rawOutput(Forms::postButton(
+        $migrateUrl,
+        (string) Translator::translateInline("Apply pending migrations", "diagnostics"),
+        (string) Translator::translateInline("Apply the pending database migrations now? Back up the database first.", "diagnostics")
+    ));
+    $output->outputNotl("`n");
 }
 
 // ---------------------------------------------------------------- timeline --

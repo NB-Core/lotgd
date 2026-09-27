@@ -35,6 +35,7 @@ use Lotgd\Page;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Security\RuntimeHardening;
 use Lotgd\Security\Escape;
+use Lotgd\Upgrade\SchemaUpgrade;
 
 BootstrapErrorHandler::register();
 // translator ready
@@ -420,6 +421,17 @@ if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
     $settings = new Settings('settings');
 }
 
+// An installation that already uses Doctrine migrations upgrades itself on the
+// first request after an update, before anything below reads a game table.
+// A fresh install and a 1.x database still go through the installer.
+$schemaUpgradeOutcome = null;
+if (isset($settings) && !AJAX_MODE && (!defined('IS_INSTALLER') || !IS_INSTALLER)) {
+    $installedVersion = (string) $settings->getSetting('installer_version', '-1');
+    if (SchemaUpgrade::canUpgradeItself($logd_version, $installedVersion, [SchemaUpgrade::class, 'hasMigrationTable'])) {
+        $schemaUpgradeOutcome = SchemaUpgrade::forGame($settings)->run($logd_version);
+    }
+}
+
 if (isset($settings) && $logd_version == $settings->getSetting("installer_version", "-1")) {
     define("IS_INSTALLER", false);
 }
@@ -513,11 +525,21 @@ if (isset($settings) && $logd_version != $settings->getSetting('installer_versio
     if (!AJAX_MODE) {
             Header::pageHeader("Upgrade Needed");
             $output->output("`#The game is temporarily unavailable while a game upgrade is applied, please be patient, the upgrade will be completed soon.");
+        if ($schemaUpgradeOutcome === SchemaUpgrade::BUSY) {
+            $output->output("The database is being upgraded right now.`n`n");
+        } elseif ($schemaUpgradeOutcome !== null) {
+            // Failed now or recently; SchemaUpgrade logged the reason.
+            $output->output("The automatic database upgrade did not complete and is retried shortly.");
+            $output->output("Admins find the reason in the game log (category maintenance) and in the server's PHP error log.`n`n");
+        } else {
             $output->output("In order to perform the upgrade, an admin will have to run through the installer.");
-        $output->output("If you are an admin, please <a href='installer.php'>visit the Installer</a> and complete the upgrade process.`n`n", true);
+            $output->output("If you are an admin, please <a href='installer.php'>visit the Installer</a> and complete the upgrade process.`n`n", true);
+        }
             $output->output("`@If you don't know what this all means, just sit tight, we're doing an upgrade and will be done soon, you will be automatically returned to the game when the upgrade is complete.");
             $output->rawOutput("<meta http-equiv='refresh' content='30; url={$session['user']['restorepage']}'>");
-        Nav::add("Installer (Admins only!)", "installer.php");
+        if ($schemaUpgradeOutcome === null) {
+            Nav::add("Installer (Admins only!)", "installer.php");
+        }
             Footer::pageFooter();
     }
         define("NO_SAVE_USER", true);

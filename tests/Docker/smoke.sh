@@ -340,4 +340,76 @@ if [ "$restored_checksum" != "$dbconnect_checksum" ]; then
     exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# An update of an installed game. The installer is gone at this point, as it is
+# in every completed container, so the game has to bring its schema up to date
+# by itself on the first request -- through Doctrine, which reads dbconnect.php
+# through the state-volume link.
+#
+# Build the schema of an installed game: the configuration the installer writes
+# and every migration. Then model an update that brings one new migration and a
+# new version number: roll the newest migration back and record an older
+# version as installed.
+docker compose exec -T web php -r '
+    $configuration = [
+        "DB_HOST" => getenv("MYSQL_HOST"),
+        "DB_USER" => getenv("MYSQL_USER"),
+        "DB_PASS" => getenv("MYSQL_PASSWORD"),
+        "DB_NAME" => getenv("MYSQL_DATABASE"),
+        "DB_PREFIX" => "",
+        "DB_USEDATACACHE" => 1,
+        "DB_DATACACHEPATH" => "/var/cache/lotgd",
+    ];
+    if (file_put_contents("/var/lib/lotgd/dbconnect.php", "<?php\nreturn " . var_export($configuration, true) . ";\n") === false) {
+        fwrite(STDERR, "Failed to write the installed configuration\n");
+        exit(1);
+    }
+'
+docker compose exec -T --user www-data web php bin/doctrine migrations:migrate --no-interaction
+newest_migration=$(docker compose exec -T web sh -c 'ls /var/www/html/migrations | sort | tail -n 1 | sed "s/\.php$//"')
+docker compose exec -T --user www-data web \
+    php bin/doctrine migrations:execute "Lotgd\\Migrations\\${newest_migration}" --down --no-interaction
+
+db_sql() {
+    docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --batch --skip-column-names -u"$MYSQL_USER" "$MYSQL_DATABASE"' <<EOF
+$1
+EOF
+}
+
+db_sql "REPLACE INTO settings (setting, value) VALUES ('installer_version', '0.0.0 smoke')"
+if [ "$(db_sql "SELECT COUNT(*) FROM doctrine_migration_versions WHERE version = 'Lotgd\\\\Migrations\\\\${newest_migration}'")" != "0" ]; then
+    echo "Rolling back ${newest_migration} did not take effect" >&2
+    exit 1
+fi
+# Settings are cached on disk; drop the copy that predates the edit above.
+docker compose exec -T --user www-data web sh -c 'find /var/cache/lotgd -maxdepth 1 -name "datacache-*" -delete'
+
+code_version=$(docker compose exec -T web sh -c "sed -n 's/^\\\$logd_version = \"\\(.*\\)\";\$/\\1/p' /var/www/html/common.php")
+if [ -z "$code_version" ]; then
+    echo "Could not read the game version from common.php" >&2
+    exit 1
+fi
+
+status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${LOTGD_HTTP_PORT}/index.php")
+if [ "$status" != "200" ]; then
+    echo "The first request after the update answered $status instead of upgrading and serving the page" >&2
+    docker compose logs web
+    exit 1
+fi
+
+installed_version=$(db_sql "SELECT value FROM settings WHERE setting = 'installer_version'")
+if [ "$installed_version" != "$code_version" ]; then
+    echo "The game did not record its upgrade: installer_version is '$installed_version', expected '$code_version'" >&2
+    docker compose logs web
+    exit 1
+fi
+if [ "$(db_sql "SELECT COUNT(*) FROM doctrine_migration_versions WHERE version = 'Lotgd\\\\Migrations\\\\${newest_migration}'")" != "1" ]; then
+    echo "The game recorded the new version without applying ${newest_migration}" >&2
+    exit 1
+fi
+if [ "$(db_sql "SELECT COUNT(*) FROM gamelog WHERE category = 'maintenance' AND message LIKE 'Upgraded the database from 0.0.0 smoke%'")" != "1" ]; then
+    echo "The upgrade was not written to the game log" >&2
+    exit 1
+fi
+
 echo "Docker production smoke test passed"

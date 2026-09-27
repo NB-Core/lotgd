@@ -97,8 +97,11 @@ final class DiagnosticsFaillogPostRegressionTest extends TestCase
                 $code .= is_array($token) ? $token[1] : $token;
             }
 
-            self::assertStringNotContainsString(
-                'post',
+            // As a whole word: `post`, `f.post` and `'post'` all match, while
+            // Forms::postButton(), which the page uses to trigger its one write,
+            // is a different identifier.
+            self::assertDoesNotMatchRegularExpression(
+                '/\bpost\b/',
                 $code,
                 $file . ' must not name the faillog post column anywhere in its code'
             );

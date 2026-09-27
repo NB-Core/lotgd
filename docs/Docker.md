@@ -839,11 +839,25 @@ git pull
 docker compose up -d --build web
 #    With the prebuilt image, pull instead:
 #    docker compose pull web && docker compose up -d --no-build web
-# 3. Apply schema changes.
-docker compose exec -T --user www-data web php bin/doctrine migrations:migrate --no-interaction
-# 4. Confirm the container reports healthy again.
+# 3. Confirm the container reports healthy again.
 docker compose ps
 ```
+
+Schema changes apply themselves. When the game's version differs from the one
+recorded in the database, the first page request after the restart runs the
+pending migrations and records the new version; other requests meanwhile see a
+short "upgrade in progress" page. The result goes to the game log (category
+`maintenance`) and the container log. A failed migration keeps the game on that
+page and is retried after a minute; `docker compose logs web` shows the reason.
+To apply the migrations before the first visitor does, run them yourself right
+after step 2; the game then only records the new version:
+
+```bash
+docker compose exec -T --user www-data web php bin/doctrine migrations:migrate --no-interaction
+```
+
+The superuser **Diagnostics** page lists any migration that is still pending
+and can apply it.
 
 Check `UPGRADING.md` and `CHANGELOG.md` before every update; some releases add
 configuration keys to `dbconnect.php` that the installer would normally write.

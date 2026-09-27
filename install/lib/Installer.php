@@ -20,13 +20,9 @@ use Lotgd\Redirect;
 use Lotgd\Settings;
 use Lotgd\PasswordHelper;
 use Lotgd\Modules\Installer as ModuleInstaller;
-use Lotgd\Doctrine\Bootstrap;
-use Doctrine\Migrations\DependencyFactory;
-use Doctrine\Migrations\Configuration\Migration\ConfigurationArray;
-use Doctrine\Migrations\Configuration\EntityManager\ExistingEntityManager;
+use Lotgd\Doctrine\MigrationRunner;
 use Doctrine\Migrations\Version\Version;
 use Doctrine\Migrations\Version\ExecutionResult;
-use Symfony\Component\Console\Input\ArrayInput;
 
 class Installer
 {
@@ -2462,20 +2458,8 @@ if ($installerIsAncient) {
         InstallerLogger::log('DB_PREFIX set to ' . $DB_PREFIX);
 
         $configFile = dirname(__DIR__, 2) . '/src/Lotgd/Config/migrations.php';
-        if (function_exists('opcache_invalidate')) {
-            opcache_invalidate($configFile, true);
-        }
-
-        $config = require $configFile;
-
-        $em = Bootstrap::getEntityManager();
-
-        $dependencyFactory = DependencyFactory::fromEntityManager(
-            new ConfigurationArray($config),
-            new ExistingEntityManager($em)
-        );
-
-        $storage = $dependencyFactory->getMetadataStorage();
+        $runner = new MigrationRunner($configFile);
+        $storage = $runner->dependencyFactory()->getMetadataStorage();
         $storage->ensureInitialized();
 
         $executed = $storage->getExecutedMigrations();
@@ -2520,13 +2504,8 @@ if ($installerIsAncient) {
             unset($_ENV['LOTGD_BASE_VERSION']);
         }
 
-        $aliasResolver = $dependencyFactory->getVersionAliasResolver();
-        $latestVersion = $aliasResolver->resolveVersionAlias('latest');
-        $plan = $dependencyFactory->getMigrationPlanCalculator()->getPlanUntilVersion($latestVersion);
-        $factory = $dependencyFactory->getConsoleInputMigratorConfigurationFactory();
-        $migratorConfig = $factory->getMigratorConfiguration(new ArrayInput([]));
         try {
-            $dependencyFactory->getMigrator()->migrate($plan, $migratorConfig);
+            $runner->migrate();
         } catch (\Throwable $e) {
             InstallerLogger::log('Migration error: ' . $e->getMessage());
             throw $e;

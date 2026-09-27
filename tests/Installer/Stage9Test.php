@@ -115,9 +115,19 @@ namespace Doctrine\Migrations {
                 public function __construct(private DependencyFactory $factory)
                 {
                 }
-                public function migrate(array $plan, array $config): void
+                /**
+                 * @return array<string,array<int,mixed>> Statements per executed version, like the real migrator
+                 */
+                public function migrate(array $plan, array $config): array
                 {
                     $this->factory->migrated = $plan;
+
+                    $executed = [];
+                    foreach ($plan as $version) {
+                        $executed[(string) $version] = [];
+                    }
+
+                    return $executed;
                 }
             };
         }
