@@ -156,6 +156,34 @@ On a development machine or test server:
    your own that uses `Lotgd\Tests\` classes requires `tests/autoload.php`
    instead of the root `autoload.php`.
 
+### Updates within 2.x no longer need the installer
+
+An installation that already runs on Doctrine migrations brings its database up
+to date by itself. When the game's version (`$logd_version` in `common.php`)
+differs from the `installer_version` setting, the first page request applies
+the pending migrations, records the new version and serves the page. Requests
+arriving meanwhile see the "upgrade in progress" page. A failed migration keeps
+the game on that page, is logged to the game log (category `maintenance`) and
+PHP's error log, and is retried at most once a minute.
+
+- **Shared webspace:** upload the new files, delete `installer.php` (the game
+  refuses to run while it exists), open the game. No installer run.
+- **Docker:** pull or rebuild and restart. Running `bin/doctrine
+  migrations:migrate` yourself is optional. This also fixes a lock-up: a
+  completed container removes `installer.php`, so the first release with a new
+  version number would have left every container on "Upgrade Needed" with no
+  installer to finish it.
+- The superuser **Diagnostics** page lists migrations that are still pending
+  (for example after an upload that delivered the new version before a file
+  in `migrations/`) and applies them on request.
+
+Upgrades from **1.x**, which have no Doctrine migrations table yet, and fresh
+installations still go through `installer.php`.
+
+The database user needs the rights to change the schema (`CREATE`, `ALTER`,
+`INDEX`, `DROP`), which the installer already required. On shared hosting the
+database user normally has them.
+
 ---
 
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
@@ -217,20 +245,12 @@ you can complete the upgrade purely from the command line:
    ```bash
    php bin/doctrine migrations:migrate
    ```
-4. Update the `settings` table so the `installer_version` value matches the
-   `$logd_version` defined near the top of `common.php`. You can read the target
-   version string directly from that file whenever a new release ships.
+4. Open the game. Its first page request finds nothing left to migrate and
+   records the new version in the `installer_version` setting, so no manual SQL
+   is needed. Step 3 is optional as well: without it, that first request applies
+   the migrations itself.
 
-Example SQL for updating the installer version:
-
-```sql
-UPDATE settings
-SET value = '2.x.y'
-WHERE setting = 'installer_version';
-```
-
-Replace `2.x.y` with the exact value of `$logd_version` from your current
-`common.php`. Skipping the browser installer is **only** safe when you already
+Skipping the browser installer is **only** safe when you already
 have an upgraded **2.x** database; fresh installs and legacy bridge upgrades
 still need the web installer to seed legacy SQL data and verify required
 modules.

@@ -19,7 +19,9 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Doctrine\DBAL\ArrayParameterType;
+use Closure;
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Doctrine\MigrationRunner;
 use Lotgd\MySQL\Database;
 
 class Diagnostics
@@ -42,6 +44,38 @@ class Diagnostics
      * @var list<string>
      */
     private const EXPECTED_EXTENSIONS = ['gd', 'mbstring', 'mysqli', 'Zend OPcache', 'pdo', 'pdo_mysql', 'zip'];
+
+    /** @var Closure(): list<string> */
+    private Closure $pendingMigrations;
+
+    /**
+     * @param (callable(): list<string>)|null $pendingMigrations Lists the migrations the database has not run;
+     *                                                           defaults to asking Doctrine Migrations
+     */
+    public function __construct(?callable $pendingMigrations = null)
+    {
+        $this->pendingMigrations = Closure::fromCallable(
+            $pendingMigrations ?? static fn (): array => (new MigrationRunner())->pending()
+        );
+    }
+
+    /**
+     * Migrations in migrations/ the database has not run.
+     *
+     * The game applies them itself when its version changes. What is left here
+     * is a migration that arrived after that: an upload that delivered the new
+     * version number before the migration file.
+     *
+     * @return list<string>|null Null when the migration state cannot be read
+     */
+    public function pendingMigrations(): ?array
+    {
+        try {
+            return ($this->pendingMigrations)();
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
 
     /**
      * Clamp a requested window to one this page offers.
@@ -450,10 +484,10 @@ class Diagnostics
         $rows = [
             $this->row('Game version', $code, 'ok', [], false),
             // Reference only, deliberately without a warning state. When the two
-            // disagree, common.php:484 renders "Upgrade Needed" and its footer
-            // calls exit(), so this page is never reached -- a mismatch cannot be
-            // reported from here, and pretending otherwise would advertise a
-            // check that cannot fire.
+            // disagree, common.php either upgrades the database first or renders
+            // "Upgrade Needed", whose footer calls exit(), so this page is never
+            // reached -- a mismatch cannot be reported from here, and pretending
+            // otherwise would advertise a check that cannot fire.
             $schema === ''
                 ? $this->row('Schema version', 'unknown')
                 : $this->row('Schema version', $schema, 'ok', [], false),
@@ -462,6 +496,15 @@ class Diagnostics
                 'the game refuses to start while these differ, so reaching this page means they match'
             ),
         ];
+
+        $pending = $this->pendingMigrations();
+        if ($pending === null) {
+            $rows[] = $this->row('Pending migrations', 'unknown', 'unknown');
+        } elseif ($pending === []) {
+            $rows[] = $this->row('Pending migrations', 'none');
+        } else {
+            $rows[] = $this->row('Pending migrations', '%s not applied: %s', 'warn', [count($pending), implode(', ', $pending)]);
+        }
 
         try {
             $rows[] = $this->row('Database server', Database::getServerVersion(), 'ok', [], false);

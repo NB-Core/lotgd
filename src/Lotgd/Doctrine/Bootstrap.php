@@ -13,6 +13,7 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Lotgd\Entity\Account;
 use Lotgd\MySQL\Database;
+use Lotgd\Doctrine\DbconnectPath;
 use Lotgd\Doctrine\TablePrefixSubscriber;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
@@ -30,8 +31,8 @@ class Bootstrap
         $rootDir = dirname(__DIR__, 3);
         global $DB_HOST, $DB_USER, $DB_PASS, $DB_NAME, $DB_PREFIX, $DB_USEDATACACHE, $DB_DATACACHEPATH;
 
-        $dbConfig = realpath($rootDir . '/dbconnect.php');
-        if ($dbConfig && strpos($dbConfig, $rootDir) === 0) {
+        $dbConfig = DbconnectPath::resolve($rootDir, getenv('LOTGD_STATE_PATH') ?: null);
+        if ($dbConfig !== null) {
             $settings = require $dbConfig;
         } else {
             throw new \RuntimeException('dbconnect.php not found');

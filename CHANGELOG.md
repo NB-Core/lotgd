@@ -12,6 +12,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Added
 
+- An installation that runs on Doctrine migrations upgrades its database itself. When the code's version differs from the recorded `installer_version`, the first page request applies the pending migrations under a MySQL named lock, records the new version and serves the page; concurrent requests see the "upgrade in progress" page. Failures keep the game locked, go to the game log (`maintenance`) and PHP's error log, and are retried at most once a minute. Updates within 2.x therefore no longer need `installer.php`; fresh installs and 1.x upgrades still do. The superuser Diagnostics page lists pending migrations and can apply them. The installer and the upgrade share `Lotgd\Doctrine\MigrationRunner`; the upgrade lives in `Lotgd\Upgrade\SchemaUpgrade`. See `UPGRADING.md`.
 - The production Docker image is published to GitHub Container Registry as `ghcr.io/nb-core/lotgd` for AMD64 and ARM64, on every push to `master` (`:master`, `:sha-<commit>`) and for version tags (`:X.Y.Z`, `:X.Y`, `:latest`), each only after passing the production smoke test. A deployment selects it with `LOTGD_WEB_IMAGE` in `.env` and pulls instead of building; a Raspberry Pi no longer builds anything. Building locally stays the default. The Composer build stage now runs on the build machine's own platform, so a cross-architecture build no longer runs Composer under emulation. See `docs/Docker.md#prebuilt-image`.
 
 ### Changed
@@ -24,6 +25,8 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- Docker: a completed container removes `installer.php`, so the first release with a new version number would have left every container on "Upgrade Needed" with no installer to finish it. The self-upgrade above closes that; `tests/Docker/smoke.sh` now models such an update end to end.
+- Docker: Doctrine refused the `dbconnect.php` the image links into its state volume (`LOTGD_STATE_PATH`), because the link target lies outside the game directory, so every Doctrine query of an installed container failed. `Lotgd\Doctrine\DbconnectPath` accepts the game directory and the state directory, and nothing else.
 - `installer.php` checks for the PHP extensions `mysqli`, `pdo_mysql` and `mbstring` before anything else and lists every missing one with a hint where hosting panels enable it. A server without `pdo_mysql` used to pass the database connection test and then stop at the migration stage with Doctrine's "could not find driver", which named neither the extension nor the fix. The check lives in `Lotgd\Installer\Requirements`.
 - Two-factor secrets are now decoded case-insensitively, as RFC 4648 defines base32. The decoder stripped before it uppercased, so a lower-case secret was silently decoded into a different, much shorter one rather than rejected. Secrets this game generates are upper-case and decode byte-for-byte as before; the change affects only secrets that arrived from elsewhere — an import or a migration — which could never have verified.
 - Corrected combat edge cases: resistance no longer amplifies ripostes, zero-damage rolls cannot loop forever or discard a hit on the final retry, regeneration uses its configured message, and damaging auras can remove companions while respecting `cannotdie`.

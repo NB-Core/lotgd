@@ -176,9 +176,19 @@ Log in with the administrator account. In the **Superuser Grotto**, open
    Your `dbconnect.php` is not part of the download, so it stays as it is.
    The same goes for modules you added yourself. `.htaccess` is replaced, so
    repeat any change you made to it.
-3. Open `installer.php`. It detects the existing installation, may ask
-   for your administrator login, and updates the database. Delete `installer.php`
-   again at the end.
+3. Delete `installer.php` from the game folder, or do not upload it in the
+   first place. An installed game does not need it for updates, and the
+   game refuses to run while the file is there.
+4. Open the game. The first page after the update brings the database up to
+   date by itself, which can take a moment; anyone else who visits meanwhile
+   sees a short "upgrade in progress" page. The superuser **Diagnostics** page
+   shows under *Pending migrations* whether anything is left, and can apply it.
+   That covers an FTP upload that delivered the new version before one of the
+   files in `migrations/`.
+
+Updating from a 1.x version is different: that still goes through
+`installer.php`, which converts the old database. See
+[UPGRADING.md](../UPGRADING.md).
 
 Read [UPGRADING.md](../UPGRADING.md) before each update. It lists anything you
 have to do by hand.

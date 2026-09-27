@@ -23,7 +23,7 @@ final class DiagnosticsTest extends TestCase
         Database::$tablePrefix = '';
         Database::resetDoctrineConnection();
 
-        $this->diagnostics = new Diagnostics();
+        $this->diagnostics = new Diagnostics(static fn (): array => []);
     }
 
     protected function tearDown(): void
@@ -374,6 +374,45 @@ final class DiagnosticsTest extends TestCase
                 $this->assertSame('something else entirely', $row['value']);
             }
         }
+    }
+
+    public function testPendingMigrationsAreReportedAsAWarning(): void
+    {
+        $diagnostics = new Diagnostics(static fn (): array => ['Lotgd\\Migrations\\Version20260101000000']);
+
+        $row = $this->versionRow($diagnostics, 'Pending migrations');
+
+        $this->assertSame('warn', $row['status']);
+        $this->assertSame([1, 'Lotgd\\Migrations\\Version20260101000000'], $row['args']);
+    }
+
+    public function testNoPendingMigrationsIsReportedAsOk(): void
+    {
+        $this->assertSame('ok', $this->versionRow($this->diagnostics, 'Pending migrations')['status']);
+    }
+
+    public function testAnUnreadableMigrationStateIsReportedAsUnknown(): void
+    {
+        $diagnostics = new Diagnostics(static function (): array {
+            throw new \RuntimeException('dbconnect.php not found');
+        });
+
+        $this->assertNull($diagnostics->pendingMigrations());
+        $this->assertSame('unknown', $this->versionRow($diagnostics, 'Pending migrations')['status']);
+    }
+
+    /**
+     * @return array{label:string,value:string,args:list<string|int>,translate:bool,status:string}
+     */
+    private function versionRow(Diagnostics $diagnostics, string $label): array
+    {
+        Settings::setInstance(new DummySettings(['installer_version' => '2.0.7 +nb Edition']));
+        foreach ($diagnostics->runtime()['Version'] as $row) {
+            if ($row['label'] === $label) {
+                return $row;
+            }
+        }
+        $this->fail('no row labelled ' . $label);
     }
 
     /**

@@ -35,6 +35,7 @@ use Lotgd\Page;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Security\RuntimeHardening;
 use Lotgd\Security\Escape;
+use Lotgd\Upgrade\SchemaUpgrade;
 
 BootstrapErrorHandler::register();
 // translator ready
@@ -418,6 +419,34 @@ if (!defined("DB_NODB")) {
 //Generate our settings object
 if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
     $settings = new Settings('settings');
+}
+
+// An installation that already uses Doctrine migrations upgrades itself on the
+// first request after an update, before anything below reads a game table.
+// A fresh install and a 1.x database still go through the installer.
+//
+// Until the upgrade has completed, no request gets past this point: navigation,
+// module hooks and AJAX handlers below would read and write tables a migration
+// may be changing at that moment. AJAX requests never start the upgrade; a
+// page request does, and everything else is answered here and ends.
+if (isset($settings) && (!defined('IS_INSTALLER') || !IS_INSTALLER)) {
+    $installedVersion = (string) $settings->getSetting('installer_version', '-1');
+    if (SchemaUpgrade::canUpgradeItself($logd_version, $installedVersion, [SchemaUpgrade::class, 'hasMigrationTable'])) {
+        $schemaUpgradeOutcome = AJAX_MODE ? SchemaUpgrade::BUSY : SchemaUpgrade::forGame($settings)->run($logd_version);
+        if ($schemaUpgradeOutcome !== SchemaUpgrade::UPGRADED) {
+            http_response_code(503);
+            header('Retry-After: ' . SchemaUpgrade::RETRY_AFTER_SECONDS);
+            header('Cache-Control: no-store');
+            if (AJAX_MODE) {
+                header('Content-Type: text/plain; charset=UTF-8');
+                echo "The game is being upgraded. Try again shortly.\n";
+            } else {
+                header('Content-Type: text/html; charset=UTF-8');
+                echo SchemaUpgrade::unavailablePage($schemaUpgradeOutcome, file_exists(__DIR__ . '/installer.php'));
+            }
+            exit;
+        }
+    }
 }
 
 if (isset($settings) && $logd_version == $settings->getSetting("installer_version", "-1")) {
