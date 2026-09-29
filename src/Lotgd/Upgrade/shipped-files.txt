@@ -387,6 +387,7 @@ src/Lotgd/Security/PasskeyCredentialRepository.php
 src/Lotgd/Security/PasskeyService.php
 src/Lotgd/Security/RequestValue.php
 src/Lotgd/Security/RuntimeHardening.php
+src/Lotgd/Security/ValidationLogin.php
 src/Lotgd/SecurityLog.php
 src/Lotgd/Serialization.php
 src/Lotgd/ServerFunctions.php
