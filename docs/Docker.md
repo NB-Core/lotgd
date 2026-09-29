@@ -350,9 +350,54 @@ that deletes the game database. After the recreated services are healthy,
 verify application login and retain the pre-rotation backups until the upgrade
 has been validated.
 
+### Installing from the command line
+
+The simplest first installation needs no browser. Start the stack and run the
+installer inside the web container:
+
+```bash
+docker compose up -d --build        # or pull the prebuilt image, see above
+docker compose exec -T --user www-data web php bin/install --admin=YourName
+```
+
+`bin/install` uses the database credentials the container already has. It
+writes `dbconnect.php` to the state volume, then creates the schema, the base
+data and the recommended modules, the administrator account and the completion
+marker. At the end it checks all of this in the database. It prints the
+administrator's password once:
+
+```text
+Installed Legend of the Green Dragon 2.0.7 +nb Edition.
+Database configuration: /var/lib/lotgd/dbconnect.php
+Modules installed and activated: 15
+Administrator: YourName
+Password: 8mKq…
+This password is shown once. Store it now and change it in the game if you like.
+```
+
+- **There is no default administrator.** `--admin` is required: 3–25 letters
+  and digits, starting with a letter.
+- **The password is generated** by default. It appears only in your terminal:
+  the output of `docker compose exec` does not reach the container log.
+- **To choose it yourself**, pass it on standard input, never as an argument,
+  where it would show up in the process list:
+
+  ```bash
+  printf '%s\n' "$ADMIN_PASSWORD" | docker compose exec -T --user www-data web php bin/install --admin=YourName --password-stdin
+  ```
+
+- `--modules=none` installs no modules; the default is the recommended set,
+  as preselected in the browser installer.
+- **An installed game is never touched.** On a database that already holds a
+  game, the command refuses. Updates apply themselves on the first page
+  request.
+
+`LOTGD_INSTALL_ENABLED` and an SSH tunnel are not needed for this route.
+
 ### Deliberately enabling initial installation
 
-The installer is denied by default. Set `LOTGD_INSTALL_ENABLED=1` in `.env`
+As an alternative to `bin/install`, the browser installer can run once. It is
+denied by default. Set `LOTGD_INSTALL_ENABLED=1` in `.env`
 only for the installation window, recreate the web container, and start the
 stack. The published port remains restricted to the Docker host's loopback
 interface (`127.0.0.1:8080` by default):

@@ -435,8 +435,12 @@ replacements. Production serves only HTTP on the chosen `LOTGD_HTTP_PORT`;
 deploy it behind a TLS-terminating reverse proxy for HTTPS.
 TLS is intentionally not bundled because each deployment must supply and renew
 certificates for its own domain, for example through Let's Encrypt.
-The installer is denied by default; enable it deliberately for the setup window
-as described in the guide.
+Install without a browser once the stack runs:
+`docker compose exec -T --user www-data web php bin/install --admin=YourName`
+creates the game and your administrator and prints the password once (see
+[Installing from the command line](docs/Docker.md#installing-from-the-command-line)).
+The browser installer is denied by default and can be enabled deliberately
+instead, as described in the guide.
 
 See [the Docker guide](docs/Docker.md) for cache behavior, verification, and
 troubleshooting — in particular

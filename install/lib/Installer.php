@@ -2193,6 +2193,29 @@ if ($installerIsAncient) {
     }
 
     /**
+     * The dbconnect.php contents for a set of database settings, as stage 6
+     * writes them. Used by the command-line install, which writes the file
+     * before the game is bootstrapped.
+     *
+     * @param array<string, mixed> $dbinfo Keys as in the installer session's `dbinfo`
+     */
+    public function dbconnectContentsFor(array $dbinfo): string
+    {
+        return $this->buildDbconnectContents(
+            $this->normalizeDbconnectAssignments($this->getSessionDbinfoOverrides($dbinfo))
+        );
+    }
+
+    /**
+     * Where dbconnect.php is written: the state directory in a container,
+     * the game directory otherwise.
+     */
+    public function dbconnectWritePath(): string
+    {
+        return $this->getDbconnectWritePath();
+    }
+
+    /**
      * Return the real configuration target used by immutable containers.
      */
     private function getDbconnectWritePath(): string

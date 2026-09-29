@@ -178,7 +178,9 @@ PHP's error log, and is retried at most once a minute.
   in `migrations/`) and applies them on request.
 
 Upgrades from **1.x**, which have no Doctrine migrations table yet, and fresh
-installations still go through `installer.php`.
+installations still go through `installer.php`. A container needs neither:
+`php bin/install --admin=NAME` installs from the command line (see
+`docs/Docker.md#installing-from-the-command-line`).
 
 The game also checks that the upload is complete. It ships a list of the
 files every installation needs (`src/Lotgd/Upgrade/shipped-files.txt`;
