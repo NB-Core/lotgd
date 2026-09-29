@@ -341,31 +341,45 @@ if [ "$restored_checksum" != "$dbconnect_checksum" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# A first installation without the browser: `bin/install` in the container,
+# as the operator documentation describes it. Start from the state of a fresh
+# deployment: no database configuration and no completion marker. The earlier
+# steps left the readiness fixture and a modelled marker behind, both written
+# by root, which www-data could not replace.
+docker compose exec -T web rm -f /var/lib/lotgd/dbconnect.php /var/lib/lotgd/installation-complete
+
+if install_output=$(docker compose exec -T --user www-data web php bin/install --admin=Smoke 2>&1); then
+    :
+else
+    echo "bin/install failed:" >&2
+    echo "$install_output" >&2
+    exit 1
+fi
+echo "$install_output" | grep -q '^Password: [A-Za-z0-9]\{24\}$' || {
+    echo "bin/install did not print a generated password:" >&2
+    echo "$install_output" >&2
+    exit 1
+}
+docker compose exec -T web sh -c '
+    test -s /var/lib/lotgd/dbconnect.php &&
+    grep -F completed /var/lib/lotgd/installation-complete >/dev/null
+' || {
+    echo "bin/install did not write the configuration and the completion marker to the state volume" >&2
+    exit 1
+}
+if docker compose exec -T --user www-data web php bin/install --admin=Again >/dev/null 2>&1; then
+    echo "bin/install ran a second time over an installed game" >&2
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
 # An update of an installed game. The installer is gone at this point, as it is
 # in every completed container, so the game has to bring its schema up to date
 # by itself on the first request -- through Doctrine, which reads dbconnect.php
 # through the state-volume link.
 #
-# Build the schema of an installed game: the configuration the installer writes
-# and every migration. Then model an update that brings one new migration and a
-# new version number: roll the newest migration back and record an older
-# version as installed.
-docker compose exec -T web php -r '
-    $configuration = [
-        "DB_HOST" => getenv("MYSQL_HOST"),
-        "DB_USER" => getenv("MYSQL_USER"),
-        "DB_PASS" => getenv("MYSQL_PASSWORD"),
-        "DB_NAME" => getenv("MYSQL_DATABASE"),
-        "DB_PREFIX" => "",
-        "DB_USEDATACACHE" => 1,
-        "DB_DATACACHEPATH" => "/var/cache/lotgd",
-    ];
-    if (file_put_contents("/var/lib/lotgd/dbconnect.php", "<?php\nreturn " . var_export($configuration, true) . ";\n") === false) {
-        fwrite(STDERR, "Failed to write the installed configuration\n");
-        exit(1);
-    }
-'
-docker compose exec -T --user www-data web php bin/doctrine migrations:migrate --no-interaction
+# Model an update that brings one new migration and a new version number: roll
+# the newest migration back and record an older version as installed.
 newest_migration=$(docker compose exec -T web sh -c 'ls /var/www/html/migrations | sort | tail -n 1 | sed "s/\.php$//"')
 docker compose exec -T --user www-data web \
     php bin/doctrine migrations:execute "Lotgd\\Migrations\\${newest_migration}" --down --no-interaction
@@ -375,6 +389,15 @@ db_sql() {
 $1
 EOF
 }
+
+if [ "$(db_sql "SELECT COUNT(*) FROM accounts WHERE login = 'Smoke' AND superuser & 1")" != "1" ]; then
+    echo "bin/install did not create the administrator Smoke" >&2
+    exit 1
+fi
+if [ "$(db_sql "SELECT COUNT(*) FROM modules WHERE active = 1")" = "0" ]; then
+    echo "bin/install did not install and activate the recommended modules" >&2
+    exit 1
+fi
 
 db_sql "REPLACE INTO settings (setting, value) VALUES ('installer_version', '0.0.0 smoke')"
 if [ "$(db_sql "SELECT COUNT(*) FROM doctrine_migration_versions WHERE version = 'Lotgd\\\\Migrations\\\\${newest_migration}'")" != "0" ]; then

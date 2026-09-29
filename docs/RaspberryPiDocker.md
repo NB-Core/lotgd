@@ -36,12 +36,11 @@ cp .env.example .env
 chmod 600 .env
 sed -i "s|^MYSQL_PASSWORD=$|MYSQL_PASSWORD=$(openssl rand -base64 32)|" .env
 sed -i "s|^MYSQL_ROOT_PASSWORD=$|MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)|" .env
-sed -i 's/^LOTGD_INSTALL_ENABLED=.*/LOTGD_INSTALL_ENABLED=1/' .env
 echo 'LOTGD_WEB_IMAGE=ghcr.io/nb-core/lotgd:master' >> .env
 ```
 
 Use two independently generated secrets; do not reuse either password or
-commit `.env`. Keep the installer flag at `1` only for initial setup.
+commit `.env`.
 
 The last line selects the [prebuilt image](Docker.md#prebuilt-image), which is
 published for ARM64. The Pi then downloads the finished image instead of
@@ -49,41 +48,37 @@ building it, which is slow on a Pi and repeats the Composer download on every
 update. Leave the line out to build locally instead, and use `--build` where
 this guide says `--no-build`.
 
-## 3. Start the private installer
+## 3. Start and install
 
 ```bash
 docker compose pull web
 docker compose up -d --no-build
+docker compose exec -T --user www-data web php bin/install --admin=YourName
 ```
+
+The last command installs the game and creates your administrator account. It
+prints the account's password once, so copy it now. The details, including how
+to choose the password yourself, are in
+[Installing from the command line](Docker.md#installing-from-the-command-line).
+No browser, SSH tunnel or installer switch is involved.
 
 Compose publishes the selected `${LOTGD_HTTP_PORT}` (8080 by default) on
 `127.0.0.1` **of the Pi only**. It is intentionally not reachable directly at
-`http://raspberrypi.local/` or the Pi's LAN address. From an administrator
-workstation, create an SSH tunnel:
+`http://raspberrypi.local/` or the Pi's LAN address. To look at the game before
+the reverse proxy below is in place, tunnel to it from your workstation:
 
 ```bash
 ssh -N -L 8080:127.0.0.1:8080 pi@raspberrypi.local
 ```
 
-Then open `http://127.0.0.1:8080/installer.php` on that workstation and finish
-installation. If `LOTGD_HTTP_PORT` is changed, use that Pi-side port after the
-second colon; the workstation-side port may be any unused local port.
-
-After installation, set `LOTGD_INSTALL_ENABLED=0` in `.env` and recreate web as
-defense in depth. The persistent completion marker already keeps the installer
-locked even if the flag is accidentally left enabled:
-
-```bash
-sed -i 's/^LOTGD_INSTALL_ENABLED=.*/LOTGD_INSTALL_ENABLED=0/' .env
-docker compose up -d --force-recreate web
-```
+and open `http://127.0.0.1:8080/`. If `LOTGD_HTTP_PORT` is changed, use that
+Pi-side port after the second colon.
 
 ## 4. Public operation requires a TLS reverse proxy
 
 For a permanently public game, run a TLS-terminating reverse proxy such as
 Caddy, Nginx, or Traefik on the Pi's public/LAN interface and proxy it to
-`127.0.0.1:${LOTGD_HTTP_PORT}`. Do not change the Compose port to `0.0.0.0` and
-do not expose the temporary installer directly. Certificate issuance, trusted
+`127.0.0.1:${LOTGD_HTTP_PORT}`. Do not change the Compose port to `0.0.0.0`. Certificate issuance, trusted
 proxy configuration, Docker network boundaries, backups, and verification are
 covered in [Docker deployment](Docker.md).
 

@@ -1,0 +1,131 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/*
+ * Install the game from the command line, without the browser installer.
+ *
+ *   docker compose exec -T --user www-data web php bin/install --admin=NAME
+ *
+ * See Lotgd\Installer\HeadlessInstall and docs/Docker.md.
+ */
+
+use Lotgd\Installer\HeadlessInstall;
+use Lotgd\Installer\Installer;
+
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit(1);
+}
+
+$root = dirname(__DIR__);
+chdir($root);
+require $root . '/autoload.php';
+
+$headless = new HeadlessInstall(getenv());
+try {
+    $request = $headless->parse(array_slice($argv, 1), STDIN);
+    $dbinfo = $headless->dbinfo();
+} catch (\InvalidArgumentException $exception) {
+    fwrite(STDERR, $exception->getMessage() . "\n\n" . HeadlessInstall::USAGE . "\n");
+    exit(2);
+}
+
+// Before anything is written: this command installs, it never overwrites a
+// game. An existing installation upgrades itself on the next page request.
+try {
+    $pdo = new \PDO(
+        sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $dbinfo['DB_HOST'], $dbinfo['DB_NAME']),
+        (string) $dbinfo['DB_USER'],
+        (string) $dbinfo['DB_PASS'],
+        [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+    );
+    $tableLike = static function (string $pattern) use ($pdo): bool {
+        $result = $pdo->query('SHOW TABLES LIKE ' . $pdo->quote($pattern));
+
+        return $result !== false && $result->fetchColumn() !== false;
+    };
+    $installed = HeadlessInstall::alreadyInstalled($tableLike);
+} catch (\PDOException $exception) {
+    fwrite(STDERR, 'Cannot reach the database: ' . $exception->getMessage() . "\n");
+    exit(1);
+}
+$pdo = null;
+if ($installed) {
+    fwrite(STDERR, "The database already holds a game, so there is nothing to install.\n"
+        . "Updates apply themselves on the first page request after a new version.\n");
+    exit(1);
+}
+$obstacles = HeadlessInstall::preflight(Installer::completionMarkerPath());
+if ($obstacles !== []) {
+    fwrite(STDERR, "Nothing was installed:\n  - " . implode("\n  - ", $obstacles) . "\n");
+    exit(1);
+}
+
+// dbconnect.php first, so common.php connects to the database like any page.
+$installer = new Installer();
+$dbconnect = HeadlessInstall::writeDbconnect($installer, $dbinfo);
+
+// common.php at global scope: the installer stages read its globals.
+define('IS_INSTALLER', true);
+define('ALLOW_ANONYMOUS', true);
+define('OVERRIDE_FORCED_NAV', true);
+require $root . '/common.php';
+require $root . '/install/data/recommended_modules.php';
+$DB_USEDATACACHE = 0;
+
+$moduleOperations = $request['modules'] === 'recommended'
+    ? HeadlessInstall::moduleOperations($recommended_modules, $root . '/modules')
+    : [];
+
+// The schema synchronisation reports every column it adjusts through
+// error_log(), and pages may print. Useful when something goes wrong, noise
+// when it does not: keep both aside and show them only on failure.
+$errorLog = (string) tempnam(sys_get_temp_dir(), 'lotgd-install-');
+$previousErrorLog = ini_set('error_log', $errorLog);
+$inactive = [];
+ob_start();
+try {
+    HeadlessInstall::runStages($installer, $request, $dbinfo, $moduleOperations);
+    $problems = HeadlessInstall::verify($logd_version, $request['admin']);
+    $inactive = HeadlessInstall::inactiveModules(array_keys($moduleOperations));
+} catch (\Throwable $exception) {
+    $problems = [get_class($exception) . ': ' . $exception->getMessage()];
+}
+$printed = (string) ob_get_clean();
+ini_set('error_log', $previousErrorLog === false ? '' : $previousErrorLog);
+$printed .= is_file($errorLog) ? (string) file_get_contents($errorLog) : '';
+if (is_file($errorLog)) {
+    unlink($errorLog);
+}
+
+if ($problems !== []) {
+    fwrite(STDERR, "The installation did not complete:\n  - " . implode("\n  - ", $problems) . "\n");
+    fwrite(STDERR, "The database may hold part of it; empty it before running this command again.\n\n");
+    fwrite(STDERR, "Installer output:\n" . HeadlessInstall::installerText() . "\n");
+    if (trim($printed) !== '') {
+        fwrite(STDERR, "\nOther output:\n" . $printed . "\n");
+    }
+    exit(1);
+}
+
+fwrite(STDOUT, sprintf("Installed Legend of the Green Dragon %s.\n", $logd_version));
+fwrite(STDOUT, sprintf("Database configuration: %s\n", $dbconnect));
+fwrite(STDOUT, sprintf(
+    "Modules installed and activated: %d of %d\n",
+    count($moduleOperations) - count($inactive),
+    count($moduleOperations)
+));
+if ($inactive !== []) {
+    fwrite(STDERR, sprintf(
+        "Not active, see the module manager in the game: %s\n",
+        implode(', ', $inactive)
+    ));
+}
+fwrite(STDOUT, sprintf("Administrator: %s\n", $request['admin']));
+if ($request['generated']) {
+    fwrite(STDOUT, sprintf("Password: %s\n", $request['password']));
+    fwrite(STDOUT, "This password is shown once. Store it now and change it in the game if you like.\n");
+}
+exit(0);

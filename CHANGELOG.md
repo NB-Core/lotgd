@@ -12,6 +12,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Added
 
+- `bin/install` installs the game from the command line, for containers: `docker compose exec -T --user www-data web php bin/install --admin=NAME`. It uses the container's database environment and runs the browser installer's own stages (dbconnect.php in the state volume, migrations and base data, recommended modules, the administrator, the completion marker). It then checks the result in the database. There is no default administrator: the name is required, and the password is read from standard input (`--password-stdin`, at least 12 characters) or generated and printed once. It refuses to run on a database that already holds a game. The browser installer, `LOTGD_INSTALL_ENABLED` and the SSH tunnel are no longer needed for a Docker install; `docs/RaspberryPiDocker.md` uses the command.
 - Incomplete uploads are detected. The game ships `src/Lotgd/Upgrade/shipped-files.txt`, the files every installation needs (core PHP, `.htaccess`, `async/`, `lib/`, `migrations/`, `pages/`, `src/`, `vendor/`; not modules, themes or images, which administrators may remove).
   - `installer.php` lists missing files before loading the Composer autoloader, which a missing `vendor/` file would otherwise stop without naming it.
   - The automatic schema upgrade does not migrate while files are missing, so a version number that arrived before its migration cannot be recorded without it. Its waiting page names the files.

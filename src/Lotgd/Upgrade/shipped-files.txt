@@ -57,6 +57,7 @@ install/data/legacy_sql.php
 install/data/recommended_modules.php
 install/data/tables.php
 install/errors/.gitignore
+install/lib/HeadlessInstall.php
 install/lib/Installer.php
 install/lib/InstallerLogger.php
 install/lib/Requirements.php
