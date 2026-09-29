@@ -101,10 +101,15 @@ final class ValidationLoginTest extends TestCase
 
     public function testOnlyAStringTokenIsAccepted(): void
     {
+        // A fresh grant for each case: consume() clears the grant even when
+        // it refuses, so a second case would otherwise meet no grant at all.
         $token = ValidationLogin::grant(42, 'Violet', 1000);
-
         self::assertNull(ValidationLogin::consume([$token], 1000));
+
+        ValidationLogin::grant(42, 'Violet', 1000);
         self::assertNull(ValidationLogin::consume('', 1000));
+
+        ValidationLogin::grant(42, 'Violet', 1000);
         self::assertNull(ValidationLogin::consume(null, 1000));
     }
 
