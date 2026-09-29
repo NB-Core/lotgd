@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Security;
 
+use Lotgd\Security\Csrf;
 use Lotgd\Security\ValidationLogin;
 use PHPUnit\Framework\TestCase;
 
@@ -32,6 +33,20 @@ final class ValidationLoginTest extends TestCase
         $token = ValidationLogin::grant(42, 'Violet', 1000);
 
         self::assertSame(['acctid' => 42, 'login' => 'Violet'], ValidationLogin::consume($token, 1000));
+    }
+
+    public function testTheTokenIsACsrfTokenInItsOwnScope(): void
+    {
+        $token = ValidationLogin::grant(42, 'Violet', 1000);
+        self::assertSame($token, Csrf::peek(Csrf::SCOPE_VALIDATION_LOGIN));
+
+        ValidationLogin::consume($token, 1000);
+        self::assertNull(Csrf::peek(Csrf::SCOPE_VALIDATION_LOGIN), 'redeeming forgets the scope');
+    }
+
+    public function testEveryGrantIssuesAFreshToken(): void
+    {
+        self::assertNotSame(ValidationLogin::grant(42, 'Violet', 1000), ValidationLogin::grant(42, 'Violet', 1000));
     }
 
     public function testAGrantIsUsableOnce(): void

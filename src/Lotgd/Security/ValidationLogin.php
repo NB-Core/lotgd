@@ -16,9 +16,11 @@ namespace Lotgd\Security;
  * point of storing bcrypt hashes at all.
  *
  * What replaces it never leaves the server except as a random token. The
- * grant lives in the session of the browser that opened the link, names one
- * account, expires after a few minutes, and is gone after its first use,
- * whether that use succeeds or not.
+ * token is a {@see Csrf} token in its own scope, issued fresh for each grant
+ * and forgotten on redemption; beside it the session keeps which account it
+ * is for and until when. It works only in the browser that opened the link,
+ * for that one account, for a few minutes, and once, whether that use
+ * succeeds or not.
  */
 final class ValidationLogin
 {
@@ -28,9 +30,8 @@ final class ValidationLogin
     /** Seconds a grant stays usable. */
     public const LIFETIME = 300;
 
+    /** Where the session keeps the account and expiry the token is for. */
     private const SESSION_KEY = 'validation_login';
-
-    private const TOKEN_BYTES = 32;
 
     /**
      * Allow one login to this account from the current session.
@@ -42,16 +43,15 @@ final class ValidationLogin
      */
     public static function grant(int $acctid, string $login, ?int $now = null): string
     {
-        $token = bin2hex(random_bytes(self::TOKEN_BYTES));
+        Csrf::forget(Csrf::SCOPE_VALIDATION_LOGIN);
         $session = &self::sessionRef();
         $session[self::SESSION_KEY] = [
             'acctid' => $acctid,
             'login' => $login,
-            'token' => $token,
             'expires' => ($now ?? time()) + self::LIFETIME,
         ];
 
-        return $token;
+        return Csrf::token(Csrf::SCOPE_VALIDATION_LOGIN);
     }
 
     /**
@@ -65,22 +65,20 @@ final class ValidationLogin
      */
     public static function consume(mixed $provided, ?int $now = null): ?array
     {
+        $tokenMatches = Csrf::matches(Csrf::SCOPE_VALIDATION_LOGIN, $provided);
+        Csrf::forget(Csrf::SCOPE_VALIDATION_LOGIN);
         $session = &self::sessionRef();
         $grant = $session[self::SESSION_KEY] ?? null;
         unset($session[self::SESSION_KEY]);
 
-        if (!is_array($grant) || !is_string($provided) || $provided === '') {
+        if (!$tokenMatches || !is_array($grant)) {
             return null;
         }
 
-        $token = $grant['token'] ?? null;
         $expires = $grant['expires'] ?? null;
         $acctid = $grant['acctid'] ?? null;
         $login = $grant['login'] ?? null;
-        if (!is_string($token) || !is_int($expires) || !is_int($acctid) || !is_string($login)) {
-            return null;
-        }
-        if (($now ?? time()) > $expires || !hash_equals($token, $provided)) {
+        if (!is_int($expires) || !is_int($acctid) || !is_string($login) || ($now ?? time()) > $expires) {
             return null;
         }
 
@@ -116,7 +114,7 @@ final class ValidationLogin
     }
 
     /**
-     * Reference to the game session array, as {@see Csrf} uses it.
+     * Reference to the game session array, the one {@see Csrf} uses.
      *
      * @return array<string, mixed>
      */
