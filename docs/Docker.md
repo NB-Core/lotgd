@@ -386,8 +386,7 @@ This password is shown once. Store it now and change it in the game if you like.
   printf '%s\n' "$ADMIN_PASSWORD" | docker compose exec -T --user www-data web php bin/install --admin=YourName --password-stdin
   ```
 
-  It needs at least 12 characters and no backslash, which the game's login
-  removes from what is typed.
+  It needs at least 12 characters.
 
 - `--modules=none` installs no modules; the default is the recommended set,
   as preselected in the browser installer. A module that fails to install is

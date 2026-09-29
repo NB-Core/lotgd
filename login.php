@@ -46,7 +46,9 @@ if ($name != "") {
         Redirect::redirect("badnav.php");
     } else {
         $passwordRequest = Http::post('password');
-        $password = is_string($passwordRequest) ? stripslashes($passwordRequest) : '';
+        // Compared as typed; PasswordHelper::matchTyped() also accepts the
+        // backslash-stripped form the login compared until now.
+        $password = is_string($passwordRequest) ? $passwordRequest : '';
         $forceRequest = Http::post('force');
         $force = is_string($forceRequest) ? $forceRequest : '';
         if (substr($password, 0, 6) == "!md52!") {
@@ -95,11 +97,15 @@ if ($name != "") {
                 if ($acctrow) {
                     $algo = (int) ($acctrow['password_algo'] ?? PasswordHelper::ALGO_LEGACY);
 
+                    // The form that matched; a rehash keeps it, so an upgrade
+                    // never changes which password the account accepts.
+                    $matched = $password;
                     if ($isPassthrough) {
                         // Passthrough: compare raw stored hash directly.
                         $passwordValid = hash_equals($acctrow['password'], $password);
                     } else {
-                        $passwordValid = PasswordHelper::verify($password, $acctrow['password'], $algo);
+                        $matched = PasswordHelper::matchTyped($password, (string) $acctrow['password'], $algo);
+                        $passwordValid = $matched !== null;
                     }
 
                     if (!$passwordValid) {
@@ -107,7 +113,7 @@ if ($name != "") {
                     } else {
                         // Transparent upgrade from legacy md5 to bcrypt.
                         if (!$isPassthrough && PasswordHelper::needsRehash($algo, (string) $acctrow['password'])) {
-                            $newHash = PasswordHelper::hash($password);
+                            $newHash = PasswordHelper::hash((string) $matched);
                             $entityManager->getConnection()->executeStatement(
                                 "UPDATE " . Database::prefix("accounts") . " SET password = :password, password_algo = :algo WHERE acctid = :acctid",
                                 [
@@ -149,16 +155,18 @@ if ($name != "") {
                     $acctrow = Database::fetchAssoc($result);
                     $algo = (int) ($acctrow['password_algo'] ?? PasswordHelper::ALGO_LEGACY);
 
+                    $matched = $password;
                     if ($isPassthrough) {
                         $passwordValid = hash_equals($acctrow['password'], $password);
                     } else {
-                        $passwordValid = PasswordHelper::verify($password, $acctrow['password'], $algo);
+                        $matched = PasswordHelper::matchTyped($password, (string) $acctrow['password'], $algo);
+                        $passwordValid = $matched !== null;
                     }
 
                     if (!$passwordValid) {
                         $acctrow = null;
                     } elseif (!$isPassthrough && PasswordHelper::needsRehash($algo, (string) $acctrow['password'])) {
-                        $newHash = PasswordHelper::hash($password);
+                        $newHash = PasswordHelper::hash((string) $matched);
                         Database::query(sprintf(
                             "UPDATE %s SET password = '%s', password_algo = %d WHERE acctid = %d",
                             Database::prefix("accounts"),

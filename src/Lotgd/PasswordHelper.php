@@ -55,6 +55,42 @@ final class PasswordHelper
     }
 
     /**
+     * Verify a password as the user typed it.
+     *
+     * Passwords are compared exactly as typed. Up to 2.0.7, however, the login
+     * and the installer removed backslashes first (stripslashes(), a relic of
+     * magic quotes), so an administrator created by the installer holds a hash
+     * of the password without them. When the typed password does not match
+     * but that form of it does, this answers with that form.
+     *
+     * The fallback accepts nothing the login did not already accept: it is
+     * the comparison every earlier release made. A caller that rehashes must
+     * hash the form returned, never the typed one: nothing in the database
+     * tells an installer's stripped password from a mistyped backslash, so
+     * rewriting the hash could change which password the account accepts.
+     *
+     * @param string $typed      Password as submitted.
+     * @param string $storedHash Hash value from the database.
+     * @param int    $algo       Algorithm identifier (ALGO_LEGACY or ALGO_MODERN).
+     *
+     * @return string|null The form that matched: $typed itself, or the form
+     *                     earlier releases compared; null when neither matches
+     */
+    public static function matchTyped(string $typed, string $storedHash, int $algo): ?string
+    {
+        if (self::verify($typed, $storedHash, $algo)) {
+            return $typed;
+        }
+
+        $unescaped = stripslashes($typed);
+        if ($unescaped !== $typed && self::verify($unescaped, $storedHash, $algo)) {
+            return $unescaped;
+        }
+
+        return null;
+    }
+
+    /**
      * Verify very old installer-upgrade credentials.
      *
      * Historical 0.9.7-era data could store the password as plaintext or as
