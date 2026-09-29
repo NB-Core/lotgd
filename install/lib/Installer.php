@@ -397,16 +397,29 @@ if ($installerIsAncient) {
      * delete installer.php when the marker cannot be written prevents a later
      * deployment from silently restoring an active installer.
      */
-    private function recordContainerInstallationCompletion(): bool
+    public function recordContainerInstallationCompletion(): bool
     {
-        $statePath = getenv('LOTGD_STATE_PATH');
-        if ($statePath === false || trim($statePath) === '') {
+        $marker = self::completionMarkerPath();
+        if ($marker === null) {
             return true;
         }
 
-        $marker = rtrim($statePath, '/\\') . '/installation-complete';
-
         return file_put_contents($marker, "completed\n", LOCK_EX) !== false;
+    }
+
+    /**
+     * The marker that disables the installer in a container, or null outside one.
+     *
+     * docker/entrypoint.sh removes installer.php at every start while it exists.
+     */
+    public static function completionMarkerPath(): ?string
+    {
+        $statePath = getenv('LOTGD_STATE_PATH');
+        if ($statePath === false || trim($statePath) === '') {
+            return null;
+        }
+
+        return rtrim($statePath, '/\\') . '/installation-complete';
     }
 
     /**

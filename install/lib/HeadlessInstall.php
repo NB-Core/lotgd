@@ -102,6 +102,11 @@ final class HeadlessInstall
                     self::MIN_PASSWORD_LENGTH
                 ));
             }
+            if (str_contains($password, '\\')) {
+                // login.php removes backslashes from what is typed, a relic of
+                // magic quotes, so such a password would not log in as typed.
+                throw new \InvalidArgumentException('The password must not contain a backslash.');
+            }
 
             return ['admin' => $admin, 'password' => $password, 'generated' => false, 'modules' => $modules];
         }
@@ -162,11 +167,42 @@ final class HeadlessInstall
     /**
      * Whether the database already holds a game.
      *
-     * @param callable(string): bool $tableExists
+     * Asked by suffix, because an installation made in the browser may have
+     * given its tables a prefix, and this command always installs without
+     * one: `lotgd_accounts` must stop it as surely as `accounts`.
+     *
+     * @param callable(string): bool $tableLike Whether a table matches a LIKE pattern
      */
-    public static function alreadyInstalled(callable $tableExists): bool
+    public static function alreadyInstalled(callable $tableLike): bool
     {
-        return $tableExists('settings') || $tableExists('accounts');
+        return $tableLike('%settings') || $tableLike('%accounts');
+    }
+
+    /**
+     * What would stop the installation from finishing, checked before
+     * anything is written.
+     *
+     * In a container, the completion marker is what keeps the browser
+     * installer away after a restart. An installation that cannot write it
+     * is refused up front rather than left half done.
+     *
+     * @return list<string> Empty when nothing stands in the way
+     */
+    public static function preflight(?string $markerPath): array
+    {
+        if ($markerPath === null) {
+            return [];
+        }
+        // Qualified, so no namespaced stand-in can answer for the real disk.
+        $directory = \dirname($markerPath);
+        if (\is_dir($markerPath)) {
+            return [sprintf('%s is a directory; the completion marker must be a file.', $markerPath)];
+        }
+        if (!\is_dir($directory) || !\is_writable($directory)) {
+            return [sprintf('%s is not writable, so the completion marker cannot be recorded.', $directory)];
+        }
+
+        return [];
     }
 
     /**
@@ -220,13 +256,30 @@ final class HeadlessInstall
      * global scope with IS_INSTALLER, because the stages read and write the
      * globals it defines.
      *
+     * The stages report failure only on the page, never to the caller, so
+     * two outcomes are checked here: nothing runs after migrations that did
+     * not complete, because the administrator and the completion marker
+     * would then mark a broken game as installed; and the completion marker
+     * is recorded even when installer.php is already gone, which is the one
+     * case stage 11 leaves it out.
+     *
      * @param array{admin:string,password:string,generated:bool,modules:string} $request
      * @param array<string, string|int>                                         $dbinfo
      * @param array<string, string>                                             $moduleOperations
+     * @param (callable(): list<string>)|null                                   $pendingMigrations
+     *
+     * @throws \RuntimeException When a stage did not complete
      */
-    public static function runStages(Installer $installer, array $request, array $dbinfo, array $moduleOperations): void
-    {
+    public static function runStages(
+        Installer $installer,
+        array $request,
+        array $dbinfo,
+        array $moduleOperations,
+        ?callable $pendingMigrations = null
+    ): void {
         global $session, $stage;
+
+        $pendingMigrations ??= static fn (): array => (new MigrationRunner())->pending();
 
         $session['dbinfo'] = $dbinfo + ['upgrade' => false, 'has_migration_metadata' => false];
         $session['fromversion'] = '-1';
@@ -246,8 +299,23 @@ final class HeadlessInstall
             $_GET = [];
             $_POST = $post;
             $installer->runStage($number);
+
+            if ($number === 9) {
+                $pending = $pendingMigrations();
+                if ($pending !== []) {
+                    $_POST = [];
+                    throw new \RuntimeException(sprintf(
+                        'The migrations did not complete (%d not applied); no administrator was created.',
+                        count($pending)
+                    ));
+                }
+            }
         }
         $_POST = [];
+
+        if (!$installer->recordContainerInstallationCompletion()) {
+            throw new \RuntimeException('The completion marker could not be written.');
+        }
     }
 
     /**
@@ -279,7 +347,34 @@ final class HeadlessInstall
             $problems[] = sprintf('%d migration(s) not applied: %s', count($pending), implode(', ', $pending));
         }
 
+        $marker = Installer::completionMarkerPath();
+        if ($marker !== null && !is_file($marker)) {
+            $problems[] = sprintf('the completion marker %s was not written', $marker);
+        }
+
         return $problems;
+    }
+
+    /**
+     * The modules asked for that did not end up active.
+     *
+     * A module that fails leaves the game playable, so this is reported
+     * rather than failing the installation: the module manager can retry it.
+     *
+     * @param list<string> $modules
+     *
+     * @return list<string>
+     */
+    public static function inactiveModules(array $modules): array
+    {
+        if ($modules === []) {
+            return [];
+        }
+        $active = Database::getDoctrineConnection()->fetchFirstColumn(
+            'SELECT modulename FROM ' . Database::prefix('modules') . ' WHERE active = 1'
+        );
+
+        return array_values(array_diff($modules, array_map('strval', $active)));
     }
 
     /**

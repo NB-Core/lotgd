@@ -41,12 +41,12 @@ try {
         (string) $dbinfo['DB_PASS'],
         [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
     );
-    $tableExists = static function (string $table) use ($pdo): bool {
-        $result = $pdo->query('SHOW TABLES LIKE ' . $pdo->quote($table));
+    $tableLike = static function (string $pattern) use ($pdo): bool {
+        $result = $pdo->query('SHOW TABLES LIKE ' . $pdo->quote($pattern));
 
         return $result !== false && $result->fetchColumn() !== false;
     };
-    $installed = HeadlessInstall::alreadyInstalled($tableExists);
+    $installed = HeadlessInstall::alreadyInstalled($tableLike);
 } catch (\PDOException $exception) {
     fwrite(STDERR, 'Cannot reach the database: ' . $exception->getMessage() . "\n");
     exit(1);
@@ -55,6 +55,11 @@ $pdo = null;
 if ($installed) {
     fwrite(STDERR, "The database already holds a game, so there is nothing to install.\n"
         . "Updates apply themselves on the first page request after a new version.\n");
+    exit(1);
+}
+$obstacles = HeadlessInstall::preflight(Installer::completionMarkerPath());
+if ($obstacles !== []) {
+    fwrite(STDERR, "Nothing was installed:\n  - " . implode("\n  - ", $obstacles) . "\n");
     exit(1);
 }
 
@@ -79,10 +84,12 @@ $moduleOperations = $request['modules'] === 'recommended'
 // when it does not: keep both aside and show them only on failure.
 $errorLog = (string) tempnam(sys_get_temp_dir(), 'lotgd-install-');
 $previousErrorLog = ini_set('error_log', $errorLog);
+$inactive = [];
 ob_start();
 try {
     HeadlessInstall::runStages($installer, $request, $dbinfo, $moduleOperations);
     $problems = HeadlessInstall::verify($logd_version, $request['admin']);
+    $inactive = HeadlessInstall::inactiveModules(array_keys($moduleOperations));
 } catch (\Throwable $exception) {
     $problems = [get_class($exception) . ': ' . $exception->getMessage()];
 }
@@ -94,7 +101,8 @@ if (is_file($errorLog)) {
 }
 
 if ($problems !== []) {
-    fwrite(STDERR, "The installation did not complete:\n  - " . implode("\n  - ", $problems) . "\n\n");
+    fwrite(STDERR, "The installation did not complete:\n  - " . implode("\n  - ", $problems) . "\n");
+    fwrite(STDERR, "The database may hold part of it; empty it before running this command again.\n\n");
     fwrite(STDERR, "Installer output:\n" . HeadlessInstall::installerText() . "\n");
     if (trim($printed) !== '') {
         fwrite(STDERR, "\nOther output:\n" . $printed . "\n");
@@ -104,7 +112,17 @@ if ($problems !== []) {
 
 fwrite(STDOUT, sprintf("Installed Legend of the Green Dragon %s.\n", $logd_version));
 fwrite(STDOUT, sprintf("Database configuration: %s\n", $dbconnect));
-fwrite(STDOUT, sprintf("Modules installed and activated: %d\n", count($moduleOperations)));
+fwrite(STDOUT, sprintf(
+    "Modules installed and activated: %d of %d\n",
+    count($moduleOperations) - count($inactive),
+    count($moduleOperations)
+));
+if ($inactive !== []) {
+    fwrite(STDERR, sprintf(
+        "Not active, see the module manager in the game: %s\n",
+        implode(', ', $inactive)
+    ));
+}
 fwrite(STDOUT, sprintf("Administrator: %s\n", $request['admin']));
 if ($request['generated']) {
     fwrite(STDOUT, sprintf("Password: %s\n", $request['password']));

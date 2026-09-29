@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Installer;
 
 use Lotgd\Installer\HeadlessInstall;
+use Lotgd\Installer\Installer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -147,9 +148,97 @@ final class HeadlessInstallTest extends TestCase
 
     public function testAnExistingGameIsNotInstalledOver(): void
     {
-        self::assertTrue(HeadlessInstall::alreadyInstalled(static fn (string $table): bool => $table === 'settings'));
-        self::assertTrue(HeadlessInstall::alreadyInstalled(static fn (string $table): bool => $table === 'accounts'));
-        self::assertFalse(HeadlessInstall::alreadyInstalled(static fn (string $table): bool => false));
+        self::assertTrue(HeadlessInstall::alreadyInstalled(static fn (string $like): bool => $like === '%settings'));
+        self::assertTrue(HeadlessInstall::alreadyInstalled(static fn (string $like): bool => $like === '%accounts'));
+        self::assertFalse(HeadlessInstall::alreadyInstalled(static fn (string $like): bool => false));
+    }
+
+    public function testAGameWithATablePrefixIsNotInstalledOver(): void
+    {
+        $tables = ['lotgd_accounts', 'lotgd_settings'];
+        $like = static function (string $pattern) use ($tables): bool {
+            $regex = '/^' . str_replace('%', '.*', preg_quote($pattern, '/')) . '$/i';
+
+            return preg_grep($regex, $tables) !== [];
+        };
+
+        self::assertTrue(HeadlessInstall::alreadyInstalled($like));
+    }
+
+    public function testNothingStandsInTheWayOutsideAContainer(): void
+    {
+        self::assertSame([], HeadlessInstall::preflight(null));
+    }
+
+    public function testTheCompletionMarkerMustBeWritable(): void
+    {
+        $directory = sys_get_temp_dir() . '/lotgd_headless_state_' . uniqid();
+        mkdir($directory, 0700);
+
+        try {
+            self::assertSame([], HeadlessInstall::preflight($directory . '/installation-complete'));
+
+            mkdir($directory . '/installation-complete');
+            self::assertStringContainsString(
+                'is a directory',
+                implode("\n", HeadlessInstall::preflight($directory . '/installation-complete'))
+            );
+            rmdir($directory . '/installation-complete');
+
+            self::assertStringContainsString(
+                'not writable',
+                implode("\n", HeadlessInstall::preflight($directory . '/missing/installation-complete'))
+            );
+        } finally {
+            rmdir($directory);
+        }
+    }
+
+    public function testNothingRunsAfterMigrationsThatDidNotComplete(): void
+    {
+        $stages = [];
+        $installer = $this->installer($stages, true);
+
+        try {
+            HeadlessInstall::runStages($installer, $this->request('Admin', 'correct-horse'), [], [], static fn (): array => ['Version20250101000000']);
+            self::fail('The stages went on after failed migrations.');
+        } catch (\RuntimeException $exception) {
+            self::assertStringContainsString('migrations did not complete', $exception->getMessage());
+        }
+
+        self::assertSame([7, 8, 9], $stages);
+    }
+
+    public function testAPasswordWithABackslashIsRefused(): void
+    {
+        // login.php strips backslashes from the password it is given.
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('backslash');
+
+        (new HeadlessInstall(self::ENV))->parse(['--admin=Admin', '--password-stdin'], $this->stream("safe\\password123\n"));
+    }
+
+    public function testEveryStageRunsWhenNothingFails(): void
+    {
+        $stages = [];
+        $installer = $this->installer($stages, true);
+
+        $noneMissing = static fn (): array => [];
+        HeadlessInstall::runStages($installer, $this->request('Admin', 'correct-horse'), [], [], $noneMissing);
+
+        self::assertSame([7, 8, 9, 10, 11], $stages);
+    }
+
+    public function testAnUnwrittenCompletionMarkerFailsTheInstallation(): void
+    {
+        $stages = [];
+        $installer = $this->installer($stages, false);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('completion marker');
+
+        $noneMissing = static fn (): array => [];
+        HeadlessInstall::runStages($installer, $this->request('Admin', 'correct-horse'), [], [], $noneMissing);
     }
 
     public function testOnlyRecommendedModulesThatExistAreInstalled(): void
@@ -176,6 +265,28 @@ final class HeadlessInstallTest extends TestCase
         $source = (string) file_get_contents(dirname(__DIR__, 2) . '/bin/install');
 
         self::assertStringContainsString("PHP_SAPI !== 'cli'", $source);
+    }
+
+    /**
+     * @param list<int> $stages Receives the stages run, in order
+     */
+    private function installer(array &$stages, bool $markerWritten): Installer
+    {
+        $installer = $this->createStub(Installer::class);
+        $installer->method('recordContainerInstallationCompletion')->willReturn($markerWritten);
+        $installer->method('runStage')->willReturnCallback(static function (int $stage) use (&$stages): void {
+            $stages[] = $stage;
+        });
+
+        return $installer;
+    }
+
+    /**
+     * @return array{admin:string,password:string,generated:bool,modules:string}
+     */
+    private function request(string $admin, string $password): array
+    {
+        return ['admin' => $admin, 'password' => $password, 'generated' => false, 'modules' => 'none'];
     }
 
     /**

@@ -369,7 +369,7 @@ administrator's password once:
 ```text
 Installed Legend of the Green Dragon 2.0.7 +nb Edition.
 Database configuration: /var/lib/lotgd/dbconnect.php
-Modules installed and activated: 15
+Modules installed and activated: 15 of 15
 Administrator: YourName
 Password: 8mKq…
 This password is shown once. Store it now and change it in the game if you like.
@@ -386,11 +386,20 @@ This password is shown once. Store it now and change it in the game if you like.
   printf '%s\n' "$ADMIN_PASSWORD" | docker compose exec -T --user www-data web php bin/install --admin=YourName --password-stdin
   ```
 
+  It needs at least 12 characters and no backslash, which the game's login
+  removes from what is typed.
+
 - `--modules=none` installs no modules; the default is the recommended set,
-  as preselected in the browser installer.
+  as preselected in the browser installer. A module that fails to install is
+  named in the output and can be retried in the game's module manager.
 - **An installed game is never touched.** On a database that already holds a
-  game, the command refuses. Updates apply themselves on the first page
-  request.
+  game, with or without a table prefix, the command refuses. Updates apply
+  themselves on the first page request.
+- **It finishes or says why not.** The command checks that the state volume
+  can take the completion marker before it writes anything, and stops before
+  creating the administrator if the migrations fail. A non-zero exit status
+  means the installation is not complete; empty the database before trying
+  again.
 
 `LOTGD_INSTALL_ENABLED` and an SSH tunnel are not needed for this route.
 
