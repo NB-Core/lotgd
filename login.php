@@ -21,6 +21,7 @@ use Lotgd\Settings;
 use Lotgd\PasswordHelper;
 use Lotgd\Security\LoginFailureTally;
 use Lotgd\Security\RuntimeHardening;
+use Lotgd\Security\ValidationLogin;
 use Lotgd\SecurityLog;
 use Lotgd\GameLog;
 use Doctrine\DBAL\Exception as DbalException;
@@ -49,22 +50,12 @@ if ($name != "") {
         // Compared as typed; PasswordHelper::matchTyped() also accepts the
         // backslash-stripped form the login compared until now.
         $password = is_string($passwordRequest) ? $passwordRequest : '';
-        $forceRequest = Http::post('force');
-        $force = is_string($forceRequest) ? $forceRequest : '';
-        if (substr($password, 0, 6) == "!md52!") {
-            // Auto-login passthrough (forgot-password / email validation).
-            // The raw stored hash is embedded in the form value.
-            if ($force) {
-                $password = substr($password, 6);
-                $isPassthrough = true;
-            } else {
-                $password = 'no hax0rs for j00!';
-                $isPassthrough = false;
-            }
-        } else {
-            // Password arrives as plaintext over HTTPS.
-            $isPassthrough = false;
-        }
+        // The one-click login create.php offers after a validation link:
+        // a single-use grant in this session, never a password or a hash.
+        $validationGrant = Http::postIsset(ValidationLogin::FIELD)
+            ? ValidationLogin::consume(Http::post(ValidationLogin::FIELD))
+            : null;
+        $isValidationLogin = $validationGrant !== null;
         static $bootstrapExists = null;
         if ($bootstrapExists === null) {
             $bootstrapExists = class_exists('Lotgd\\Doctrine\\Bootstrap');
@@ -100,9 +91,8 @@ if ($name != "") {
                     // The form that matched; a rehash keeps it, so an upgrade
                     // never changes which password the account accepts.
                     $matched = $password;
-                    if ($isPassthrough) {
-                        // Passthrough: compare raw stored hash directly.
-                        $passwordValid = hash_equals($acctrow['password'], $password);
+                    if ($isValidationLogin) {
+                        $passwordValid = (int) $acctrow['acctid'] === $validationGrant['acctid'];
                     } else {
                         $matched = PasswordHelper::matchTyped($password, (string) $acctrow['password'], $algo);
                         $passwordValid = $matched !== null;
@@ -112,7 +102,7 @@ if ($name != "") {
                         $acctrow = null;
                     } else {
                         // Transparent upgrade from legacy md5 to bcrypt.
-                        if (!$isPassthrough && PasswordHelper::needsRehash($algo, (string) $acctrow['password'])) {
+                        if (!$isValidationLogin && PasswordHelper::needsRehash($algo, (string) $acctrow['password'])) {
                             $newHash = PasswordHelper::hash((string) $matched);
                             $entityManager->getConnection()->executeStatement(
                                 "UPDATE " . Database::prefix("accounts") . " SET password = :password, password_algo = :algo WHERE acctid = :acctid",
@@ -124,7 +114,7 @@ if ($name != "") {
                             );
                             $acctrow['password'] = $newHash;
                             $acctrow['password_algo'] = PasswordHelper::ALGO_MODERN;
-                        } elseif (!$isPassthrough
+                        } elseif (!$isValidationLogin
                             && $algo !== PasswordHelper::ALGO_MODERN
                             && PasswordHelper::isModernHash((string) $acctrow['password'])
                         ) {
@@ -156,8 +146,8 @@ if ($name != "") {
                     $algo = (int) ($acctrow['password_algo'] ?? PasswordHelper::ALGO_LEGACY);
 
                     $matched = $password;
-                    if ($isPassthrough) {
-                        $passwordValid = hash_equals($acctrow['password'], $password);
+                    if ($isValidationLogin) {
+                        $passwordValid = (int) $acctrow['acctid'] === $validationGrant['acctid'];
                     } else {
                         $matched = PasswordHelper::matchTyped($password, (string) $acctrow['password'], $algo);
                         $passwordValid = $matched !== null;
@@ -165,7 +155,7 @@ if ($name != "") {
 
                     if (!$passwordValid) {
                         $acctrow = null;
-                    } elseif (!$isPassthrough && PasswordHelper::needsRehash($algo, (string) $acctrow['password'])) {
+                    } elseif (!$isValidationLogin && PasswordHelper::needsRehash($algo, (string) $acctrow['password'])) {
                         $newHash = PasswordHelper::hash((string) $matched);
                         Database::query(sprintf(
                             "UPDATE %s SET password = '%s', password_algo = %d WHERE acctid = %d",
@@ -176,7 +166,7 @@ if ($name != "") {
                         ));
                         $acctrow['password'] = $newHash;
                         $acctrow['password_algo'] = PasswordHelper::ALGO_MODERN;
-                    } elseif (!$isPassthrough
+                    } elseif (!$isValidationLogin
                         && $algo !== PasswordHelper::ALGO_MODERN
                         && PasswordHelper::isModernHash((string) $acctrow['password'])
                     ) {
@@ -209,7 +199,7 @@ if ($name != "") {
             // this hook should automatically call page_footer and exit
             // itself.
             HookHandler::hook("check-login");
-            if (\Lotgd\ServerFunctions::isTheServerFull() === true && $force !== '1') {
+            if (\Lotgd\ServerFunctions::isTheServerFull() === true && !$isValidationLogin) {
                 //sanity check if the server is / got full --> back to home
                 $session['message'] = Translator::translateInline("`4Sorry, server full!");
                 $session['user'] = array();
