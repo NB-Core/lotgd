@@ -135,7 +135,7 @@ class Installer
                 if (Database::numRows($result) > 0) {
                     $row = Database::fetchAssoc($result);
                     $needsauthentication = ! $this->verifyInstallerAdminPassword(
-                        stripslashes(Http::post("password")),
+                        (string) Http::post("password"),
                         is_array($row) ? $row : []
                     );
 
@@ -148,7 +148,7 @@ if ($installerIsAncient) {
     $session['installer_admin_credential'] = [
         'acctid' => (int) ($row['acctid'] ?? 0),
         'login' => (string) ($row['login'] ?? Http::post('username')),
-        'password' => stripslashes(Http::post('password')),
+        'password' => (string) Http::post('password'),
         'verifiedPassword' => (string) ($row['password'] ?? ''),
         'ancient' => true,
     ];
@@ -265,7 +265,7 @@ if ($installerIsAncient) {
                     SU_MANAGE_MODULES | SU_AUDIT_MODERATION | SU_RAW_SQL |
                     SU_VIEW_SOURCE | SU_NEVER_EXPIRE;
                     $name = Http::post("name");
-                    $pass = PasswordHelper::hash(stripslashes(Http::post("pass1")));
+                    $pass = PasswordHelper::hash((string) Http::post("pass1"));
                     $connection = Database::getDoctrineConnection();
                     $table = Database::prefix("accounts");
                     $connection->delete($table, ['login' => $name]);
@@ -2300,15 +2300,18 @@ if ($installerIsAncient) {
             ? (int) $account['password_algo']
             : PasswordHelper::ALGO_LEGACY;
 
-        if (PasswordHelper::verify($plaintext, $storedHash, $algo)) {
+        // As typed, or in the backslash-stripped form earlier releases stored.
+        if (PasswordHelper::matchTyped($plaintext, $storedHash, $algo) !== null) {
             return true;
         }
 
         if ($this->getSetting("installer_version", "-1") === "-1") {
             // Compatibility for very old installs that stored plain text or
             // single-MD5 credentials before modern password algorithms.
-            if (PasswordHelper::verifyLegacyUpgradeCredential($plaintext, $storedHash)) {
-                return true;
+            foreach (array_unique([$plaintext, stripslashes($plaintext)]) as $candidate) {
+                if (PasswordHelper::verifyLegacyUpgradeCredential($candidate, $storedHash)) {
+                    return true;
+                }
             }
         }
 

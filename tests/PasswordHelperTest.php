@@ -24,6 +24,41 @@ final class PasswordHelperTest extends TestCase
     }
 
     /**
+     * A password is matched as typed, backslashes included.
+     */
+    public function testMatchTypedComparesThePasswordAsTyped(): void
+    {
+        $hash = PasswordHelper::hash('back\\slash');
+
+        $this->assertSame('back\\slash', PasswordHelper::matchTyped('back\\slash', $hash, PasswordHelper::ALGO_MODERN));
+        $this->assertNull(PasswordHelper::matchTyped('backslash', $hash, PasswordHelper::ALGO_MODERN));
+    }
+
+    /**
+     * Hashes earlier releases stored without the backslashes still match,
+     * and the answer tells the caller to store the typed form instead.
+     */
+    public function testMatchTypedAcceptsTheFormEarlierReleasesStored(): void
+    {
+        $bcrypt = PasswordHelper::hash('backslash');
+        $this->assertSame('backslash', PasswordHelper::matchTyped('back\\slash', $bcrypt, PasswordHelper::ALGO_MODERN));
+
+        $legacy = md5(md5('backslash'));
+        $this->assertSame('backslash', PasswordHelper::matchTyped('back\\slash', $legacy, PasswordHelper::ALGO_LEGACY));
+    }
+
+    /**
+     * Without a backslash there is nothing to strip and no second attempt.
+     */
+    public function testMatchTypedRejectsAWrongPassword(): void
+    {
+        $hash = PasswordHelper::hash('swordfish');
+
+        $this->assertNull(PasswordHelper::matchTyped('swordfisk', $hash, PasswordHelper::ALGO_MODERN));
+        $this->assertNull(PasswordHelper::matchTyped('', $hash, PasswordHelper::ALGO_MODERN));
+    }
+
+    /**
      * Ensure already-modern hashes are not repeatedly rehashed.
      */
     public function testNeedsRehashReturnsFalseForBcryptHashWithLegacyAlgo(): void

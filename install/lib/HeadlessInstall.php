@@ -102,11 +102,6 @@ final class HeadlessInstall
                     self::MIN_PASSWORD_LENGTH
                 ));
             }
-            if (str_contains($password, '\\')) {
-                // login.php removes backslashes from what is typed, a relic of
-                // magic quotes, so such a password would not log in as typed.
-                throw new \InvalidArgumentException('The password must not contain a backslash.');
-            }
 
             return ['admin' => $admin, 'password' => $password, 'generated' => false, 'modules' => $modules];
         }

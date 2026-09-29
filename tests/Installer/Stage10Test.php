@@ -137,6 +137,29 @@ final class Stage10Test extends TestCase
         $this->assertStringContainsString('Your superuser account has been created', $output);
     }
 
+    public function testStage10StoresThePasswordAsTyped(): void
+    {
+        Database::$mockResults = [
+            [],
+            [['Field' => 'password_algo']],
+        ];
+
+        $connection = new DoctrineConnection();
+        DoctrineBootstrap::$conn = $connection;
+        Database::$doctrineConnection = null;
+
+        // login.php compares what is typed, backslashes included.
+        $_POST = [
+            'name'  => 'Admin',
+            'pass1' => 'back\\slash-pass',
+            'pass2' => 'back\\slash-pass',
+        ];
+
+        (new Installer())->stage10();
+
+        $this->assertTrue(password_verify('back\\slash-pass', $connection->lastInsert['data']['password']));
+    }
+
     public function testStage10RejectsMismatchedPasswords(): void
     {
         Database::$mockResults = [

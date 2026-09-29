@@ -199,6 +199,19 @@ The database user needs the rights to change the schema (`CREATE`, `ALTER`,
 `INDEX`, `DROP`), which the installer already required. On shared hosting the
 database user normally has them.
 
+### Passwords containing a backslash
+
+The login used to remove backslashes from the password before comparing it,
+while registration and the preferences page stored the password as typed. A
+player whose password contains a backslash could therefore not log in. The
+login now compares the password exactly as typed.
+
+The one password stored without its backslashes is an administrator's created
+by the installer, which removed them as well. Such an account still logs in
+with the password as it was typed at installation. That login replaces the
+stored hash with the typed form, after which the form without backslashes
+stops working. Nothing needs to be done.
+
 ---
 
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)

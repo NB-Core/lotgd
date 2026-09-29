@@ -209,13 +209,12 @@ final class HeadlessInstallTest extends TestCase
         self::assertSame([7, 8, 9], $stages);
     }
 
-    public function testAPasswordWithABackslashIsRefused(): void
+    public function testAPasswordIsTakenAsTyped(): void
     {
-        // login.php strips backslashes from the password it is given.
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('backslash');
+        $request = (new HeadlessInstall(self::ENV))
+            ->parse(['--admin=Admin', '--password-stdin'], $this->stream("safe\\pass'word123\n"));
 
-        (new HeadlessInstall(self::ENV))->parse(['--admin=Admin', '--password-stdin'], $this->stream("safe\\password123\n"));
+        self::assertSame("safe\\pass'word123", $request['password']);
     }
 
     public function testEveryStageRunsWhenNothingFails(): void
