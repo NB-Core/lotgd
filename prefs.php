@@ -16,6 +16,7 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Sanitize;
 use Lotgd\Security\Csrf;
+use Lotgd\Security\ValidationLogin;
 use Lotgd\PasswordHelper;
 use Lotgd\DataCache;
 use Lotgd\DebugLog;
@@ -433,9 +434,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
             if ($settings->getSetting('playerchangeemail', 0)) {
                 if (EmailValidator::isValid($email)) {
                     if ($settings->getSetting('requirevalidemail', 0) == 1) {
-                        $emailverification = "x" . md5(date("Y-m-d H:i:s") . $email);
-                        $emailverification = substr($emailverification, 0, strlen($emailverification) - 2);
-                        //cut last char, won't be salved in the DB else!
+                        $emailverification = ValidationLogin::linkToken('x');
                         $subj = Translator::translateMail('LoGD Account Verification', 0);
                         $shortname = $session['user']['login'];
                         $gameurl = $settings->getSetting('serverurl', 'https://lotgd.com');

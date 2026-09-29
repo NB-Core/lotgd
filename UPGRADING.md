@@ -213,6 +213,23 @@ the backslashes. The stored hash is left as it is, because nothing tells such a
 password from a mistyped one; changing the password in the preferences stores
 it as typed. Nothing needs to be done.
 
+### The login after a validation link no longer uses the password hash
+
+After a player validates an email address or opens a forgotten-password link,
+`create.php` offers a button that logs them in. That button used to post the
+account's stored password hash as `!md52!<hash>` with `force=1`, and
+`login.php` accepted it. It now posts a single-use token from
+`Lotgd\Security\ValidationLogin`, which is valid for five minutes in the
+browser session that opened the link.
+
+- `login.php` rejects `!md52!` passwords. A module that built such a form
+  must call `ValidationLogin::grant()` and render `ValidationLogin::button()`
+  instead.
+- `force=1` no longer bypasses the "server full" check. Only the validated
+  login does.
+- Links already sent by mail keep working: the stored tokens are compared as
+  before, only new ones are random.
+
 ---
 
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)

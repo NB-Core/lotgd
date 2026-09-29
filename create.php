@@ -20,6 +20,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\PasswordHelper;
+use Lotgd\Security\ValidationLogin;
 use Lotgd\EmailValidator;
 use Lotgd\PlayerFunctions;
 
@@ -68,7 +69,7 @@ if ($op == "forgotval") {
     $conn = Database::getDoctrineConnection();
     $accountsTable = Database::prefix('accounts');
     $result = $conn->executeQuery(
-        "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress,emailvalidation
+        "SELECT acctid,login,superuser,name,replaceemail,emailaddress,emailvalidation
             FROM {$accountsTable}
             WHERE forgottenpassword = :forgottenpassword AND forgottenpassword != :emptyForgottenPassword",
         [
@@ -94,12 +95,11 @@ if ($op == "forgotval") {
             ]
         );
         $output->output("`#`cYour login request has been validated.  You may now log in.`c`0");
-        $output->rawOutput("<form action='login.php' method='POST'>");
-        $output->rawOutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
-        $output->rawOutput("<input name='password' value=\"!md52!{$row['password']}\" type='hidden'>");
-        $output->rawOutput("<input name='force' value='1' type='hidden'>");
-        $click = Translator::translate("Click here to log in");
-        $output->rawOutput("<input type='submit' class='button' value='$click'></form>");
+        $output->rawOutput(ValidationLogin::button(
+            (string) $row['login'],
+            ValidationLogin::grant((int) $row['acctid'], (string) $row['login']),
+            Translator::translate("Click here to log in")
+        ));
         $output->outputNotl("`n");
         if ($trash > 0) {
             $output->output("`^Characters that have never been logged into will be deleted after %s day(s) of no activity.`n`0", $trash);
@@ -134,7 +134,7 @@ if ($op == "forgotval") {
     $conn = Database::getDoctrineConnection();
     $accountsTable = Database::prefix('accounts');
     $result = $conn->executeQuery(
-        "SELECT acctid,login,superuser,password,name,replaceemail,emailaddress
+        "SELECT acctid,login,superuser,name,replaceemail,emailaddress
             FROM {$accountsTable}
             WHERE emailvalidation = :emailvalidation AND emailvalidation != :emptyEmailValidation",
         [
@@ -208,12 +208,11 @@ if ($op == "forgotval") {
         );
         if ($row['replaceemail'] == '') {
             //no auto-login for email changers
-            $output->rawOutput("<form action='login.php' method='POST'>");
-            $output->rawOutput("<input name='name' value=\"{$row['login']}\" type='hidden'>");
-            $output->rawOutput("<input name='password' value=\"!md52!{$row['password']}\" type='hidden'>");
-            $output->rawOutput("<input name='force' value='1' type='hidden'>");
-            $click = Translator::translate("Click here to log in");
-            $output->rawOutput("<input type='submit' class='button' value='$click'></form>");
+            $output->rawOutput(ValidationLogin::button(
+                (string) $row['login'],
+                ValidationLogin::grant((int) $row['acctid'], (string) $row['login']),
+                Translator::translate("Click here to log in")
+            ));
         }
         $output->outputNotl("`n");
         if ($trash > 0) {
@@ -239,7 +238,7 @@ if ($op == "forgot") {
         $conn = Database::getDoctrineConnection();
         $accountsTable = Database::prefix('accounts');
         $result = $conn->executeQuery(
-            "SELECT acctid,login,emailaddress,forgottenpassword,password
+            "SELECT acctid,login,emailaddress,forgottenpassword
                 FROM {$accountsTable}
                 WHERE login = :login",
             [
@@ -253,7 +252,7 @@ if ($op == "forgot") {
         if ($row !== false) {
             if (trim($row['emailaddress']) != "") {
                 if ($row['forgottenpassword'] == "") {
-                    $row['forgottenpassword'] = substr("x" . md5(date("Y-m-d H:i:s") . $row['password']), 0, 32);
+                    $row['forgottenpassword'] = ValidationLogin::linkToken('x');
                     // Keep account bootstrap writes parameterized to avoid SQL interpolation.
                     $conn = Database::getDoctrineConnection();
                     $accountsTable = Database::prefix('accounts');
@@ -424,7 +423,7 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                     }
                     $title = PlayerFunctions::getDkTitle(0, $sex);
                     if ((int) $settings->getSetting('requirevalidemail', 0)) {
-                        $emailverification = md5(date("Y-m-d H:i:s") . $email);
+                        $emailverification = ValidationLogin::linkToken();
                     }
                     $refer = Http::get('r');
                     if ($refer > "") {

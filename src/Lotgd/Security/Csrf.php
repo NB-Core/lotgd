@@ -102,6 +102,14 @@ final class Csrf
     public const SCOPE_ASYNC = 'async';
 
     /**
+     * The one-click login after a validation link ({@see ValidationLogin}).
+     *
+     * Unlike the other scopes it is single-use: each grant issues a fresh
+     * token and redeeming it forgets the scope, whatever the outcome.
+     */
+    public const SCOPE_VALIDATION_LOGIN = 'validation_login';
+
+    /**
      * 32 bytes, so every scope gets the same strength. The 2FA module used 16;
      * 128 bits is not breakable either, but an unexplained outlier invites the
      * next person to copy the smaller number.
