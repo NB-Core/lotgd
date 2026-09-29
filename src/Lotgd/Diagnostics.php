@@ -236,11 +236,13 @@ class Diagnostics
     /**
      * Failed login attempts in the window.
      *
-     * The column list is explicit and `post` is not in it, deliberately: that
-     * column holds a serialize() of the whole POST body of a failed login, so
-     * it contains submitted passwords. It is never selected, never rendered and
-     * never passed on -- not even to a megauser. DiagnosticsFaillogPostRegressionTest
-     * holds that line.
+     * The column list is explicit and `post` is not in it, deliberately. That
+     * column held a serialize() of the whole POST body of a failed login, and
+     * so the submitted passwords, until login.php was changed to store only
+     * the name tried and migration Version20250724000025 cleared the old rows.
+     * It stays unselected, unrendered and never passed on -- not even to a
+     * megauser -- so a database restored from an older backup cannot leak
+     * through this page. DiagnosticsFaillogPostRegressionTest holds that line.
      *
      * @return list<array<string,mixed>>
      */

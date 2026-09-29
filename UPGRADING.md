@@ -230,6 +230,17 @@ browser session that opened the link.
 - Links already sent by mail keep working: the stored tokens are compared as
   before, only new ones are random.
 
+### Failed logins no longer keep the password
+
+`faillog.post` used to hold the whole form of every failed login, including
+the password that was tried. It now holds only the name that was tried.
+
+Migration `Version20250724000025` clears the column in existing rows. It runs
+with the other migrations of the update: automatically on the first page
+request after a version change, or from the Diagnostics page. Nothing else
+reads the column. The failed-login count behind the automatic ban uses the
+date, address and account, which are unchanged.
+
 ---
 
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)

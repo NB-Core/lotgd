@@ -293,8 +293,12 @@ if ($name != "") {
             CheckBan::check();
             //Database::query($sql);
             $remoteAddr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
-            $post = Http::allPost();
-            $serializedPost = serialize($post);
+            // Only the name that was tried. The whole POST body used to be
+            // stored here, and with it the password of every failed attempt,
+            // often a near miss of the real one or one used elsewhere, plus
+            // whatever a module posted beside it (codes, tokens). An allowlist
+            // keeps fields nobody reviewed out of the table.
+            $serializedPost = serialize(['name' => mb_substr($name, 0, 100)]);
             /**
              * faillog schema note:
              * - Legacy/core schema stores the login-cookie fingerprint in the `id` column.
@@ -354,7 +358,7 @@ if ($name != "") {
                                 ]
                             );
                             $rows2 = $entityManager->getConnection()->executeQuery(
-                                "SELECT " . Database::prefix("faillog") . ".*," . Database::prefix("accounts") . ".superuser,name,login FROM " . Database::prefix("faillog") . " INNER JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid=" . Database::prefix("faillog") . ".acctid WHERE ip = :ip AND date > :cutoff",
+                                "SELECT " . Database::prefix("faillog") . ".date," . Database::prefix("faillog") . ".ip," . Database::prefix("faillog") . ".id," . Database::prefix("faillog") . ".acctid," . Database::prefix("accounts") . ".superuser,name,login FROM " . Database::prefix("faillog") . " INNER JOIN " . Database::prefix("accounts") . " ON " . Database::prefix("accounts") . ".acctid=" . Database::prefix("faillog") . ".acctid WHERE ip = :ip AND date > :cutoff",
                                 [
                                     'ip' => $remoteAddr,
                                     'cutoff' => date("Y-m-d H:i:s", strtotime("-1 day")),
@@ -372,13 +376,10 @@ if ($name != "") {
                             );
                             Database::query($sql);
                             $sql = sprintf(
-                                "SELECT %s.*, %s.superuser,name,login FROM %s INNER JOIN %s ON %s.acctid=%s.acctid WHERE ip='%s' AND date>'%s'",
+                                'SELECT %1$s.date, %1$s.ip, %1$s.id, %1$s.acctid, %2$s.superuser, name, login FROM %1$s'
+                                . ' INNER JOIN %2$s ON %2$s.acctid = %1$s.acctid WHERE ip = \'%3$s\' AND date > \'%4$s\'',
                                 Database::prefix("faillog"),
                                 Database::prefix("accounts"),
-                                Database::prefix("faillog"),
-                                Database::prefix("accounts"),
-                                Database::prefix("accounts"),
-                                Database::prefix("faillog"),
                                 Database::escape($remoteAddr),
                                 Database::escape(date("Y-m-d H:i:s", strtotime("-1 day")))
                             );
