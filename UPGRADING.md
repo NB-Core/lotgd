@@ -208,9 +208,10 @@ login now compares the password exactly as typed.
 
 The one password stored without its backslashes is an administrator's created
 by the installer, which removed them as well. Such an account still logs in
-with the password as it was typed at installation. That login replaces the
-stored hash with the typed form, after which the form without backslashes
-stops working. Nothing needs to be done.
+with the password as it was typed at installation, and, as before, also without
+the backslashes. The stored hash is left as it is, because nothing tells such a
+password from a mistyped one; changing the password in the preferences stores
+it as typed. Nothing needs to be done.
 
 ---
 

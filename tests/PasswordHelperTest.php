@@ -36,7 +36,7 @@ final class PasswordHelperTest extends TestCase
 
     /**
      * Hashes earlier releases stored without the backslashes still match,
-     * and the answer tells the caller to store the typed form instead.
+     * and the answer names that form, which is the one a rehash must keep.
      */
     public function testMatchTypedAcceptsTheFormEarlierReleasesStored(): void
     {

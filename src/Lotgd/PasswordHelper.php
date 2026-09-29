@@ -61,18 +61,20 @@ final class PasswordHelper
      * and the installer removed backslashes first (stripslashes(), a relic of
      * magic quotes), so an administrator created by the installer holds a hash
      * of the password without them. When the typed password does not match
-     * but that form of it does, this answers with the form, and the caller
-     * stores the password as typed so the next login needs no second try.
+     * but that form of it does, this answers with that form.
      *
      * The fallback accepts nothing the login did not already accept: it is
-     * the comparison every earlier release made.
+     * the comparison every earlier release made. A caller that rehashes must
+     * hash the form returned, never the typed one: nothing in the database
+     * tells an installer's stripped password from a mistyped backslash, so
+     * rewriting the hash could change which password the account accepts.
      *
      * @param string $typed      Password as submitted.
      * @param string $storedHash Hash value from the database.
      * @param int    $algo       Algorithm identifier (ALGO_LEGACY or ALGO_MODERN).
      *
      * @return string|null The form that matched: $typed itself, or the form
-     *                     earlier releases hashed; null when neither matches
+     *                     earlier releases compared; null when neither matches
      */
     public static function matchTyped(string $typed, string $storedHash, int $algo): ?string
     {
