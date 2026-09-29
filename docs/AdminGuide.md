@@ -109,8 +109,10 @@ the page shows:
 
 Two things it deliberately does **not** show:
 
-- **The submitted form data of a failed login.** The `faillog` table stores the whole POST body,
-  which contains the password that was tried. That column is never read.
+- **The submitted form data of a failed login.** The `faillog.post` column records only the name
+  that was tried. Earlier releases stored the whole POST body there, including the password
+  that was tried; migration `Version20250724000025` clears those rows. The page still never reads
+  the column, so a database restored from an older backup cannot expose it here.
 - **The PHP error log itself.** In the Docker image `error_log` points at `/dev/stderr`, which is
   write-only, so nothing in PHP can read it back. The page names the destination and tells you
   where to look instead. This is why the async diagnostics (`Jaxon csrf`, rate-limit and
