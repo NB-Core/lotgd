@@ -179,6 +179,7 @@ migrations/Version20250724000021.php
 migrations/Version20250724000022.php
 migrations/Version20250724000023.php
 migrations/Version20250724000024.php
+migrations/Version20250724000025.php
 moderate.php
 modules.php
 motd.php
