@@ -60,7 +60,7 @@ final class AccountChangeReauthenticationTest extends TestCase
 
     public function testNewPasswordsFollowTheConfiguredMinimum(): void
     {
-        foreach (['prefs.php', 'create.php', 'install/lib/Installer.php'] as $path) {
+        foreach (['prefs.php', 'create.php', 'install/lib/Installer.php', 'pages/user/user_save.php'] as $path) {
             self::assertStringContainsString('PasswordHelper::isTooShort(', self::source($path), $path);
         }
     }
@@ -72,6 +72,14 @@ final class AccountChangeReauthenticationTest extends TestCase
         self::assertStringContainsString('passbox.value.length < {$minLength}', $prefs);
         self::assertStringContainsString('alert({$warn})', $prefs);
         self::assertStringContainsString('$warn = Escape::js(', $prefs);
+    }
+
+    public function testTheUserEditorMarksItsPasswordFieldAsNew(): void
+    {
+        self::assertStringContainsString(
+            '"newpassword" => "New Password,password,new-password"',
+            self::source('src/Lotgd/Config/user_account.php')
+        );
     }
 
     public function testRegistrationMarksItsFields(): void

@@ -238,7 +238,7 @@ password or the email address. Other preferences save without it.
 New passwords need at least 8 characters. The minimum is the setting
 *Minimum length of a new password* (`passwordminlength`) under Account
 Creation. It applies whenever a password is set: at registration, in the
-preferences and for the installer's administrator. Existing passwords keep
+preferences, in the user editor and for the installer's administrator. Existing passwords keep
 working whatever their length. Set it to 4 to keep the old rule.
 
 ### Failed logins no longer keep the password

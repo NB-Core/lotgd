@@ -48,7 +48,12 @@ $output->outputNotl("`n");
 foreach ($post as $key => $val) {
     if (isset($userinfo[$key])) {
         if ($key == "newpassword") {
-            if ($val > "") {
+            if ($val > "" && PasswordHelper::isTooShort((string) $val, $settings)) {
+                $output->output(
+                    "`\$The new password is too short and was not changed: it must be at least %s characters.`0`n",
+                    PasswordHelper::minLength($settings)
+                );
+            } elseif ($val > "") {
                 $passwordHash = PasswordHelper::hash((string) $val);
                 $fieldUpdates['password'] = $passwordHash;
                 $fieldUpdates['password_algo'] = PasswordHelper::ALGO_MODERN;

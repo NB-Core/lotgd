@@ -153,6 +153,58 @@ namespace Lotgd\Tests\User {
             $this->assertStringContainsString("changed the target account's password", $logOutput);
         }
 
+        #[RunInSeparateProcess]
+        public function testANewPasswordBelowTheMinimumIsNotSet(): void
+        {
+            Database::resetDoctrineConnection();
+            $connection = Database::getDoctrineConnection();
+            $connection->executeStatements = [];
+
+            $targetUserid = 42;
+            $oldvalues = [
+                'newpassword' => '',
+                'playername' => 'Admin',
+                'title' => '',
+                'ctitle' => '',
+            ];
+            $serialized = htmlentities(serialize($oldvalues), ENT_COMPAT, 'UTF-8');
+
+            $include = function () use ($serialized, $oldvalues, $targetUserid): void {
+                global $_POST, $_GET, $session, $userid, $userinfo, $__test_debuglog;
+
+                $_POST = ['newpassword' => 'short', 'oldvalues' => $serialized];
+                $_GET = [];
+                $__test_debuglog = [];
+                $session = [
+                    'user' => [
+                        'acctid' => $targetUserid,
+                        'superuser' => SU_MEGAUSER,
+                        'name' => 'Admin',
+                        'password' => 'old hash',
+                        'password_algo' => PasswordHelper::ALGO_LEGACY,
+                    ],
+                ];
+                $userid = $targetUserid;
+                $userinfo = $oldvalues;
+
+                $_SERVER['REQUEST_METHOD'] = 'POST';
+                $__csrf = str_repeat('a', 64);
+                \Lotgd\Security\Csrf::seed(\Lotgd\Forms::csrfScope(), $__csrf);
+                $_POST[\Lotgd\Security\Csrf::FORM_FIELD] = $__csrf;
+
+                require __DIR__ . '/../../pages/user/user_save.php';
+            };
+
+            \Closure::bind($include, null, null)();
+
+            foreach ($connection->executeStatements as $entry) {
+                $this->assertArrayNotHasKey('password', $entry['params'] ?? [], 'a too-short password must not be written');
+            }
+            $this->assertSame('old hash', $GLOBALS['session']['user']['password']);
+            $logOutput = implode("\n", array_column($GLOBALS['__test_debuglog'], 'message'));
+            $this->assertStringNotContainsString("changed the target account's password", $logOutput);
+        }
+
         public function testUpdateBindsParametersForQuotedAndMultibyteNames(): void
         {
             Database::resetDoctrineConnection();
