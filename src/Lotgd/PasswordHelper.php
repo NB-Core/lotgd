@@ -21,6 +21,37 @@ final class PasswordHelper
     /** Modern bcrypt algorithm identifier. */
     public const ALGO_MODERN = 1;
 
+    /** Shortest password accepted when one is set, unless configured otherwise. */
+    public const DEFAULT_MIN_LENGTH = 8;
+
+    /** The configured minimum is never taken below this, the rule of earlier releases. */
+    public const LOWEST_MIN_LENGTH = 4;
+
+    /**
+     * Minimum length of a password being set: at registration, on a change
+     * in the preferences, and for the installer's administrator.
+     *
+     * It applies only when a password is chosen. Existing passwords keep
+     * working whatever their length.
+     */
+    public static function minLength(Settings $settings): int
+    {
+        $configured = (int) $settings->getSetting('passwordminlength', self::DEFAULT_MIN_LENGTH);
+
+        return max(self::LOWEST_MIN_LENGTH, $configured);
+    }
+
+    /**
+     * Whether a password being set is shorter than the configured minimum.
+     *
+     * Counted in characters, not bytes, so a password with umlauts is not
+     * treated as longer than it looks.
+     */
+    public static function isTooShort(string $password, Settings $settings): bool
+    {
+        return mb_strlen($password, 'UTF-8') < self::minLength($settings);
+    }
+
     /**
      * Hash a plaintext password for storage using bcrypt.
      *

@@ -497,6 +497,9 @@ switch ($type_setting) {
                 //this is just a way to check and insert a setting I deem necessary without going through the installer
                 if ($settings->getSetting('dpointspercurrencyunit', 100)) {
                 }
+                // Read once so an unset minimum is stored as its default before
+                // the form shows it; the range field would otherwise start at 4.
+                \Lotgd\PasswordHelper::minLength($settings);
 
                 //
 

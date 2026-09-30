@@ -359,9 +359,11 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 }
             }
 
-            $passlen = strlen($pass1);
-            if ($passlen <= 3) {
-                $msg .= Translator::translate("Your password must be at least 4 characters long.`n");
+            if (PasswordHelper::isTooShort((string) $pass1, $settings)) {
+                $msg .= Translator::sprintfTranslate(
+                    "Your password must be at least %s characters long.`n",
+                    PasswordHelper::minLength($settings)
+                );
                 $blockaccount = true;
             }
             if ($pass1 != $pass2) {
@@ -618,11 +620,11 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 // better
                 $output->rawOutput("<table><tr valign='top'><td>");
                 $output->output("How will you be known to this world? ");
-                $output->rawOutput("</td><td><input name='name'></td></tr><tr valign='top'><td>");
+                $output->rawOutput("</td><td><input name='name' autocomplete='username'></td></tr><tr valign='top'><td>");
                 $output->output("Enter a password: ");
-                $output->rawOutput("</td><td><input type='password' name='pass1' id='pass1'></td></tr><tr valign='top'><td>");
+                $output->rawOutput("</td><td><input type='password' name='pass1' id='pass1' autocomplete='new-password'></td></tr><tr valign='top'><td>");
                 $output->output("Re-enter it for confirmation: ");
-                $output->rawOutput("</td><td><input type='password' name='pass2' id='pass2'></td></tr><tr valign='top'><td>");
+                $output->rawOutput("</td><td><input type='password' name='pass2' id='pass2' autocomplete='new-password'></td></tr><tr valign='top'><td>");
                 $output->output("Enter your email address: ");
                 $r1 = Translator::translate("`^(optional -- however, if you choose not to enter one, there will be no way that you can reset your password if you forget it!)`0");
                 $r2 = Translator::translate("`\$(required)`0");

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests;
 
 use Lotgd\PasswordHelper;
+use Lotgd\Tests\Stubs\DummySettings;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -56,6 +57,40 @@ final class PasswordHelperTest extends TestCase
 
         $this->assertNull(PasswordHelper::matchTyped('swordfisk', $hash, PasswordHelper::ALGO_MODERN));
         $this->assertNull(PasswordHelper::matchTyped('', $hash, PasswordHelper::ALGO_MODERN));
+    }
+
+    /**
+     * Without a setting, a new password needs eight characters.
+     */
+    public function testTheMinimumLengthDefaultsToEight(): void
+    {
+        $settings = new DummySettings();
+
+        $this->assertSame(8, PasswordHelper::minLength($settings));
+        $this->assertTrue(PasswordHelper::isTooShort('seven77', $settings));
+        $this->assertFalse(PasswordHelper::isTooShort('eight888', $settings));
+    }
+
+    /**
+     * The minimum is configurable, but never below the four characters
+     * earlier releases required.
+     */
+    public function testTheMinimumLengthFollowsTheSettingDownToFour(): void
+    {
+        $this->assertSame(12, PasswordHelper::minLength(new DummySettings(['passwordminlength' => 12])));
+        $this->assertSame(4, PasswordHelper::minLength(new DummySettings(['passwordminlength' => 1])));
+        $this->assertSame(4, PasswordHelper::minLength(new DummySettings(['passwordminlength' => ''])));
+    }
+
+    /**
+     * Length is counted in characters, so umlauts do not count double.
+     */
+    public function testTheLengthIsCountedInCharacters(): void
+    {
+        $settings = new DummySettings(['passwordminlength' => 8]);
+
+        $this->assertTrue(PasswordHelper::isTooShort('äöüäöüä', $settings), 'seven characters, fourteen bytes');
+        $this->assertFalse(PasswordHelper::isTooShort('äöüäöüäö', $settings));
     }
 
     /**
