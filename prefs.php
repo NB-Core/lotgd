@@ -376,8 +376,14 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         $changesPassword = $pass1 !== '';
         $changesEmail = $email != $session['user']['emailaddress']
             && $settings->getSetting('playerchangeemail', 0);
+        // After a login through a forgotten-password link the player does not
+        // know the current password, which is the point of the link: that
+        // session may set a new password once without it. The email address
+        // still takes it.
+        $resettingPassword = $changesPassword
+            && ValidationLogin::passwordResetAllowed((int) $session['user']['acctid']);
         $identityConfirmed = true;
-        if ($changesPassword || $changesEmail) {
+        if ($changesEmail || ($changesPassword && !$resettingPassword)) {
             $currentPost = Http::post('oldpass');
             $identityConfirmed = PasswordHelper::matchTyped(
                 is_string($currentPost) ? $currentPost : '',
@@ -405,6 +411,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
             } else {
                 $session['user']['password'] = PasswordHelper::hash($pass1);
                 $session['user']['password_algo'] = PasswordHelper::ALGO_MODERN;
+                ValidationLogin::clearPasswordReset();
                 $output->output("`#Your password has been changed.`n");
             }
         }
@@ -639,6 +646,9 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         Nav::add("", "prefs.php?op=cancelemail");
     }
 
+    if (ValidationLogin::passwordResetAllowed((int) $session['user']['acctid'])) {
+        $output->output("`@You logged in with a password reset link. Choose a new password now; your current password is not needed for that.`0`n`n");
+    }
     $output->rawOutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(validatePrefs())'>");
     $usernameValue = htmlentities($session['user']['login'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
     $output->rawOutput("<input type='hidden' name='username' class='visually-hidden' value='{$usernameValue}' autocomplete='username' readonly>");

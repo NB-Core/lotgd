@@ -58,6 +58,24 @@ final class AccountChangeReauthenticationTest extends TestCase
         self::assertStringContainsString('SecurityLog::event(', $prefs);
     }
 
+    /**
+     * A forgotten-password login cannot know the current password, so that
+     * session may set a new one once without it -- and only the password.
+     */
+    public function testAForgottenPasswordLoginMaySetANewPasswordWithoutTheOldOne(): void
+    {
+        $prefs = self::source('prefs.php');
+        self::assertStringContainsString('ValidationLogin::passwordResetAllowed(', $prefs);
+        self::assertStringContainsString('if ($changesEmail || ($changesPassword && !$resettingPassword)) {', $prefs);
+        self::assertStringContainsString('ValidationLogin::clearPasswordReset();', $prefs);
+
+        self::assertStringContainsString('ValidationLogin::allowPasswordReset(', self::source('login.php'));
+        self::assertStringContainsString(
+            "ValidationLogin::grant((int) \$row['acctid'], (string) \$row['login'], null, true)",
+            self::source('create.php')
+        );
+    }
+
     public function testNewPasswordsFollowTheConfiguredMinimum(): void
     {
         foreach (['prefs.php', 'create.php', 'install/lib/Installer.php', 'pages/user/user_save.php'] as $path) {

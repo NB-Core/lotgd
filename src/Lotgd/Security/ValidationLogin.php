@@ -30,8 +30,18 @@ final class ValidationLogin
     /** Seconds a grant stays usable. */
     public const LIFETIME = 300;
 
+    /**
+     * Seconds a password reset stays open after logging in through a
+     * forgotten-password link: long enough to open the preferences and
+     * choose a password, short enough not to outlive the visit.
+     */
+    public const RESET_LIFETIME = 1800;
+
     /** Where the session keeps the account and expiry the token is for. */
     private const SESSION_KEY = 'validation_login';
+
+    /** Where the session keeps an open password reset. */
+    private const RESET_KEY = 'password_reset';
 
     /**
      * Allow one login to this account from the current session.
@@ -41,7 +51,7 @@ final class ValidationLogin
      *
      * @return string The token to post back
      */
-    public static function grant(int $acctid, string $login, ?int $now = null): string
+    public static function grant(int $acctid, string $login, ?int $now = null, bool $passwordReset = false): string
     {
         Csrf::forget(Csrf::SCOPE_VALIDATION_LOGIN);
         $session = &self::sessionRef();
@@ -49,6 +59,7 @@ final class ValidationLogin
             'acctid' => $acctid,
             'login' => $login,
             'expires' => ($now ?? time()) + self::LIFETIME,
+            'passwordReset' => $passwordReset,
         ];
 
         return Csrf::token(Csrf::SCOPE_VALIDATION_LOGIN);
@@ -60,8 +71,9 @@ final class ValidationLogin
      * The grant is removed before anything is compared, so a wrong or late
      * token cannot be followed by a second try against the same grant.
      *
-     * @return array{acctid:int,login:string}|null The account the grant names,
-     *         or null when there is no grant, it expired, or the token differs
+     * @return array{acctid:int,login:string,passwordReset:bool}|null The account
+     *         the grant names and whether it came from a forgotten-password
+     *         link, or null when there is no grant, it expired, or the token differs
      */
     public static function consume(mixed $provided, ?int $now = null): ?array
     {
@@ -82,7 +94,48 @@ final class ValidationLogin
             return null;
         }
 
-        return ['acctid' => $acctid, 'login' => $login];
+        return ['acctid' => $acctid, 'login' => $login, 'passwordReset' => ($grant['passwordReset'] ?? false) === true];
+    }
+
+    /**
+     * Let this session set a new password once without the current one.
+     *
+     * Called by login.php after a login through a forgotten-password link:
+     * the player does not know the current password, which is the point of
+     * the link, and the preferences otherwise ask for it. The email address
+     * still takes the current password.
+     */
+    public static function allowPasswordReset(int $acctid, ?int $now = null): void
+    {
+        $session = &self::sessionRef();
+        $session[self::RESET_KEY] = [
+            'acctid' => $acctid,
+            'expires' => ($now ?? time()) + self::RESET_LIFETIME,
+        ];
+    }
+
+    /**
+     * Whether this session may set a new password for the account without
+     * the current one.
+     */
+    public static function passwordResetAllowed(int $acctid, ?int $now = null): bool
+    {
+        $session = &self::sessionRef();
+        $reset = $session[self::RESET_KEY] ?? null;
+
+        return is_array($reset)
+            && ($reset['acctid'] ?? null) === $acctid
+            && is_int($reset['expires'] ?? null)
+            && ($now ?? time()) <= $reset['expires'];
+    }
+
+    /**
+     * Close an open password reset, once the new password is set.
+     */
+    public static function clearPasswordReset(): void
+    {
+        $session = &self::sessionRef();
+        unset($session[self::RESET_KEY]);
     }
 
     /**

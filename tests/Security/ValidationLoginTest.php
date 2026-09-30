@@ -32,7 +32,10 @@ final class ValidationLoginTest extends TestCase
     {
         $token = ValidationLogin::grant(42, 'Violet', 1000);
 
-        self::assertSame(['acctid' => 42, 'login' => 'Violet'], ValidationLogin::consume($token, 1000));
+        self::assertSame(
+            ['acctid' => 42, 'login' => 'Violet', 'passwordReset' => false],
+            ValidationLogin::consume($token, 1000)
+        );
     }
 
     public function testTheTokenIsACsrfTokenInItsOwnScope(): void
@@ -111,6 +114,33 @@ final class ValidationLoginTest extends TestCase
 
         ValidationLogin::grant(42, 'Violet', 1000);
         self::assertNull(ValidationLogin::consume(null, 1000));
+    }
+
+    public function testAGrantFromAForgottenPasswordLinkSaysSo(): void
+    {
+        $token = ValidationLogin::grant(42, 'Violet', 1000, true);
+
+        self::assertTrue(ValidationLogin::consume($token, 1000)['passwordReset'] ?? false);
+    }
+
+    public function testAPasswordResetIsOpenForItsAccountAndItsLifetimeOnly(): void
+    {
+        self::assertFalse(ValidationLogin::passwordResetAllowed(42, 1000), 'nothing open by default');
+
+        ValidationLogin::allowPasswordReset(42, 1000);
+
+        self::assertTrue(ValidationLogin::passwordResetAllowed(42, 1000));
+        self::assertTrue(ValidationLogin::passwordResetAllowed(42, 1000 + ValidationLogin::RESET_LIFETIME));
+        self::assertFalse(ValidationLogin::passwordResetAllowed(42, 1001 + ValidationLogin::RESET_LIFETIME));
+        self::assertFalse(ValidationLogin::passwordResetAllowed(43, 1000), 'another account');
+    }
+
+    public function testAPasswordResetClosesOnceUsed(): void
+    {
+        ValidationLogin::allowPasswordReset(42, 1000);
+        ValidationLogin::clearPasswordReset();
+
+        self::assertFalse(ValidationLogin::passwordResetAllowed(42, 1000));
     }
 
     public function testTheButtonCarriesNoPassword(): void

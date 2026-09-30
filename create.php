@@ -97,7 +97,7 @@ if ($op == "forgotval") {
         $output->output("`#`cYour login request has been validated.  You may now log in.`c`0");
         $output->rawOutput(ValidationLogin::button(
             (string) $row['login'],
-            ValidationLogin::grant((int) $row['acctid'], (string) $row['login']),
+            ValidationLogin::grant((int) $row['acctid'], (string) $row['login'], null, true),
             Translator::translate("Click here to log in")
         ));
         $output->outputNotl("`n");
