@@ -130,10 +130,11 @@ class Installer
                 $needsauthentication = false;
             }
             if (!empty(Http::post("username"))) {
-                $sql = "SELECT * FROM " . Database::prefix("accounts") . " WHERE login='" . Database::escape(Http::post("username")) . "' AND superuser & " . SU_MEGAUSER;
-                $result = Database::query($sql);
-                if (Database::numRows($result) > 0) {
-                    $row = Database::fetchAssoc($result);
+                $row = Database::getDoctrineConnection()->fetchAssociative(
+                    "SELECT * FROM " . Database::prefix("accounts") . " WHERE login = :login AND (superuser & :megauser) <> 0",
+                    ['login' => (string) Http::post("username"), 'megauser' => SU_MEGAUSER]
+                );
+                if ($row !== false) {
                     $needsauthentication = ! $this->verifyInstallerAdminPassword(
                         (string) Http::post("password"),
                         is_array($row) ? $row : []
