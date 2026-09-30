@@ -182,9 +182,9 @@ if ($installerIsAncient) {
             $this->output->rawOutput("<form action='installer.php?stage=0' method='POST'>");
             $this->output->output("`%In order to upgrade this LoGD installation, you will need to provide the username and password of a superuser account with the MEGAUSER privilege`n");
             $this->output->output("`^Username: `0");
-            $this->output->rawOutput("<input name='username'><br>");
+            $this->output->rawOutput("<input name='username' autocomplete='username'><br>");
             $this->output->output("`^Password: `0");
-            $this->output->rawOutput("<input type='password' name='password'><br>");
+            $this->output->rawOutput("<input type='password' name='password' autocomplete='current-password'><br>");
             $submit = Translator::translateInline("Submit");
             $this->output->rawOutput("<input type='submit' value='$submit' class='button'>");
             $this->output->rawOutput("</form>");
@@ -250,8 +250,8 @@ if ($installerIsAncient) {
                 if (Http::post("pass1") != Http::post("pass2")) {
                     $this->output->output("`\$Oops, your passwords don't match.`2`n");
                     $showform = true;
-                } elseif (strlen(Http::post("pass1")) < 6) {
-                    $this->output->output("`\$Whoa, that's a short password, you really should make it longer. At least 6 letters.`2`n");
+                } elseif (PasswordHelper::isTooShort((string) Http::post("pass1"), Settings::getInstance())) {
+                    $this->output->output("`\$Whoa, that's a short password, you really should make it longer. At least %s characters.`2`n", PasswordHelper::minLength(Settings::getInstance()));
                     $showform = true;
                 } else {
                     // Give the superuser a decent set of privs so they can
@@ -319,11 +319,11 @@ if ($installerIsAncient) {
                 $this->output->rawOutput("<form action='installer.php?stage=$stage' method='POST'>");
                 $this->output->output("Enter a name for your superuser account:");
                 $postedName = Http::post('name');
-                $this->output->rawOutput("<input name='name' value=\"" . htmlentities((string) $postedName, ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "\">");
+                $this->output->rawOutput("<input name='name' autocomplete='username' value=\"" . htmlentities((string) $postedName, ENT_COMPAT, $this->getSetting('charset', 'UTF-8')) . "\">");
                 $this->output->output("`nEnter a password: ");
-                $this->output->rawOutput("<input name='pass1' type='password'>");
+                $this->output->rawOutput("<input name='pass1' type='password' autocomplete='new-password'>");
                 $this->output->output("`nConfirm your password: ");
-                $this->output->rawOutput("<input name='pass2' type='password'>");
+                $this->output->rawOutput("<input name='pass2' type='password' autocomplete='new-password'>");
                 $submit = Translator::translateInline("Create");
                 $this->output->rawOutput("<br><input type='submit' value='$submit' class='button'>");
                 $this->output->rawOutput("</form>");

@@ -85,6 +85,8 @@ $setup = array(
     "requireemail" => "Require users to enter their email address,bool",
     "requirevalidemail" => "Require users to validate their email address,bool",
     "blockdupeemail" => "One account per email address,bool",
+    "passwordminlength" => "Minimum length of a new password,range,4,64,1",
+    "Note: Applies whenever a password is set: at registration and when a player changes it. Existing passwords keep working.,note",
     "spaceinname" => "Allow spaces in user names,bool",
     "allowoddadminrenames" => "Allow admins to enter 'illegal' names in the user editor,bool",
     "selfdelete" => "Allow player to delete their character,bool",

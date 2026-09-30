@@ -16,8 +16,10 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Sanitize;
 use Lotgd\Security\Csrf;
+use Lotgd\Security\Escape;
 use Lotgd\Security\ValidationLogin;
 use Lotgd\PasswordHelper;
+use Lotgd\SecurityLog;
 use Lotgd\DataCache;
 use Lotgd\DebugLog;
 use Lotgd\EmailValidator;
@@ -55,8 +57,9 @@ function buildPreferenceForm(array $session, Settings $settings, int $nowWithOff
 {
     return array(
         "Account Preferences,title",
-        "pass1" => "Password,password,new-password",
-        "pass2" => "Retype,password,new-password",
+        "oldpass" => "Current password (needed to change password or email),password,current-password",
+        "pass1" => "New password,password,new-password",
+        "pass2" => "Retype new password,password,new-password",
         "email" => "Email Address",
 
         "Character Preferences,title",
@@ -359,25 +362,62 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
 
     if (count($post) == 0) {
     } else {
-        $pass1 = Http::post('pass1');
-        $pass2 = Http::post('pass2');
-        if ($pass1 != $pass2) {
+        $pass1Post = Http::post('pass1');
+        $pass1 = is_string($pass1Post) ? $pass1Post : '';
+        $pass2Post = Http::post('pass2');
+        $pass2 = is_string($pass2Post) ? $pass2Post : '';
+        $emailPost = Http::post('email');
+        $email = is_string($emailPost) ? $emailPost : '';
+
+        // A new password or a new email address takes the current password.
+        // Either one hands the account to whoever sets it -- the address
+        // through "forgot password" -- so an open session alone must not be
+        // enough: not a shared computer, not a stolen session cookie.
+        $changesPassword = $pass1 !== '';
+        $changesEmail = $email != $session['user']['emailaddress']
+            && $settings->getSetting('playerchangeemail', 0);
+        // After a login through a forgotten-password link the player does not
+        // know the current password, which is the point of the link: that
+        // session may set a new password once without it. The email address
+        // still takes it.
+        $resettingPassword = $changesPassword
+            && ValidationLogin::passwordResetAllowed((int) $session['user']['acctid']);
+        $identityConfirmed = true;
+        if ($changesEmail || ($changesPassword && !$resettingPassword)) {
+            $currentPost = Http::post('oldpass');
+            $identityConfirmed = PasswordHelper::matchTyped(
+                is_string($currentPost) ? $currentPost : '',
+                (string) ($session['user']['password'] ?? ''),
+                (int) ($session['user']['password_algo'] ?? PasswordHelper::ALGO_LEGACY)
+            ) !== null;
+            if (!$identityConfirmed) {
+                $output->output("`\$Your current password was not correct, so your password and email address were not changed.`0`n");
+                SecurityLog::event(
+                    'Preferences: password or email change refused, current password wrong',
+                    ['password' => $changesPassword ? 'yes' : 'no', 'email' => $changesEmail ? 'yes' : 'no'],
+                    (int) $session['user']['acctid']
+                );
+            }
+        }
+
+        if (!$identityConfirmed) {
+            // Nothing below may change the password or the address.
+        } elseif ($pass1 != $pass2) {
             $output->output("`#Your passwords do not match.`n");
-        } else {
-            if ($pass1 != "") {
-                if (strlen($pass1) > 3) {
-                    $pass1 = PasswordHelper::hash($pass1);
-                    $session['user']['password'] = $pass1;
-                    $session['user']['password_algo'] = PasswordHelper::ALGO_MODERN;
-                    $output->output("`#Your password has been changed.`n");
-                } else {
-                    $output->output("`#Your password is too short.");
-                    $output->output("It must be at least 4 characters.`n");
-                }
+        } elseif ($changesPassword) {
+            if (PasswordHelper::isTooShort($pass1, $settings)) {
+                $output->output("`#Your password is too short.");
+                $output->output("It must be at least %s characters.`n", PasswordHelper::minLength($settings));
+            } else {
+                $session['user']['password'] = PasswordHelper::hash($pass1);
+                $session['user']['password_algo'] = PasswordHelper::ALGO_MODERN;
+                ValidationLogin::clearPasswordReset();
+                $output->output("`#Your password has been changed.`n");
             }
         }
         reset($post);
         $nonsettings = array(
+            "oldpass" => 1,
             "pass1" => 1,
             "pass2" => 1,
             "email" => 1,
@@ -428,9 +468,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
                 $session['user']['biotime'] = date("Y-m-d H:i:s");
             }
         }
-        $emailPost = Http::post('email');
-        $email = is_string($emailPost) ? $emailPost : '';
-        if ($email != $session['user']['emailaddress']) {
+        if ($identityConfirmed && $email != $session['user']['emailaddress']) {
             if ($settings->getSetting('playerchangeemail', 0)) {
                 if (EmailValidator::isValid($email)) {
                     if ($settings->getSetting('requirevalidemail', 0) == 1) {
@@ -490,7 +528,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
                         }
                     } else {
                         $output->output("`#Your email address has been changed.`n");
-                        DebugLog::add("Email changed from " . $email . " to " . $email, $session['user']['acctid'], $session['user']['acctid'], 'Email');
+                        DebugLog::add("Email changed from " . $session['user']['emailaddress'] . " to " . $email, $session['user']['acctid'], $session['user']['acctid'], 'Email');
                         $session['user']['emailaddress'] = $email;
                     }
                 } else {
@@ -498,7 +536,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
                         $output->output("`#That is not a valid email address.`n");
                     } else {
                         $output->output("`#Your email address has been changed.`n");
-                        DebugLog::add("Email changed from " . $email . " to " . $email, $session['user']['acctid'], $session['user']['acctid'], 'Email');
+                        DebugLog::add("Email changed from " . $session['user']['emailaddress'] . " to " . $email, $session['user']['acctid'], $session['user']['acctid'], 'Email');
                         $session['user']['emailaddress'] = $email;
                     }
                 }
@@ -518,12 +556,13 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     Output::requireVendorAsset('datatables', 'js', Output::VENDOR_BUCKET_MID);
     Output::requireVendorAsset('datatables', 'css', Output::VENDOR_BUCKET_MID);
 
-	$warn = Translator::translateInline('Your password is too short.  It must be at least 4 characters long.');
+	$minLength = PasswordHelper::minLength($settings);
+	$warn = Escape::js(Translator::sprintfTranslate('Your password is too short.  It must be at least %s characters long.', $minLength));
 	$output->rawOutput("<script>
 	function validatePrefs(){
 		var passbox = document.getElementById('pass1');
-		if (passbox.value.length < 4 && passbox.value.length > 0){
-			alert('$warn');
+		if (passbox.value.length < {$minLength} && passbox.value.length > 0){
+			alert({$warn});
 			return false;
 		}
 		return true;
@@ -607,6 +646,9 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         Nav::add("", "prefs.php?op=cancelemail");
     }
 
+    if (ValidationLogin::passwordResetAllowed((int) $session['user']['acctid'])) {
+        $output->output("`@You logged in with a password reset link. Choose a new password now; your current password is not needed for that.`0`n`n");
+    }
     $output->rawOutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(validatePrefs())'>");
     $usernameValue = htmlentities($session['user']['login'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
     $output->rawOutput("<input type='hidden' name='username' class='visually-hidden' value='{$usernameValue}' autocomplete='username' readonly>");

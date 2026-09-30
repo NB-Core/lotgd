@@ -19,7 +19,7 @@ $userinfo = array(
     "Account info,title",
     "acctid" => "User id,viewonly",
     "login" => "Login",
-    "newpassword" => "New Password",
+    "newpassword" => "New Password,password,new-password",
     "emailaddress" => "Email Address",
     "locked" => "Account Locked,bool",
     "banoverride" => "Override Bans for this account,bool",

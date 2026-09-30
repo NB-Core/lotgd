@@ -230,6 +230,22 @@ browser session that opened the link.
 - Links already sent by mail keep working: the stored tokens are compared as
   before, only new ones are random.
 
+### Changing the password or email address takes the current password
+
+The preferences page asks for the current password before it changes the
+password or the email address. Other preferences save without it.
+
+A player who logs in through a forgotten-password link does not know the
+current password. That session may set a new password once without it,
+within 30 minutes of the login. The page says so above the form. The email
+address still takes the current password.
+
+New passwords need at least 8 characters. The minimum is the setting
+*Minimum length of a new password* (`passwordminlength`) under Account
+Creation. It applies whenever a password is set: at registration, in the
+preferences, in the user editor and for the installer's administrator. Existing passwords keep
+working whatever their length. Set it to 4 to keep the old rule.
+
 ### Failed logins no longer keep the password
 
 `faillog.post` used to hold the whole form of every failed login, including

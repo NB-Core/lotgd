@@ -87,8 +87,8 @@ final class Stage10Test extends TestCase
 
         $_POST = [
             'name'  => 'Admin',
-            'pass1' => 'secret',
-            'pass2' => 'secret',
+            'pass1' => 'secret-password',
+            'pass2' => 'secret-password',
         ];
 
         $installer = new Installer();
@@ -119,7 +119,7 @@ final class Stage10Test extends TestCase
 
         $this->assertSame('accounts', $connection->lastInsert['table']);
         $this->assertSame('Admin', $connection->lastInsert['data']['login']);
-        $this->assertTrue(password_verify('secret', $connection->lastInsert['data']['password']));
+        $this->assertTrue(password_verify('secret-password', $connection->lastInsert['data']['password']));
         $this->assertSame(PasswordHelper::ALGO_MODERN, $connection->lastInsert['data']['password_algo']);
         $this->assertSame($expectedPrivileges, $connection->lastInsert['data']['superuser']);
         $this->assertSame('`%Admin `&Admin`0', $connection->lastInsert['data']['name']);
@@ -186,6 +186,48 @@ final class Stage10Test extends TestCase
         $this->assertEmpty($connection->lastInsert);
     }
 
+    public function testStage10RejectsAPasswordShorterThanTheConfiguredMinimum(): void
+    {
+        Database::$mockResults = [
+            [],
+            [],
+        ];
+
+        $connection = new DoctrineConnection();
+        DoctrineBootstrap::$conn = $connection;
+        Database::$doctrineConnection = null;
+
+        $_POST = [
+            'name'  => 'Admin',
+            'pass1' => 'seven77',
+            'pass2' => 'seven77',
+        ];
+
+        (new Installer())->stage10();
+
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString('At least 8 characters', $output);
+        $this->assertEmpty($connection->lastInsert);
+    }
+
+    public function testStage10OffersTheFieldsPasswordManagersExpect(): void
+    {
+        Database::$mockResults = [
+            [],
+            [],
+        ];
+
+        DoctrineBootstrap::$conn = new DoctrineConnection();
+        Database::$doctrineConnection = null;
+
+        (new Installer())->stage10();
+
+        $output = Output::getInstance()->getRawOutput();
+        $this->assertStringContainsString("name='name' autocomplete='username'", $output);
+        $this->assertStringContainsString("name='pass1' type='password' autocomplete='new-password'", $output);
+        $this->assertStringContainsString("name='pass2' type='password' autocomplete='new-password'", $output);
+    }
+
     public function testStage10SkipsCreationWhenSuperuserAlreadyExists(): void
     {
         Database::$mockResults = [
@@ -225,8 +267,8 @@ final class Stage10Test extends TestCase
 
         $_POST = [
             'name'  => "O'Connor",
-            'pass1' => 'secret',
-            'pass2' => 'secret',
+            'pass1' => 'secret-password',
+            'pass2' => 'secret-password',
         ];
 
         $installer = new Installer();
@@ -253,14 +295,14 @@ final class Stage10Test extends TestCase
 
         $_POST = [
             'name'  => 'Admin',
-            'pass1' => 'secret',
-            'pass2' => 'secret',
+            'pass1' => 'secret-password',
+            'pass2' => 'secret-password',
         ];
 
         $installer = new Installer();
         $installer->stage10();
 
         $this->assertArrayNotHasKey('password_algo', $connection->lastInsert['data']);
-        $this->assertTrue(password_verify('secret', $connection->lastInsert['data']['password']));
+        $this->assertTrue(password_verify('secret-password', $connection->lastInsert['data']['password']));
     }
 }

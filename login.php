@@ -192,6 +192,11 @@ if ($name != "") {
             // immediately after successful authentication.
             RuntimeHardening::regenerateSessionIdFor('login-success');
             $session['user'] = $acctrow;
+            if ($isValidationLogin && $validationGrant['passwordReset']) {
+                // Logged in through a forgotten-password link: the player
+                // may set a new password without the one they forgot.
+                ValidationLogin::allowPasswordReset((int) $acctrow['acctid']);
+            }
             $baseaccount = $session['user'];
             CheckBan::check($session['user']['login']); //check if this account is banned
             CheckBan::check(); //check if this computer is banned
