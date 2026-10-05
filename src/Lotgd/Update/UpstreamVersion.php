@@ -396,6 +396,12 @@ final class UpstreamVersion
      */
     private static function atomEntries(string $xml): array
     {
+        // SimpleXML is not among the required extensions. Without it a feed
+        // cannot be read, which is handled like a feed that did not arrive.
+        if (! function_exists('simplexml_load_string')) {
+            return [];
+        }
+
         $previous = libxml_use_internal_errors(true);
         $feed = simplexml_load_string($xml, \SimpleXMLElement::class, LIBXML_NONET);
         libxml_clear_errors();

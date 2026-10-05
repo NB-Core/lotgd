@@ -257,6 +257,21 @@ final class UpstreamVersionTest extends TestCase
         self::assertNull(UpstreamVersion::versionFromCommonPhp('$logd_version = "dev";'));
     }
 
+    /**
+     * SimpleXML is optional; without it the feeds count as unavailable
+     * instead of ending the Grotto in an undefined-function error.
+     */
+    public function testTheFeedParserIsGuardedForAMissingSimpleXml(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/src/Lotgd/Update/UpstreamVersion.php');
+        $guard = strpos($source, "if (! function_exists('simplexml_load_string')) {\n            return [];");
+        $call = strpos($source, 'simplexml_load_string($xml');
+
+        self::assertNotFalse($guard);
+        self::assertNotFalse($call);
+        self::assertLessThan($call, $guard);
+    }
+
     public function testTheGrottoNoticeIsLimitedToMegausersAndNeverAsksMaster(): void
     {
         $source = (string) file_get_contents(dirname(__DIR__, 2) . '/superuser.php');

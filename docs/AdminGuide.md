@@ -165,6 +165,9 @@ up after three seconds. Master is looked up only when Core News is opened. The
 **Latest upstream release** row of the diagnostics page shows what was last stored
 and never asks GitHub itself.
 
+The feeds are read with PHP's SimpleXML extension; without it the release and the
+last commit are reported as unreachable, and the development version is still shown.
+
 To turn the check off, set **Check GitHub for new releases** in *Game Settings →
 Game Setup* to *No*; the game then makes no requests at all.
 
