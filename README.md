@@ -254,6 +254,11 @@ To publish a release:
 2. Create the tag (for example `v2.0.8`) and the release on GitHub. Pushing a
    `v*` tag also publishes the Docker image as `:X.Y.Z`, `:X.Y` and `:latest`
    (`.github/workflows/image.yml`).
+   Publishing the release starts the **Release notes** workflow, which puts
+   the `CHANGELOG.md` sections since the previous release at the top of its
+   text and folds GitHub's generated list of pull requests away underneath
+   (`scripts/release-notes.php`). To refresh the text after correcting the
+   changelog, run **Actions → Release notes** with the tag.
 3. For downloadable archives, open **Actions → Release → Run workflow** and
    enter the tag.
 

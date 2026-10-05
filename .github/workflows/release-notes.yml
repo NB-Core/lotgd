@@ -1,0 +1,57 @@
+name: Release notes
+
+# Puts the CHANGELOG.md sections since the previous release at the top of a
+# published release, with GitHub's generated list of pull requests folded
+# away underneath (scripts/release-notes.php). Running it again replaces only
+# the changelog part, so it can be started by hand after the changelog was
+# corrected.
+#
+# A release event runs the workflow file of the tagged commit, so releases
+# tagged before this file existed are filled by starting it by hand.
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag of the published release (for example: v2.0.8)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-notes-${{ github.event.release.tag_name || github.event.inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.release_tag }}
+    steps:
+      # The tags are needed to find the previous release.
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Read the release
+        id: release
+        run: |
+          gh api "repos/$REPOSITORY/releases/tags/$RELEASE_TAG" > release.json
+          echo "id=$(jq -r .id release.json)" >> "$GITHUB_OUTPUT"
+          jq -r '.body // ""' release.json > existing.md
+      - name: Build the text
+        run: php scripts/release-notes.php --version="$RELEASE_TAG" --existing=existing.md > body.md
+      - name: Update the release
+        env:
+          RELEASE_ID: ${{ steps.release.outputs.id }}
+        run: |
+          jq -n --rawfile body body.md '{body: $body}' > patch.json
+          gh api -X PATCH "repos/$REPOSITORY/releases/$RELEASE_ID" --input patch.json > /dev/null
+          echo "Release $RELEASE_TAG now starts with its changelog."

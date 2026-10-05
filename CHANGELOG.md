@@ -10,6 +10,10 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ## [Unreleased]
 
+### CI
+
+- Published releases get their text from `CHANGELOG.md`: the *Release notes* workflow puts the sections since the previous release at the top and folds GitHub's generated list of pull requests away underneath (`scripts/release-notes.php`). It can be run again by hand, which replaces only the changelog part.
+
 ## [2.0.8] – 2026-10-05
 
 2.0.6 and 2.0.7 were not published as releases; upgrading from 2.0.5 includes their changes, listed below under their own headings. An installation that already runs a development state numbered 2.0.7 applies the migrations added since when it updates to 2.0.8, because the version changes.
