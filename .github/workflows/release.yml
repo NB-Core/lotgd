@@ -29,11 +29,19 @@ jobs:
           VERSION="${RELEASE_TAG#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
       # An archive whose common.php names another version would install as
-      # that version, so refuse to build one.
+      # that version, so refuse to build one. The check is written out here
+      # rather than in a script, because an older tag being packaged does
+      # not contain one.
       - name: Check version
         env:
           VERSION: ${{ steps.vars.outputs.VERSION }}
-        run: scripts/check-release-version.sh "$VERSION"
+        run: |
+          DECLARED=$(sed -n 's/^\$logd_version = "\([^" ]*\).*";$/\1/p' common.php)
+          if [ "$DECLARED" != "$VERSION" ]; then
+            echo "::error::common.php declares version '$DECLARED', but the tag is for '$VERSION'."
+            exit 1
+          fi
+          echo "common.php declares $DECLARED, matching the tag."
       - name: Create archives
         run: |
           VERSION=${{ steps.vars.outputs.VERSION }}
