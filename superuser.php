@@ -14,6 +14,10 @@ use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Sanitize;
+use Lotgd\Page;
+use Lotgd\Settings;
+use Lotgd\Security\Escape;
+use Lotgd\Update\UpstreamVersion;
 use Doctrine\DBAL\ParameterType;
 
 // translator ready
@@ -57,6 +61,17 @@ Header::pageHeader("Superuser Grotto");
 
 $lines = HookHandler::hook("superuser-headlines", array());
 $output->outputNotl("`c");
+// Only a final release newer than this installation is announced here; the
+// development version and recent commits are left to the Core News page.
+if ($session['user']['superuser'] & SU_MEGAUSER) {
+    $installedVersion = Page::getInstance()->getLogdVersion();
+    $newRelease = (new UpstreamVersion(Settings::getInstance()))->announcedRelease($installedVersion);
+    if ($newRelease !== null) {
+        $output->output("`@Release %s is available (installed: %s).`0 ", $newRelease['tag'], $installedVersion);
+        $output->rawOutput("<a href='corenews.php'>" . Escape::html((string) Translator::translateInline("See Core News")) . "</a>");
+        $output->outputNotl("`n`n");
+    }
+}
 foreach ($lines as $line) {
     //output it like an announcement, if any argument is given, automatically(!) centered
     //ATTENTION! pre-translate your stuff in your own schema with Translator::translate or Translator::getInstance()->sprintfTranslate()!

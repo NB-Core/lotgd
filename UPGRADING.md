@@ -259,6 +259,15 @@ date, address and account, which are unchanged.
 
 ---
 
+### Version check against GitHub
+
+Core News and a notice in the Superuser Grotto now compare the installed version
+with the latest release on GitHub, and Core News also shows the development
+version on `master`. The setting `versioncheck` (*Game Setup*, on by default)
+turns this off; see the Administrator Guide. The unused setting `corenewspath`,
+a leftover of the old custom news URL, is no longer offered; a stored value is
+ignored.
+
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
 
 If you are coming directly from **1.3.2** (or earlier 1.x):
