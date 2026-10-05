@@ -500,6 +500,7 @@ switch ($type_setting) {
                 // Read once so an unset minimum is stored as its default before
                 // the form shows it; the range field would otherwise start at 4.
                 \Lotgd\PasswordHelper::minLength($settings);
+                $settings->getSetting(\Lotgd\Update\UpstreamVersion::SETTING_ENABLED, 1);
 
                 //
 

@@ -139,6 +139,35 @@ Two things it deliberately does **not** show:
 > from the comment block at the end of `.htaccess` into the server configuration, or move the script
 > out of the document root so only CLI cron jobs can invoke it.
 
+## Version check
+
+The Superuser Grotto tells megausers when a new release of the game is out, and
+**Core News** (in the Grotto's navigation) shows the details:
+
+- the latest release on GitHub, compared with the installed version: up to date,
+  an update is available, or this installation is a development build newer than
+  the release; with the release notes;
+- the development version, read from the `$logd_version` line of `common.php` on
+  `master`, and the last commit there, for information.
+
+The Grotto only mentions a final release newer than the installed version — never
+a release candidate, the development version or new commits — in one line at the
+top of the page.
+
+The lookups are anonymous requests for the public Atom feeds on `github.com`
+(`releases.atom`, `commits/master.atom`) and for `common.php` on
+`raw.githubusercontent.com`; nothing about the server or its players is sent. The
+feeds are used instead of GitHub's REST API because the API allows only 60
+anonymous requests an hour per IP address, which a shared host easily exhausts. The
+release is asked for at most once a day and kept in the setting
+`versioncheck_release`, a failure is retried after an hour, and each request gives
+up after three seconds. Master is looked up only when Core News is opened. The
+**Latest upstream release** row of the diagnostics page shows what was last stored
+and never asks GitHub itself.
+
+To turn the check off, set **Check GitHub for new releases** in *Game Settings →
+Game Setup* to *No*; the game then makes no requests at all.
+
 ## SMTP and Email
 
 Configure SMTP credentials in the in-game settings editor ([`configuration.php`](../configuration.php),

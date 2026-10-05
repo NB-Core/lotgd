@@ -23,6 +23,7 @@ use Closure;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Doctrine\MigrationRunner;
 use Lotgd\MySQL\Database;
+use Lotgd\Update\UpstreamVersion;
 use Lotgd\Upgrade\ShippedFiles;
 
 class Diagnostics
@@ -537,10 +538,10 @@ class Diagnostics
             $rows[] = $this->row('Database server', 'unknown', 'unknown');
         }
 
-        // Read the cache the core news page fills; never trigger a fetch here.
-        $release = DataCache::getInstance()->datacache('github_release_latest', 86400);
-        if (is_array($release) && isset($release['tag_name'])) {
-            $rows[] = $this->row('Latest upstream release', (string) $release['tag_name'], 'ok', [], false);
+        // Read what the version check last stored; never trigger a fetch here.
+        $release = UpstreamVersion::storedRelease($settings[UpstreamVersion::SETTING_STATE] ?? null);
+        if ($release !== null) {
+            $rows[] = $this->row('Latest upstream release', $release['tag'], 'ok', [], false);
         } else {
             $rows[] = $this->row('Latest upstream release', 'not cached', 'unknown');
         }
