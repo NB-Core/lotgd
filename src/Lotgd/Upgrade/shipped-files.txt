@@ -402,6 +402,7 @@ src/Lotgd/Substitute.php
 src/Lotgd/Template.php
 src/Lotgd/Translator.php
 src/Lotgd/TwigTemplate.php
+src/Lotgd/Update/UpstreamVersion.php
 src/Lotgd/Upgrade/MysqlSchemaUpgradeLock.php
 src/Lotgd/Upgrade/SchemaUpgrade.php
 src/Lotgd/Upgrade/SchemaUpgradeLock.php
