@@ -42,6 +42,14 @@ Before doing anything:
 2. Keep your `config` folder (but update as noted below).  
 3. Run `composer install` to pull required dependencies.
 
+### 2.0.8 is the first release since 2.0.5
+
+2.0.6 and 2.0.7 were never published, so an update from 2.0.5 takes every
+change below at once; the [changelog](CHANGELOG.md) lists them under 2.0.6,
+2.0.7 and 2.0.8. An installation that tracked `master` and already reports
+2.0.7 applies the migrations added since without further steps: the version
+changes to 2.0.8, which starts the automatic upgrade described below.
+
 ### Docker deployments: the runtime image now serves PHP 8.4
 
 The container image moved from `thecodingmachine/php:8.3-v4-apache` to

@@ -367,7 +367,7 @@ marker. At the end it checks all of this in the database. It prints the
 administrator's password once:
 
 ```text
-Installed Legend of the Green Dragon 2.0.7 +nb Edition.
+Installed Legend of the Green Dragon 2.0.8 +nb Edition.
 Database configuration: /var/lib/lotgd/dbconnect.php
 Modules installed and activated: 15 of 15
 Administrator: YourName

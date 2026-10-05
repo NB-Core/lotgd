@@ -246,13 +246,20 @@ Releases are prepared manually by maintainers. The `Release` GitHub Actions
 workflow is intentionally configured as **manual-only** (`workflow_dispatch`) so
 it does not auto-run on tags.
 
-When a maintainer wants release archives built by GitHub Actions:
+To publish a release:
 
-1. Update the version in `common.php` and push changes.
-2. Open **Actions → Release → Run workflow**.
-3. Provide the target tag/ref (for example `v2.0.0` or `v2.0.0-rc1`) and run.
+1. Update the version in `common.php` and run `composer shipped-files` in the
+   same commit (CI checks that the list names the new version). Add the
+   release to `CHANGELOG.md`, then merge to `master`.
+2. Create the tag (for example `v2.0.8`) and the release on GitHub. Pushing a
+   `v*` tag also publishes the Docker image as `:X.Y.Z`, `:X.Y` and `:latest`
+   (`.github/workflows/image.yml`).
+3. For downloadable archives, open **Actions → Release → Run workflow** and
+   enter the tag.
 
-The workflow builds archives that contain the application and its `vendor/`
+The Release workflow checks out that tag, refuses to continue when
+`common.php` in it declares another version (`scripts/check-release-version.sh`),
+and builds archives that contain the application and its `vendor/`
 dependencies while omitting development files such as the `tests/` directory.
 
 ### GitHub Actions Storage Policy
