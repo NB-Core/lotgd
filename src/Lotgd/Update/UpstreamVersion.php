@@ -181,11 +181,13 @@ final class UpstreamVersion
         $feed = ($this->fetch)(self::MASTER_FEED);
         $version = is_string($common) ? self::versionFromCommonPhp($common) : null;
         $head = null;
-        foreach (is_string($feed) ? self::atomEntries($feed) : [] as $entry) {
-            if (preg_match('#^' . preg_quote(self::REPOSITORY_URL, '#') . '/commit/([0-9a-f]{40})$#', $entry['link'], $matches) === 1) {
-                $head = ['sha' => $matches[1], 'date' => substr($entry['updated'], 0, 10), 'title' => $entry['title']];
-            }
-            break;
+        // The newest entry is the head of master; older commits do not matter.
+        $newest = is_string($feed) ? (self::atomEntries($feed)[0] ?? null) : null;
+        if (
+            $newest !== null
+            && preg_match('#^' . preg_quote(self::REPOSITORY_URL, '#') . '/commit/([0-9a-f]{40})$#', $newest['link'], $matches) === 1
+        ) {
+            $head = ['sha' => $matches[1], 'date' => substr($newest['updated'], 0, 10), 'title' => $newest['title']];
         }
         if ($version !== null || $head !== null) {
             $cache->updatedatacache(self::CACHE_MASTER, ['version' => $version, 'head' => $head]);
