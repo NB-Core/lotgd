@@ -13,17 +13,27 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
+      # Package the tag that was asked for, not the branch the workflow was
+      # started from.
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.inputs.release_tag }}
           fetch-depth: 0
       - name: Extract version
         id: vars
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
         run: |
           # Remove leading 'v' from the tag name
-          VERSION="${{ github.event.inputs.release_tag }}"
-          VERSION="${VERSION#v}"
+          VERSION="${RELEASE_TAG#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+      # An archive whose common.php names another version would install as
+      # that version, so refuse to build one.
+      - name: Check version
+        env:
+          VERSION: ${{ steps.vars.outputs.VERSION }}
+        run: scripts/check-release-version.sh "$VERSION"
       - name: Create archives
         run: |
           VERSION=${{ steps.vars.outputs.VERSION }}
