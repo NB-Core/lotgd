@@ -76,6 +76,12 @@ final class ReleaseNotesTest extends TestCase
         changelogSections(self::CHANGELOG, '2.0.9', '2.0.8');
     }
 
+    public function testAMissingPreviousReleaseIsAnError(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        changelogSections(self::CHANGELOG, '2.0.8', '2.0.4');
+    }
+
     public function testThePreviousReleaseIsTheNewestOlderFinalTag(): void
     {
         $tags = ['v2.0.4-rc3', 'v2.0.4', 'v2.0.5', 'v2.0.8', 'v2.0.9'];
