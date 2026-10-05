@@ -258,8 +258,7 @@ To publish a release:
    enter the tag.
 
 The Release workflow checks out that tag, refuses to continue when
-`common.php` in it declares another version (`scripts/check-release-version.sh`),
-and builds archives that contain the application and its `vendor/`
+`common.php` in it declares another version, and builds archives that contain the application and its `vendor/`
 dependencies while omitting development files such as the `tests/` directory.
 
 ### GitHub Actions Storage Policy
