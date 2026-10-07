@@ -23,7 +23,8 @@ function graveyard_haunt_getmoduleinfo(): array
         "download" => "core",
         "settings" => array(
             "hauntcost" => "Cost to haunt,int|25",
-            "turnloss" => "How many turns loses a successfully haunted user?,int|1"
+            "turnloss" => "How many turns loses a successfully haunted user?,int|1",
+            "testers" => "Only these account IDs can haunt (comma separated; empty = everyone),text|7",
             ),
         "prefs" => array(
             "hauntedby" => "Acctid of the haunter,viewonly",
@@ -44,10 +45,27 @@ function graveyard_haunt_uninstall(): bool
     return true;
 }
 
+/**
+ * Whether the current player passes the account restriction in the given
+ * setting (comma separated account IDs; an empty setting means everyone;
+ * entries that are not plain numbers are ignored, so a typo locks out rather
+ * than opens up).
+ */
+function graveyard_haunt_account_allowed(string $setting): bool
+{
+    global $session;
+    $raw = trim((string) get_module_setting($setting, 'graveyard_haunt'));
+    if ($raw === '') {
+        return true;
+    }
+    $ids = array_map('intval', preg_grep('/^\d+$/', array_map('trim', explode(',', $raw))));
+    return in_array((int) $session['user']['acctid'], $ids, true);
+}
+
 function graveyard_haunt_dohook(string $hookname, array $args): array
 {
     global $session;
-    if ($session['user']['acctid'] != 7) {
+    if (!graveyard_haunt_account_allowed('testers')) {
         return $args;
     }
     switch ($hookname) {
@@ -93,6 +111,11 @@ function graveyard_haunt_run(): void
     addnav("Places");
     addnav("S?Land of the Shades", "shades.php");
     addnav("G?The Graveyard", "graveyard.php");
+    if (!graveyard_haunt_account_allowed('testers')) {
+        output("`\$%s`) does not grant you the power to haunt.", $deathoverlord);
+        page_footer();
+        return;
+    }
     $op = httpget('op');
     switch ($op) {
         case "stage2":
