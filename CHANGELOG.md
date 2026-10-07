@@ -14,6 +14,14 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 - *Graveyard Haunting* (`graveyard_haunt`) no longer has account 7 built into its code as the only account allowed to haunt. The restriction is now the module setting *Only these account IDs can haunt* (`testers`), which defaults to `7`, so nothing changes until an administrator edits it; clearing it opens haunting to every player.
 
+### Fixed
+
+- `Battle::unsuspendBuffByName()` and `Battle::isBuffActive()` (and their wrappers `unsuspend_buff_by_name()`, `is_buff_active()`) no longer raise "Undefined array key" for a buff the player does not have, such as `mount` for a player without one, or for a buff without a `suspended` flag. What they do for an existing buff is unchanged.
+
+### Security
+
+- The character stats escape the weapon and armour names. The stat block keeps markup, so a name containing a tag, which a module letting players name their weapon can store, was rendered as that tag in the sidebar. Colour codes still work.
+
 ### CI
 
 - Published releases get their text from `CHANGELOG.md`: the *Release notes* workflow puts the sections since the previous release at the top and folds GitHub's generated list of pull requests away underneath (`scripts/release-notes.php`). It can be run again by hand, which replaces only the changelog part.

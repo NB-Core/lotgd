@@ -33,6 +33,7 @@ use Lotgd\DataCache;
 use Lotgd\Http;
 use Lotgd\Mounts;
 use Lotgd\PhpGenericEnvironment;
+use Lotgd\Security\Escape;
 
 class PageParts
 {
@@ -391,8 +392,10 @@ class PageParts
             }
             self::addCharStat("Gems", number_format((int)$u['gems'], 0, $point, $sep) . PlayerFunctions::checkTempStat("gems", 1));
             self::addCharStat("Equipment Info");
-            self::addCharStat("Weapon", $u['weapon']);
-            self::addCharStat("Armor", $u['armor']);
+            // The stat block is encoded with appoencode(..., true), which keeps
+            // markup; equipment names can be player-chosen, so escape them here.
+            self::addCharStat("Weapon", Escape::html($u['weapon']));
+            self::addCharStat("Armor", Escape::html($u['armor']));
             if ($u['hashorse'] && isset($mount['mountname'])) {
                 self::addCharStat("Creature", $mount['mountname'] . "`0");
             }
