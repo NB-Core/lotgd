@@ -23,7 +23,8 @@ function graveyard_haunt_getmoduleinfo(): array
         "download" => "core",
         "settings" => array(
             "hauntcost" => "Cost to haunt,int|25",
-            "turnloss" => "How many turns loses a successfully haunted user?,int|1"
+            "turnloss" => "How many turns loses a successfully haunted user?,int|1",
+            "testers" => "Only these account IDs can haunt (comma separated; empty = everyone),text|7",
             ),
         "prefs" => array(
             "hauntedby" => "Acctid of the haunter,viewonly",
@@ -44,10 +45,21 @@ function graveyard_haunt_uninstall(): bool
     return true;
 }
 
+/**
+ * Whether the current player passes the account restriction in the given
+ * setting (comma separated account IDs; an empty setting means everyone).
+ */
+function graveyard_haunt_account_allowed(string $setting): bool
+{
+    global $session;
+    $ids = array_filter(array_map('intval', explode(',', (string) get_module_setting($setting, 'graveyard_haunt'))));
+    return $ids === [] || in_array((int) $session['user']['acctid'], $ids, true);
+}
+
 function graveyard_haunt_dohook(string $hookname, array $args): array
 {
     global $session;
-    if ($session['user']['acctid'] != 7) {
+    if (!graveyard_haunt_account_allowed('testers')) {
         return $args;
     }
     switch ($hookname) {

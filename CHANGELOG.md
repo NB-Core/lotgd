@@ -10,6 +10,10 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ## [Unreleased]
 
+### Changed
+
+- *Graveyard Haunting* (`graveyard_haunt`) no longer has account 7 built into its code as the only account allowed to haunt. The restriction is now the module setting *Only these account IDs can haunt* (`testers`), which defaults to `7`, so nothing changes until an administrator edits it; clearing it opens haunting to every player.
+
 ### CI
 
 - Published releases get their text from `CHANGELOG.md`: the *Release notes* workflow puts the sections since the previous release at the top and folds GitHub's generated list of pull requests away underneath (`scripts/release-notes.php`). It can be run again by hand, which replaces only the changelog part.
