@@ -292,7 +292,7 @@ class Battle
     public static function unsuspendBuffByName($name, $msg = false)
     {
         global $session;
-        if ($session['bufflist'][$name] && $session['bufflist'][$name]['suspended']) {
+        if (!empty($session['bufflist'][$name]['suspended'])) {
             $session['bufflist'][$name]['suspended'] = 0;
 
             $schema = false;
@@ -313,7 +313,7 @@ class Battle
     public static function isBuffActive($name)
     {
         global $session;
-        return (($session['bufflist'][$name] && !$session['bufflist'][$name]['suspended']) ? 1 : 0);
+        return (!empty($session['bufflist'][$name]) && empty($session['bufflist'][$name]['suspended'])) ? 1 : 0;
     }
 
     public static function unsuspendBuffs($susp = false, $msg = false)
