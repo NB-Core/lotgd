@@ -20,6 +20,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Security
 
+- Removing a comment needs a posted `[Del]` button with the page's form token and the rights the button is shown for: `SU_EDIT_COMMENTS`, or `SU_IS_GAMEMASTER` for the game master's own line. Before, `?removecomment=N` deleted a comment on any page that calls `addcommentary()` without checking either; only the navigation allowlist stood in the way, and a link on another site could make a moderator's browser follow a granted removal URL. A posted comment now needs the talk form's token.
 - The character stats escape the weapon and armour names. The stat block keeps markup, so a name containing a tag, which a module letting players name their weapon can store, was rendered as that tag in the sidebar. Colour codes still work.
 
 ### CI

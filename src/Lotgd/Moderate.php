@@ -435,11 +435,9 @@ class Moderate
             $moderating = true;
         }
 
-        $del = Translator::translateInline('Del');
         $scriptname = ScriptName::current() . '.php';
         $pos = strpos($_SERVER['REQUEST_URI'], '?');
         $return = $scriptname . ($pos === false ? '' : substr($_SERVER['REQUEST_URI'], $pos));
-        $one = (strstr($return, '?') === false ? '?' : '&');
 
         for (; $i >= 0; $i--) {
             $out = '';
@@ -484,8 +482,7 @@ class Moderate
                 }
             } else {
                 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
-                    $out .= "`2[<a href='" . $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return) . "'>$del</a>`2]`0&nbsp;";
-                    Navigation::add('', $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return));
+                    $out .= Commentary::removeButton($return, (int) $commentids[$i], $section);
                 }
                 $out .= $op[$i];
                 if (!array_key_exists($sect, $outputcomments) || !is_array($outputcomments[$sect])) {

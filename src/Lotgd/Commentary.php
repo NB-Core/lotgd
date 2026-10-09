@@ -126,9 +126,26 @@ class Commentary
         $sectionFromUrl = (string)Http::get('section');
         $rawSectionFromUrl = rawurldecode($sectionFromUrl);
 
-        // Handle comment removal request
+        // Handle comment removal request. [Del] is a posted button carrying the
+        // token of the page it posts back to (removeButton()); a link, or a
+        // request another site made the browser send, deletes nothing. The
+        // guard records the refusal itself.
         if ($removeId > 0) {
+            if (Forms::isUnverifiedRequest(null, ['commentid' => $removeId])) {
+                http_response_code(400);
+
+                return;
+            }
             self::handleRemoval($sectionFromUrl, $returnPath, $removeId);
+
+            return;
+        }
+
+        // A comment comes from the talk form, which carries the page's form
+        // token (talkForm()). Asked only when a comment was posted, so an
+        // ordinary view of the page is not filed as a refused write.
+        if (Http::postIsset('insertcommentary') && Forms::isUnverifiedRequest()) {
+            http_response_code(400);
 
             return;
         }
@@ -154,6 +171,22 @@ class Commentary
                 }
             }
         }
+    }
+
+    /**
+     * The [Del] control for one comment line.
+     *
+     * A posted button carrying the token of the page it posts back to, because
+     * addCommentary() deletes nothing on a link. The URL is still granted as a
+     * navigation: the post goes through ForcedNavigation like any request.
+     */
+    public static function removeButton(string $return, int $commentId, string $section): string
+    {
+        $url = $return . (strpos($return, '?') === false ? '?' : '&')
+            . "removecomment={$commentId}&section=$section&returnpath=/" . URLEncode($return);
+        Navigation::add('', $url);
+
+        return '`2[' . Forms::postButton($url, Translator::translateInline('Del')) . '`2]`0&nbsp;';
     }
 
     /**
@@ -185,6 +218,25 @@ SQL;
             ['commentid' => $removeId],
             ['commentid' => ParameterType::INTEGER]
         );
+
+        // The rule that decides who sees [Del] in viewCommentary(): comment
+        // moderators, and game masters for their own lines. The link used to
+        // be the only check, and a request does not have to come from a link.
+        $superuser = (int) ($session['user']['superuser'] ?? 0);
+        $acctId = (int) ($session['user']['acctid'] ?? 0);
+        $isModerator = ($superuser & SU_EDIT_COMMENTS) === SU_EDIT_COMMENTS;
+        $isOwnGameMasterLine = ($superuser & SU_IS_GAMEMASTER) === SU_IS_GAMEMASTER
+            && $row !== false
+            && (int) $row['author'] === $acctId;
+        if (!$isModerator && !$isOwnGameMasterLine) {
+            SecurityLog::event(
+                'Refused to remove a comment without the rights to moderate it',
+                ['commentid' => $removeId, 'section' => $section],
+                $acctId
+            );
+
+            return;
+        }
 
         $moderated = Database::prefix('moderatedcomments');
         $now       = date('Y-m-d H:i:s');
@@ -689,18 +741,15 @@ SQL;
         $outputcomments = [];
         $sect = 'x';
 
-        $del = Translator::translateInline('Del');
         $scriptnameForReturn = $scriptname . '.php';
         $pos = strpos($real_request_uri, '?');
         $return = $scriptnameForReturn . ($pos === false ? '' : mb_substr($real_request_uri, $pos));
-        $one = (strstr($return, '?') === false ? '?' : '&');
 
         $editrights = ($session['user']['superuser'] & SU_EDIT_COMMENTS ? 1 : 0);
         for (; $i >= 0; $i--) {
             $out = '';
             if ($editrights || in_array($i, $gm_array)) {
-                $out .= "`2[<a href='" . $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return) . "'>$del</a>`2]`0&nbsp;";
-                Navigation::add('', $return . $one . "removecomment={$commentids[$i]}&section=$section&returnpath=/" . URLEncode($return));
+                $out .= self::removeButton($return, (int) $commentids[$i], $section);
             }
             $out .= $op[$i];
             if (!array_key_exists($sect, $outputcomments) || !is_array($outputcomments[$sect])) {

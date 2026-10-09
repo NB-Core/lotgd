@@ -485,6 +485,24 @@ modules.
 
 ## 7. Breaking Changes
 
+- **Removing a comment takes a posted button, and posting one takes the talk
+  form's token.** `[Del]` beside a comment line was a link to
+  `?removecomment=N`, and `addCommentary()` deleted the line on that link
+  alone. It checked neither the token nor the rights the link is shown for:
+  only the navigation allowlist stood in the way, which a page exempt from
+  forced navigation does not have, and a link on another site could make a
+  moderator's browser follow a removal URL it had been granted. `[Del]` is now
+  a `Forms::postButton()` (`Commentary::removeButton()`). A removal needs the
+  page's form token and `SU_EDIT_COMMENTS`, or `SU_IS_GAMEMASTER` for the game
+  master's own line. The comment the talk form posts is refused without the
+  form token the form has carried since September 2026.
+
+  **Module authors:** a module that builds its own `removecomment` link, or its
+  own form posting `insertcommentary`, stops working. Use
+  `Commentary::removeButton()` for the first. For the second, render
+  `Forms::csrfField()` into the form; the field must belong to the script the
+  form posts to.
+
 - **The `linkbutton` class is gone from the tree; those buttons now carry
   `button`.** It was used at 17 call sites -- `taunt.php`, `titleedit.php`,
   `masters.php`, `deathmessages.php`, `creatures.php`, `donators.php`,
