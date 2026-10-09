@@ -39,7 +39,7 @@ final class CommentaryWriteGuardTest extends TestCase
         Database::resetDoctrineConnection();
         Settings::setInstance(new DummySettings(['usedatacache' => 0]));
 
-        $GLOBALS['session'] = ['user' => ['acctid' => 1, 'superuser' => 0, 'specialinc' => '']];
+        $GLOBALS['session'] = ['loggedin' => true, 'user' => ['acctid' => 1, 'superuser' => 0, 'specialinc' => '']];
         $_GET = [];
         $_POST = [];
         $_SERVER['SCRIPT_NAME'] = self::SCRIPT;
@@ -227,6 +227,28 @@ final class CommentaryWriteGuardTest extends TestCase
         Commentary::addCommentary();
 
         self::assertSame([], self::securityMessages());
+    }
+
+    /**
+     * motd.php serves anonymous visitors without forced navigation. A refusal
+     * row per unauthenticated request would let anyone grow the game log.
+     */
+    public function testAnAnonymousCallerWritesNothing(): void
+    {
+        $GLOBALS['session'] = ['user' => []];
+        self::requestRemoval(false, 'GET');
+        self::queueCommentBy(2);
+
+        Commentary::addCommentary();
+
+        $_GET = ['section' => 'motd'];
+        $_POST = ['insertcommentary' => 'hello', 'section' => 'motd', 'talkline' => 'says', 'counter' => '0'];
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+
+        Commentary::addCommentary();
+
+        self::assertFalse(self::deletedComment());
+        self::assertSame([], Database::getDoctrineConnection()->executeStatements, 'no refusal row, no write at all');
     }
 
     public function testAPageViewIsNotAskedAbout(): void

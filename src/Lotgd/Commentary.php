@@ -115,6 +115,14 @@ class Commentary
         self::setEmptyPost(false);
         $output = Output::getInstance();
 
+        // Removing and posting a comment are for a logged-in account. motd.php
+        // serves anonymous visitors without forced navigation, and the guards
+        // below record every refusal in the database, so an unauthenticated
+        // caller would otherwise write a row per request.
+        if (empty($session['loggedin']) || (int) ($session['user']['acctid'] ?? 0) <= 0) {
+            return;
+        }
+
         // Gather request parameters
         $section = (string)Http::post('section');
         $talkline = (string)Http::post('talkline');
