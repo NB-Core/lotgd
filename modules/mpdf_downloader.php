@@ -93,15 +93,7 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
                             $mpdf->AddPage();
                         }
                         $first = false;
-                        $body = mpdf_downloader_convertMail(stripslashes($row['body']));
-                        $subject = sanitize($row['subject']);
-                        $sender = sanitize($row['sender']);
-                        $receiver = sanitize($row['receiver']);
-                        $sent = $row['sent'];
-                        $html = "<h2>" . $subject . "</h2>";
-                        $html .= "<p><strong>From:</strong> " . $sender . "<br><strong>To:</strong> " . $receiver . "<br><strong>Date:</strong> " . $sent . "</p><hr>";
-                        $html .= "<div>" . $body . "</div>";
-                        $mpdf->WriteHTML($html);
+                        $mpdf->WriteHTML(mpdf_downloader_mailHtml($row));
                     }
                     $mpdf->Output('MailDownload.pdf', 'D');
                     exit;
@@ -249,10 +241,35 @@ function mpdf_downloader_setup(?string $logoImage = null, ?string $siteUrl = nul
     $mpdf->SetHTMLFooter("<div style='text-align:center;font-size:10pt;'>$serverUrl<br/>$siteName<br/>Page {PAGENO}/{nb}</div>");
     return $mpdf;
 }
+/**
+ * One message as the HTML mPDF renders.
+ *
+ * Subject, names and body are what players wrote, so all of it is escaped:
+ * markup in a message would otherwise reach mPDF, which fetches the images
+ * and stylesheets it names from the server.
+ *
+ * @param array<string, mixed> $row A row from mpdf_downloader_mails()
+ */
+function mpdf_downloader_mailHtml(array $row): string
+{
+    $escape = static fn ($text): string => htmlspecialchars((string) $text, ENT_QUOTES, getsetting('charset', 'UTF-8'));
+
+    $html = "<h2>" . $escape(sanitize((string) $row['subject'])) . "</h2>";
+    $html .= "<p><strong>From:</strong> " . $escape(sanitize((string) $row['sender']))
+        . "<br><strong>To:</strong> " . $escape(sanitize((string) $row['receiver']))
+        . "<br><strong>Date:</strong> " . $escape($row['sent']) . "</p><hr>";
+    $html .= "<div>" . mpdf_downloader_convertMail(stripslashes((string) $row['body'])) . "</div>";
+
+    return $html;
+}
+
 function mpdf_downloader_convertMail(string $text): string
 {
-    // Convert internal new line markers to HTML line breaks for MPDF
-    return str_replace('`n', "<br>\n", $text);
+    // Plain text: escaped, with its line breaks kept. Messages store them as
+    // newlines; older ones as the `n marker.
+    $text = htmlspecialchars(str_replace('`n', "\n", $text), ENT_QUOTES, getsetting('charset', 'UTF-8'));
+
+    return nl2br($text, false);
 }
 
 function mpdf_downloader_convert(array $row): string
