@@ -25,6 +25,8 @@ function mpdf_downloader_getmoduleinfo(): array
             "Customization,title",
         "header_image" => "Optional logo or watermark image,text|",
         "site_url" => "Override site URL in footer,text|",
+            "Chat downloads,title",
+            "maxlines" => "Most lines one chat download may hold,int|500",
         ],
     ];
 }
@@ -50,9 +52,11 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
     global $session;
     switch ($hookname) {
         case "insertcomment":
-            $section = htmlspecialchars($args['section'] ?? '', ENT_QUOTES, getsetting('charset', 'UTF-8'));
+            // The form names the chat by a key the session maps back to it, so a
+            // player can download the chats they were shown and no other.
+            $key = mpdf_downloader_offer_section((string) ($args['section'] ?? ''));
             rawoutput("<form action='runmodule.php?module=mpdf_downloader&op=grab' method='POST' style='display:inline'>");
-            rawoutput("<input type='hidden' name='section' value='$section'>");
+            rawoutput("<input type='hidden' name='key' value='$key'>");
             rawoutput("Lines: <input name='lines' value='100' size='4'> ");
                         rawoutput("<label for='format'>Format:</label> <select name='format' id='format'><option value='pdf'>PDF</option><option value='text'>Text</option></select> ");
             rawoutput("<input type='submit' class='button' value='Download'>");
@@ -109,6 +113,36 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
 }
 
 /**
+ * Remember a chat the player is shown the download form for.
+ *
+ * Returns the key the form posts in its place. Only the most recent sections
+ * are kept, so the list does not grow for as long as the session lasts.
+ */
+function mpdf_downloader_offer_section(string $section): string
+{
+    global $session;
+
+    $key = substr(hash('sha256', $section), 0, 16);
+    $offered = $session['mpdf_downloader_sections'] ?? [];
+    unset($offered[$key]);
+    $offered[$key] = $section;
+    $session['mpdf_downloader_sections'] = array_slice($offered, -20, null, true);
+
+    return $key;
+}
+
+/**
+ * The chat a posted key stands for, or null when the player was never shown
+ * a download form for it.
+ */
+function mpdf_downloader_offered_section(string $key): ?string
+{
+    global $session;
+
+    return $session['mpdf_downloader_sections'][$key] ?? null;
+}
+
+/**
  * The player's own messages among the given ids, oldest first.
  *
  * The ids are whatever the mail form posted, so they are only a request: a
@@ -147,12 +181,14 @@ function mpdf_downloader_mails(string $table, array $ids, int $owner): array
 function mpdf_downloader_run(): void
 {
     $op = httpget('op');
-    if ($op === 'grab') {
-        $section = httppost('section');
+    $section = $op === 'grab' ? mpdf_downloader_offered_section((string) httppost('key')) : null;
+    if ($section !== null) {
         $lines = (int) httppost('lines');
         $format = httppost('format');
 
         $lines = $lines > 0 ? $lines : 100;
+        $maxlines = (int) get_module_setting('maxlines');
+        $lines = min($lines, $maxlines > 0 ? $maxlines : 500);
 
         $conn = Database::getDoctrineConnection();
         $commentary = Database::prefix('commentary');
