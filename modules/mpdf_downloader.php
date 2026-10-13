@@ -11,7 +11,9 @@ use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Mpdf\Mpdf;
 use Lotgd\Commentary;
+use Lotgd\Forms;
 use Lotgd\Output;
+use Lotgd\Security\Csrf;
 use Lotgd\Security\Escape;
 
 function mpdf_downloader_getmoduleinfo(): array
@@ -60,7 +62,7 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
             // to it, such as a clan member who was removed, cannot reuse it.
             $key = mpdf_downloader_offer_section((string) ($args['section'] ?? ''));
             $grab = "runmodule.php?module=mpdf_downloader&op=grab&key=$key";
-            rawoutput("<form action='$grab' method='POST' style='display:inline'>");
+            rawoutput("<form action='$grab' method='POST' style='display:inline'>" . Csrf::hiddenField(mpdf_downloader_scope()));
             rawoutput("Lines: <input name='lines' value='100' size='4'> ");
                         rawoutput("<label for='format'>Format:</label> <select name='format' id='format'><option value='pdf'>PDF</option><option value='text'>Text</option></select> ");
             rawoutput("<input type='submit' class='button' value='Download'>");
@@ -148,6 +150,30 @@ function mpdf_downloader_take_section(string $key): ?string
 }
 
 /**
+ * The token scope of the chat download form, which renders the token in
+ * Csrf::FIELD: the field Forms::isUnverifiedRequest() reads for a named scope.
+ */
+function mpdf_downloader_scope(): string
+{
+    return 'module:mpdf_downloader';
+}
+
+/**
+ * The chat this download request is for, or null.
+ *
+ * Only the posted form, with its token, uses up its key: a link, which another
+ * site can make the browser follow, would spend the player's one download.
+ */
+function mpdf_downloader_requested_section(): ?string
+{
+    if (Forms::isUnverifiedRequest(mpdf_downloader_scope())) {
+        return null;
+    }
+
+    return mpdf_downloader_take_section((string) httpget('key'));
+}
+
+/**
  * The player's own messages among the given ids, oldest first.
  *
  * The ids are whatever the mail form posted, so they are only a request: a
@@ -186,7 +212,7 @@ function mpdf_downloader_mails(string $table, array $ids, int $owner): array
 function mpdf_downloader_run(): void
 {
     $op = httpget('op');
-    $section = $op === 'grab' ? mpdf_downloader_take_section((string) httpget('key')) : null;
+    $section = $op === 'grab' ? mpdf_downloader_requested_section() : null;
     if ($section !== null) {
         $lines = (int) httppost('lines');
         $format = httppost('format');

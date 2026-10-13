@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Modules;
 
+use Lotgd\Security\Csrf;
+use Lotgd\Settings;
+use Lotgd\Tests\Stubs\DummySettings;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../modules/mpdf_downloader.php';
@@ -46,6 +50,7 @@ final class MpdfDownloaderChatScopeTest extends TestCase
         $pattern = "/<form action='runmodule\\.php\\?module=mpdf_downloader&op=grab&key=([0-9a-f]{16})' method='POST'/";
         $this->assertStringNotContainsString('village', $form);
         $this->assertStringNotContainsString("name='key'", $form);
+        $this->assertStringContainsString("name='csrf_token'", $form, 'only the posted form may use up the key');
         $this->assertMatchesRegularExpression($pattern, $form);
         preg_match($pattern, $form, $match);
         $this->assertSame('village', mpdf_downloader_take_section($match[1]));
@@ -66,6 +71,34 @@ final class MpdfDownloaderChatScopeTest extends TestCase
 
         $this->assertSame($key, mpdf_downloader_offer_section('clan-3'), 'showing the chat again offers it again');
         $this->assertSame('clan-3', mpdf_downloader_take_section($key));
+    }
+
+    /**
+     * The key in the link can be worked out from the chat's name, and forced
+     * navigation does not look at the method. A link another site makes the
+     * browser follow must not use up the player's download.
+     */
+    #[RunInSeparateProcess]
+    public function testOnlyThePostedFormWithItsTokenUsesUpTheKey(): void
+    {
+        if (!function_exists('httpget')) {
+            eval('function httpget($name) { return \\Lotgd\\Http::get($name); }');
+        }
+        Settings::setInstance(new DummySettings([]));
+        $key = mpdf_downloader_offer_section('clan-3');
+        Csrf::seed(mpdf_downloader_scope(), 'form-token');
+        $_GET = ['op' => 'grab', 'key' => $key];
+
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_POST = [];
+        $this->assertNull(mpdf_downloader_requested_section(), 'a followed link');
+
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $this->assertNull(mpdf_downloader_requested_section(), 'a post without the token');
+
+        $_POST = [Csrf::FIELD => 'form-token'];
+        $this->assertSame('clan-3', mpdf_downloader_requested_section(), 'the key was still there');
+        $this->assertNull(mpdf_downloader_requested_section(), 'and is used up now');
     }
 
     public function testAChatThePlayerWasNotShownCannotBeDownloaded(): void
