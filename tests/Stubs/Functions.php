@@ -24,7 +24,9 @@ namespace {
         function output_notl(string $format, ...$args)
         {
             global $forms_output;
-            $forms_output .= vsprintf($format, $args);
+            // Formatted only when there is something to format, as Output does:
+            // a line like "`%Yes!" is plain text, not a conversion.
+            $forms_output .= $args === [] ? $format : vsprintf($format, $args);
         }
     }
 
@@ -40,7 +42,9 @@ namespace {
         function output(string $format, ...$args)
         {
             global $forms_output;
-            $forms_output .= vsprintf($format, $args);
+            // Formatted only when there is something to format, as Output does:
+            // a line like "`%Yes!" is plain text, not a conversion.
+            $forms_output .= $args === [] ? $format : vsprintf($format, $args);
         }
     }
 

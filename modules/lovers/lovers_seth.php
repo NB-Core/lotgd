@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\AddNews;
+use Lotgd\Buffs;
 use Lotgd\Random;
 
 function lovers_seth()
@@ -31,7 +33,9 @@ function lovers_seth()
                         break;
                 }
                 output("You head over to snuggle up to %s`0 and kiss him about the face and neck, but he grumbles something about %s and with a comment like that, you storm away from him!", $partner, $msg);
-                $session['user']['charm']--;
+                if ($session['user']['charm'] > 0) {
+                    $session['user']['charm']--;
+                }
                 output("`n`n`^You LOSE a charm point!");
             } else {
                 output("You and %s`0 take some time to yourselves, and you leave the inn, positively glowing!", $partner);
@@ -56,7 +60,7 @@ function lovers_seth()
                 addnav("Marry him", "runmodule.php?module=lovers&op=flirt&flirt=7");
             } else {
                 //flirting now
-                $c = $session['user']['charm'];
+                $c = (int) $session['user']['charm'];
                 $seenlover = 1;
                 switch (httpget('flirt')) {
                     case 1:

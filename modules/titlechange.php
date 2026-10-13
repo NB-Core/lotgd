@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\AddNews;
 use Lotgd\Names;
 
 function titlechange_getmoduleinfo(): array

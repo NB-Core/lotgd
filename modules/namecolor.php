@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\AddNews;
 use Lotgd\Names;
 
 //addnews ready
@@ -98,7 +99,7 @@ function namecolor_run(): void
     if (!is_array($config)) {
         $config = array();
     }
-    if ($config['namechange']) {
+    if (isset($config['namechange']) && $config['namechange']) {
         set_module_pref("boughtbefore", 1);
         unset($config['namechange']);
         $session['user']['donationconfig'] = serialize($config);

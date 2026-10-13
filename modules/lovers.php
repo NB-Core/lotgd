@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 use Doctrine\DBAL\ParameterType;
+use Lotgd\AddNews;
 use Lotgd\Buffs;
 use Lotgd\MySQL\Database;
 use Lotgd\Random;

@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 use Doctrine\DBAL\ParameterType;
+use Lotgd\AddNews;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Mail;
@@ -176,7 +177,7 @@ function graveyard_haunt_run(): void
                 } else {
                     $session['user']['deathpower'] -= get_module_pref('hauntcost');
                     $roll1 = Random::eRand(0, (int) $row['level']);
-                    $roll2 = Random::eRand(0, $session['user']['level']);
+                    $roll2 = Random::eRand(0, (int) $session['user']['level']);
                     if ($roll2 > $roll1) {
                         output("You have successfully haunted `7%s`)!", $row['name']);
                         set_module_pref('hauntedby', $session['user']['acctid'], 'graveyard_haunt');

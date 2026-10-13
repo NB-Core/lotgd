@@ -6,7 +6,7 @@ declare(strict_types=1);
 // as PDF or plain text files. Requires the MPDF library to be installed
 // via Composer.
 
-use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ArrayParameterType;
 use Lotgd\MySQL\Database;
 use Mpdf\Mpdf;
 use Lotgd\Commentary;
@@ -90,7 +90,8 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
                         ->leftJoin('m', $acct, 'receiver', 'receiver.acctid = m.msgto')
                         ->where($qb->expr()->in('m.messageid', ':ids'))
                         ->orderBy('m.messageid', 'ASC')
-                        ->setParameter('ids', $ids, Connection::PARAM_INT_ARRAY)
+                        // Doctrine needs the explicit array element type to expand IN (:ids) safely.
+                        ->setParameter('ids', $ids, ArrayParameterType::INTEGER)
                         ->executeQuery()
                         ->fetchAllAssociative();
 

@@ -17,6 +17,12 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 ### Fixed
 
 - `Battle::unsuspendBuffByName()` and `Battle::isBuffActive()` (and their wrappers `unsuspend_buff_by_name()`, `is_buff_active()`) no longer raise "Undefined array key" for a buff the player does not have, such as `mount` for a player without one, or for a buff without a `suspended` flag. What they do for an existing buff is unchanged.
+- Bundled modules that stopped with "Class not found" since the move to `AddNews::add()` and `Buffs::applyBuff()` work again; the classes were called without being imported. *Violet and Seth Lovers* (`lovers`) failed on every outcome that posts news or grants the lover's buff, among them a successful flirt and the wedding. *Name Colorization* (`namecolor`) and *Title Change* (`titlechange`) failed when a purchase posted its news, and *Graveyard Haunting* (`graveyard_haunt`) when a haunt did.
+- *Violet and Seth Lovers* no longer takes a married player's charm below zero when the partner turns them down. *Name Colorization* no longer raises "Undefined array key" each time a player without the old `namechange` donation flag, which is almost everyone, opens the shop.
+- *Mail PDF Downloader* (`mpdf_downloader`) stopped with an error on every export: it used `Connection::PARAM_INT_ARRAY`, which Doctrine DBAL 4 removed. It now uses `ArrayParameterType::INTEGER`.
+- *Take* in the companion editor (`companions.php`) called a hook method that does not exist, `HookHandler::moduleHook()`, and stopped with an error. It now runs the `alter-companion` hook as the mercenary camp does.
+- The legacy `loadtemplate()` called `PageParts::loadTemplate()`, which does not exist. It now calls `Template::loadTemplate()`.
+- `PlayerFunctions::explainedGetPlayerAttack()` and `explainedGetPlayerDefense()` (and `explained_get_player_attack()`, `explained_get_player_defense()`) returned the int `0` for an account that does not exist, a TypeError under their `string` return type; they return an empty string. For another player's account they also read no weapon damage, armour or level, so the breakdown showed `0 Weapon` and `-1 Train`.
 
 ### Security
 
