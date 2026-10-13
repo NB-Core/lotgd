@@ -7,6 +7,7 @@ declare(strict_types=1);
 // via Composer.
 
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Mpdf\Mpdf;
 use Lotgd\Commentary;
@@ -77,23 +78,7 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
                 $ids = array_filter($ids);
                 if (count($ids) > 0) {
                     $table = ($hookname === 'header-mail') ? 'mail' : 'mailarchive';
-                    $acct = Database::prefix('accounts');
-                    $mailtbl = Database::prefix($table);
-                    $conn = Database::getDoctrineConnection();
-                    $qb = $conn->createQueryBuilder();
-                    $rows = $qb
-                        ->select('m.*')
-                        ->addSelect('sender.name AS sender')
-                        ->addSelect('receiver.name AS receiver')
-                        ->from($mailtbl, 'm')
-                        ->leftJoin('m', $acct, 'sender', 'sender.acctid = m.msgfrom')
-                        ->leftJoin('m', $acct, 'receiver', 'receiver.acctid = m.msgto')
-                        ->where($qb->expr()->in('m.messageid', ':ids'))
-                        ->orderBy('m.messageid', 'ASC')
-                        // Doctrine needs the explicit array element type to expand IN (:ids) safely.
-                        ->setParameter('ids', $ids, ArrayParameterType::INTEGER)
-                        ->executeQuery()
-                        ->fetchAllAssociative();
+                    $rows = mpdf_downloader_mails($table, $ids, (int) $session['user']['acctid']);
 
                     $header = get_module_setting('header_image');
                     $url = get_module_setting('site_url');
@@ -121,6 +106,42 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
             break;
     }
     return $args;
+}
+
+/**
+ * The player's own messages among the given ids, oldest first.
+ *
+ * The ids are whatever the mail form posted, so they are only a request: a
+ * message addressed to someone else is never returned, as on the mail pages.
+ *
+ * @param string    $table 'mail' or 'mailarchive', unprefixed
+ * @param list<int> $ids
+ * @param int       $owner The account the messages must be addressed to
+ *
+ * @return list<array<string, mixed>>
+ */
+function mpdf_downloader_mails(string $table, array $ids, int $owner): array
+{
+    $acct = Database::prefix('accounts');
+    $mailtbl = Database::prefix($table);
+    $conn = Database::getDoctrineConnection();
+    $qb = $conn->createQueryBuilder();
+
+    return $qb
+        ->select('m.*')
+        ->addSelect('sender.name AS sender')
+        ->addSelect('receiver.name AS receiver')
+        ->from($mailtbl, 'm')
+        ->leftJoin('m', $acct, 'sender', 'sender.acctid = m.msgfrom')
+        ->leftJoin('m', $acct, 'receiver', 'receiver.acctid = m.msgto')
+        ->where($qb->expr()->in('m.messageid', ':ids'))
+        ->andWhere('m.msgto = :owner')
+        ->orderBy('m.messageid', 'ASC')
+        // Doctrine needs the explicit array element type to expand IN (:ids) safely.
+        ->setParameter('ids', $ids, ArrayParameterType::INTEGER)
+        ->setParameter('owner', $owner, ParameterType::INTEGER)
+        ->executeQuery()
+        ->fetchAllAssociative();
 }
 
 function mpdf_downloader_run(): void

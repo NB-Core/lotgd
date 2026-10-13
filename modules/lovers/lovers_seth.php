@@ -35,8 +35,8 @@ function lovers_seth()
                 output("You head over to snuggle up to %s`0 and kiss him about the face and neck, but he grumbles something about %s and with a comment like that, you storm away from him!", $partner, $msg);
                 if ($session['user']['charm'] > 0) {
                     $session['user']['charm']--;
+                    output("`n`n`^You LOSE a charm point!");
                 }
-                output("`n`n`^You LOSE a charm point!");
             } else {
                 output("You and %s`0 take some time to yourselves, and you leave the inn, positively glowing!", $partner);
                 Buffs::applyBuff('lover', lovers_getbuff());
