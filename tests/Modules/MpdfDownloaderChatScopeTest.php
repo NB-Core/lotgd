@@ -14,7 +14,8 @@ require_once __DIR__ . '/../../modules/mpdf_downloader.php';
  * The download form used to post the section name, and the download read
  * whatever section was posted: a player who had been shown the form once
  * could fetch any chat, staff and other clans' ones included. The form now
- * posts a key that the session maps back to a chat it was shown for.
+ * posts to a link carrying a key that the session maps back to a chat it was
+ * shown for.
  *
  * @group modules
  */
@@ -31,14 +32,22 @@ final class MpdfDownloaderChatScopeTest extends TestCase
         unset($GLOBALS['session'], $GLOBALS['forms_output']);
     }
 
-    public function testTheFormPostsAKeyAndNotTheChat(): void
+    /**
+     * The key is part of the link the form posts to, so forced navigation
+     * accepts it only from the page that showed this chat. A key left in the
+     * session from an earlier page, for a chat the player has since lost
+     * access to, is a link that page no longer offers.
+     */
+    public function testTheFormPostsToALinkNamingAKeyAndNotTheChat(): void
     {
         mpdf_downloader_dohook('insertcomment', ['section' => 'village']);
 
         $form = (string) $GLOBALS['forms_output'];
+        $pattern = "/<form action='runmodule\\.php\\?module=mpdf_downloader&op=grab&key=([0-9a-f]{16})' method='POST'/";
         $this->assertStringNotContainsString('village', $form);
-        $this->assertMatchesRegularExpression("/name='key' value='([0-9a-f]{16})'/", $form);
-        preg_match("/name='key' value='([0-9a-f]{16})'/", $form, $match);
+        $this->assertStringNotContainsString("name='key'", $form);
+        $this->assertMatchesRegularExpression($pattern, $form);
+        preg_match($pattern, $form, $match);
         $this->assertSame('village', mpdf_downloader_offered_section($match[1]));
     }
 

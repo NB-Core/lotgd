@@ -53,15 +53,18 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
     switch ($hookname) {
         case "insertcomment":
             // The form names the chat by a key the session maps back to it, so a
-            // player can download the chats they were shown and no other.
+            // player can download the chats they were shown and no other. The
+            // key is part of the link, so forced navigation accepts it only from
+            // the page that showed this chat: a player who has since lost access
+            // to it, such as a clan member who was removed, cannot reuse it.
             $key = mpdf_downloader_offer_section((string) ($args['section'] ?? ''));
-            rawoutput("<form action='runmodule.php?module=mpdf_downloader&op=grab' method='POST' style='display:inline'>");
-            rawoutput("<input type='hidden' name='key' value='$key'>");
+            $grab = "runmodule.php?module=mpdf_downloader&op=grab&key=$key";
+            rawoutput("<form action='$grab' method='POST' style='display:inline'>");
             rawoutput("Lines: <input name='lines' value='100' size='4'> ");
                         rawoutput("<label for='format'>Format:</label> <select name='format' id='format'><option value='pdf'>PDF</option><option value='text'>Text</option></select> ");
             rawoutput("<input type='submit' class='button' value='Download'>");
             rawoutput("</form>");
-            addnav('', "runmodule.php?module=mpdf_downloader&op=grab");
+            addnav('', $grab);
             // Break to avoid executing the mail form logic when the
             // hook is triggered from commentary.
             break;
@@ -173,7 +176,7 @@ function mpdf_downloader_mails(string $table, array $ids, int $owner): array
 function mpdf_downloader_run(): void
 {
     $op = httpget('op');
-    $section = $op === 'grab' ? mpdf_downloader_offered_section((string) httppost('key')) : null;
+    $section = $op === 'grab' ? mpdf_downloader_offered_section((string) httpget('key')) : null;
     if ($section !== null) {
         $lines = (int) httppost('lines');
         $format = httppost('format');
