@@ -48,16 +48,33 @@ final class MpdfDownloaderChatScopeTest extends TestCase
         $this->assertStringNotContainsString("name='key'", $form);
         $this->assertMatchesRegularExpression($pattern, $form);
         preg_match($pattern, $form, $match);
-        $this->assertSame('village', mpdf_downloader_offered_section($match[1]));
+        $this->assertSame('village', mpdf_downloader_take_section($match[1]));
+    }
+
+    /**
+     * The download ends the request before the player's links are stored, so
+     * the link that carried the key stays allowed until the next page. The
+     * key itself is good once: the same link cannot be used again later, by
+     * a player who has lost access to the chat in the meantime.
+     */
+    public function testAKeyIsGoodForOneDownload(): void
+    {
+        $key = mpdf_downloader_offer_section('clan-3');
+
+        $this->assertSame('clan-3', mpdf_downloader_take_section($key));
+        $this->assertNull(mpdf_downloader_take_section($key));
+
+        $this->assertSame($key, mpdf_downloader_offer_section('clan-3'), 'showing the chat again offers it again');
+        $this->assertSame('clan-3', mpdf_downloader_take_section($key));
     }
 
     public function testAChatThePlayerWasNotShownCannotBeDownloaded(): void
     {
         mpdf_downloader_offer_section('village');
 
-        $this->assertNull(mpdf_downloader_offered_section('superuser'));
-        $this->assertNull(mpdf_downloader_offered_section(substr(hash('sha256', 'superuser'), 0, 16)));
-        $this->assertNull(mpdf_downloader_offered_section(''));
+        $this->assertNull(mpdf_downloader_take_section('superuser'));
+        $this->assertNull(mpdf_downloader_take_section(substr(hash('sha256', 'superuser'), 0, 16)));
+        $this->assertNull(mpdf_downloader_take_section(''));
     }
 
     public function testOnlyTheMostRecentChatsAreKept(): void
@@ -67,9 +84,9 @@ final class MpdfDownloaderChatScopeTest extends TestCase
             mpdf_downloader_offer_section('chat-' . $i);
         }
 
-        $this->assertNull(mpdf_downloader_offered_section($first));
-        $this->assertSame('chat-20', mpdf_downloader_offered_section(substr(hash('sha256', 'chat-20'), 0, 16)));
         $this->assertCount(20, $GLOBALS['session']['mpdf_downloader_sections']);
+        $this->assertNull(mpdf_downloader_take_section($first));
+        $this->assertSame('chat-20', mpdf_downloader_take_section(substr(hash('sha256', 'chat-20'), 0, 16)));
     }
 
     public function testAChatShownAgainStaysAvailable(): void
@@ -81,6 +98,6 @@ final class MpdfDownloaderChatScopeTest extends TestCase
         mpdf_downloader_offer_section('village');
         mpdf_downloader_offer_section('chat-20');
 
-        $this->assertSame('village', mpdf_downloader_offered_section($village));
+        $this->assertSame('village', mpdf_downloader_take_section($village));
     }
 }

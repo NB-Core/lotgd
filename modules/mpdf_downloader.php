@@ -12,6 +12,7 @@ use Lotgd\MySQL\Database;
 use Mpdf\Mpdf;
 use Lotgd\Commentary;
 use Lotgd\Output;
+use Lotgd\Security\Escape;
 
 function mpdf_downloader_getmoduleinfo(): array
 {
@@ -70,7 +71,7 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
             break;
         case 'mailform':
         case 'mailform-archive':
-            $label = htmlentities(translate_inline("Grab checked as PDF"), ENT_COMPAT, getsetting('charset', 'UTF-8'));
+            $label = Escape::html(translate_inline("Grab checked as PDF"));
             rawoutput("<input type='submit' class='button' name='pdf_mail' value=\"{$label}\"> ");
             break;
         case 'header-mail':
@@ -127,14 +128,23 @@ function mpdf_downloader_offer_section(string $section): string
 }
 
 /**
- * The chat a posted key stands for, or null when the player was never shown
- * a download form for it.
+ * The chat a key stands for, or null when the player was not shown a download
+ * form for it.
+ *
+ * A key is good for one download. The download ends the request before the
+ * page that would store the player's next links, so the link that carried the
+ * key stays allowed; taking the key out of the session, which is saved even
+ * then, is what stops the link being used again later, by a player who has
+ * since lost access to the chat. Showing the chat again offers a new one.
  */
-function mpdf_downloader_offered_section(string $key): ?string
+function mpdf_downloader_take_section(string $key): ?string
 {
     global $session;
 
-    return $session['mpdf_downloader_sections'][$key] ?? null;
+    $section = $session['mpdf_downloader_sections'][$key] ?? null;
+    unset($session['mpdf_downloader_sections'][$key]);
+
+    return $section;
 }
 
 /**
@@ -176,7 +186,7 @@ function mpdf_downloader_mails(string $table, array $ids, int $owner): array
 function mpdf_downloader_run(): void
 {
     $op = httpget('op');
-    $section = $op === 'grab' ? mpdf_downloader_offered_section((string) httpget('key')) : null;
+    $section = $op === 'grab' ? mpdf_downloader_take_section((string) httpget('key')) : null;
     if ($section !== null) {
         $lines = (int) httppost('lines');
         $format = httppost('format');
@@ -218,7 +228,7 @@ function mpdf_downloader_run(): void
             $html = '';
             foreach ($rows as $row) {
                 $line = mpdf_downloader_convert($row);
-                $html .= '<p>' . htmlentities($line, ENT_COMPAT, getsetting('charset', 'UTF-8')) . '</p>';
+                $html .= '<p>' . Escape::html($line) . '</p>';
             }
             $mpdf->WriteHTML($html);
             $currentDateTime = new DateTime('now', new DateTimeZone('UTC'));
@@ -227,7 +237,9 @@ function mpdf_downloader_run(): void
         exit();
     }
     page_header('Download Commentary');
-    output('Invalid operation.');
+    output('This download is no longer available. Open the chat again to download it.');
+    require_once("lib/villagenav.php");
+    villagenav();
     page_footer();
 }
 function mpdf_downloader_setup(?string $logoImage = null, ?string $siteUrl = null): Mpdf
@@ -255,12 +267,10 @@ function mpdf_downloader_setup(?string $logoImage = null, ?string $siteUrl = nul
  */
 function mpdf_downloader_mailHtml(array $row): string
 {
-    $escape = static fn ($text): string => htmlspecialchars((string) $text, ENT_QUOTES, getsetting('charset', 'UTF-8'));
-
-    $html = "<h2>" . $escape(sanitize((string) $row['subject'])) . "</h2>";
-    $html .= "<p><strong>From:</strong> " . $escape(sanitize((string) $row['sender']))
-        . "<br><strong>To:</strong> " . $escape(sanitize((string) $row['receiver']))
-        . "<br><strong>Date:</strong> " . $escape($row['sent']) . "</p><hr>";
+    $html = "<h2>" . Escape::html(sanitize((string) $row['subject'])) . "</h2>";
+    $html .= "<p><strong>From:</strong> " . Escape::html(sanitize((string) $row['sender']))
+        . "<br><strong>To:</strong> " . Escape::html(sanitize((string) $row['receiver']))
+        . "<br><strong>Date:</strong> " . Escape::html($row['sent']) . "</p><hr>";
     $html .= "<div>" . mpdf_downloader_convertMail(stripslashes((string) $row['body'])) . "</div>";
 
     return $html;
@@ -270,9 +280,7 @@ function mpdf_downloader_convertMail(string $text): string
 {
     // Plain text: escaped, with its line breaks kept. Messages store them as
     // newlines; older ones as the `n marker.
-    $text = htmlspecialchars(str_replace('`n', "\n", $text), ENT_QUOTES, getsetting('charset', 'UTF-8'));
-
-    return nl2br($text, false);
+    return nl2br(Escape::html(str_replace('`n', "\n", $text)), false);
 }
 
 function mpdf_downloader_convert(array $row): string
