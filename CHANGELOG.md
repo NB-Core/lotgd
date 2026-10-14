@@ -18,6 +18,8 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- The game settings reported *Saved:* with nothing after it for a setting that was not saved. The red "No" was written as `"`$No`0"`, in double quotes, so PHP read `$No` as an undefined variable.
+- *reCAPTCHA v2* (`recaptcha_v2`) reported every failed check as `not-available`: it read the error codes from `$answer`, a variable that does not exist, instead of from Google's answer.
 - Deleting your own character in the preferences left a page with no navigation at all when it was refused (a missing form token) or failed. The page now offers the way back to the village, or to the news for a dead player, and to the preferences.
 - The companion editor stopped with a TypeError when adding or editing a companion: the cost fields passed an int to `htmlentities()` under `strict_types`.
 - The gypsy's tent listed the way back to the village twice when the player could not pay.
@@ -33,6 +35,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Security
 
+- The armour shop looked up a purchase with the requested id written into its SQL between quotes, unescaped. Forced navigation lets a player request only the buy links the shop listed, so it could not be reached as it stood. The armour and weapon shops now bind the id, the player's dragon kills and the level they list as integers.
 - *Mail PDF Downloader* (`mpdf_downloader`) exports only messages addressed to the player, as the mail pages show them. It selected the posted message ids alone, so a player could post another player's message id and get its subject and body in the PDF. In the core the export failed before reaching its query (see *Fixed*); an installation that already ran a DBAL 4 compatible copy of the module was exposed.
 - *Mail PDF Downloader* downloads only chats the player was shown the download form for. The form posted the chat's section name and the download read whatever section was posted, so a player who had seen the form once could fetch any chat, the staff chat and other clans' halls included. The form now posts to a link carrying a key that the player's session maps back to the chat. Being part of the link, the key passes forced navigation only from the page that showed the chat, and it is good for one download, so a player who has since lost access to the chat, such as a clan member who was removed, cannot reuse it. Showing the chat again offers a new one. Only the posted form with its token uses a key up, so a link another site makes the browser follow cannot spend it. The new setting *Most lines one chat download may hold* (`maxlines`, default 500) caps the line count, which was unlimited.
 - *Mail PDF Downloader* escapes the subject, names and body of an exported message. They were handed to mPDF as HTML, so a sender could put markup in a message, and mPDF fetches the images and stylesheets such markup names from the server when the recipient exports it. Line breaks are kept: they were lost in the PDF before.
@@ -41,6 +44,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### CI
 
+- PHPStan (level 1) analyses the whole game, not only `src/`: the root scripts, `pages/`, `lib/`, `async/` and the bundled modules. A call to a class or method that is not there, such as the missing `AddNews` and `Buffs` imports fixed above, now fails CI. Two rules cover what PHPStan cannot follow: the variables a file under `pages/` gets from the script that requires it, and `$session`, `$settings` and `$output`, which `common.php` sets. `phpstan-baseline.neon` lists the 103 findings already there, so only new ones fail.
 - Published releases get their text from `CHANGELOG.md`: the *Release notes* workflow puts the sections since the previous release at the top and folds GitHub's generated list of pull requests away underneath (`scripts/release-notes.php`). It can be run again by hand, which replaces only the changelog part.
 
 ## [2.0.8] – 2026-10-05

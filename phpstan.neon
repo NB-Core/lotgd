@@ -5,9 +5,37 @@ includes:
 
 parameters:
     level: 1
+    # The whole game, not only src/: the pages, lib/ and the bundled modules
+    # call into src/ too, and a call to a class or method that is not there
+    # stops the request there just the same.
     paths:
-        - src
-        - src/Lotgd/Entity
+        - .
+    excludePaths:
+        # Not scanned either: tests/ declares stand-ins for core classes, and
+        # vendor/ is loaded through its autoloader.
+        analyseAndScan:
+            - vendor/*
+            - tools/*
+            - tests/*
+            - dbconnect.php*
+        analyse:
+            - migrations/*
+            - scripts/*
+            - install/*
+            - images/*
+            - docker/*
     bootstrapFiles:
         - vendor/autoload.php
         - src/Lotgd/Config/constants.php
+    ignoreErrors:
+        -
+            # A file under pages/ runs inside the script that requires it and
+            # uses that script's variables, which PHPStan cannot follow.
+            identifier: variable.undefined
+            path: pages/*
+        -
+            # common.php sets these in the global scope of every script that
+            # requires it, and a module's included file inherits them from the
+            # function that includes it.
+            identifier: variable.undefined
+            message: '#^Variable \$(session|settings|output) might not be defined\.$#'

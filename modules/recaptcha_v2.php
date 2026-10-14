@@ -70,10 +70,10 @@ function recaptcha_v2_dohook(string $hookname, array $args): array
             $captcha_success = json_decode($verify);
 
             if (!$captcha_success->{'success'}) {
-                if (!is_array($answer->{'error-codes'})) {
+                if (!is_array($captcha_success->{'error-codes'} ?? null)) {
                     $errorcodes = array('not-available');
                 } else {
-                    $errorcodes = $answer->{'error-codes'};
+                    $errorcodes = $captcha_success->{'error-codes'};
                 }
                 $args['cancelreason'] = sprintf("`c`b`\$Sorry, but you entered the wrong captcha code, try again`b`c(%s)`n`n", implode(",", $errorcodes));
                 $args['cancelpetition'] = true;
