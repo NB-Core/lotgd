@@ -153,13 +153,13 @@ class PlayerFunctions
         global $session;
         if ($player !== false) {
             $result = Database::getDoctrineConnection()->executeQuery(
-                'SELECT strength,wisdom,intelligence,attack FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                'SELECT strength,wisdom,intelligence,attack,weapondmg,level FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
                 ['acctid' => (int) $player],
                 ['acctid' => ParameterType::INTEGER]
             );
             $row = Database::fetchAssoc($result);
             if (!$row) {
-                return 0;
+                return '';
             }
             $user = $row;
         } else {
@@ -208,13 +208,13 @@ class PlayerFunctions
         global $session;
         if ($player !== false) {
             $result = Database::getDoctrineConnection()->executeQuery(
-                'SELECT constitution,wisdom,defense FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                'SELECT constitution,wisdom,defense,armordef,level FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
                 ['acctid' => (int) $player],
                 ['acctid' => ParameterType::INTEGER]
             );
             $row = Database::fetchAssoc($result);
             if (!$row) {
-                return 0;
+                return '';
             }
             $user = $row;
         } else {

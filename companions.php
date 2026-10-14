@@ -99,7 +99,7 @@ if ($op == "deactivate" && $id !== null) {
         $row['defense'] = $row['defense'] + $row['defenseperlevel'] * $session['user']['level'];
         $row['maxhitpoints'] = $row['maxhitpoints'] + $row['maxhitpointsperlevel'] * $session['user']['level'];
         $row['hitpoints'] = $row['maxhitpoints'];
-        $row = HookHandler::moduleHook("alter-companion", $row);
+        $row = HookHandler::hook("alter-companion", $row);
         $abilities = unserialize((string) $row['abilities'], ['allowed_classes' => false]);
         $row['abilities'] = is_array($abilities) ? $abilities : [];
         if (Buffs::applyCompanion($row['name'], $row)) {

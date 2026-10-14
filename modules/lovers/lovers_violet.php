@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Lotgd\AddNews;
+use Lotgd\Buffs;
 use Lotgd\Random;
 
 function lovers_violet()
@@ -28,8 +30,10 @@ function lovers_violet()
                         break;
                 }
                 output("You head over to cuddle %s`0 and kiss her about the face and neck, but she grumbles something about %s and with a comment like that, you storm away from her!`n`n", $partner, $msg);
-                $session['user']['charm']--;
-                output("`^You LOSE a charm point!");
+                if ($session['user']['charm'] > 0) {
+                    $session['user']['charm']--;
+                    output("`^You LOSE a charm point!");
+                }
             } else {
                 output("You and %s`0 take some time to yourselves, and you leave the inn, positively glowing!", $partner);
                 Buffs::applyBuff('lover', lovers_getbuff());
@@ -52,7 +56,7 @@ function lovers_violet()
             addnav("Carry her upstairs", "runmodule.php?module=lovers&op=flirt&flirt=6");
             addnav("Marry her", "runmodule.php?module=lovers&op=flirt&flirt=7");
         } else {
-            $c = $session['user']['charm'];
+            $c = (int) $session['user']['charm'];
             $seenlover = 1;
             switch (httpget('flirt')) {
                 case 1:

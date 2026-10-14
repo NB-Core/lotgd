@@ -6,11 +6,15 @@ declare(strict_types=1);
 // as PDF or plain text files. Requires the MPDF library to be installed
 // via Composer.
 
-use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Mpdf\Mpdf;
 use Lotgd\Commentary;
+use Lotgd\Forms;
 use Lotgd\Output;
+use Lotgd\Security\Csrf;
+use Lotgd\Security\Escape;
 
 function mpdf_downloader_getmoduleinfo(): array
 {
@@ -24,6 +28,8 @@ function mpdf_downloader_getmoduleinfo(): array
             "Customization,title",
         "header_image" => "Optional logo or watermark image,text|",
         "site_url" => "Override site URL in footer,text|",
+            "Chat downloads,title",
+            "maxlines" => "Most lines one chat download may hold,int|500",
         ],
     ];
 }
@@ -49,20 +55,25 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
     global $session;
     switch ($hookname) {
         case "insertcomment":
-            $section = htmlspecialchars($args['section'] ?? '', ENT_QUOTES, getsetting('charset', 'UTF-8'));
-            rawoutput("<form action='runmodule.php?module=mpdf_downloader&op=grab' method='POST' style='display:inline'>");
-            rawoutput("<input type='hidden' name='section' value='$section'>");
+            // The form names the chat by a key the session maps back to it, so a
+            // player can download the chats they were shown and no other. The
+            // key is part of the link, so forced navigation accepts it only from
+            // the page that showed this chat: a player who has since lost access
+            // to it, such as a clan member who was removed, cannot reuse it.
+            $key = mpdf_downloader_offer_section((string) ($args['section'] ?? ''));
+            $grab = "runmodule.php?module=mpdf_downloader&op=grab&key=$key";
+            rawoutput("<form action='$grab' method='POST' style='display:inline'>" . Csrf::hiddenField(mpdf_downloader_scope()));
             rawoutput("Lines: <input name='lines' value='100' size='4'> ");
                         rawoutput("<label for='format'>Format:</label> <select name='format' id='format'><option value='pdf'>PDF</option><option value='text'>Text</option></select> ");
             rawoutput("<input type='submit' class='button' value='Download'>");
             rawoutput("</form>");
-            addnav('', "runmodule.php?module=mpdf_downloader&op=grab");
+            addnav('', $grab);
             // Break to avoid executing the mail form logic when the
             // hook is triggered from commentary.
             break;
         case 'mailform':
         case 'mailform-archive':
-            $label = htmlentities(translate_inline("Grab checked as PDF"), ENT_COMPAT, getsetting('charset', 'UTF-8'));
+            $label = Escape::html(translate_inline("Grab checked as PDF"));
             rawoutput("<input type='submit' class='button' name='pdf_mail' value=\"{$label}\"> ");
             break;
         case 'header-mail':
@@ -77,22 +88,7 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
                 $ids = array_filter($ids);
                 if (count($ids) > 0) {
                     $table = ($hookname === 'header-mail') ? 'mail' : 'mailarchive';
-                    $acct = Database::prefix('accounts');
-                    $mailtbl = Database::prefix($table);
-                    $conn = Database::getDoctrineConnection();
-                    $qb = $conn->createQueryBuilder();
-                    $rows = $qb
-                        ->select('m.*')
-                        ->addSelect('sender.name AS sender')
-                        ->addSelect('receiver.name AS receiver')
-                        ->from($mailtbl, 'm')
-                        ->leftJoin('m', $acct, 'sender', 'sender.acctid = m.msgfrom')
-                        ->leftJoin('m', $acct, 'receiver', 'receiver.acctid = m.msgto')
-                        ->where($qb->expr()->in('m.messageid', ':ids'))
-                        ->orderBy('m.messageid', 'ASC')
-                        ->setParameter('ids', $ids, Connection::PARAM_INT_ARRAY)
-                        ->executeQuery()
-                        ->fetchAllAssociative();
+                    $rows = mpdf_downloader_mails($table, $ids, (int) $session['user']['acctid']);
 
                     $header = get_module_setting('header_image');
                     $url = get_module_setting('site_url');
@@ -103,15 +99,7 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
                             $mpdf->AddPage();
                         }
                         $first = false;
-                        $body = mpdf_downloader_convertMail(stripslashes($row['body']));
-                        $subject = sanitize($row['subject']);
-                        $sender = sanitize($row['sender']);
-                        $receiver = sanitize($row['receiver']);
-                        $sent = $row['sent'];
-                        $html = "<h2>" . $subject . "</h2>";
-                        $html .= "<p><strong>From:</strong> " . $sender . "<br><strong>To:</strong> " . $receiver . "<br><strong>Date:</strong> " . $sent . "</p><hr>";
-                        $html .= "<div>" . $body . "</div>";
-                        $mpdf->WriteHTML($html);
+                        $mpdf->WriteHTML(mpdf_downloader_mailHtml($row));
                     }
                     $mpdf->Output('MailDownload.pdf', 'D');
                     exit;
@@ -122,15 +110,116 @@ function mpdf_downloader_dohook(string $hookname, array $args): array
     return $args;
 }
 
+/**
+ * Remember a chat the player is shown the download form for.
+ *
+ * Returns the key the form posts in its place. Only the most recent sections
+ * are kept, so the list does not grow for as long as the session lasts.
+ */
+function mpdf_downloader_offer_section(string $section): string
+{
+    global $session;
+
+    $key = substr(hash('sha256', $section), 0, 16);
+    $offered = $session['mpdf_downloader_sections'] ?? [];
+    unset($offered[$key]);
+    $offered[$key] = $section;
+    $session['mpdf_downloader_sections'] = array_slice($offered, -20, null, true);
+
+    return $key;
+}
+
+/**
+ * The chat a key stands for, or null when the player was not shown a download
+ * form for it.
+ *
+ * A key is good for one download. The download ends the request before the
+ * page that would store the player's next links, so the link that carried the
+ * key stays allowed; taking the key out of the session, which is saved even
+ * then, is what stops the link being used again later, by a player who has
+ * since lost access to the chat. Showing the chat again offers a new one.
+ */
+function mpdf_downloader_take_section(string $key): ?string
+{
+    global $session;
+
+    $section = $session['mpdf_downloader_sections'][$key] ?? null;
+    unset($session['mpdf_downloader_sections'][$key]);
+
+    return $section;
+}
+
+/**
+ * The token scope of the chat download form, which renders the token in
+ * Csrf::FIELD: the field Forms::isUnverifiedRequest() reads for a named scope.
+ */
+function mpdf_downloader_scope(): string
+{
+    return 'module:mpdf_downloader';
+}
+
+/**
+ * The chat this download request is for, or null.
+ *
+ * Only the posted form, with its token, uses up its key: a link, which another
+ * site can make the browser follow, would spend the player's one download.
+ */
+function mpdf_downloader_requested_section(): ?string
+{
+    if (Forms::isUnverifiedRequest(mpdf_downloader_scope())) {
+        return null;
+    }
+
+    return mpdf_downloader_take_section((string) httpget('key'));
+}
+
+/**
+ * The player's own messages among the given ids, oldest first.
+ *
+ * The ids are whatever the mail form posted, so they are only a request: a
+ * message addressed to someone else is never returned, as on the mail pages.
+ *
+ * @param string    $table 'mail' or 'mailarchive', unprefixed
+ * @param list<int> $ids
+ * @param int       $owner The account the messages must be addressed to
+ *
+ * @return list<array<string, mixed>>
+ */
+function mpdf_downloader_mails(string $table, array $ids, int $owner): array
+{
+    $acct = Database::prefix('accounts');
+    $mailtbl = Database::prefix($table);
+    $conn = Database::getDoctrineConnection();
+    $qb = $conn->createQueryBuilder();
+
+    return $qb
+        ->select('m.*')
+        ->addSelect('sender.name AS sender')
+        ->addSelect('receiver.name AS receiver')
+        ->from($mailtbl, 'm')
+        ->leftJoin('m', $acct, 'sender', 'sender.acctid = m.msgfrom')
+        ->leftJoin('m', $acct, 'receiver', 'receiver.acctid = m.msgto')
+        ->where($qb->expr()->in('m.messageid', ':ids'))
+        ->andWhere('m.msgto = :owner')
+        ->orderBy('m.messageid', 'ASC')
+        // Doctrine needs the explicit array element type to expand IN (:ids) safely.
+        ->setParameter('ids', $ids, ArrayParameterType::INTEGER)
+        ->setParameter('owner', $owner, ParameterType::INTEGER)
+        ->executeQuery()
+        ->fetchAllAssociative();
+}
+
 function mpdf_downloader_run(): void
 {
     $op = httpget('op');
-    if ($op === 'grab') {
-        $section = httppost('section');
+    $section = $op === 'grab' ? mpdf_downloader_requested_section() : null;
+    if ($section !== null) {
         $lines = (int) httppost('lines');
         $format = httppost('format');
 
         $lines = $lines > 0 ? $lines : 100;
+        $maxlines = (int) get_module_setting('maxlines');
+        $lines = min($lines, $maxlines > 0 ? $maxlines : 500);
 
         $conn = Database::getDoctrineConnection();
         $commentary = Database::prefix('commentary');
@@ -165,7 +254,7 @@ function mpdf_downloader_run(): void
             $html = '';
             foreach ($rows as $row) {
                 $line = mpdf_downloader_convert($row);
-                $html .= '<p>' . htmlentities($line, ENT_COMPAT, getsetting('charset', 'UTF-8')) . '</p>';
+                $html .= '<p>' . Escape::html($line) . '</p>';
             }
             $mpdf->WriteHTML($html);
             $currentDateTime = new DateTime('now', new DateTimeZone('UTC'));
@@ -174,7 +263,9 @@ function mpdf_downloader_run(): void
         exit();
     }
     page_header('Download Commentary');
-    output('Invalid operation.');
+    output('This download is no longer available. Open the chat again to download it.');
+    require_once("lib/villagenav.php");
+    villagenav();
     page_footer();
 }
 function mpdf_downloader_setup(?string $logoImage = null, ?string $siteUrl = null): Mpdf
@@ -191,10 +282,31 @@ function mpdf_downloader_setup(?string $logoImage = null, ?string $siteUrl = nul
     $mpdf->SetHTMLFooter("<div style='text-align:center;font-size:10pt;'>$serverUrl<br/>$siteName<br/>Page {PAGENO}/{nb}</div>");
     return $mpdf;
 }
+/**
+ * One message as the HTML mPDF renders.
+ *
+ * Subject, names and body are what players wrote, so all of it is escaped:
+ * markup in a message would otherwise reach mPDF, which fetches the images
+ * and stylesheets it names from the server.
+ *
+ * @param array<string, mixed> $row A row from mpdf_downloader_mails()
+ */
+function mpdf_downloader_mailHtml(array $row): string
+{
+    $html = "<h2>" . Escape::html(sanitize((string) $row['subject'])) . "</h2>";
+    $html .= "<p><strong>From:</strong> " . Escape::html(sanitize((string) $row['sender']))
+        . "<br><strong>To:</strong> " . Escape::html(sanitize((string) $row['receiver']))
+        . "<br><strong>Date:</strong> " . Escape::html($row['sent']) . "</p><hr>";
+    $html .= "<div>" . mpdf_downloader_convertMail(stripslashes((string) $row['body'])) . "</div>";
+
+    return $html;
+}
+
 function mpdf_downloader_convertMail(string $text): string
 {
-    // Convert internal new line markers to HTML line breaks for MPDF
-    return str_replace('`n', "<br>\n", $text);
+    // Plain text: escaped, with its line breaks kept. Messages store them as
+    // newlines; older ones as the `n marker.
+    return nl2br(Escape::html(str_replace('`n', "\n", $text)), false);
 }
 
 function mpdf_downloader_convert(array $row): string

@@ -6,6 +6,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Page\CharStats;
 use Lotgd\PageParts;
+use Lotgd\Template;
 
 function page_header(...$args)
 {
@@ -57,7 +58,7 @@ function charstats(): string
 }
 function loadtemplate($templatename)
 {
-    return PageParts::loadTemplate($templatename);
+    return Template::loadTemplate($templatename);
 }
 function maillink()
 {
