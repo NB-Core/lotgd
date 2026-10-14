@@ -360,16 +360,26 @@ function charrestore_restore_overwrite_account(
         }
         $connection->commit();
     } catch (Throwable $exception) {
-        if ($connection->isTransactionActive()) {
-            $connection->rollBack();
+        // The rollback can fail as well, on a lost connection for one; what
+        // follows still has to run. The server discards what an InnoDB
+        // transaction left uncommitted, and MyISAM never held it back anyway.
+        $rollbackFailure = '';
+        try {
+            if ($connection->isTransactionActive()) {
+                $connection->rollBack();
+            }
+        } catch (Throwable $rollbackException) {
+            $rollbackFailure = ' (the rollback itself failed: ' . $rollbackException->getMessage() . ')';
         }
         if ($atomic || !$writing) {
-            charrestore_snapshot_log(
-                $context,
-                "Full account overwrite failed for acctid {$acctid}; "
-                    . ($atomic ? 'changes were rolled back: ' : 'nothing had been written yet: ')
-                    . $exception->getMessage()
-            );
+            $failure = "Full account overwrite failed for acctid {$acctid}; "
+                . ($atomic ? 'changes were rolled back: ' : 'nothing had been written yet: ')
+                . $exception->getMessage() . $rollbackFailure;
+            try {
+                charrestore_snapshot_log($context, $failure);
+            } catch (Throwable $logFailure) {
+                error_log('[charrestore] ' . $failure);
+            }
             return false;
         }
         $mayBePartial = true;
@@ -378,7 +388,7 @@ function charrestore_restore_overwrite_account(
         // event goes first: SecurityLog writes PHP's error log before the game
         // log, so the event is on record even when the game log refuses it.
         $failure = "Full account overwrite failed for acctid {$acctid}; the tables cannot roll back, so part of"
-            . ' the snapshot may already be written: ' . $exception->getMessage();
+            . ' the snapshot may already be written: ' . $exception->getMessage() . $rollbackFailure;
         try {
             \Lotgd\SecurityLog::event(
                 'Character Restorer overwrite failed on tables that cannot roll back',

@@ -284,6 +284,41 @@ final class CharrestoreOverwriteAccountTest extends TestCase
     }
 
     /**
+     * A rollback that fails too, on a lost connection, must not cut the
+     * reporting short: the caller still gets false, the partial write is
+     * still filed, and the failed rollback is part of the message.
+     */
+    #[RunInSeparateProcess]
+    public function testAFailedRollbackDoesNotCutThePartialReportShort(): void
+    {
+        self::loadModule();
+        $this->expectErrorLog();
+        $this->connection->nonTransactionalTables = ['accounts'];
+        $this->connection->failPreferenceWrites = true;
+        $this->connection->failRollback = true;
+
+        $mayBePartial = null;
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore'],
+            $mayBePartial
+        );
+
+        $this->assertFalse($restored);
+        $this->assertTrue($mayBePartial);
+        $this->assertStringContainsString(
+            '[security] Character Restorer overwrite failed on tables that cannot roll back',
+            $this->errorLog()
+        );
+        $failure = $this->connection->fetchAllAssociative(
+            "SELECT message FROM gamelog WHERE message LIKE 'Full account overwrite failed%'"
+        );
+        $this->assertCount(1, $failure);
+        $this->assertStringContainsString('the rollback itself failed: The connection was lost.', $failure[0]['message']);
+    }
+
+    /**
      * A failure that may have left the account partly written is reported
      * even when the game log is gone: the security event and the failure both
      * reach PHP's error log, and the caller still gets false.
