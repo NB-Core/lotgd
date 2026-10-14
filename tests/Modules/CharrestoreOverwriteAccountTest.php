@@ -252,6 +252,32 @@ final class CharrestoreOverwriteAccountTest extends TestCase
     }
 
     /**
+     * A failure that may have left the account partly written is reported
+     * even when the game log is gone: the security event and the failure both
+     * reach PHP's error log, and the caller still gets false.
+     */
+    #[RunInSeparateProcess]
+    public function testAPartialFailureIsReportedWhenTheGameLogRefusesIt(): void
+    {
+        self::loadModule();
+        $this->expectErrorLog();
+        $this->connection->nonTransactionalTables = ['accounts'];
+        $this->connection->failPreferenceWrites = true;
+        $this->connection->executeStatement('DROP TABLE gamelog');
+
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore']
+        );
+
+        $this->assertFalse($restored);
+        $log = $this->errorLog();
+        $this->assertStringContainsString('[security] Character Restorer overwrite failed on tables that cannot roll back', $log);
+        $this->assertStringContainsString('[charrestore] Full account overwrite failed for acctid 5; the tables cannot roll back', $log);
+    }
+
+    /**
      * The security entry is written after the commit. A game log that cannot
      * take it does not undo the overwrite, so it must not be reported as one
      * that was rolled back.

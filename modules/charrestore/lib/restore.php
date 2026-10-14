@@ -361,21 +361,30 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
             );
             return false;
         }
-        charrestore_snapshot_log(
-            $context,
-            "Full account overwrite failed for acctid {$acctid}; the tables cannot roll back, so part of the snapshot"
-                . ' may already be written: ' . $exception->getMessage()
-        );
-        // Credentials or superuser flags may already be the snapshot's.
-        \Lotgd\SecurityLog::event(
-            'Character Restorer overwrite failed on tables that cannot roll back',
-            array(
-                'target_acctid' => $acctid,
-                'owner' => (string) ($context['owner'] ?? 'charrestore'),
-            ),
-            (int) ($session['user']['acctid'] ?? 0),
-            \Lotgd\GameLog::SEVERITY_ERROR
-        );
+        // Credentials or superuser flags may already be the snapshot's, so
+        // this must reach the administrator whatever the logs do. The security
+        // event goes first: SecurityLog writes PHP's error log before the game
+        // log, so the event is on record even when the game log refuses it.
+        $failure = "Full account overwrite failed for acctid {$acctid}; the tables cannot roll back, so part of"
+            . ' the snapshot may already be written: ' . $exception->getMessage();
+        try {
+            \Lotgd\SecurityLog::event(
+                'Character Restorer overwrite failed on tables that cannot roll back',
+                array(
+                    'target_acctid' => $acctid,
+                    'owner' => (string) ($context['owner'] ?? 'charrestore'),
+                ),
+                (int) ($session['user']['acctid'] ?? 0),
+                \Lotgd\GameLog::SEVERITY_ERROR
+            );
+        } catch (Throwable $logFailure) {
+            // Its error-log line was written before the game log refused the row.
+        }
+        try {
+            charrestore_snapshot_log($context, $failure);
+        } catch (Throwable $logFailure) {
+            error_log('[charrestore] ' . $failure);
+        }
         return false;
     }
 
