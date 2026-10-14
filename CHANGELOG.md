@@ -12,7 +12,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Added
 
-- *Character Restorer* (`charrestore`) can restore a snapshot over the account it was taken from while that account still exists. *Restore anyway over the current user* writes the snapshot's account fields and module preferences over it and keeps its id, in one transaction: a preference that cannot be written takes the account update back with it. It is a button of its own that asks for confirmation, offered only when the snapshot's login is not another account's, and each overwrite is filed in the security log with the administrator who ran it. Shinobi Legends' copy of the module had this already. The two copies are the same again, with the core's CSRF token and game-log severities.
+- *Character Restorer* (`charrestore`) can restore a snapshot over the account it was taken from while that account still exists. *Restore anyway over the current user* writes the snapshot's account fields and module preferences over it and keeps its id, in one transaction: a preference that cannot be written takes the account update back with it. It is a button of its own that asks for confirmation, offered only when the snapshot's login is not another account's, and each overwrite is filed in the security log with the administrator who ran it. It is neither offered nor carried out where `accounts` or `module_userprefs` is on a storage engine that cannot roll back, such as MyISAM left over from an old release. Shinobi Legends' copy of the module had this already. The two copies are the same again, with the core's CSRF token and game-log severities.
 
 ### Changed
 

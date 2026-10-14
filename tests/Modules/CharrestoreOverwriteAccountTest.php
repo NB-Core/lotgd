@@ -170,6 +170,49 @@ final class CharrestoreOverwriteAccountTest extends TestCase
     }
 
     /**
+     * MySQL does not roll back a MyISAM table, and an installation upgraded
+     * from an old release can still have one. Where the rollback could not be
+     * kept, nothing is written at all.
+     */
+    #[RunInSeparateProcess]
+    public function testTablesThatCannotRollBackRefuseTheOverwrite(): void
+    {
+        self::loadModule();
+        $this->connection->nonTransactionalTables = ['module_userprefs'];
+
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore']
+        );
+
+        $this->assertFalse($restored);
+        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1], $this->account());
+        $this->assertSame(['newer' => 'keep', 'slots' => '3'], $this->prefs());
+        $this->assertSame(0, $this->connection->commits);
+        $this->assertSame(
+            ['error'],
+            array_column(
+                $this->connection->fetchAllAssociative("SELECT severity FROM gamelog WHERE message LIKE 'Full account overwrite refused%InnoDB%'"),
+                'severity'
+            )
+        );
+    }
+
+    #[RunInSeparateProcess]
+    public function testTheEngineCheckNeedsBothTablesToRollBack(): void
+    {
+        self::loadModule();
+
+        $this->assertTrue(charrestore_restore_tables_transactional($this->connection));
+        $this->connection->nonTransactionalTables = ['accounts'];
+        $this->assertFalse(charrestore_restore_tables_transactional($this->connection));
+        $this->connection->nonTransactionalTables = [];
+        $this->connection->executeStatement('DROP TABLE module_userprefs');
+        $this->assertFalse(charrestore_restore_tables_transactional($this->connection), 'a table it cannot see counts as no');
+    }
+
+    /**
      * The security entry is written after the commit. A game log that cannot
      * take it does not undo the overwrite, so it must not be reported as one
      * that was rolled back.

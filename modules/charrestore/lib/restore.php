@@ -182,11 +182,51 @@ function charrestore_restore_account(array $account, array $context): int
 }
 
 /**
+ * Whether writes to the accounts and preference tables can be rolled back.
+ *
+ * DBAL opens a transaction whatever the tables are stored in, but MySQL does
+ * not roll back a MyISAM table, and the schema synchronizer keeps the engine
+ * of a table that already exists: an installation upgraded from an old release
+ * can still have one. Anything that cannot be confirmed counts as no.
+ */
+function charrestore_restore_tables_transactional(object $connection): bool
+{
+    foreach (array('beginTransaction', 'commit', 'rollBack', 'isTransactionActive', 'fetchAllAssociative') as $method) {
+        if (!method_exists($connection, $method)) {
+            return false;
+        }
+    }
+    $tables = array(db_prefix('accounts'), db_prefix('module_userprefs'));
+    try {
+        $rows = $connection->fetchAllAssociative(
+            'SELECT t.TABLE_NAME AS name, e.TRANSACTIONS AS transactions'
+                . ' FROM information_schema.TABLES t'
+                . ' JOIN information_schema.ENGINES e ON e.ENGINE = t.ENGINE'
+                . ' WHERE t.TABLE_SCHEMA = DATABASE() AND t.TABLE_NAME IN (:accounts, :prefs)',
+            array('accounts' => $tables[0], 'prefs' => $tables[1])
+        );
+    } catch (Throwable $exception) {
+        return false;
+    }
+    $transactional = array();
+    foreach ($rows as $row) {
+        $transactional[(string) ($row['name'] ?? '')] = strtoupper((string) ($row['transactions'] ?? '')) === 'YES';
+    }
+    foreach ($tables as $table) {
+        if (($transactional[$table] ?? false) !== true) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
  * Destructively restore account fields and preferences over the matching ID.
  *
  * The archived acctid is used only as the immutable update target and is never
  * included among mutable values. The shared connection transaction keeps the
- * account row and preference restore atomic when DBAL transactions are available.
+ * account row and preference restore atomic; the overwrite is refused where the
+ * tables could not roll it back.
  *
  * @param array<string, mixed> $account Snapshot account data.
  * @param array<string, mixed> $prefs Snapshot module preferences.
@@ -227,15 +267,17 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         $parameters[$parameter] = $value;
     }
 
-    $transactionSupported = method_exists($connection, 'beginTransaction')
-        && method_exists($connection, 'commit')
-        && method_exists($connection, 'rollBack');
-    $startedTransaction = false;
+    if (!charrestore_restore_tables_transactional($connection)) {
+        charrestore_snapshot_log(
+            $context,
+            "Full account overwrite refused for acctid {$acctid}: the accounts and module_userprefs tables"
+                . ' must use a transactional storage engine such as InnoDB, or a failed restore could not be undone.'
+        );
+        return false;
+    }
+
     try {
-        if ($transactionSupported) {
-            $connection->beginTransaction();
-            $startedTransaction = true;
-        }
+        $connection->beginTransaction();
         $target = $connection->fetchAssociative(
             'SELECT COUNT(acctid) AS c FROM ' . db_prefix('accounts') . ' WHERE acctid = :target_acctid',
             array('target_acctid' => $acctid)
@@ -252,16 +294,10 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         if (!$preferenceResult['applied']) {
             throw new RuntimeException('One or more archived preferences could not be restored.');
         }
-        if ($startedTransaction) {
-            $connection->commit();
-        }
+        $connection->commit();
     } catch (Throwable $exception) {
-        if ($startedTransaction) {
-            $transactionActive = !method_exists($connection, 'isTransactionActive')
-                || $connection->isTransactionActive();
-            if ($transactionActive) {
-                $connection->rollBack();
-            }
+        if ($connection->isTransactionActive()) {
+            $connection->rollBack();
         }
         charrestore_snapshot_log(
             $context,
@@ -410,6 +446,10 @@ function charrestore_restore_render_preview(array $context, string $file, string
     // rather than a box ticked in the form above. It is offered only when the
     // snapshot's login is not another account's, since it would be refused.
     if ($conflicts['acctid_exists'] && $otherLoginOwners === array()) {
+        if (!charrestore_restore_tables_transactional(charrestore_restore_connection())) {
+            output('`n`$Restoring over the current user is not offered: the accounts and module_userprefs tables must use a transactional storage engine such as InnoDB, or a failed restore could not be undone.`0`n');
+            return;
+        }
         output('`n`$Destructive: this restores the snapshot account fields and preferences over the current user while preserving the existing account ID.`0`n');
         rawoutput(\Lotgd\Forms::postButton(
             $url,
@@ -460,7 +500,7 @@ function charrestore_restore_finish(array $context, string $file, string $baseUr
             $restored = charrestore_restore_overwrite_account($account, $snapshot['prefs'], $context);
             output($restored
                 ? '`#The current user was fully overwritten with the snapshot account fields and preferences; the account ID was preserved.`0'
-                : '`$The full overwrite failed and was rolled back. See the administrative log.`0');
+                : '`$The full overwrite was not carried out; the account is unchanged. See the administrative log.`0');
             return;
         }
         $result = charrestore_restore_preferences((int) $account['acctid'], $snapshot['prefs'], $context);

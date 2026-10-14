@@ -16,6 +16,8 @@ final class MysqlishConnection extends Connection
 {
     public bool $failPreferenceWrites = false;
     public int $commits = 0;
+    /** @var list<string> Tables information_schema reports on an engine that cannot roll back. */
+    public array $nonTransactionalTables = [];
 
     public function executeQuery(
         string $sql,
@@ -33,6 +35,15 @@ final class MysqlishConnection extends Connection
 
     public function fetchAllAssociative(string $query, array $params = [], array $types = []): array
     {
+        if (str_contains($query, 'information_schema.ENGINES')) {
+            return array_map(
+                fn (string $table): array => [
+                    'name' => $table,
+                    'transactions' => in_array($table, $this->nonTransactionalTables, true) ? 'NO' : 'YES',
+                ],
+                array_column($this->fetchAllAssociative("SELECT name FROM sqlite_master WHERE type = 'table'"), 'name')
+            );
+        }
         if (preg_match('/^SHOW INDEX FROM/i', trim($query)) === 1) {
             return array_map(
                 static fn (int $seq, string $column): array => [
