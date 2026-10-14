@@ -25,7 +25,9 @@ final class MysqlishConnection extends Connection
         array $types = [],
         ?QueryCacheProfile $qcp = null,
     ): Result {
-        if (preg_match('/^DESCRIBE\s+(\w+)$/i', trim($sql), $match) === 1) {
+        // SQLite locks the whole database for a write transaction anyway.
+        $sql = (string) preg_replace('/\s+FOR UPDATE$/i', '', trim($sql));
+        if (preg_match('/^DESCRIBE\s+(\w+)$/i', $sql, $match) === 1) {
             $sql = "SELECT name AS Field, CASE WHEN type = 'INTEGER' THEN 'int(11)' ELSE 'varchar(255)' END AS Type"
                 . " FROM pragma_table_info('{$match[1]}')";
         }

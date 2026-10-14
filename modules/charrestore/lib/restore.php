@@ -242,6 +242,11 @@ function charrestore_restore_tables_transactional(object $connection): bool
  * account row and preference restore atomic; the overwrite is refused where the
  * tables could not roll it back.
  *
+ * The target is logged out, whatever the snapshot says: a session still open on
+ * it must not carry on with the restored credentials and superuser flags. The
+ * administrator's own account is refused, since the save at the end of their own
+ * request would write the account as it was loaded back over the snapshot.
+ *
  * @param array<string, mixed> $account Snapshot account data.
  * @param array<string, mixed> $prefs Snapshot module preferences.
  * @param array<string, mixed> $context Shared library context.
@@ -251,15 +256,27 @@ function charrestore_restore_tables_transactional(object $connection): bool
  */
 function charrestore_restore_overwrite_account(array $account, array $prefs, array $context): bool
 {
+    global $session;
     $acctid = (int) ($account['acctid'] ?? 0);
     if ($acctid <= 0) {
         charrestore_snapshot_log($context, 'Full account overwrite rejected: snapshot has no valid account ID.');
         return false;
     }
+    if ($acctid === (int) ($session['user']['acctid'] ?? 0)) {
+        charrestore_snapshot_log(
+            $context,
+            "Full account overwrite refused for acctid {$acctid}: it is the account running the restore."
+        );
+        return false;
+    }
 
     try {
         $connection = charrestore_restore_connection();
-        $values = charrestore_restore_normalize_account($account, charrestore_restore_account_schema());
+        $schema = charrestore_restore_account_schema();
+        $values = charrestore_restore_normalize_account($account, $schema);
+        if (array_key_exists('loggedin', $schema)) {
+            $values['loggedin'] = 0;
+        }
     } catch (Throwable $exception) {
         charrestore_snapshot_log(
             $context,
@@ -292,11 +309,13 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
 
     try {
         $connection->beginTransaction();
+        // Locked until the commit, so the account cannot be deleted between
+        // this check and the writes, leaving preferences without an account.
         $target = $connection->fetchAssociative(
-            'SELECT COUNT(acctid) AS c FROM ' . db_prefix('accounts') . ' WHERE acctid = :target_acctid',
+            'SELECT acctid FROM ' . db_prefix('accounts') . ' WHERE acctid = :target_acctid FOR UPDATE',
             array('target_acctid' => $acctid)
         );
-        if ((int) ($target['c'] ?? 0) !== 1) {
+        if ($target === false) {
             throw new RuntimeException('The target account no longer exists.');
         }
         $connection->executeStatement(
@@ -329,7 +348,6 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
     // so who replaced which live account belongs in the security log. The
     // overwrite is committed by now: a log that cannot take the entry must
     // not make it look rolled back.
-    global $session;
     try {
         \Lotgd\SecurityLog::event(
             'Character Restorer overwrote an existing account with a snapshot',
@@ -465,11 +483,16 @@ function charrestore_restore_render_preview(array $context, string $file, string
     // rather than a box ticked in the form above. It is offered only when the
     // snapshot's login is not another account's, since it would be refused.
     if ($conflicts['acctid_exists'] && $otherLoginOwners === array()) {
+        global $session;
+        if ($snapshotId === (int) ($session['user']['acctid'] ?? 0)) {
+            output('`n`$Restoring over the current user is not offered for the account you are logged in with.`0`n');
+            return;
+        }
         if (!charrestore_restore_tables_transactional(charrestore_restore_connection())) {
             output('`n`$Restoring over the current user is not offered: the accounts and module_userprefs tables must use a transactional storage engine such as InnoDB, or a failed restore could not be undone.`0`n');
             return;
         }
-        output('`n`$Destructive: this restores the snapshot account fields and preferences over the current user while preserving the existing account ID.`0`n');
+        output('`n`$Destructive: this restores the snapshot account fields and preferences over the current user while preserving the existing account ID, and logs the user out.`0`n');
         rawoutput(\Lotgd\Forms::postButton(
             $url,
             translate_inline('Restore anyway over the current user'),

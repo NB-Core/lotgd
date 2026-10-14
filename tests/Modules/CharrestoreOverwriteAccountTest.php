@@ -40,14 +40,14 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         self::assertInstanceOf(MysqlishConnection::class, $connection);
         $this->connection = $connection;
 
-        $connection->executeStatement('CREATE TABLE accounts (acctid INTEGER PRIMARY KEY, login TEXT, name TEXT, gold INTEGER)');
+        $connection->executeStatement('CREATE TABLE accounts (acctid INTEGER PRIMARY KEY, login TEXT, name TEXT, gold INTEGER, loggedin INTEGER)');
         $connection->executeStatement(
             'CREATE TABLE module_userprefs (userid INTEGER, modulename TEXT, setting TEXT, value TEXT, UNIQUE (userid, modulename, setting))'
         );
         $connection->executeStatement(
             'CREATE TABLE gamelog (logid INTEGER PRIMARY KEY, message TEXT, category TEXT, severity TEXT, filed INTEGER, date TEXT, who INTEGER)'
         );
-        $connection->executeStatement("INSERT INTO accounts VALUES (5, 'hero', 'Hero Now', 1)");
+        $connection->executeStatement("INSERT INTO accounts VALUES (5, 'hero', 'Hero Now', 1, 1)");
         $connection->executeStatement("INSERT INTO module_userprefs VALUES (5, 'inventory', 'slots', '3'), (5, 'inventory', 'newer', 'keep')");
 
         Database::$doctrineConnection = $connection;
@@ -90,7 +90,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
      */
     private static function snapshotAccount(): array
     {
-        return ['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Then', 'gold' => '250', 'retiredcolumn' => 'gone'];
+        return ['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Then', 'gold' => '250', 'loggedin' => '1', 'retiredcolumn' => 'gone'];
     }
 
     /**
@@ -128,8 +128,9 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         );
 
         $this->assertTrue($restored);
-        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Then', 'gold' => 250], $this->account());
+        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Then', 'gold' => 250, 'loggedin' => 0], $this->account());
         $this->assertSame(['newer' => 'keep', 'slots' => '7'], $this->prefs(), 'a preference the snapshot does not know stays');
+        $this->assertSame(0, $this->account()['loggedin'] ?? null, 'logged out, though the snapshot was taken logged in');
         $this->assertFalse($this->connection->isTransactionActive());
         $this->assertSame(1, $this->connection->commits, 'one transaction, committed once');
         $security = $this->connection->fetchAllAssociative(
@@ -154,7 +155,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         );
 
         $this->assertFalse($restored);
-        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1], $this->account());
+        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1, 'loggedin' => 1], $this->account());
         $this->assertSame([], $this->connection->fetchAllAssociative("SELECT logid FROM gamelog WHERE category = 'security'"));
         $this->assertSame(['newer' => 'keep', 'slots' => '3'], $this->prefs());
         $this->assertFalse($this->connection->isTransactionActive());
@@ -188,7 +189,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         );
 
         $this->assertFalse($restored);
-        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1], $this->account());
+        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1, 'loggedin' => 1], $this->account());
         $this->assertSame(['newer' => 'keep', 'slots' => '3'], $this->prefs());
         $this->assertSame(0, $this->connection->commits);
         $this->assertSame(
@@ -232,7 +233,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         );
 
         $this->assertTrue($restored, 'the overwrite was committed');
-        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Then', 'gold' => 250], $this->account());
+        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Then', 'gold' => 250, 'loggedin' => 0], $this->account());
         $this->assertSame(1, $this->connection->commits);
         $log = $this->errorLog();
         $this->assertStringContainsString('[security] Character Restorer overwrote an existing account', $log, 'the event is on record');
@@ -253,6 +254,25 @@ final class CharrestoreOverwriteAccountTest extends TestCase
             "/Forms::postButton\\([^;]*translate_inline\\('Overwrite the current user[^;]*SCOPE_CHARRESTORE,\\s*array\\('overwriteaccount' => '1'\\)/s",
             $source
         );
+    }
+
+    /**
+     * The save at the end of the administrator's own request would write their
+     * account as it was loaded back over the snapshot.
+     */
+    #[RunInSeparateProcess]
+    public function testTheAdministratorsOwnAccountIsRefused(): void
+    {
+        self::loadModule();
+        $GLOBALS['session']['user']['acctid'] = 5;
+
+        $this->assertFalse(charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore']
+        ));
+        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1, 'loggedin' => 1], $this->account());
+        $this->assertSame(0, $this->connection->commits);
     }
 
     #[RunInSeparateProcess]
