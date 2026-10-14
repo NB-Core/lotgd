@@ -274,14 +274,21 @@ function charrestore_restore_overwrite_refused(int $acctid, string $reason, arra
  * @param array<string, mixed> $account Snapshot account data.
  * @param array<string, mixed> $prefs Snapshot module preferences.
  * @param array<string, mixed> $context Shared library context.
+ * @param bool|null $mayBePartial Set to true when it failed after it had begun
+ *                                writing to tables that cannot roll back, so
+ *                                part of the snapshot may be in the account.
  *
  * @return bool True once the overwrite is committed, even if the security log
- *              could not take its entry; false when it failed, which leaves the
- *              account unchanged only where the tables roll back.
+ *              could not take its entry; false when it failed.
  */
-function charrestore_restore_overwrite_account(array $account, array $prefs, array $context): bool
-{
+function charrestore_restore_overwrite_account(
+    array $account,
+    array $prefs,
+    array $context,
+    ?bool &$mayBePartial = null
+): bool {
     global $session;
+    $mayBePartial = false;
     $acctid = (int) ($account['acctid'] ?? 0);
     if ($acctid <= 0) {
         charrestore_snapshot_log($context, 'Full account overwrite rejected: snapshot has no valid account ID.');
@@ -323,6 +330,7 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
     // On MyISAM the transaction below is a formality: what was written before
     // a failure stays. The restore still runs; a failure is reported as such.
     $atomic = charrestore_restore_tables_transactional($connection);
+    $writing = false;
 
     try {
         $connection->beginTransaction();
@@ -335,6 +343,7 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         if ($target === false) {
             throw new RuntimeException('The target account no longer exists.');
         }
+        $writing = true;
         $connection->executeStatement(
             'UPDATE ' . db_prefix('accounts') . ' SET ' . implode(', ', $assignments)
                 . ' WHERE acctid = :target_acctid',
@@ -354,13 +363,16 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         if ($connection->isTransactionActive()) {
             $connection->rollBack();
         }
-        if ($atomic) {
+        if ($atomic || !$writing) {
             charrestore_snapshot_log(
                 $context,
-                "Full account overwrite failed for acctid {$acctid}; changes were rolled back: " . $exception->getMessage()
+                "Full account overwrite failed for acctid {$acctid}; "
+                    . ($atomic ? 'changes were rolled back: ' : 'nothing had been written yet: ')
+                    . $exception->getMessage()
             );
             return false;
         }
+        $mayBePartial = true;
         // Credentials or superuser flags may already be the snapshot's, so
         // this must reach the administrator whatever the logs do. The security
         // event goes first: SecurityLog writes PHP's error log before the game
@@ -584,13 +596,14 @@ function charrestore_restore_finish(array $context, string $file, string $baseUr
                 output('`$That login belongs to another account. The destructive overwrite was cancelled.`0');
                 return;
             }
-            $restored = charrestore_restore_overwrite_account($account, $snapshot['prefs'], $context);
+            $mayBePartial = false;
+            $restored = charrestore_restore_overwrite_account($account, $snapshot['prefs'], $context, $mayBePartial);
             if ($restored) {
                 output('`#The current user was fully overwritten with the snapshot account fields and preferences; the account ID was preserved.`0');
-            } elseif (charrestore_restore_tables_transactional(charrestore_restore_connection())) {
-                output('`$The full overwrite was not carried out; the account is unchanged. See the administrative log.`0');
-            } else {
+            } elseif ($mayBePartial) {
                 output('`$The full overwrite failed. These tables cannot roll back, so part of it may have been written; check the account and the administrative log.`0');
+            } else {
+                output('`$The full overwrite was not carried out; the account is unchanged. See the administrative log.`0');
             }
             return;
         }

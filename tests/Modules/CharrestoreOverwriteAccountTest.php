@@ -214,13 +214,16 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         $this->connection->nonTransactionalTables = ['accounts'];
         $this->connection->failPreferenceWrites = true;
 
+        $mayBePartial = null;
         $restored = charrestore_restore_overwrite_account(
             self::snapshotAccount(),
             ['inventory' => ['slots' => '7']],
-            ['owner' => 'charrestore']
+            ['owner' => 'charrestore'],
+            $mayBePartial
         );
 
         $this->assertFalse($restored);
+        $this->assertTrue($mayBePartial, 'the account row was written before the preference failed');
         $failure = $this->connection->fetchAllAssociative(
             "SELECT message, severity FROM gamelog WHERE message LIKE 'Full account overwrite failed%'"
         );
@@ -249,6 +252,35 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         $this->connection->nonTransactionalTables = [];
         $this->connection->executeStatement('DROP TABLE module_userprefs');
         $this->assertFalse(charrestore_restore_tables_transactional($this->connection), 'a table it cannot see counts as no');
+    }
+
+    /**
+     * A failure before anything was written is not a partial write, whatever
+     * the engine: the account is unchanged and the page must say so.
+     */
+    #[RunInSeparateProcess]
+    public function testAFailureBeforeAnyWriteIsNotReportedAsPartial(): void
+    {
+        self::loadModule();
+        $this->connection->nonTransactionalTables = ['accounts'];
+        $this->connection->executeStatement('DELETE FROM accounts');
+
+        $mayBePartial = null;
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore'],
+            $mayBePartial
+        );
+
+        $this->assertFalse($restored);
+        $this->assertFalse($mayBePartial);
+        $this->assertSame([], $this->connection->fetchAllAssociative("SELECT logid FROM gamelog WHERE category = 'security'"));
+        $failure = $this->connection->fetchAllAssociative(
+            "SELECT message FROM gamelog WHERE message LIKE 'Full account overwrite failed%'"
+        );
+        $this->assertCount(1, $failure);
+        $this->assertStringContainsString('nothing had been written yet', $failure[0]['message']);
     }
 
     /**
