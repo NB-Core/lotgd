@@ -76,5 +76,5 @@ while ($row = Database::fetchAssoc($result)) {
         $session['user']['clanrank'] = CLAN_APPLICANT;
         $session['user']['clanjoindate'] = DATETIME_DATEMIN;
         $output->output("`&You have withdrawn from your clan.");
-        Nav::add("Clan Options");
+        Nav::add("Navigation");
         Nav::add("Return to the Lobby", "clan.php");

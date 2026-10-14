@@ -51,8 +51,8 @@ if (is_string($postedOp) && in_array($postedOp, ['save', 'del'], true)) {
 $csrfField = Csrf::escapedToken(Csrf::SCOPE_WEAPON_EDITOR);
 
 SuperuserNav::render();
-Nav::add('Weapon Editor');
 Nav::add('Weapon Editor Home', "weaponeditor.php?level=$weaponlevel");
+Nav::add('Weapon Editor');
 Nav::add('Add a weapon', "weaponeditor.php?op=add&level=$weaponlevel");
 
 $values = [1 => 48, 225, 585, 990, 1575, 2250, 2790, 3420, 4230, 5040, 5850, 6840, 8010, 9000, 10350];

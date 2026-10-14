@@ -148,6 +148,7 @@ if ($op == "") {
         ++$i;
     }
     $output->rawOutput("</table>");
+    Nav::add("Navigation");
     VillageNav::render();
 } elseif ($op == "buy") {
     $id = (int) Http::get("id");
@@ -157,10 +158,11 @@ if ($op == "") {
         $translator->setSchema($schemas['nosuchweapon']);
         $output->output('%s', $texts['nosuchweapon']);
         $translator->setSchema();
+        Nav::add("Navigation");
+        VillageNav::render();
         $translator->setSchema($schemas['tryagain']);
         Nav::add($texts['tryagain'], "weapons.php");
         $translator->setSchema();
-        VillageNav::render();
     } else {
         $row = Database::fetchAssoc($result);
         $row = HookHandler::hook("modify-weapon", $row);
@@ -168,6 +170,7 @@ if ($op == "") {
             $translator->setSchema($schemas['notenoughgold']);
             $output->output($texts['notenoughgold'], $row['weaponname']);
             $translator->setSchema();
+            Nav::add("Navigation");
             VillageNav::render();
         } else {
             $translator->setSchema($schemas['payweapon']);
@@ -181,6 +184,7 @@ if ($op == "") {
             $session['user']['weapondmg'] = $row['damage'];
             $session['user']['attack'] += $session['user']['weapondmg'];
             $session['user']['weaponvalue'] = $row['value'];
+            Nav::add("Navigation");
             VillageNav::render();
         }
     }

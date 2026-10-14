@@ -15,6 +15,8 @@ use Lotgd\Page\Footer;
 $output = Output::getInstance();
 $settings = Settings::getInstance();
 
+// Before the events, so that what an event offers is not listed with the way out.
+Nav::add("Things to do");
 if ($com == "" && !$comment && $op != "fleedragon") {
     $innChance = (int) $settings->getSetting('innchance', 0);
     if (HookHandler::moduleEvents('inn', $innChance) != 0) {

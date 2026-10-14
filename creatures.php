@@ -374,6 +374,8 @@ if ($op == "" || $op == "search") {
                 $row = $result->fetchAssociative();
                 if ($row === false) {
                     $output->output("`4Error`0, that creature was not found!");
+                    Nav::add("Navigation");
+                    Nav::add("Return to the creature editor", "creatures.php");
                     Footer::pageFooter();
                     return;
                 } else {

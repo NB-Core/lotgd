@@ -64,6 +64,7 @@ switch ($op) {
                 $session['user']['deathpower'] -= $favor;
             }
             Translator::getInstance()->setSchema("nav");
+            Nav::add("Navigation");
             Nav::add("G?Return to the Graveyard", "graveyard.php");
             Translator::getInstance()->setSchema();
         } else {
@@ -120,6 +121,7 @@ if ($battle) {
             $output->output("You may not torment any more souls today.");
             $session['user']['gravefights'] = 0;
             Translator::getInstance()->setSchema("nav");
+            Nav::add("Navigation");
             Nav::add("G?Return to the Graveyard", "graveyard.php");
             Translator::getInstance()->setSchema();
         } else {
@@ -128,6 +130,9 @@ if ($battle) {
     }
 }
 
+// The way back goes first; what a module adds here comes below it.
+Nav::add("Navigation");
+Nav::add("Actions");
 HookHandler::hook("deathoverlord", array());
 
 switch ($op) {

@@ -70,6 +70,7 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
     ) {
         $session['allowednavs'] = array();
         Header::pageHeader("Your Navs Are Corrupted");
+        Nav::add("Navigation");
         if ($session['user']['alive']) {
             VillageNav::render();
             $output->output(

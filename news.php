@@ -118,14 +118,14 @@ if (Database::numRows($result) == 0) {
 }
 $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
 if (!$session['user']['loggedin']) {
+    Nav::add("Navigation");
     Nav::add("Login Screen", "index.php");
 } elseif ($session['user']['alive']) {
+    Nav::add("Navigation");
     VillageNav::render();
 } else {
     $translator->setSchema("nav");
-    Nav::add("Log Out");
-    Nav::add("Log out", "login.php?op=logout");
-
+    // The dead get their way back under a heading of its own.
     if ($session['user']['sex'] == 1) {
         Nav::add("`!`bYou're dead, Jane!`b`0");
     } else {
@@ -133,6 +133,8 @@ if (!$session['user']['loggedin']) {
     }
     Nav::add("S?Land of Shades", "shades.php");
     Nav::add("G?The Graveyard", "graveyard.php");
+    Nav::add("Log Out");
+    Nav::add("Log out", "login.php?op=logout");
         Battle::suspendCompanions("allowinshades", true);
     $translator->setSchema();
 }

@@ -40,9 +40,11 @@ $ret = Http::get('ret');
 $ret = $ret !== false ? (string) $ret : '';
 $return = cmd_sanitize($ret);
 $return = basename($return);
-Translator::getInstance()->setSchema("nav");
-Nav::add("Return whence you came", $return);
-Translator::getInstance()->setSchema();
+if ($return !== '') {
+    Translator::getInstance()->setSchema("nav");
+    Nav::add("Return whence you came", $return);
+    Translator::getInstance()->setSchema();
+}
 
 $add = Translator::translate("Add Donation");
 $output->rawOutput("<form action='donators.php?op=add1&ret=" . rawurlencode($ret) . "' method='POST'>" . Forms::csrfField());

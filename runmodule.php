@@ -72,6 +72,7 @@ if (Modules::inject($module, Http::get('admin') ? true : false)) {
         Translator::getInstance()->setSchema("badnav");
 
         Header::pageHeader("Error");
+        Nav::add("Navigation");
     if ($session['user']['loggedin']) {
             VillageNav::render();
     } else {

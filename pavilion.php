@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Lotgd\Commentary;
 use Lotgd\DateTime;
+use Lotgd\Nav;
 use Lotgd\Nav\VillageNav;
 use Lotgd\Output;
 use Lotgd\Page\Footer;
@@ -27,6 +28,7 @@ Header::pageHeader('Eye-catching Pavilion');
 $output->output("`b`cThe Pavilion`c`b`n");
 $output->output("This page is a placeholder for beta features. Customize it to showcase experimental content.`n");
 
+Nav::add("Navigation");
 VillageNav::render();
 Commentary::commentDisplay('', 'beta', 'Talk with other testers:', 25);
 

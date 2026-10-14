@@ -44,7 +44,9 @@ if ($session['user']['loggedin']) {
         }
     }
 } else {
+    Nav::add("Navigation");
     Nav::add("Login Screen", "index.php");
+    Nav::add("Actions");
     Nav::add("Currently Online", "list.php");
 }
 

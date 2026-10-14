@@ -60,7 +60,7 @@ $deathmessageidParam = $deathmessageid === null ? '' : (string) $deathmessageid;
 $commentaryPage = RequestValue::optionalPositiveInt(Http::get('c'));
 switch ($op) {
     case "edit":
-        Nav::add("Deathmessages");
+        Nav::add("Navigation");
         Nav::add("Return to the Deathmessage editor", "deathmessages.php");
         $output->rawOutput("<form action='deathmessages.php?op=save&deathmessageid=" . rawurlencode($deathmessageidParam) . "' method='POST'>" . Forms::csrfField(), true);
         Nav::add("", "deathmessages.php?op=save&deathmessageid=" . rawurlencode($deathmessageidParam));

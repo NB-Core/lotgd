@@ -40,9 +40,9 @@ Commentary::addCommentary();
 SuAccess::check(SU_EDIT_COMMENTS);
 
 SuperuserNav::render();
+Nav::add("Commentary Overview", "moderate.php");
 
 Nav::add("Other");
-Nav::add("Commentary Overview", "moderate.php");
 Nav::add("Reset Seen Comments", "moderate.php?seen=" . rawurlencode(date("Y-m-d H:i:s")));
 Nav::add("B?Player Bios", "bios.php");
 if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {

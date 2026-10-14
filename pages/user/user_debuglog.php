@@ -97,8 +97,9 @@ $sql = "(
 
 $next = $start + 500;
 $prev = $start - 500;
-Nav::add("Operations");
+Nav::add("Navigation");
 Nav::add("Edit user info", "user.php?op=edit&userid=$userid$returnpetition");
+Nav::add("Operations");
 Nav::add("Refresh", "user.php?op=debuglog&userid=$userid&start=$start$returnpetition");
 Nav::add("Debug Log");
 if ($next < $max) {

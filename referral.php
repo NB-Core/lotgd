@@ -30,6 +30,7 @@ $translator->setSchema("referral");
 
 if ($session['user']['loggedin']) {
     Header::pageHeader("Referral Page");
+    Nav::add("Navigation");
     if (file_exists("lodge.php")) {
         Nav::add("L?Return to the Lodge", "lodge.php");
     } else {
@@ -89,7 +90,9 @@ if ($session['user']['loggedin']) {
     $referrer = Http::get('r') ?: '';
     $sanitizedReferrer = HTMLEntities($referrer, ENT_COMPAT, $settings->getSetting("charset", "UTF-8"));
 
-    Nav::add("Create a character", "create.php?r=" . $sanitizedReferrer);
+    Nav::add("Navigation");
     Nav::add("Login Page", "index.php");
+    Nav::add("Actions");
+    Nav::add("Create a character", "create.php?r=" . $sanitizedReferrer);
     Footer::pageFooter();
 }

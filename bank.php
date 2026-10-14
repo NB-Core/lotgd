@@ -345,6 +345,7 @@ if ($op == "") {
             break;
     }
 }
+Nav::add("Navigation");
 VillageNav::render();
 Nav::add("Money");
 if ($session['user']['goldinbank'] >= 0) {

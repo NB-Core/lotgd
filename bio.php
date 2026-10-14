@@ -62,7 +62,7 @@ if ($target = Database::fetchAssoc($result)) {
     Header::pageHeader("Character Biography: %s", Sanitize::stripAllColorCodes($target['name']));
 
     $translator->setSchema("nav");
-    Nav::add("Return");
+    Nav::add("Navigation");
     $translator->setSchema();
 
     if ($session['user']['superuser'] & SU_EDIT_USERS) {
@@ -70,6 +70,8 @@ if ($target = Database::fetchAssoc($result)) {
         Nav::add("Edit User", "user.php?op=edit&userid=$id");
     }
 
+    // What modules add to the biography goes below the way back.
+    Nav::add("Actions");
     HookHandler::hook("biotop", $target);
 
     $output->output("`^Biography for %s`^.", $target['name']);
@@ -181,13 +183,13 @@ if ($target = Database::fetchAssoc($result)) {
     if ($ret == "") {
         $return = basename($return);
         $translator->setSchema("nav");
-        Nav::add("Return");
+        Nav::add("Navigation");
         Nav::add("Return to the warrior list", $return);
         $translator->setSchema();
     } else {
         $return = basename($return);
         $translator->setSchema("nav");
-        Nav::add("Return");
+        Nav::add("Navigation");
         if ($return == "list.php") {
             Nav::add("Return to the warrior list", $return);
         } else {
@@ -196,6 +198,7 @@ if ($target = Database::fetchAssoc($result)) {
         $translator->setSchema();
     }
 
+    Nav::add("Actions");
     HookHandler::hook("bioend", $target);
     Footer::pageFooter();
 } else {
@@ -204,13 +207,13 @@ if ($target = Database::fetchAssoc($result)) {
     if ($ret == "") {
         $return = basename($return);
         $translator->setSchema("nav");
-        Nav::add("Return");
+        Nav::add("Navigation");
         Nav::add("Return to the warrior list", $return);
         $translator->setSchema();
     } else {
         $return = basename($return);
         $translator->setSchema("nav");
-        Nav::add("Return");
+        Nav::add("Navigation");
         if ($return == "list.php") {
             Nav::add("Return to the warrior list", $return);
         } else {

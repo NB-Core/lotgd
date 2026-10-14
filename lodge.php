@@ -44,12 +44,12 @@ if ($pointsavailable < 0) {
 Header::pageHeader("Hunter's Lodge");
 Nav::add("Navigation");
 VillageNav::render();
-Nav::add("General");
-
-Nav::add("Referrals", "referral.php");
 if ($op != "" && $entry) {
     Nav::add("L?Back to the Lodge", "lodge.php");
 }
+Nav::add("General");
+
+Nav::add("Referrals", "referral.php");
 Nav::add("Describe Points", "lodge.php?op=points");
 
 

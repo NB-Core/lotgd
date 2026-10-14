@@ -158,6 +158,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // blind spot SECURITY.md describes; the id comes from the session now, and
     // the request parameter is not consulted at all.
     $userid = (int) ($session['user']['acctid'] ?? 0);
+    $deleted = false;
     if (Forms::isUnverifiedRequest(Csrf::SCOPE_SELF_DELETE)) {
         http_response_code(400);
         $output->output("`\$Your character was not deleted.`0`n");
@@ -176,6 +177,17 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         $session['user']['loggedin'] = false;
         $dataCache->massinvalidate('charlisthomepage');
         $dataCache->invalidatedatacache('list.php-warsonline');
+        $deleted = true;
+    }
+    if (!$deleted) {
+        // The character is still there, and so is the player: without these
+        // the page had no navigation at all.
+        if ($session['user']['alive']) {
+            VillageNav::render();
+        } else {
+            Nav::add("Return to the news", "news.php");
+        }
+        Nav::add("Return to the Prefs", "prefs.php");
     }
 } elseif ($op == "forcechangeemail") {
     DateTime::checkDay();

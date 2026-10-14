@@ -53,11 +53,15 @@ $msg = '';
 
 CheckBan::check();
 $op = Http::get('op');
+// The way back first; what the hooks below add goes under "Actions".
+Nav::add("Navigation");
+Nav::add("Actions");
 if ($op == 'val' || $op == 'forgotval') {
     if (ServerFunctions::isTheServerFull() == true) {
         //server is full, your "cheat" does not work here buddy ;) you can't bypass this!
         Header::pageHeader("Account Validation");
         $output->output("Sorry, there are too many people online. Click at the link you used to get here later on. Thank you.");
+        Nav::add("Navigation");
         Nav::add("Login", "index.php");
 
         Footer::pageFooter();
@@ -661,5 +665,6 @@ if ((int) $settings->getSetting('allowcreation', 1) === 0) {
                 $output->rawOutput("</form>");
     }
 }
+Nav::add("Navigation");
 Nav::add("Login", "index.php");
 Footer::pageFooter();

@@ -255,10 +255,14 @@ if ($op == "") {
     $output->output("`nIf you wish to delete a companion, you have to deactivate it first.");
 } elseif ($op == "add") {
     $output->output("Add a companion:`n");
+    Nav::add("Navigation");
     Nav::add("Companion Editor Home", "companions.php");
+    Nav::add("Companion Editor");
     companionform(array());
 } elseif ($op == "edit") {
+    Nav::add("Navigation");
     Nav::add("Companion Editor Home", "companions.php");
+    Nav::add("Companion Editor");
     $result = $id === null ? null : $connection->executeQuery(
         "SELECT * FROM " . Database::prefix("companions") . " WHERE companionid = :id",
         ['id' => $id],
@@ -469,13 +473,13 @@ function companionform($companion)
     $output->rawOutput("<tr><td nowrap>");
 
     $output->output("Companion Cost (DKs):");
-    $output->rawOutput("</td><td><input name='companion[companioncostdks]' value=\"" . htmlentities((int)$companion['companioncostdks'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[companioncostdks]' value=\"" . htmlentities((string) (int) $companion['companioncostdks'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Cost (Gems):");
-    $output->rawOutput("</td><td><input name='companion[companioncostgems]' value=\"" . htmlentities((int)$companion['companioncostgems'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[companioncostgems]' value=\"" . htmlentities((string) (int) $companion['companioncostgems'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Companion Cost (Gold):");
-    $output->rawOutput("</td><td><input name='companion[companioncostgold]' value=\"" . htmlentities((int)$companion['companioncostgold'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
+    $output->rawOutput("</td><td><input name='companion[companioncostgold]' value=\"" . htmlentities((string) (int) $companion['companioncostgold'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\"></td></tr>");
     $output->rawOutput("<tr><td nowrap>");
     $output->output("Allow in shades:");
     $output->rawOutput("</td><td><input type='checkbox' name='companion[allowinshades]' value='1'" . ($companion['allowinshades'] == true ? " checked" : "") . "></td></tr>");

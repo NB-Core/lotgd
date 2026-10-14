@@ -57,8 +57,10 @@ if ($op == "run") {
 }
 
 if ($op == "dragon") {
-    Nav::add("Enter the cave", "dragon.php");
+    Nav::add("Navigation");
     Nav::add("Run away like a baby", "inn.php?op=fleedragon");
+    Nav::add("Actions");
+    Nav::add("Enter the cave", "dragon.php");
     $output->output("`\$You approach the blackened entrance of a cave deep in the forest, though the trees are scorched to stumps for a hundred yards all around.");
     $output->output("A thin tendril of smoke escapes the roof of the cave's entrance, and is whisked away by a suddenly cold and brisk wind.");
     $output->output("The mouth of the cave lies up a dozen feet from the forest floor, set in the side of a cliff, with debris making a conical ramp to the opening.");

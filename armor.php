@@ -149,6 +149,7 @@ if ($op == "") {
         ++$i;
     }
     $output->rawOutput("</table>", true);
+    Nav::add("Navigation");
     VillageNav::render();
 } elseif ($op == "buy") {
     $idRequest = Http::get('id');
@@ -159,10 +160,11 @@ if ($op == "") {
         $translator->setSchema($schemas['nosuchweapon']);
         $output->output('%s', $texts['nosuchweapon']);
         $translator->setSchema();
+        Nav::add("Navigation");
+        VillageNav::render();
         $translator->setSchema($schemas['tryagain']);
         Nav::add($texts['tryagain'], "armor.php");
         $translator->setSchema();
-        VillageNav::render();
     } else {
         $row = Database::fetchAssoc($result);
         $row = HookHandler::hook("modify-armor", $row);
@@ -170,6 +172,7 @@ if ($op == "") {
             $translator->setSchema($schemas['notenoughgold']);
             $output->output($texts['notenoughgold'], $row['armorname']);
             $translator->setSchema();
+            Nav::add("Navigation");
             VillageNav::render();
         } else {
             $translator->setSchema($schemas['payarmor']);
@@ -183,6 +186,7 @@ if ($op == "") {
             $session['user']['armordef'] = $row['defense'];
             $session['user']['defense'] += $session['user']['armordef'];
             $session['user']['armorvalue'] = $row['value'];
+            Nav::add("Navigation");
             VillageNav::render();
         }
     }

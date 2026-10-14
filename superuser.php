@@ -59,6 +59,8 @@ if ($op == "keepalive") {
 
 Header::pageHeader("Superuser Grotto");
 
+// What modules add in the hooks below goes under "Actions", not with the way out.
+Nav::add("Actions");
 $lines = HookHandler::hook("superuser-headlines", array());
 $output->outputNotl("`c");
 // Only a final release newer than this installation is announced here; the
@@ -171,7 +173,8 @@ if ($session['user']['superuser'] & SU_MANAGE_MODULES) {
     Nav::add("Manage Modules", "modules.php");
 }
 
-if ($session['user']['superuser'] & SU_EDIT_CONFIG) {
+// The megauser links below belong here too, not under "Editors".
+if ($session['user']['superuser'] & (SU_EDIT_CONFIG | SU_MEGAUSER)) {
     Nav::add("Mechanics");
 }
 if ($session['user']['superuser'] & SU_EDIT_CONFIG) {

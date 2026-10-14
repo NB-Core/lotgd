@@ -249,6 +249,7 @@ if ($op == "") {
     }
 } else {
     Header::pageHeader("LoGD Net");
+    Nav::add("Navigation");
     Nav::add("Login page", "index.php");
     $output->output("`@Below are a list of other LoGD servers that have registered with the LoGD Net.`n");
     $output->output("`2It should be noted that this list is subject to editing and culling by the administrators of logdnet.logd.com. ");

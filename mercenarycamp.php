@@ -112,6 +112,10 @@ $translator->setSchema();
 $opRequest = Http::get('op');
 $op = is_string($opRequest) ? $opRequest : '';
 
+// The way back first; healing and buying add "Return to the camp" below it.
+Nav::add("Navigation");
+VillageNav::render();
+
 if ($op == "") {
     if (Http::get('skip') != 1) {
         $translator->setSchema($schemas['desc']);
@@ -224,8 +228,6 @@ if ($op == "") {
     Nav::add("Navigation");
     Nav::add("Return to the camp", "mercenarycamp.php?skip=1");
 }
-Nav::add("Navigation");
-VillageNav::render();
 Footer::pageFooter();
 
 

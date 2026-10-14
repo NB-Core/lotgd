@@ -6,7 +6,6 @@ use Lotgd\Commentary;
 use Lotgd\DateTime;
 use Lotgd\Translator;
 use Lotgd\Nav;
-use Lotgd\Nav\VillageNav;
 use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
@@ -37,7 +36,6 @@ if ($op == "pay") {
         redirect("gypsy.php?op=talk");
     } else {
         Header::pageHeader("Gypsy Seer's tent");
-        VillageNav::render();
         $output->output("`5You offer the old gypsy woman your `^%s`5 gold for your gen-u-wine say-ance, however she informs you that the dead may be dead, but they ain't cheap.", $session['user']['gold']);
     }
 } elseif ($op == "talk") {

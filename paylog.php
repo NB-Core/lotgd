@@ -73,6 +73,7 @@ SuAccess::check(SU_EDIT_PAYLOG);
 */
 Header::pageHeader('Payment Log');
 SuperuserNav::render();
+Nav::add('Actions');
 HookHandler::hook("paylog", array());
 
 $op = (string) Http::get('op');

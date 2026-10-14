@@ -67,18 +67,22 @@ if ($apply == 1) {
     if ($clanname != $ocn || $clanshort != $ocs) {
         $output->outputNotl($e[0], $registrar);
         clanform();
+        Nav::add("Navigation");
         Nav::add("Return to the Lobby", "clan.php");
     } elseif (strlen($clanname) < 5 || strlen($clanname) > 50) {
         $output->outputNotl($e[1], $registrar);
         clanform();
+        Nav::add("Navigation");
         Nav::add("Return to the Lobby", "clan.php");
     } elseif (strlen($clanshort) < 2 || strlen($clanshort) > $clanShortNameLength) {
         $output->outputNotl($e[2], $registrar, $clanShortNameLength);
         clanform();
+        Nav::add("Navigation");
         Nav::add("Return to the Lobby", "clan.php");
     } elseif (Database::numRows($result) > 0) {
         $output->outputNotl($e[3], $registrar, stripslashes($clanname));
         clanform();
+        Nav::add("Navigation");
         Nav::add("Return to the Lobby", "clan.php");
     } else {
         //too many stupids put < and > in their clanshort name -_-
@@ -92,6 +96,7 @@ if ($apply == 1) {
         if (Database::numRows($result) > 0) {
             $output->outputNotl($e[4], $registrar, stripslashes($clanshort));
             clanform();
+            Nav::add("Navigation");
             Nav::add("Return to the Lobby", "clan.php");
         } else {
             if ($session['user']['gold'] < $gold || $session['user']['gems'] < $gems) {
@@ -103,6 +108,7 @@ if ($apply == 1) {
                     $output->outputNotl($e[6], $registrar, $gold, $gems);
                 }
                 $output->outputNotl($e[8], $registrar);
+                Nav::add("Navigation");
                 Nav::add("Return to the Lobby", "clan.php");
             } else {
 /*//*/                      $args = array("ocn" => $ocn, "ocs" => $ocs, "clanname" => $clanname, "clanshort" => $clanshort);
@@ -110,6 +116,7 @@ if ($apply == 1) {
 /*//*/                      if (isset($args['blocked']) && $args['blocked']) {
 /*//*/                          $output->outputNotl(Translator::sprintfTranslate($args['blockmsg']));
 /*//*/                          clanform();
+/*//*/                          Nav::add("Navigation");
 /*//*/                          Nav::add("Return to the Lobby", "clan.php");
 /*//*/
 } else {
@@ -147,6 +154,7 @@ if ($apply == 1) {
     $output->output("Third you have to decide on whether or not you're willing to give up the fees that are required to start the clan.");
     $output->output("This fee is used to tailor the locks on your clan door to you and your members.`n");
     $output->output("The fees are as follows:`nGold: `^%s`7`nGems: `%%s`7", $gold, $gems);
+    Nav::add("Navigation");
     Nav::add("Return to the Lobby", "clan.php");
     $e1 = Translator::translateInline("`n`n\"`5Since you do not have enough gold with you, I cannot allow you to apply for a clan,`7\" she says.");
     $e2 = Translator::translateInline("`n`n\"`5Since you do not have enough gems with you, I cannot allow you to apply for a clan,`7\" she says.");

@@ -51,8 +51,8 @@ if (is_string($postedOp) && in_array($postedOp, ['save', 'del'], true)) {
 $csrfField = Csrf::escapedToken(Csrf::SCOPE_ARMOR_EDITOR);
 
 SuperuserNav::render();
-Nav::add('Armor Editor');
 Nav::add('Armor Editor Home', "armoreditor.php?level=$armorlevel");
+Nav::add('Armor Editor');
 Nav::add('Add armor', "armoreditor.php?op=add&level=$armorlevel");
 
 $values = [1 => 48, 225, 585, 990, 1575, 2250, 2790, 3420, 4230, 5040, 5850, 6840, 8010, 9000, 10350];

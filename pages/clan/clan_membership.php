@@ -22,6 +22,7 @@ function clanMembership(): void
 
     $output = Output::getInstance();
 
+    Nav::add('Navigation');
     Nav::add('Clan Hall', 'clan.php');
     Nav::add('Clan Options');
     // All three membership buttons post here, carrying their ids in the body,

@@ -91,8 +91,9 @@ $translator->setSchema($schemas['title']);
 Header::pageHeader($texts['title']);
 $translator->setSchema();
 
-Nav::add("Other");
+Nav::add("Navigation");
 VillageNav::render();
+Nav::add("Other");
 HookHandler::hook("stables-nav");
 
 list($name, $lcname) = MountName::getmountname();

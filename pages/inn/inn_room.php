@@ -51,6 +51,7 @@ if ($pay) {
         $output->output("Perhaps you'd like to get sufficient funds before you attempt to engage in local commerce.");
     }
 } else {
+    Nav::add("Actions");
     if ($session['user']['boughtroomtoday']) {
         $output->output("You already paid for a room for the day.");
         Nav::add("Go to room", "inn.php?op=room&pay=1");

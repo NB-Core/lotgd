@@ -42,36 +42,41 @@ final class PageRunner
      * @param array<string,string> $get
      * @param array<string,string> $post
      * @param array<string,mixed>  $globals Tables the page reads, by global name.
+     * @param array<string,mixed>  $settings Game settings beyond the harness defaults.
      */
     public static function withToken(
         string $page,
         int $superuser,
         array $get = [],
         array $post = [],
-        array $globals = []
+        array $globals = [],
+        array $settings = []
     ): PageOutcome {
-        return self::run($page, $superuser, $get, $post, self::TOKEN, $globals);
+        return self::run($page, $superuser, $get, $post, self::TOKEN, $globals, $settings);
     }
 
     /**
      * @param array<string,string> $get
      * @param array<string,string> $post
      * @param array<string,mixed>  $globals Tables the page reads, by global name.
+     * @param array<string,mixed>  $settings Game settings beyond the harness defaults.
      */
     public static function withoutToken(
         string $page,
         int $superuser,
         array $get = [],
         array $post = [],
-        array $globals = []
+        array $globals = [],
+        array $settings = []
     ): PageOutcome {
-        return self::run($page, $superuser, $get, $post, null, $globals);
+        return self::run($page, $superuser, $get, $post, null, $globals, $settings);
     }
 
     /**
      * @param array<string,string> $get
      * @param array<string,string> $post
      * @param array<string,mixed>  $globals Tables the page reads, by global name.
+     * @param array<string,mixed>  $settings Game settings beyond the harness defaults.
      */
     private static function run(
         string $page,
@@ -79,7 +84,8 @@ final class PageRunner
         array $get,
         array $post,
         ?string $token,
-        array $globals = []
+        array $globals = [],
+        array $settings = []
     ): PageOutcome {
         $root = dirname(__DIR__, 3);
 
@@ -93,6 +99,7 @@ final class PageRunner
             'token' => $token,
             'version' => self::version($root),
             'globals' => $globals,
+            'settings' => $settings,
         ];
 
         // The page's own markup goes to a file of this run's own rather than to

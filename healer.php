@@ -45,7 +45,7 @@ $cost *= $result['alterpct'];
 $cost = round($cost, 0);
 
 Translator::getInstance()->setSchema("nav");
-Nav::add("`bNavigation`b");
+Nav::add("Navigation");
 Translator::getInstance()->setSchema();
 
 $op = Http::get('op');
@@ -146,7 +146,7 @@ foreach ($companions as $name => $companion) {
 }
 //needs to be after the code
 Translator::getInstance()->setSchema("nav");
-Nav::add("`bNavigation`b");
+Nav::add("Navigation");
 if ($return == "") {
     if ($playerheal || $compheal) {
         Nav::add("F?Back to the Forest", "forest.php");
