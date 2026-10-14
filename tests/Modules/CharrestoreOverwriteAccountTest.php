@@ -180,6 +180,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
     public function testTablesThatCannotRollBackRefuseTheOverwrite(): void
     {
         self::loadModule();
+        $this->expectErrorLog();
         $this->connection->nonTransactionalTables = ['module_userprefs'];
 
         $restored = charrestore_restore_overwrite_account(
@@ -192,13 +193,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1, 'loggedin' => 1], $this->account());
         $this->assertSame(['newer' => 'keep', 'slots' => '3'], $this->prefs());
         $this->assertSame(0, $this->connection->commits);
-        $this->assertSame(
-            ['error'],
-            array_column(
-                $this->connection->fetchAllAssociative("SELECT severity FROM gamelog WHERE message LIKE 'Full account overwrite refused%InnoDB%'"),
-                'severity'
-            )
-        );
+        $this->assertRefusalFiled('InnoDB');
     }
 
     #[RunInSeparateProcess]
@@ -264,6 +259,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
     public function testTheAdministratorsOwnAccountIsRefused(): void
     {
         self::loadModule();
+        $this->expectErrorLog();
         $GLOBALS['session']['user']['acctid'] = 5;
 
         $this->assertFalse(charrestore_restore_overwrite_account(
@@ -273,6 +269,24 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         ));
         $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1, 'loggedin' => 1], $this->account());
         $this->assertSame(0, $this->connection->commits);
+        $this->assertRefusalFiled('the account running the restore', 5);
+    }
+
+    /**
+     * A refused overwrite is a denied admin action: one security entry, under
+     * the administrator who asked, naming the account and the reason.
+     */
+    private function assertRefusalFiled(string $reason, int $administrator = 9): void
+    {
+        $security = $this->connection->fetchAllAssociative(
+            "SELECT message, severity, who FROM gamelog WHERE category = 'security'"
+        );
+        $this->assertCount(1, $security);
+        $this->assertStringStartsWith('Character Restorer refused to overwrite an existing account', $security[0]['message']);
+        $this->assertStringContainsString('target_acctid=5', $security[0]['message']);
+        $this->assertStringContainsString($reason, $security[0]['message']);
+        $this->assertSame(['warning', $administrator], [$security[0]['severity'], (int) $security[0]['who']]);
+        $this->assertStringContainsString('[security] Character Restorer refused to overwrite', $this->errorLog());
     }
 
     #[RunInSeparateProcess]

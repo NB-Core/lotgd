@@ -235,6 +235,29 @@ function charrestore_restore_tables_transactional(object $connection): bool
 }
 
 /**
+ * File a refused full-account overwrite in the security log.
+ *
+ * Refusing to replace a live account is a denied admin action, so it is filed
+ * under the administrator who asked, with the account they named and why.
+ *
+ * @param array<string, mixed> $context Shared library context.
+ */
+function charrestore_restore_overwrite_refused(int $acctid, string $reason, array $context): void
+{
+    global $session;
+    \Lotgd\SecurityLog::event(
+        'Character Restorer refused to overwrite an existing account',
+        array(
+            'target_acctid' => $acctid,
+            'reason' => $reason,
+            'owner' => (string) ($context['owner'] ?? 'charrestore'),
+        ),
+        (int) ($session['user']['acctid'] ?? 0),
+        \Lotgd\GameLog::SEVERITY_WARNING
+    );
+}
+
+/**
  * Destructively restore account fields and preferences over the matching ID.
  *
  * The archived acctid is used only as the immutable update target and is never
@@ -263,10 +286,7 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         return false;
     }
     if ($acctid === (int) ($session['user']['acctid'] ?? 0)) {
-        charrestore_snapshot_log(
-            $context,
-            "Full account overwrite refused for acctid {$acctid}: it is the account running the restore."
-        );
+        charrestore_restore_overwrite_refused($acctid, 'it is the account running the restore', $context);
         return false;
     }
 
@@ -299,10 +319,10 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
     }
 
     if (!charrestore_restore_tables_transactional($connection)) {
-        charrestore_snapshot_log(
-            $context,
-            "Full account overwrite refused for acctid {$acctid}: the accounts and module_userprefs tables"
-                . ' must use a transactional storage engine such as InnoDB, or a failed restore could not be undone.'
+        charrestore_restore_overwrite_refused(
+            $acctid,
+            'accounts and module_userprefs must use a transactional storage engine such as InnoDB',
+            $context
         );
         return false;
     }
@@ -536,6 +556,7 @@ function charrestore_restore_finish(array $context, string $file, string $baseUr
                 static fn (int $id): bool => $id !== $targetId
             );
             if ($otherLoginOwners !== array()) {
+                charrestore_restore_overwrite_refused($targetId, 'the login belongs to another account', $context);
                 output('`$That login belongs to another account. The destructive overwrite was cancelled.`0');
                 return;
             }
