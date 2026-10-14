@@ -83,7 +83,7 @@ function lovers_dohook(string $hookname, array $args): array
         case "newday":
             set_module_pref("seenlover", 0);
             if ($session['user']['marriedto'] == 4294967295) {
-                $dk = $session['user']['dragonkills'];
+                $dk = (int) $session['user']['dragonkills'];
 
 
                 // 0.7 seemed to be a perfect balance of no loss of charm.

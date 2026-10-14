@@ -24,9 +24,9 @@ namespace {
         function output_notl(string $format, ...$args)
         {
             global $forms_output;
-            // Formatted only when there is something to format, as Output does:
-            // a line like "`%Yes!" is plain text, not a conversion.
-            $forms_output .= $args === [] ? $format : vsprintf($format, $args);
+            // As Output does: formatted only when there is something to format,
+            // and the colour code `% kept out of the conversion either way.
+            $forms_output .= $args === [] ? $format : vsprintf(str_replace('`%', '`%%', $format), $args);
         }
     }
 
@@ -42,9 +42,9 @@ namespace {
         function output(string $format, ...$args)
         {
             global $forms_output;
-            // Formatted only when there is something to format, as Output does:
-            // a line like "`%Yes!" is plain text, not a conversion.
-            $forms_output .= $args === [] ? $format : vsprintf($format, $args);
+            // As Output does: formatted only when there is something to format,
+            // and the colour code `% kept out of the conversion either way.
+            $forms_output .= $args === [] ? $format : vsprintf(str_replace('`%', '`%%', $format), $args);
         }
     }
 

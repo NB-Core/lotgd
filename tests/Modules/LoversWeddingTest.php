@@ -79,6 +79,33 @@ final class LoversWeddingTest extends TestCase
         return false;
     }
 
+    /**
+     * The new day costs a married player charm, scaled by dragon kills. A
+     * player at one charm is always left, which posts news from lovers.php.
+     * The dragon kills arrive as a string here, as an older module can write
+     * them back, and sqrt() takes no string under strict_types.
+     */
+    #[RunInSeparateProcess]
+    public function testANewDayCanEndAMarriage(): void
+    {
+        self::loadModule();
+        self::proposeAs(SEX_FEMALE, SEX_MALE);
+        global $session;
+        $session['user']['marriedto'] = 4294967295;
+        $session['user']['charm'] = 1;
+        $session['user']['dragonkills'] = '16';
+
+        lovers_dohook('newday', []);
+
+        $this->assertSame(0, $session['user']['marriedto']);
+        $this->assertSame(0, $session['user']['charm']);
+        $left = false;
+        foreach (Database::getDoctrineConnection()->executeStatements as $statement) {
+            $left = $left || str_contains((string) ($statement['params']['newstext'] ?? ''), 'has left');
+        }
+        $this->assertTrue($left);
+    }
+
     #[RunInSeparateProcess]
     public function testMarryingSethPostsTheNewsAndGrantsTheBuff(): void
     {
