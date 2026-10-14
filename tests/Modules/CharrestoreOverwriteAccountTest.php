@@ -159,13 +159,14 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         $this->assertSame(['newer' => 'keep', 'slots' => '3'], $this->prefs());
         $this->assertFalse($this->connection->isTransactionActive());
         $this->assertSame(0, $this->connection->commits);
-        $this->assertSame(
-            ['error'],
-            array_column(
-                $this->connection->fetchAllAssociative("SELECT severity FROM gamelog WHERE message LIKE 'Full account overwrite failed%'"),
-                'severity'
-            ),
-            'the failure is logged after the rollback, so the entry survives it'
+        $logged = $this->connection->fetchAllAssociative('SELECT message, severity FROM gamelog');
+        $this->assertCount(1, $logged, 'the failure is logged after the rollback, so the entry survives it');
+        $this->assertSame('error', $logged[0]['severity']);
+        $this->assertStringStartsWith('Full account overwrite failed for acctid 5; changes were rolled back', $logged[0]['message']);
+        $this->assertStringContainsString(
+            'The preference could not be written.',
+            $logged[0]['message'],
+            'the reason, which a row written inside the transaction would have lost, comes with it'
         );
     }
 

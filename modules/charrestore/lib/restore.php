@@ -39,9 +39,13 @@ function charrestore_restore_conflicts(array $account, string $login = ''): arra
  * Restore preference keys with an upsert, falling back to the host preference API.
  * Unrelated keys are deliberately never deleted.
  *
+ * Inside a transaction the caller owns, the reasons a preference failed are
+ * returned in `problems` instead of being logged, since the rollback would
+ * take the log entry with it.
+ *
  * @param array<string, mixed> $prefs Module-keyed preference payload.
  * @param array<string, mixed> $context Shared library context.
- * @return array{applied:bool, used_fallback:bool}
+ * @return array{applied:bool, used_fallback:bool, problems:list<string>}
  */
 function charrestore_restore_preferences(int $acctid, array $prefs, array $context): array
 {
@@ -49,6 +53,11 @@ function charrestore_restore_preferences(int $acctid, array $prefs, array $conte
     if (function_exists('charrestore_restore_prefs_upsert')) {
         return charrestore_restore_prefs_upsert(charrestore_restore_connection(), $acctid, $prefs);
     }
+    // Inside the shared overwrite transaction a game-log row would be rolled
+    // back with the writes it explains; the overwrite logs these afterwards.
+    $connection = charrestore_restore_connection();
+    $shared = method_exists($connection, 'isTransactionActive') && $connection->isTransactionActive();
+    $problems = array();
     $complete = true;
     foreach ($prefs as $module => $values) {
         if (!is_string($module) || $module === '' || !is_array($values)) {
@@ -68,11 +77,16 @@ function charrestore_restore_preferences(int $acctid, array $prefs, array $conte
                 set_module_pref($setting, (string) $value, $module, $acctid);
             } catch (Throwable $exception) {
                 $complete = false;
-                charrestore_snapshot_log($context, "Preference restore failed for {$module}/{$setting}: " . $exception->getMessage());
+                $problem = "Preference restore failed for {$module}/{$setting}: " . $exception->getMessage();
+                if ($shared) {
+                    $problems[] = $problem;
+                } else {
+                    charrestore_snapshot_log($context, $problem);
+                }
             }
         }
     }
-    return array('applied' => $complete, 'used_fallback' => true);
+    return array('applied' => $complete, 'used_fallback' => true, 'problems' => $problems);
 }
 
 /**
@@ -292,7 +306,12 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         );
         $preferenceResult = charrestore_restore_preferences($acctid, $prefs, $context);
         if (!$preferenceResult['applied']) {
-            throw new RuntimeException('One or more archived preferences could not be restored.');
+            // The reasons were held back from the game log, which would have
+            // lost them in the rollback; this exception carries them past it.
+            throw new RuntimeException(implode(' ', array_merge(
+                array('One or more archived preferences could not be restored.'),
+                (array) ($preferenceResult['problems'] ?? array())
+            )));
         }
         $connection->commit();
     } catch (Throwable $exception) {
