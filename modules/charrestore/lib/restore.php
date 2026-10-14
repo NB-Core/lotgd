@@ -191,6 +191,9 @@ function charrestore_restore_account(array $account, array $context): int
  * @param array<string, mixed> $account Snapshot account data.
  * @param array<string, mixed> $prefs Snapshot module preferences.
  * @param array<string, mixed> $context Shared library context.
+ *
+ * @return bool True once the overwrite is committed, even if the security log
+ *              could not take its entry; false when nothing was changed.
  */
 function charrestore_restore_overwrite_account(array $account, array $prefs, array $context): bool
 {
@@ -252,19 +255,6 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         if ($startedTransaction) {
             $connection->commit();
         }
-        // Credentials, e-mail and superuser flags come from the snapshot too,
-        // so who replaced which live account belongs in the security log.
-        global $session;
-        \Lotgd\SecurityLog::event(
-            'Character Restorer overwrote an existing account with a snapshot',
-            array(
-                'target_acctid' => $acctid,
-                'owner' => (string) ($context['owner'] ?? 'charrestore'),
-            ),
-            (int) ($session['user']['acctid'] ?? 0),
-            \Lotgd\GameLog::SEVERITY_WARNING
-        );
-        return true;
     } catch (Throwable $exception) {
         if ($startedTransaction) {
             $transactionActive = !method_exists($connection, 'isTransactionActive')
@@ -279,6 +269,31 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         );
         return false;
     }
+
+    // Credentials, e-mail and superuser flags come from the snapshot too,
+    // so who replaced which live account belongs in the security log. The
+    // overwrite is committed by now: a log that cannot take the entry must
+    // not make it look rolled back.
+    global $session;
+    try {
+        \Lotgd\SecurityLog::event(
+            'Character Restorer overwrote an existing account with a snapshot',
+            array(
+                'target_acctid' => $acctid,
+                'owner' => (string) ($context['owner'] ?? 'charrestore'),
+            ),
+            (int) ($session['user']['acctid'] ?? 0),
+            \Lotgd\GameLog::SEVERITY_WARNING
+        );
+    } catch (Throwable $exception) {
+        // SecurityLog writes PHP's error log before the game log, so the event
+        // itself is on record there; this says the game log row is missing.
+        error_log(
+            "[charrestore] Account {$acctid} was overwritten, but the game log refused its security entry: "
+                . $exception->getMessage()
+        );
+    }
+    return true;
 }
 
 /** Return the per-session CSRF token used by shared synchronous restore forms. */

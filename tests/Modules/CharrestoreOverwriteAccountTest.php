@@ -26,7 +26,6 @@ use PHPUnit\Framework\TestCase;
 final class CharrestoreOverwriteAccountTest extends TestCase
 {
     private MysqlishConnection $connection;
-    private string $errorLog = '';
 
     protected function setUp(): void
     {
@@ -54,18 +53,22 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         Database::$doctrineConnection = $connection;
         // The administrator running the restore.
         $GLOBALS['session'] = ['user' => ['acctid' => 9]];
-        // SecurityLog writes its line to PHP's error log as well as the game log.
-        $this->errorLog = (string) tempnam(sys_get_temp_dir(), 'charrestore-test-');
-        ini_set('error_log', $this->errorLog);
     }
 
     protected function tearDown(): void
     {
         Database::resetDoctrineConnection();
         unset($GLOBALS['session']);
-        if ($this->errorLog !== '' && is_file($this->errorLog)) {
-            unlink($this->errorLog);
-        }
+    }
+
+    /**
+     * What reached PHP's error log during the test so far. PHPUnit points the
+     * log at a capture file of its own for every test; SecurityLog writes its
+     * line there as well as to the game log.
+     */
+    private function errorLog(): string
+    {
+        return (string) file_get_contents((string) ini_get('error_log'));
     }
 
     private static function loadModule(): void
@@ -116,6 +119,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
     public function testTheSnapshotIsWrittenOverTheAccountItCameFrom(): void
     {
         self::loadModule();
+        $this->expectErrorLog();
 
         $restored = charrestore_restore_overwrite_account(
             self::snapshotAccount(),
@@ -134,6 +138,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         $this->assertCount(1, $security, 'replacing a live account is a security outcome');
         $this->assertStringContainsString('target_acctid=5', $security[0]['message']);
         $this->assertSame(['warning', 9], [$security[0]['severity'], (int) $security[0]['who']], 'filed under the admin who did it');
+        $this->assertStringContainsString('[security] Character Restorer overwrote an existing account', $this->errorLog());
     }
 
     #[RunInSeparateProcess]
@@ -162,6 +167,32 @@ final class CharrestoreOverwriteAccountTest extends TestCase
             ),
             'the failure is logged after the rollback, so the entry survives it'
         );
+    }
+
+    /**
+     * The security entry is written after the commit. A game log that cannot
+     * take it does not undo the overwrite, so it must not be reported as one
+     * that was rolled back.
+     */
+    #[RunInSeparateProcess]
+    public function testAGameLogThatRefusesTheSecurityEntryDoesNotTurnTheOverwriteIntoAFailure(): void
+    {
+        self::loadModule();
+        $this->expectErrorLog();
+        $this->connection->executeStatement('DROP TABLE gamelog');
+
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore']
+        );
+
+        $this->assertTrue($restored, 'the overwrite was committed');
+        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Then', 'gold' => 250], $this->account());
+        $this->assertSame(1, $this->connection->commits);
+        $log = $this->errorLog();
+        $this->assertStringContainsString('[security] Character Restorer overwrote an existing account', $log, 'the event is on record');
+        $this->assertStringContainsString('Account 5 was overwritten, but the game log refused its security entry', $log);
     }
 
     /**
