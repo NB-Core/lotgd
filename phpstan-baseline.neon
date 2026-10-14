@@ -241,18 +241,6 @@ parameters:
 			path: modules.php
 
 		-
-			message: '#^Undefined variable\: \$acctid_acc$#'
-			identifier: variable.undefined
-			count: 1
-			path: modules/charrestore.php
-
-		-
-			message: '#^Variable \$new might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: modules/charrestore.php
-
-		-
 			message: '#^Variable \$battle might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1

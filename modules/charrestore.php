@@ -359,6 +359,7 @@ function charrestore_run(): void
         $d = dir($path);
         $count = 0;
         //fetch them to sort the directory
+        $new = array();
         while (($entry = $d->read()) !== false) {
             $new[] = $entry;
         }
@@ -386,7 +387,8 @@ function charrestore_run(): void
                 continue; //already hashed and salted or superlong email
             } else {
                 //found one hit, now count up and convert if necessary
-                $dks_acc = $content['account']['dragonkills'];
+                $acctid_acc = (int) ($content['account']['acctid'] ?? 0);
+                $dks_acc = (int) ($content['account']['dragonkills'] ?? 0);
                 if ($convert == 1) {
                     //convert this one
                     $content['account']['emailaddress'] = charrestore_gethash($email_acc);
@@ -450,9 +452,14 @@ function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $
     $hadErrors = false;
     if ($uniqueKeyReady) {
         $prefsTable = Database::prefix('module_userprefs');
+        // A shared full-account overwrite may already own the transaction. In
+        // that case participate in it rather than nesting or committing early.
+        $ownsTransaction = !$conn->isTransactionActive();
         try {
             // Keep upsert writes atomic so prefs are restored all-or-nothing.
-            $conn->beginTransaction();
+            if ($ownsTransaction) {
+                $conn->beginTransaction();
+            }
             foreach ($prefs as $moduleKey => $values) {
                 $modulename = charrestore_extract_modulename($moduleKey);
                 if ($modulename === null) {
@@ -498,19 +505,31 @@ function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $
                     );
                 }
             }
-            $conn->commit();
+            if ($ownsTransaction) {
+                $conn->commit();
+            }
             return ['unique_key_ready' => true, 'used_fallback' => false, 'applied' => ! $hadErrors];
         } catch (\Throwable $e) {
-            if ($conn->isTransactionActive()) {
+            if ($ownsTransaction && $conn->isTransactionActive()) {
                 $conn->rollBack();
             }
             GameLog::log(
-                sprintf('Transactional upsert failed; switching to fallback restore: %s', $e->getMessage()),
+                sprintf(
+                    $ownsTransaction
+                        ? 'Transactional upsert failed; switching to fallback restore: %s'
+                        : 'Upsert failed inside the shared account-restore transaction: %s',
+                    $e->getMessage()
+                ),
                 'charrestore',
                 false,
                 null,
-                GameLog::SEVERITY_WARNING
+                $ownsTransaction ? GameLog::SEVERITY_WARNING : GameLog::SEVERITY_ERROR
             );
+            // The caller must roll back its account update as well; a fallback
+            // write here would escape that all-or-nothing transaction.
+            if (!$ownsTransaction) {
+                return ['unique_key_ready' => true, 'used_fallback' => false, 'applied' => false];
+            }
         }
     }
 
