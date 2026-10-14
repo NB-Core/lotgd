@@ -138,6 +138,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         );
         $this->assertCount(1, $security, 'replacing a live account is a security outcome');
         $this->assertStringContainsString('target_acctid=5', $security[0]['message']);
+        $this->assertStringContainsString('transactional=yes', $security[0]['message']);
         $this->assertSame(['warning', 9], [$security[0]['severity'], (int) $security[0]['who']], 'filed under the admin who did it');
         $this->assertStringContainsString('[security] Character Restorer overwrote an existing account', $this->errorLog());
     }
@@ -173,11 +174,11 @@ final class CharrestoreOverwriteAccountTest extends TestCase
 
     /**
      * MySQL does not roll back a MyISAM table, and an installation upgraded
-     * from an old release can still have one. Where the rollback could not be
-     * kept, nothing is written at all.
+     * from an old release can still have one. The restore is not withheld
+     * there; the security entry records that it could not have been undone.
      */
     #[RunInSeparateProcess]
-    public function testTablesThatCannotRollBackRefuseTheOverwrite(): void
+    public function testTablesThatCannotRollBackStillOverwrite(): void
     {
         self::loadModule();
         $this->expectErrorLog();
@@ -189,11 +190,52 @@ final class CharrestoreOverwriteAccountTest extends TestCase
             ['owner' => 'charrestore']
         );
 
+        $this->assertTrue($restored);
+        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Then', 'gold' => 250, 'loggedin' => 0], $this->account());
+        $this->assertSame(['newer' => 'keep', 'slots' => '7'], $this->prefs());
+        $security = $this->connection->fetchAllAssociative("SELECT message FROM gamelog WHERE category = 'security'");
+        $this->assertCount(1, $security);
+        $this->assertStringStartsWith('Character Restorer overwrote an existing account', $security[0]['message']);
+        $this->assertStringContainsString('transactional=no', $security[0]['message']);
+    }
+
+    /**
+     * Where a failure cannot be rolled back, part of the snapshot, credentials
+     * included, may already be written. The failure must not read as "nothing
+     * changed", and it is a security outcome.
+     *
+     * SQLite does roll back, so what is checked is what gets reported.
+     */
+    #[RunInSeparateProcess]
+    public function testAFailureOnTablesThatCannotRollBackSaysSo(): void
+    {
+        self::loadModule();
+        $this->expectErrorLog();
+        $this->connection->nonTransactionalTables = ['accounts'];
+        $this->connection->failPreferenceWrites = true;
+
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore']
+        );
+
         $this->assertFalse($restored);
-        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1, 'loggedin' => 1], $this->account());
-        $this->assertSame(['newer' => 'keep', 'slots' => '3'], $this->prefs());
-        $this->assertSame(0, $this->connection->commits);
-        $this->assertRefusalFiled('InnoDB');
+        $failure = $this->connection->fetchAllAssociative(
+            "SELECT message, severity FROM gamelog WHERE message LIKE 'Full account overwrite failed%'"
+        );
+        $this->assertCount(1, $failure);
+        $this->assertSame('error', $failure[0]['severity']);
+        $this->assertStringContainsString('cannot roll back, so part of the snapshot may already be written', $failure[0]['message']);
+        $this->assertStringNotContainsString('changes were rolled back', $failure[0]['message']);
+        $this->assertStringContainsString('The preference could not be written.', $failure[0]['message']);
+        $security = $this->connection->fetchAllAssociative(
+            "SELECT message, severity, who FROM gamelog WHERE category = 'security'"
+        );
+        $this->assertCount(1, $security);
+        $this->assertStringStartsWith('Character Restorer overwrite failed on tables that cannot roll back', $security[0]['message']);
+        $this->assertStringContainsString('target_acctid=5', $security[0]['message']);
+        $this->assertSame(['error', 9], [$security[0]['severity'], (int) $security[0]['who']]);
     }
 
     #[RunInSeparateProcess]
