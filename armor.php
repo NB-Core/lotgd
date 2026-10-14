@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\Http;
@@ -80,12 +81,19 @@ if ($op == "") {
     }
     $translator->setSchema();
 
-    $sql = "SELECT max(level) AS level FROM " . Database::prefix("armor") . " WHERE level<=" . $session['user']['dragonkills'];
-    $result = Database::query($sql);
+    $connection = Database::getDoctrineConnection();
+    $result = $connection->executeQuery(
+        "SELECT max(level) AS level FROM " . Database::prefix("armor") . " WHERE level <= :dragonkills",
+        ['dragonkills' => (int) $session['user']['dragonkills']],
+        ['dragonkills' => ParameterType::INTEGER]
+    );
     $row = Database::fetchAssoc($result);
 
-    $sql = "SELECT * FROM " . Database::prefix("armor") . " WHERE level={$row['level']} ORDER BY value";
-    $result = Database::query($sql);
+    $result = $connection->executeQuery(
+        "SELECT * FROM " . Database::prefix("armor") . " WHERE level = :level ORDER BY value",
+        ['level' => (int) ($row['level'] ?? 0)],
+        ['level' => ParameterType::INTEGER]
+    );
 
     $translator->setSchema($schemas['tradein']);
     if (is_array($texts['tradein'])) {
@@ -152,10 +160,14 @@ if ($op == "") {
     Nav::add("Navigation");
     VillageNav::render();
 } elseif ($op == "buy") {
-    $idRequest = Http::get('id');
-    $id = is_string($idRequest) ? $idRequest : '';
-    $sql = "SELECT * FROM " . Database::prefix("armor") . " WHERE armorid='$id'";
-    $result = Database::query($sql);
+    // The id came into the query as the raw request string, quoted but not
+    // escaped; an armour id is an integer, and it is bound as one now.
+    $id = (int) Http::get('id');
+    $result = Database::getDoctrineConnection()->executeQuery(
+        "SELECT * FROM " . Database::prefix("armor") . " WHERE armorid = :id",
+        ['id' => $id],
+        ['id' => ParameterType::INTEGER]
+    );
     if (Database::numRows($result) == 0) {
         $translator->setSchema($schemas['nosuchweapon']);
         $output->output('%s', $texts['nosuchweapon']);

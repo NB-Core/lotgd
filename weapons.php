@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
@@ -80,12 +81,19 @@ if ($op == "") {
     $translator->setSchema();
 
 
-    $sql = "SELECT max(level) AS level FROM " .  Database::prefix("weapons") . " WHERE level<=" . (int)$session['user']['dragonkills'];
-    $result = Database::query($sql);
+    $connection = Database::getDoctrineConnection();
+    $result = $connection->executeQuery(
+        "SELECT max(level) AS level FROM " . Database::prefix("weapons") . " WHERE level <= :dragonkills",
+        ['dragonkills' => (int) $session['user']['dragonkills']],
+        ['dragonkills' => ParameterType::INTEGER]
+    );
     $row = Database::fetchAssoc($result);
 
-    $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE level = " . (int)$row['level'] . " ORDER BY damage ASC";
-    $result = Database::query($sql);
+    $result = $connection->executeQuery(
+        "SELECT * FROM " . Database::prefix("weapons") . " WHERE level = :level ORDER BY damage ASC",
+        ['level' => (int) ($row['level'] ?? 0)],
+        ['level' => ParameterType::INTEGER]
+    );
 
     $translator->setSchema($schemas['tradein']);
     if (is_array($texts['tradein'])) {
@@ -152,8 +160,11 @@ if ($op == "") {
     VillageNav::render();
 } elseif ($op == "buy") {
     $id = (int) Http::get("id");
-    $sql = "SELECT * FROM " . Database::prefix("weapons") . " WHERE weaponid='$id'";
-    $result = Database::query($sql);
+    $result = Database::getDoctrineConnection()->executeQuery(
+        "SELECT * FROM " . Database::prefix("weapons") . " WHERE weaponid = :id",
+        ['id' => $id],
+        ['id' => ParameterType::INTEGER]
+    );
     if (Database::numRows($result) == 0) {
         $translator->setSchema($schemas['nosuchweapon']);
         $output->output('%s', $texts['nosuchweapon']);

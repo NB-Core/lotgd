@@ -1,2 +1,415 @@
 parameters:
-        ignoreErrors: []
+	ignoreErrors:
+		-
+			message: '#^Variable \$alive might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: battle.php
+
+		-
+			message: '#^Variable \$enemiesflown might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: battle.php
+
+		-
+			message: '#^Variable \$leaderisdead might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: battle.php
+
+		-
+			message: '#^Variable \$newcompanions might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: battle.php
+
+		-
+			message: '#^Variable \$config might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: common.php
+
+		-
+			message: '#^Variable \$notified might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: common.php
+
+		-
+			message: '#^Variable \$smsmessage might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: common.php
+
+		-
+			message: '#^Variable \$conf might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: companions.php
+
+		-
+			message: '#^Variable \$DB_DATACACHEPATH might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: configuration.php
+
+		-
+			message: '#^Variable \$DB_USEDATACACHE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: configuration.php
+
+		-
+			message: '#^Variable \$info might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: configuration.php
+
+		-
+			message: '#^Variable \$setup_extended might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: configuration.php
+
+		-
+			message: '#^Constant LINK not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: creatures.php
+
+		-
+			message: '#^Static method Lotgd\\MySQL\\Database\:\:error\(\) invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: creatures.php
+
+		-
+			message: '#^Variable \$creaturestats might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: creatures.php
+
+		-
+			message: '#^Variable \$badguy might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: dragon.php
+
+		-
+			message: '#^Variable \$defeat might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: dragon.php
+
+		-
+			message: '#^Variable \$victory might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: dragon.php
+
+		-
+			message: '#^Variable \$badguy might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: forest.php
+
+		-
+			message: '#^Variable \$companions might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: forest.php
+
+		-
+			message: '#^Variable \$defeat might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: forest.php
+
+		-
+			message: '#^Variable \$newenemies might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: forest.php
+
+		-
+			message: '#^Variable \$stack might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: forest.php
+
+		-
+			message: '#^Variable \$victory might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: forest.php
+
+		-
+			message: '#^Variable \$badguy might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: graveyard.php
+
+		-
+			message: '#^Variable \$defeat might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: graveyard.php
+
+		-
+			message: '#^Variable \$victory might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: graveyard.php
+
+		-
+			message: '#^Variable \$companions might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: healer.php
+
+		-
+			message: '#^Variable \$table in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: hof.php
+
+		-
+			message: '#^Variable \$logd_version might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: home.php
+
+		-
+			message: '#^Result of static method Lotgd\\Translator\:\:enableTranslation\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
+			path: lib/translator.php
+
+		-
+			message: '#^Result of static method Lotgd\\Translator\:\:tlschema\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
+			path: lib/translator.php
+
+		-
+			message: '#^Result of static method Lotgd\\Translator\:\:translatorCheckCollectTexts\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
+			path: lib/translator.php
+
+		-
+			message: '#^Result of static method Lotgd\\Translator\:\:translatorSetup\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
+			path: lib/translator.php
+
+		-
+			message: '#^Variable \$from might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: list.php
+
+		-
+			message: '#^Variable \$pageoffset might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: list.php
+
+		-
+			message: '#^Variable \$to might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: list.php
+
+		-
+			message: '#^Variable \$companions might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: mercenarycamp.php
+
+		-
+			message: '#^Variable \$comment in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: moderate.php
+
+		-
+			message: '#^Variable \$temp in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: modules.php
+
+		-
+			message: '#^Undefined variable\: \$acctid_acc$#'
+			identifier: variable.undefined
+			count: 1
+			path: modules/charrestore.php
+
+		-
+			message: '#^Variable \$new might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: modules/charrestore.php
+
+		-
+			message: '#^Variable \$battle might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: modules/cities/run.php
+
+		-
+			message: '#^Variable \$defeat might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: modules/cities/run.php
+
+		-
+			message: '#^Variable \$newenemies might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: modules/cities/run.php
+
+		-
+			message: '#^Variable \$victory might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: modules/cities/run.php
+
+		-
+			message: '#^Function rawoutput invoked with 2 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 3
+			path: modules/graveyard_haunt.php
+
+		-
+			message: '#^Variable \$msg might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: modules/graveyard_haunt.php
+
+		-
+			message: '#^Function mpdf_downloader_setup\(\) has invalid return type Mpdf\\Mpdf\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/mpdf_downloader.php
+
+		-
+			message: '#^Instantiated class Mpdf\\Mpdf not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/mpdf_downloader.php
+
+		-
+			message: '#^Static method Lotgd\\Motd\:\:motdPollForm\(\) invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: motd.php
+
+		-
+			message: '#^Variable \$color might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: newday.php
+
+		-
+			message: '#^Variable \$state might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: newday.php
+
+		-
+			message: '#^Variable \$params on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: pages/bans/case_removeban.php
+
+		-
+			message: '#^Variable \$types on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: pages/bans/case_removeban.php
+
+		-
+			message: '#^Variable \$idParam in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: pages/mail/case_read.php
+
+		-
+			message: '#^Variable \$statusImage on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: pages/mail/case_read.php
+
+		-
+			message: '#^Variable \$badguy might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: pvp.php
+
+		-
+			message: '#^Variable \$defeat might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pvp.php
+
+		-
+			message: '#^Variable \$options might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pvp.php
+
+		-
+			message: '#^Variable \$victory might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pvp.php
+
+		-
+			message: '#^Static method Lotgd\\MySQL\\Database\:\:error\(\) invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: rawsql.php
+
+		-
+			message: '#^Variable \$row might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: titleedit.php
+
+		-
+			message: '#^Variable \$attackstack might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: train.php
+
+		-
+			message: '#^Variable \$badguy might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: train.php
+
+		-
+			message: '#^Variable \$companions might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: train.php
+
+		-
+			message: '#^Constant LANGUAGE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: translatortool.php
+
+		-
+			message: '#^Variable \$logd_version might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: untranslated.php
+
+		-
+			message: '#^Variable \$userinfo might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: user.php

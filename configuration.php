@@ -94,7 +94,7 @@ switch ($type_setting) {
                             "Setting %s to %s (Saved: %s)`n",
                             $key,
                             $value,
-                            $hasSaved ? "`2Yes`0" : "`$No`0"
+                            $hasSaved ? "`2Yes`0" : '`$No`0'
                         );
                         gamelog("`@Changed core setting (extended)`^$key`@ from `#" . substr($old[$key], 25) . "...`@ to `&" . substr($value, 25) . "...`0", "settings");
                         // Notify every module
@@ -219,7 +219,7 @@ switch ($type_setting) {
                             continue;
                         }
                         $hasSaved = $settings->saveSetting($key, $value);
-                        $output->output("Setting %s to %s (Saved: %s)`n", $key, $value, $hasSaved ? "`2Yes`0" : "`$No`0");
+                        $output->output("Setting %s to %s (Saved: %s)`n", $key, $value, $hasSaved ? "`2Yes`0" : '`$No`0');
                         gamelog("`@Changed core setting `^$key`@ from `#{$old[$key]}`@ to `&$value`0", "settings");
                         // Notify every module
                         HookHandler::hook(
