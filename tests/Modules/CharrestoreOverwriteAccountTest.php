@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
 final class CharrestoreOverwriteAccountTest extends TestCase
 {
     private MysqlishConnection $connection;
+    private string $errorLog = '';
 
     protected function setUp(): void
     {
@@ -51,11 +52,20 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         $connection->executeStatement("INSERT INTO module_userprefs VALUES (5, 'inventory', 'slots', '3'), (5, 'inventory', 'newer', 'keep')");
 
         Database::$doctrineConnection = $connection;
+        // The administrator running the restore.
+        $GLOBALS['session'] = ['user' => ['acctid' => 9]];
+        // SecurityLog writes its line to PHP's error log as well as the game log.
+        $this->errorLog = (string) tempnam(sys_get_temp_dir(), 'charrestore-test-');
+        ini_set('error_log', $this->errorLog);
     }
 
     protected function tearDown(): void
     {
         Database::resetDoctrineConnection();
+        unset($GLOBALS['session']);
+        if ($this->errorLog !== '' && is_file($this->errorLog)) {
+            unlink($this->errorLog);
+        }
     }
 
     private static function loadModule(): void
@@ -118,6 +128,12 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         $this->assertSame(['newer' => 'keep', 'slots' => '7'], $this->prefs(), 'a preference the snapshot does not know stays');
         $this->assertFalse($this->connection->isTransactionActive());
         $this->assertSame(1, $this->connection->commits, 'one transaction, committed once');
+        $security = $this->connection->fetchAllAssociative(
+            "SELECT message, severity, who FROM gamelog WHERE category = 'security'"
+        );
+        $this->assertCount(1, $security, 'replacing a live account is a security outcome');
+        $this->assertStringContainsString('target_acctid=5', $security[0]['message']);
+        $this->assertSame(['warning', 9], [$security[0]['severity'], (int) $security[0]['who']], 'filed under the admin who did it');
     }
 
     #[RunInSeparateProcess]
@@ -134,6 +150,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
 
         $this->assertFalse($restored);
         $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1], $this->account());
+        $this->assertSame([], $this->connection->fetchAllAssociative("SELECT logid FROM gamelog WHERE category = 'security'"));
         $this->assertSame(['newer' => 'keep', 'slots' => '3'], $this->prefs());
         $this->assertFalse($this->connection->isTransactionActive());
         $this->assertSame(0, $this->connection->commits);
@@ -144,6 +161,22 @@ final class CharrestoreOverwriteAccountTest extends TestCase
                 'severity'
             ),
             'the failure is logged after the rollback, so the entry survives it'
+        );
+    }
+
+    /**
+     * Replacing a live account is a destructive operation, and AGENTS.md has
+     * those triggered by a post button with a confirmation, never by a box
+     * ticked in a form that otherwise does something harmless.
+     */
+    public function testTheOverwriteIsAConfirmedButtonOfItsOwn(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/modules/charrestore/lib/restore.php');
+
+        $this->assertStringNotContainsString("name='overwriteaccount'", $source);
+        $this->assertMatchesRegularExpression(
+            "/Forms::postButton\\([^;]*translate_inline\\('Overwrite the current user[^;]*SCOPE_CHARRESTORE,\\s*array\\('overwriteaccount' => '1'\\)/s",
+            $source
         );
     }
 

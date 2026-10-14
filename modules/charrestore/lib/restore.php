@@ -252,6 +252,18 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         if ($startedTransaction) {
             $connection->commit();
         }
+        // Credentials, e-mail and superuser flags come from the snapshot too,
+        // so who replaced which live account belongs in the security log.
+        global $session;
+        \Lotgd\SecurityLog::event(
+            'Character Restorer overwrote an existing account with a snapshot',
+            array(
+                'target_acctid' => $acctid,
+                'owner' => (string) ($context['owner'] ?? 'charrestore'),
+            ),
+            (int) ($session['user']['acctid'] ?? 0),
+            \Lotgd\GameLog::SEVERITY_WARNING
+        );
         return true;
     } catch (Throwable $exception) {
         if ($startedTransaction) {
@@ -373,14 +385,26 @@ function charrestore_restore_render_preview(array $context, string $file, string
         output("`\$The snapshot account ID already exists on this server.`n");
         rawoutput("<label><input type='checkbox' name='overwriteprefs' value='1'>" . htmlentities(translate_inline('Overwrite prefs'), ENT_QUOTES, 'UTF-8') . '</label><br>');
         output('`#This overwrites matching preference keys without deleting unrelated keys.`0`n');
-        rawoutput("<label><input type='checkbox' name='overwriteaccount' value='1'>" . htmlentities(translate_inline('Restore anyway over the current user'), ENT_QUOTES, 'UTF-8') . '</label><br>');
-        output('`$Destructive: this restores the snapshot account fields and preferences over the current user while preserving the existing account ID.`0`n');
     }
     output('`n`#Some user info:`0`n');
     foreach (array('login' => 'Login', 'name' => 'Name', 'acctid' => 'Account ID', 'laston' => 'Last On', 'emailaddress' => 'Email', 'dragonkills' => 'DKs', 'level' => 'Level') as $key => $label) {
         output('`^%s: `#%s`n', translate_inline($label), (string) ($snapshot['account'][$key] ?? ''));
     }
     rawoutput("<input type='submit' value='" . htmlentities(translate_inline('Do the restore'), ENT_QUOTES, 'UTF-8') . "' class='button'></form>");
+    // The destructive overwrite is a button of its own, with a confirmation,
+    // rather than a box ticked in the form above. It is offered only when the
+    // snapshot's login is not another account's, since it would be refused.
+    if ($conflicts['acctid_exists'] && $otherLoginOwners === array()) {
+        output('`n`$Destructive: this restores the snapshot account fields and preferences over the current user while preserving the existing account ID.`0`n');
+        rawoutput(\Lotgd\Forms::postButton(
+            $url,
+            translate_inline('Restore anyway over the current user'),
+            translate_inline('Overwrite the current user with this snapshot? Their account fields and preferences are replaced.'),
+            'button',
+            \Lotgd\Security\Csrf::SCOPE_CHARRESTORE,
+            array('overwriteaccount' => '1')
+        ));
+    }
 }
 
 /** Perform a CSRF-protected new restore, preference-only restore, or full overwrite. */
@@ -405,7 +429,7 @@ function charrestore_restore_finish(array $context, string $file, string $baseUr
         $preferencesOnly = (int) httppost('overwriteprefs') === 1;
         $fullOverwrite = (int) httppost('overwriteaccount') === 1;
         if ($preferencesOnly === $fullOverwrite) {
-            output('`$The account ID already exists. Explicitly select either Overwrite prefs or the destructive full-account overwrite, but not both.`0');
+            output('`$The account ID already exists. Select Overwrite prefs, or use the separate button to restore over the current user.`0');
             return;
         }
         if ($fullOverwrite) {
