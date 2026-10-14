@@ -117,13 +117,20 @@ if (Database::numRows($result) == 0) {
     $output->output("`1`b`c Nothing of note happened this day.  All in all a boring day. `c`b`0");
 }
 $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
-Nav::add("Navigation");
 if (!$session['user']['loggedin']) {
+    Nav::add("Navigation");
     Nav::add("Login Screen", "index.php");
 } elseif ($session['user']['alive']) {
+    Nav::add("Navigation");
     VillageNav::render();
 } else {
     $translator->setSchema("nav");
+    // The dead get their way back under a heading of its own.
+    if ($session['user']['sex'] == 1) {
+        Nav::add("`!`bYou're dead, Jane!`b`0");
+    } else {
+        Nav::add("`!`bYou're dead, Jim!`b`0");
+    }
     Nav::add("S?Land of Shades", "shades.php");
     Nav::add("G?The Graveyard", "graveyard.php");
     Nav::add("Log Out");
