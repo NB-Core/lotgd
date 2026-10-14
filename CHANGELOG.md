@@ -10,6 +10,10 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ## [Unreleased]
 
+### Added
+
+- *Character Restorer* (`charrestore`) can restore a snapshot over the account it was taken from while that account still exists. *Restore anyway over the current user* writes the snapshot's account fields and module preferences over it and keeps its id, in one transaction: a preference that cannot be written takes the account update back with it. It is a button of its own that asks for confirmation, offered only when the snapshot's login is not another account's, and each overwrite, or refusal to overwrite, is filed in the security log with the administrator who asked. The restored user is logged out. The overwrite is neither offered nor carried out for the administrator's own account, or where `accounts` or `module_userprefs` is on a storage engine that cannot roll back, such as MyISAM left over from an old release. Shinobi Legends' copy of the module had this already. The two copies are the same again, with the core's CSRF token and game-log severities.
+
 ### Changed
 
 - The navigation of the core pages starts with the way back, under *Navigation*: the village, forest or Shades first (the Grotto and the Mundane on staff pages), then the nearer place, such as the inn, the clan lobby or an editor's list. What the page offers follows under a heading of its own, *Actions* or one naming the topic. Pages that listed their options above the way back, in the same section as it or with no heading at all, are reordered: the inn (room, bartender), the dragon's cave, the weapon and armour shops, the PvP list, the mercenary camp, the Hunter's Lodge, the clan pages, the graveyard and the mausoleum, the news for a dead player, *About*, the referral page, the warrior list when logged out, biographies, character creation, and on the staff side the game settings, the companion, mount, title, master, taunt, death message, armour and weapon editors, the user editor, comment moderation and the biography moderation. The way back was headed *Other* (inn, stables), *Village* (clans), *Return* (biographies), a bold *Navigation* that was a section of its own (healer) or *Places* (the way to the Shades from the mausoleum); it is *Navigation* everywhere now, except for a dead player in the news, who keeps *You're dead, Jane!* above *Log Out*, so these pages have new texts to translate.
@@ -18,6 +22,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- *Character Restorer*'s e-mail hash conversion listed each snapshot with an account id it never read, which raised "Undefined variable $acctid_acc" once per snapshot.
 - The game settings reported *Saved:* with nothing after it for a setting that was not saved. The red "No" was written as `"`$No`0"`, in double quotes, so PHP read `$No` as an undefined variable.
 - *reCAPTCHA v2* (`recaptcha_v2`) reported every failed check as `not-available`: it read the error codes from `$answer`, a variable that does not exist, instead of from Google's answer.
 - Deleting your own character in the preferences left a page with no navigation at all when it was refused (a missing form token) or failed. The page now offers the way back to the village, or to the news for a dead player, and to the preferences.

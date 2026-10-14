@@ -359,6 +359,7 @@ function charrestore_run(): void
         $d = dir($path);
         $count = 0;
         //fetch them to sort the directory
+        $new = array();
         while (($entry = $d->read()) !== false) {
             $new[] = $entry;
         }
@@ -386,7 +387,8 @@ function charrestore_run(): void
                 continue; //already hashed and salted or superlong email
             } else {
                 //found one hit, now count up and convert if necessary
-                $dks_acc = $content['account']['dragonkills'];
+                $acctid_acc = (int) ($content['account']['acctid'] ?? 0);
+                $dks_acc = (int) ($content['account']['dragonkills'] ?? 0);
                 if ($convert == 1) {
                     //convert this one
                     $content['account']['emailaddress'] = charrestore_gethash($email_acc);
@@ -438,21 +440,32 @@ function charrestore_gethash($value)
  * We intentionally avoid deleting rows from module_userprefs because newer keys
  * may have been introduced since the backup was created; those keys must survive.
  *
+ * Inside a transaction the caller owns, the reasons a preference could not be
+ * restored are returned in `problems` rather than logged: a game-log row
+ * written there would be rolled back along with the writes it explains. The
+ * caller logs them once its transaction has ended.
+ *
  * @param Connection $conn  Doctrine DBAL connection.
  * @param int        $acctid Target account ID receiving the preferences.
  * @param array      $prefs  Snapshot module preferences grouped by module then setting.
  *
- * @return array{unique_key_ready: bool, used_fallback: bool, applied: bool}
+ * @return array{unique_key_ready: bool, used_fallback: bool, applied: bool, problems: list<string>}
  */
 function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $prefs): array
 {
+    // A shared full-account overwrite may already own the transaction. In
+    // that case participate in it rather than nesting or committing early.
+    $ownsTransaction = !$conn->isTransactionActive();
+    $problems = array();
     $uniqueKeyReady = charrestore_can_use_userprefs_upsert_key($conn);
     $hadErrors = false;
     if ($uniqueKeyReady) {
         $prefsTable = Database::prefix('module_userprefs');
         try {
             // Keep upsert writes atomic so prefs are restored all-or-nothing.
-            $conn->beginTransaction();
+            if ($ownsTransaction) {
+                $conn->beginTransaction();
+            }
             foreach ($prefs as $moduleKey => $values) {
                 $modulename = charrestore_extract_modulename($moduleKey);
                 if ($modulename === null) {
@@ -465,13 +478,12 @@ function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $
                 }
                 if (! is_array($values)) {
                     $hadErrors = true;
-                    GameLog::log(
-                        sprintf('Malformed prefs payload for module %s during upsert restore.', $modulename),
-                        'charrestore',
-                        false,
-                        null,
-                        GameLog::SEVERITY_WARNING
-                    );
+                    $problem = sprintf('Malformed prefs payload for module %s during upsert restore.', $modulename);
+                    if ($ownsTransaction) {
+                        GameLog::log($problem, 'charrestore', false, null, GameLog::SEVERITY_WARNING);
+                    } else {
+                        $problems[] = $problem;
+                    }
                     output("`\$Skipping malformed prefs for module `^%s`\$ (expected key/value array).`n", $modulename);
                     continue;
                 }
@@ -498,9 +510,17 @@ function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $
                     );
                 }
             }
-            $conn->commit();
-            return ['unique_key_ready' => true, 'used_fallback' => false, 'applied' => ! $hadErrors];
+            if ($ownsTransaction) {
+                $conn->commit();
+            }
+            return ['unique_key_ready' => true, 'used_fallback' => false, 'applied' => ! $hadErrors, 'problems' => $problems];
         } catch (\Throwable $e) {
+            // The caller must roll back its account update as well; a fallback
+            // write here would escape that all-or-nothing transaction.
+            if (!$ownsTransaction) {
+                $problems[] = sprintf('Upsert failed inside the shared account-restore transaction: %s', $e->getMessage());
+                return ['unique_key_ready' => true, 'used_fallback' => false, 'applied' => false, 'problems' => $problems];
+            }
             if ($conn->isTransactionActive()) {
                 $conn->rollBack();
             }
@@ -515,8 +535,12 @@ function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $
     }
 
     // Fallback preserves pre-existing behavior if upsert prerequisites are unavailable.
-    $applied = charrestore_restore_prefs_fallback($acctid, $prefs);
-    return ['unique_key_ready' => $uniqueKeyReady, 'used_fallback' => true, 'applied' => $applied];
+    if ($ownsTransaction) {
+        $applied = charrestore_restore_prefs_fallback($acctid, $prefs);
+    } else {
+        $applied = charrestore_restore_prefs_fallback($acctid, $prefs, $problems);
+    }
+    return ['unique_key_ready' => $uniqueKeyReady, 'used_fallback' => true, 'applied' => $applied, 'problems' => $problems];
 }
 
 /**
@@ -524,8 +548,11 @@ function charrestore_restore_prefs_upsert(Connection $conn, int $acctid, array $
  *
  * This fallback is used only when upsert prerequisites are unavailable; it still
  * avoids destructive deletes so newer preference keys are preserved.
+ *
+ * @param list<string>|null $problems Collects the failures instead of logging
+ *                                    them, for a caller that owns the transaction.
  */
-function charrestore_restore_prefs_fallback(int $acctid, array $prefs): bool
+function charrestore_restore_prefs_fallback(int $acctid, array $prefs, ?array &$problems = null): bool
 {
     $allApplied = true;
     foreach ($prefs as $moduleKey => $values) {
@@ -540,13 +567,12 @@ function charrestore_restore_prefs_fallback(int $acctid, array $prefs): bool
         }
         if (! is_array($values)) {
             $allApplied = false;
-            GameLog::log(
-                sprintf('Malformed prefs payload for module %s during fallback restore.', $modulename),
-                'charrestore',
-                false,
-                null,
-                GameLog::SEVERITY_WARNING
-            );
+            $problem = sprintf('Malformed prefs payload for module %s during fallback restore.', $modulename);
+            if ($problems !== null) {
+                $problems[] = $problem;
+            } else {
+                GameLog::log($problem, 'charrestore', false, null, GameLog::SEVERITY_WARNING);
+            }
             output("`\$Skipping malformed prefs for module `^%s`\$ (expected key/value array).`n", $modulename);
             continue;
         }
@@ -557,18 +583,17 @@ function charrestore_restore_prefs_fallback(int $acctid, array $prefs): bool
                 set_module_pref((string) $prefname, (string) $value, $modulename, $acctid);
             } catch (\Throwable $e) {
                 $allApplied = false;
-                GameLog::log(
-                    sprintf(
-                        'Failed fallback pref restore for module %s setting %s: %s',
-                        $modulename,
-                        (string) $prefname,
-                        $e->getMessage()
-                    ),
-                    'charrestore',
-                    false,
-                    null,
-                    GameLog::SEVERITY_ERROR
+                $problem = sprintf(
+                    'Failed fallback pref restore for module %s setting %s: %s',
+                    $modulename,
+                    (string) $prefname,
+                    $e->getMessage()
                 );
+                if ($problems !== null) {
+                    $problems[] = $problem;
+                } else {
+                    GameLog::log($problem, 'charrestore', false, null, GameLog::SEVERITY_ERROR);
+                }
             }
         }
     }
