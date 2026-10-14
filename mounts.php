@@ -390,10 +390,14 @@ if ($op == "") {
     $output->output("If there are any owners of the mount when it is deleted, they will no longer have a mount, but they will get a FULL refund of the price of the mount at the time of deletion.");
 } elseif ($op == "add") {
     $output->output("Add a mount:`n");
+    Nav::add("Navigation");
     Nav::add("Mount Editor Home", "mounts.php");
+    Nav::add("Mount Editor");
     mountform(array());
 } elseif ($op == "edit") {
+    Nav::add("Navigation");
     Nav::add("Mount Editor Home", "mounts.php");
+    Nav::add("Mount Editor");
     $sql = "SELECT * FROM " . Database::prefix("mounts") . " WHERE mountid = :mountId";
     $row = $id === null ? false : $connection->executeQuery(
         $sql,

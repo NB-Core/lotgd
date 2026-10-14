@@ -21,7 +21,9 @@ if ($to > 0) {
     $output->output("`%%s`7 accepts your application, files it in her out box, and folds her hands on the desk, staring at you.", $registrar);
     $output->output("You stand there staring blankly back at her for a few minutes before she suggests that perhaps you'd like to take a seat in the waiting area.");
 
+    Nav::add("Navigation");
     Nav::add("Return to the Lobby", "clan.php");
+    Nav::add("Clan Options");
     Nav::add("Waiting Area", "clan.php?op=waiting");
     $session['user']['clanid'] = $to;
     $session['user']['clanrank'] = CLAN_APPLICANT;
@@ -90,6 +92,7 @@ if ($row['c'] == 1) {
                 Nav::add("", "clan.php?op=apply&to={$row['clanid']}");
             }
         }
+        Nav::add("Navigation");
         Nav::add("Return to the Lobby", "clan.php");
         Nav::add("Sorting");
         Nav::add("Order by Membercount", "clan.php?op=apply&order=0");
@@ -98,6 +101,7 @@ if ($row['c'] == 1) {
         $output->output("`7You ask %s`7 for a clan membership application form.", $registrar);
         $output->output("She stares at you blankly for a few moments, then says, \"`5Sorry pal, no one has had enough gumption to start up a clan yet.  Maybe that should be you, eh?`7\"");
         Nav::add("Apply for a New Clan", "clan.php?op=new");
+        Nav::add("Navigation");
         Nav::add("Return to the Lobby", "clan.php");
     }
 }

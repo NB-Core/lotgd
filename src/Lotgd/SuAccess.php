@@ -51,6 +51,7 @@ class SuAccess
             $output->output("Looks like you're probably an admin with appropriate permissions to perform this action, but a module is preventing you from doing so.");
             $output->output('Sorry about that!');
             Translator::getInstance()->setSchema('nav');
+            Navigation::add('Navigation');
             Navigation::add('M?Return to the Mundane', 'village.php');
             Translator::getInstance()->setSchema();
             Footer::pageFooter();
@@ -86,6 +87,7 @@ class SuAccess
         $session['user']['deathpower'] = 0;
         $session['user']['gold'] = 0;
         $session['user']['experience'] *= 0.75;
+        Navigation::add('Navigation');
         Navigation::add('Daily News', 'news.php');
         $sql = 'SELECT acctid FROM ' . Database::prefix('accounts') . ' WHERE (superuser&:requiredFlag)';
         $conn = Database::getDoctrineConnection();

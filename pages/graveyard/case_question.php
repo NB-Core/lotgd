@@ -12,9 +12,9 @@ use Lotgd\Sanitize;
 $output = Output::getInstance();
 $settings = Settings::getInstance();
 
-Nav::add('G?Return to the Graveyard', 'graveyard.php');
-Nav::add('Places');
+Nav::add('Navigation');
 Nav::add('S?Land of the Shades', 'shades.php');
+Nav::add('G?Return to the Graveyard', 'graveyard.php');
 Nav::add('Souls');
 if ($favortoheal > 0) {
     Nav::add(['Restore Your Soul (%s favor)', $favortoheal], 'graveyard.php?op=restore');

@@ -149,4 +149,5 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
 } else {
     $output->output("You do not have authority to change your clan's motd or description.");
 }
+        Nav::add("Navigation");
         Nav::add("Return to your clan hall", "clan.php");

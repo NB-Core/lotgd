@@ -105,6 +105,8 @@ if ($settings->getSetting('impressum', '') != '') {
     Nav::add("Imprint", "about.php");
 }
 
+// What modules add here is not a legal notice.
+Nav::add("Other");
 HookManager::hook('index', []);
 
 $lastOnlineCountUpdate = (int) $settings->getSetting('OnlineCountLast', 0);

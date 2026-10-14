@@ -59,7 +59,7 @@ $com = Http::get('comscroll');
 $comment = Http::post('insertcommentary');
 
 $partner = Partner::getPartner();
-Nav::add("Other");
+Nav::add("Navigation");
 VillageNav::render();
 Nav::add("I?Return to the Inn", "inn.php");
 

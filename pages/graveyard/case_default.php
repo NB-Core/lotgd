@@ -28,6 +28,7 @@ if (! $skipgraveyardtext) {
     $output->output("The plaque above the door reads `\$%s`), Overlord of Death`).", $deathoverlord);
     HookHandler::hook('graveyard-desc');
 }
+Nav::add('Navigation');
 Nav::add('S?Return to the Shades', 'shades.php');
 if ($session['user']['gravefights']) {
     Nav::add('Torment');

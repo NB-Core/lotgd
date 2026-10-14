@@ -287,6 +287,10 @@ Nav::add("", "stats.php");
 Nav::add("", "viewpetition.php");
 Nav::add("", "weaponeditor.php");
 
+// A link a module adds in the hooks below without a header of its own would
+// otherwise land under "Superuser", for every player, staff or not.
+Nav::add($texts['othernav']);
+
 if (!$skipvillagedesc) {
     HookHandler::hook("collapse{", array("name" => "villagedesc-" . $session['user']['location']));
     $translator->setSchema($schemas['text']);

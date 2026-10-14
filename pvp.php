@@ -43,9 +43,11 @@ if ($op == "" && $act != "attack") {
     Translator::getInstance()->setSchema($args['schemas']['atkmsg']);
     $output->output($args['atkmsg'], $session['user']['playerfights']);
     Translator::getInstance()->setSchema();
+    Nav::add("Navigation");
+    VillageNav::render();
+    Nav::add("Actions");
     Nav::add("L?Refresh List of Warriors", "pvp.php");
         Pvp::listTargets();
-    VillageNav::render();
 } elseif ($act == "attack") {
     $name = Http::get('name');
         $badguy = Pvp::setupTarget($name);
@@ -66,6 +68,7 @@ if ($op == "" && $act != "attack") {
     }
 
     if ($failedattack) {
+        Nav::add("Navigation");
         if (Http::get('inn') > "") {
             Nav::add("Return to Listing", "inn.php?op=bartender&act=listupstairs");
         } else {
@@ -107,6 +110,7 @@ if ($battle) {
 
         $op = "";
         Http::set('op', $op);
+        Nav::add("Navigation");
         if ($killedin == $iname) {
             Nav::add("Return to the inn", "inn.php");
         } else {

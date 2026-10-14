@@ -25,6 +25,8 @@ Commentary::addCommentary();
 Translator::getInstance()->setSchema("translatorlounge");
 
 SuperuserNav::render();
+// What the hooks of the header and the commentary add goes under "Actions".
+Nav::add("Actions");
 
 $op = Http::get('op');
 Header::pageHeader("Translator Lounge");

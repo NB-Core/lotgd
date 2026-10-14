@@ -59,7 +59,6 @@ $editarray = array(
     "male" => "Male Title,text|",
     "female" => "Female Title,text|",
 );
-Nav::add("Other");
 SuperuserNav::render();
 Nav::add("Functions");
 
@@ -224,6 +223,7 @@ switch ($op) {
             }
         }
         $output->output("`n`n`^Done.`0");
+        Nav::add("Navigation");
         Nav::add("Main Title Editor", "titleedit.php");
         break;
 
@@ -243,7 +243,7 @@ switch ($op) {
         Nav::add("", "titleedit.php?op=save&id=$id");
         Forms::showForm($editarray, $row);
         $output->rawOutput("</form>");
-        Nav::add("Functions");
+        Nav::add("Navigation");
         Nav::add("Main Title Editor", "titleedit.php");
         title_help();
         //fallthrough

@@ -144,9 +144,15 @@ $GLOBALS['accounts_table'] = [
 // accounts_table merges rather than replaces, because the seeded rows are
 // usually *additional* people (the sender of a message) and the harness
 // account above is the one the session is for. Replacing it outright would log
-// the request out, and the page under test would never run.
+// the request out, and the page under test would never run. Fields given for
+// that account itself (row 1) are laid over it instead, for a page that needs
+// the player somewhere particular, or with something in their purse.
 foreach ((array) ($spec['globals'] ?? []) as $name => $value) {
     if ($name === 'accounts_table' && is_array($value)) {
+        if (isset($value[1]) && is_array($value[1])) {
+            $GLOBALS['accounts_table'][1] = $value[1] + $GLOBALS['accounts_table'][1];
+            unset($value[1]);
+        }
         $GLOBALS['accounts_table'] = $value + $GLOBALS['accounts_table'];
         continue;
     }

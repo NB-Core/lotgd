@@ -37,6 +37,7 @@ if ($act == "") {
         $output->output("While you know that you won't always get what you want, sometimes the way to a man's information is through your purse.");
         $output->output("It's also always been said that more is better.`n`n");
         $output->output("How much would you like to offer him?");
+        Nav::addNotl(Sanitize::sanitize($barkeep));
         Nav::add("1 gem", "inn.php?op=bartender&act=bribe&type=gem&amt=1");
         Nav::add("2 gems", "inn.php?op=bartender&act=bribe&type=gem&amt=2");
         Nav::add("3 gems", "inn.php?op=bartender&act=bribe&type=gem&amt=3");
@@ -92,14 +93,17 @@ if ($act == "") {
                     $output->output("When he's finished, your gold is gone.");
                 }
                 $output->output("You inquire about the loss, and he stares blankly back at you.");
+                Nav::addNotl(Sanitize::sanitize($barkeep));
                 Nav::add(["B?Talk to %s`0 again", $barkeep], "inn.php?op=bartender");
             }
         } else {
             $output->output("`n`n%s`0 stands there staring at you blankly.", $barkeep);
+            Nav::addNotl(Sanitize::sanitize($barkeep));
             Nav::add(["B?Talk to %s`0 the Barkeep", $barkeep], "inn.php?op=bartender");
         }
     }
 } elseif ($act == "listupstairs") {
+    Nav::addNotl(Sanitize::sanitize($barkeep));
     Nav::add("Refresh the list", "inn.php?op=bartender&act=listupstairs");
     $output->output("%s`0 lays out a set of keys on the counter top, and tells you which key opens whose room.  The choice is yours, you may sneak in and attack any one of them.", $barkeep);
     Pvp::listTargets($iname, 'pvp.php', '?act=attack&inn=1');
@@ -136,6 +140,7 @@ if ($act == "") {
         $output->output("\"`3What?  Were you expecting a secret room?`0\" he asks.  \"`3Now then, you must be more careful about how loudly you say that you want to change your specialty, not everyone looks favorably on that sort of thing.`n`n");
         $output->output("`0\"`3What new specialty did you have in mind?`0\"");
         $specialities = HookHandler::hook('specialtynames');
+        Nav::addNotl(Sanitize::sanitize($barkeep));
         foreach ($specialities as $key => $name) {
             Nav::add($name, Sanitize::cmdSanitize(PhpGenericEnvironment::getRequestUri()) . "&specialty=$key");
         }

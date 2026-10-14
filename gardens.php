@@ -60,7 +60,9 @@ if (!$skipgardendesc) {
     $output->output("One of the fairies buzzing about the garden flies up to remind you that the garden is a place for roleplaying and peaceful conversation, and to confine out-of-character comments to the other areas of the game.`n`n");
 }
 
+Nav::add("Navigation");
 VillageNav::render();
+Nav::add("Actions");
 HookHandler::hook("gardens", []);
 
 Commentary::commentDisplay("", "gardens", "Whisper here", 30, "whispers");

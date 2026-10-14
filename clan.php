@@ -33,7 +33,7 @@ $settings = Settings::getInstance();
 Translator::getInstance()->setSchema("clans");
 
 
-Nav::add("Village");
+Nav::add("Navigation");
 VillageNav::render();
 Nav::add("Clan Options");
 Nav::add("C?List Clans", "clan.php?op=list");

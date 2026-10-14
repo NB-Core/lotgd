@@ -62,13 +62,11 @@ while ($row = Database::fetchAssoc($result)) {
 }
 Database::freeResult($result);
 SuperuserNav::render();
-
-Nav::add("Moderation");
-
 if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     Nav::add("Return to Comment Moderation", "moderate.php");
 }
 
+Nav::add("Moderation");
 Nav::add("Refresh", "bios.php");
 $sql = "SELECT name,acctid,bio,biotime FROM " . Database::prefix("accounts") . " WHERE biotime>'9000-01-01' AND bio>'' ORDER BY biotime DESC LIMIT 100";
 $result = Database::query($sql);

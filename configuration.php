@@ -64,6 +64,8 @@ $moduleRequest = Http::get('module');
 $module = is_string($moduleRequest) ? $moduleRequest : '';
 $typeSettingRequest = Http::get('settings');
 $type_setting = is_string($typeSettingRequest) ? $typeSettingRequest : '';
+// Set by the SMTP test; the link goes under "Navigation" once that exists.
+$backToSettingsList = false;
 
 //standardsettings
 switch ($type_setting) {
@@ -240,7 +242,7 @@ switch ($type_setting) {
 
                 if ($adminEmail === '') {
                     $output->output(Translator::translate('`$No admin email is configured. Update the Game Settings first.`0'));
-                    Nav::add(Translator::translate('Back to settings list'), 'configuration.php');
+                    $backToSettingsList = true;
                     Nav::add('', 'configuration.php');
                     break;
                 }
@@ -252,7 +254,7 @@ switch ($type_setting) {
                         Translator::translate('`$The configured admin email %s is not a valid address.`0'),
                         htmlentities($adminEmail, ENT_COMPAT, $charset)
                     );
-                    Nav::add(Translator::translate('Back to settings list'), 'configuration.php');
+                    $backToSettingsList = true;
                     Nav::add('', 'configuration.php');
                     break;
                 }
@@ -292,7 +294,7 @@ switch ($type_setting) {
                     );
                 }
 
-                Nav::add(Translator::translate('Back to settings list'), 'configuration.php');
+                $backToSettingsList = true;
                 Nav::add('', 'configuration.php');
                 break;
 
@@ -409,16 +411,20 @@ switch ($type_setting) {
 
 Header::pageHeader("Game Settings");
 SuperuserNav::render();
-Nav::add("Module Manager", "modules.php");
 if ($module) {
     $cat = $info['category'];
     Nav::add(array("Module Category - `^%s`0", Translator::translateInline($cat)), "modules.php?cat=$cat");
+}
+if ($backToSettingsList) {
+    Nav::add(Translator::translate('Back to settings list'), 'configuration.php');
 }
 
 Nav::add("Game Settings");
 Nav::add("Standard settings", "configuration.php");
 Nav::add("Extended settings", "configuration.php?settings=extended");
 Nav::add(Translator::translate("Test SMTP settings"), "configuration.php?op=testsmtp");
+Nav::add("Modules");
+Nav::add("Module Manager", "modules.php");
 Nav::add('', 'configuration.php?op=testsmtp');
 Nav::add("", PhpGenericEnvironment::getRequestUri());
 

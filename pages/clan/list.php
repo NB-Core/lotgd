@@ -63,6 +63,7 @@ if (Database::numRows($result) > 0) {
         }
     }
     $output->rawOutput("</table>", true);
+    Nav::add("Navigation");
     Nav::add("Return to the Lobby", "clan.php");
     Nav::add("Sorting");
     Nav::add("Order by Membercount", "clan.php?op=list&order=0");
@@ -71,6 +72,7 @@ if (Database::numRows($result) > 0) {
 } else {
     $output->output("`7You ask %s`7 for the clan listings.  She stares at you blankly for a few moments, then says, \"`5Sorry pal, no one has had enough gumption to start up a clan yet.  Maybe that should be you, eh?`7\"", $registrar);
     Nav::add("Apply for a New Clan", "clan.php?op=new");
+    Nav::add("Navigation");
     Nav::add("Return to the Lobby", "clan.php");
 }
 

@@ -14,7 +14,9 @@ use Lotgd\Commentary;
     $output->output("Some Ye Olde Muzak is coming from a fake rock sitting at the base of a potted bush.`n`n");
     Commentary::commentDisplay("", "waiting", "Speak", 25);
 if ($session['user']['clanrank'] == CLAN_APPLICANT) {
+    Nav::add("Navigation");
     Nav::add("Return to the Lobby", "clan.php");
 } else {
+    Nav::add("Navigation");
     Nav::add("Return to your Clan Rooms", "clan.php");
 }

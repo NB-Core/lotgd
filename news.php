@@ -117,22 +117,17 @@ if (Database::numRows($result) == 0) {
     $output->output("`1`b`c Nothing of note happened this day.  All in all a boring day. `c`b`0");
 }
 $output->outputNotl("`c`2-=-`@=-=`2-=-`@=-=`2-=-`@=-=`2-=-`0`c");
+Nav::add("Navigation");
 if (!$session['user']['loggedin']) {
     Nav::add("Login Screen", "index.php");
 } elseif ($session['user']['alive']) {
     VillageNav::render();
 } else {
     $translator->setSchema("nav");
-    Nav::add("Log Out");
-    Nav::add("Log out", "login.php?op=logout");
-
-    if ($session['user']['sex'] == 1) {
-        Nav::add("`!`bYou're dead, Jane!`b`0");
-    } else {
-        Nav::add("`!`bYou're dead, Jim!`b`0");
-    }
     Nav::add("S?Land of Shades", "shades.php");
     Nav::add("G?The Graveyard", "graveyard.php");
+    Nav::add("Log Out");
+    Nav::add("Log out", "login.php?op=logout");
         Battle::suspendCompanions("allowinshades", true);
     $translator->setSchema();
 }

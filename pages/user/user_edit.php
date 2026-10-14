@@ -94,7 +94,7 @@ if (Http::get('subop') == "") {
     $output->rawOutput("</iframe>");
 } elseif (Http::get('subop') == "module") {
     //Show a user's prefs for a given module.
-    Nav::add("Operations");
+    Nav::add("Navigation");
     Nav::add("Edit user", "user.php?op=edit&userid=$userid$returnpetition");
     $module = Http::get('module');
     $info = get_module_info($module);

@@ -140,7 +140,7 @@ if ($op == "del") {
     $op = "";
     Http::set("op", "");
 } elseif ($op == "edit") {
-    Nav::add("Functions");
+    Nav::add("Navigation");
     Nav::add("Return to Masters Editor", "masters.php");
     $sql = "SELECT * FROM " . Database::prefix("masters") . " WHERE creatureid=$id";
     $res = Database::query($sql);

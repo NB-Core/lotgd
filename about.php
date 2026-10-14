@@ -34,6 +34,13 @@ DateTime::checkDay();
 $opRequest = Http::get('op');
 $op = is_string($opRequest) ? $opRequest : '';
 
+Nav::add("Navigation");
+if ($session['user']['loggedin']) {
+    Nav::add("Return to the news", "news.php");
+} else {
+    Nav::add("Login Page", "index.php");
+}
+
 switch ($op) {
     case "setup":
     case "listmodules":
@@ -43,10 +50,5 @@ switch ($op) {
     default:
         require __DIR__ . "/pages/about/about_default.php";
         break;
-}
-if ($session['user']['loggedin']) {
-    Nav::add("Return to the news", "news.php");
-} else {
-    Nav::add("Login Page", "index.php");
 }
 Footer::pageFooter();

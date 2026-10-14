@@ -59,7 +59,7 @@ $tauntidRejected = $tauntid === null && RequestValue::isPresent($tauntidRequest)
 $tauntidParam = $tauntid === null ? '' : (string) $tauntid;
 $commentaryPage = RequestValue::optionalPositiveInt(Http::get('c'));
 if ($op == "edit") {
-    Nav::add("Taunts");
+    Nav::add("Navigation");
     Nav::add("Return to the taunt editor", "taunt.php");
     $output->rawOutput("<form action='taunt.php?op=save&tauntid=" . rawurlencode($tauntidParam) . "' method='POST'>" . Forms::csrfField(), true);
     Nav::add("", "taunt.php?op=save&tauntid=" . rawurlencode($tauntidParam));
