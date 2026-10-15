@@ -138,6 +138,7 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         );
         $this->assertCount(1, $security, 'replacing a live account is a security outcome');
         $this->assertStringContainsString('target_acctid=5', $security[0]['message']);
+        $this->assertStringContainsString('transactional=yes', $security[0]['message']);
         $this->assertSame(['warning', 9], [$security[0]['severity'], (int) $security[0]['who']], 'filed under the admin who did it');
         $this->assertStringContainsString('[security] Character Restorer overwrote an existing account', $this->errorLog());
     }
@@ -173,11 +174,11 @@ final class CharrestoreOverwriteAccountTest extends TestCase
 
     /**
      * MySQL does not roll back a MyISAM table, and an installation upgraded
-     * from an old release can still have one. Where the rollback could not be
-     * kept, nothing is written at all.
+     * from an old release can still have one. The restore is not withheld
+     * there; the security entry records that it could not have been undone.
      */
     #[RunInSeparateProcess]
-    public function testTablesThatCannotRollBackRefuseTheOverwrite(): void
+    public function testTablesThatCannotRollBackStillOverwrite(): void
     {
         self::loadModule();
         $this->expectErrorLog();
@@ -189,11 +190,55 @@ final class CharrestoreOverwriteAccountTest extends TestCase
             ['owner' => 'charrestore']
         );
 
+        $this->assertTrue($restored);
+        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Then', 'gold' => 250, 'loggedin' => 0], $this->account());
+        $this->assertSame(['newer' => 'keep', 'slots' => '7'], $this->prefs());
+        $security = $this->connection->fetchAllAssociative("SELECT message FROM gamelog WHERE category = 'security'");
+        $this->assertCount(1, $security);
+        $this->assertStringStartsWith('Character Restorer overwrote an existing account', $security[0]['message']);
+        $this->assertStringContainsString('transactional=no', $security[0]['message']);
+    }
+
+    /**
+     * Where a failure cannot be rolled back, part of the snapshot, credentials
+     * included, may already be written. The failure must not read as "nothing
+     * changed", and it is a security outcome.
+     *
+     * SQLite does roll back, so what is checked is what gets reported.
+     */
+    #[RunInSeparateProcess]
+    public function testAFailureOnTablesThatCannotRollBackSaysSo(): void
+    {
+        self::loadModule();
+        $this->expectErrorLog();
+        $this->connection->nonTransactionalTables = ['accounts'];
+        $this->connection->failPreferenceWrites = true;
+
+        $mayBePartial = null;
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore'],
+            $mayBePartial
+        );
+
         $this->assertFalse($restored);
-        $this->assertSame(['acctid' => 5, 'login' => 'hero', 'name' => 'Hero Now', 'gold' => 1, 'loggedin' => 1], $this->account());
-        $this->assertSame(['newer' => 'keep', 'slots' => '3'], $this->prefs());
-        $this->assertSame(0, $this->connection->commits);
-        $this->assertRefusalFiled('InnoDB');
+        $this->assertTrue($mayBePartial, 'the account row was written before the preference failed');
+        $failure = $this->connection->fetchAllAssociative(
+            "SELECT message, severity FROM gamelog WHERE message LIKE 'Full account overwrite failed%'"
+        );
+        $this->assertCount(1, $failure);
+        $this->assertSame('error', $failure[0]['severity']);
+        $this->assertStringContainsString('cannot roll back, so part of the snapshot may already be written', $failure[0]['message']);
+        $this->assertStringNotContainsString('changes were rolled back', $failure[0]['message']);
+        $this->assertStringContainsString('The preference could not be written.', $failure[0]['message']);
+        $security = $this->connection->fetchAllAssociative(
+            "SELECT message, severity, who FROM gamelog WHERE category = 'security'"
+        );
+        $this->assertCount(1, $security);
+        $this->assertStringStartsWith('Character Restorer overwrite failed on tables that cannot roll back', $security[0]['message']);
+        $this->assertStringContainsString('target_acctid=5', $security[0]['message']);
+        $this->assertSame(['error', 9], [$security[0]['severity'], (int) $security[0]['who']]);
     }
 
     #[RunInSeparateProcess]
@@ -207,6 +252,96 @@ final class CharrestoreOverwriteAccountTest extends TestCase
         $this->connection->nonTransactionalTables = [];
         $this->connection->executeStatement('DROP TABLE module_userprefs');
         $this->assertFalse(charrestore_restore_tables_transactional($this->connection), 'a table it cannot see counts as no');
+    }
+
+    /**
+     * A failure before anything was written is not a partial write, whatever
+     * the engine: the account is unchanged and the page must say so.
+     */
+    #[RunInSeparateProcess]
+    public function testAFailureBeforeAnyWriteIsNotReportedAsPartial(): void
+    {
+        self::loadModule();
+        $this->connection->nonTransactionalTables = ['accounts'];
+        $this->connection->executeStatement('DELETE FROM accounts');
+
+        $mayBePartial = null;
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore'],
+            $mayBePartial
+        );
+
+        $this->assertFalse($restored);
+        $this->assertFalse($mayBePartial);
+        $this->assertSame([], $this->connection->fetchAllAssociative("SELECT logid FROM gamelog WHERE category = 'security'"));
+        $failure = $this->connection->fetchAllAssociative(
+            "SELECT message FROM gamelog WHERE message LIKE 'Full account overwrite failed%'"
+        );
+        $this->assertCount(1, $failure);
+        $this->assertStringContainsString('nothing had been written yet', $failure[0]['message']);
+    }
+
+    /**
+     * A rollback that fails too, on a lost connection, must not cut the
+     * reporting short: the caller still gets false, the partial write is
+     * still filed, and the failed rollback is part of the message.
+     */
+    #[RunInSeparateProcess]
+    public function testAFailedRollbackDoesNotCutThePartialReportShort(): void
+    {
+        self::loadModule();
+        $this->expectErrorLog();
+        $this->connection->nonTransactionalTables = ['accounts'];
+        $this->connection->failPreferenceWrites = true;
+        $this->connection->failRollback = true;
+
+        $mayBePartial = null;
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore'],
+            $mayBePartial
+        );
+
+        $this->assertFalse($restored);
+        $this->assertTrue($mayBePartial);
+        $this->assertStringContainsString(
+            '[security] Character Restorer overwrite failed on tables that cannot roll back',
+            $this->errorLog()
+        );
+        $failure = $this->connection->fetchAllAssociative(
+            "SELECT message FROM gamelog WHERE message LIKE 'Full account overwrite failed%'"
+        );
+        $this->assertCount(1, $failure);
+        $this->assertStringContainsString('the rollback itself failed: The connection was lost.', $failure[0]['message']);
+    }
+
+    /**
+     * A failure that may have left the account partly written is reported
+     * even when the game log is gone: the security event and the failure both
+     * reach PHP's error log, and the caller still gets false.
+     */
+    #[RunInSeparateProcess]
+    public function testAPartialFailureIsReportedWhenTheGameLogRefusesIt(): void
+    {
+        self::loadModule();
+        $this->expectErrorLog();
+        $this->connection->nonTransactionalTables = ['accounts'];
+        $this->connection->failPreferenceWrites = true;
+        $this->connection->executeStatement('DROP TABLE gamelog');
+
+        $restored = charrestore_restore_overwrite_account(
+            self::snapshotAccount(),
+            ['inventory' => ['slots' => '7']],
+            ['owner' => 'charrestore']
+        );
+
+        $this->assertFalse($restored);
+        $log = $this->errorLog();
+        $this->assertStringContainsString('[security] Character Restorer overwrite failed on tables that cannot roll back', $log);
+        $this->assertStringContainsString('[charrestore] Full account overwrite failed for acctid 5; the tables cannot roll back', $log);
     }
 
     /**

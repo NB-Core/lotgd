@@ -15,6 +15,7 @@ use Doctrine\DBAL\Result;
 final class MysqlishConnection extends Connection
 {
     public bool $failPreferenceWrites = false;
+    public bool $failRollback = false;
     public int $commits = 0;
     /** @var list<string> Tables information_schema reports on an engine that cannot roll back. */
     public array $nonTransactionalTables = [];
@@ -73,6 +74,14 @@ final class MysqlishConnection extends Connection
         }
 
         return parent::executeStatement($sql, $params, $types);
+    }
+
+    public function rollBack(): void
+    {
+        if ($this->failRollback) {
+            throw new \RuntimeException('The connection was lost.');
+        }
+        parent::rollBack();
     }
 
     public function commit(): void

@@ -262,8 +262,15 @@ function charrestore_restore_overwrite_refused(int $acctid, string $reason, arra
  *
  * The archived acctid is used only as the immutable update target and is never
  * included among mutable values. The shared connection transaction keeps the
- * account row and preference restore atomic; the overwrite is refused where the
- * tables could not roll it back.
+ * account row and preference restore atomic. On tables that cannot roll back
+ * (MyISAM) it still runs, but a failure may leave the account partly written,
+ * and the log and the security log say so.
+ *
+ * That is decided on purpose (NB-Core/lotgd#1588), not an oversight to fix by
+ * refusing: the overwrite writes nothing but the snapshot's own values, so
+ * running it again completes a partial one and leaves a complete one as it is.
+ * Refusing instead shut the restore out of installations that never converted
+ * their tables, for a failure the administrator can simply repeat.
  *
  * The target is logged out, whatever the snapshot says: a session still open on
  * it must not carry on with the restored credentials and superuser flags. The
@@ -273,13 +280,21 @@ function charrestore_restore_overwrite_refused(int $acctid, string $reason, arra
  * @param array<string, mixed> $account Snapshot account data.
  * @param array<string, mixed> $prefs Snapshot module preferences.
  * @param array<string, mixed> $context Shared library context.
+ * @param bool|null $mayBePartial Set to true when it failed after it had begun
+ *                                writing to tables that cannot roll back, so
+ *                                part of the snapshot may be in the account.
  *
  * @return bool True once the overwrite is committed, even if the security log
- *              could not take its entry; false when nothing was changed.
+ *              could not take its entry; false when it failed.
  */
-function charrestore_restore_overwrite_account(array $account, array $prefs, array $context): bool
-{
+function charrestore_restore_overwrite_account(
+    array $account,
+    array $prefs,
+    array $context,
+    ?bool &$mayBePartial = null
+): bool {
     global $session;
+    $mayBePartial = false;
     $acctid = (int) ($account['acctid'] ?? 0);
     if ($acctid <= 0) {
         charrestore_snapshot_log($context, 'Full account overwrite rejected: snapshot has no valid account ID.');
@@ -318,14 +333,11 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         $parameters[$parameter] = $value;
     }
 
-    if (!charrestore_restore_tables_transactional($connection)) {
-        charrestore_restore_overwrite_refused(
-            $acctid,
-            'accounts and module_userprefs must use a transactional storage engine such as InnoDB',
-            $context
-        );
-        return false;
-    }
+    // On MyISAM the transaction below is a formality: what was written before
+    // a failure stays. The restore still runs, on purpose (see the docblock);
+    // a failure is reported as such and running it again completes it.
+    $atomic = charrestore_restore_tables_transactional($connection);
+    $writing = false;
 
     try {
         $connection->beginTransaction();
@@ -338,6 +350,7 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         if ($target === false) {
             throw new RuntimeException('The target account no longer exists.');
         }
+        $writing = true;
         $connection->executeStatement(
             'UPDATE ' . db_prefix('accounts') . ' SET ' . implode(', ', $assignments)
                 . ' WHERE acctid = :target_acctid',
@@ -354,13 +367,53 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
         }
         $connection->commit();
     } catch (Throwable $exception) {
-        if ($connection->isTransactionActive()) {
-            $connection->rollBack();
+        // The rollback can fail as well, on a lost connection for one; what
+        // follows still has to run. The server discards what an InnoDB
+        // transaction left uncommitted, and MyISAM never held it back anyway.
+        $rollbackFailure = '';
+        try {
+            if ($connection->isTransactionActive()) {
+                $connection->rollBack();
+            }
+        } catch (Throwable $rollbackException) {
+            $rollbackFailure = ' (the rollback itself failed: ' . $rollbackException->getMessage() . ')';
         }
-        charrestore_snapshot_log(
-            $context,
-            "Full account overwrite failed for acctid {$acctid}; changes were rolled back: " . $exception->getMessage()
-        );
+        if ($atomic || !$writing) {
+            $failure = "Full account overwrite failed for acctid {$acctid}; "
+                . ($atomic ? 'changes were rolled back: ' : 'nothing had been written yet: ')
+                . $exception->getMessage() . $rollbackFailure;
+            try {
+                charrestore_snapshot_log($context, $failure);
+            } catch (Throwable $logFailure) {
+                error_log('[charrestore] ' . $failure);
+            }
+            return false;
+        }
+        $mayBePartial = true;
+        // Credentials or superuser flags may already be the snapshot's, so
+        // this must reach the administrator whatever the logs do. The security
+        // event goes first: SecurityLog writes PHP's error log before the game
+        // log, so the event is on record even when the game log refuses it.
+        $failure = "Full account overwrite failed for acctid {$acctid}; the tables cannot roll back, so part of"
+            . ' the snapshot may already be written: ' . $exception->getMessage() . $rollbackFailure;
+        try {
+            \Lotgd\SecurityLog::event(
+                'Character Restorer overwrite failed on tables that cannot roll back',
+                array(
+                    'target_acctid' => $acctid,
+                    'owner' => (string) ($context['owner'] ?? 'charrestore'),
+                ),
+                (int) ($session['user']['acctid'] ?? 0),
+                \Lotgd\GameLog::SEVERITY_ERROR
+            );
+        } catch (Throwable $logFailure) {
+            // Its error-log line was written before the game log refused the row.
+        }
+        try {
+            charrestore_snapshot_log($context, $failure);
+        } catch (Throwable $logFailure) {
+            error_log('[charrestore] ' . $failure);
+        }
         return false;
     }
 
@@ -374,6 +427,7 @@ function charrestore_restore_overwrite_account(array $account, array $prefs, arr
             array(
                 'target_acctid' => $acctid,
                 'owner' => (string) ($context['owner'] ?? 'charrestore'),
+                'transactional' => $atomic,
             ),
             (int) ($session['user']['acctid'] ?? 0),
             \Lotgd\GameLog::SEVERITY_WARNING
@@ -509,8 +563,7 @@ function charrestore_restore_render_preview(array $context, string $file, string
             return;
         }
         if (!charrestore_restore_tables_transactional(charrestore_restore_connection())) {
-            output('`n`$Restoring over the current user is not offered: the accounts and module_userprefs tables must use a transactional storage engine such as InnoDB, or a failed restore could not be undone.`0`n');
-            return;
+            output('`n`$These tables cannot roll back (e.g. MyISAM): if the restore fails halfway, what was already written stays; running the restore again completes it.`0');
         }
         output('`n`$Destructive: this restores the snapshot account fields and preferences over the current user while preserving the existing account ID, and logs the user out.`0`n');
         rawoutput(\Lotgd\Forms::postButton(
@@ -560,10 +613,15 @@ function charrestore_restore_finish(array $context, string $file, string $baseUr
                 output('`$That login belongs to another account. The destructive overwrite was cancelled.`0');
                 return;
             }
-            $restored = charrestore_restore_overwrite_account($account, $snapshot['prefs'], $context);
-            output($restored
-                ? '`#The current user was fully overwritten with the snapshot account fields and preferences; the account ID was preserved.`0'
-                : '`$The full overwrite was not carried out; the account is unchanged. See the administrative log.`0');
+            $mayBePartial = false;
+            $restored = charrestore_restore_overwrite_account($account, $snapshot['prefs'], $context, $mayBePartial);
+            if ($restored) {
+                output('`#The current user was fully overwritten with the snapshot account fields and preferences; the account ID was preserved.`0');
+            } elseif ($mayBePartial) {
+                output('`$The full overwrite failed. These tables cannot roll back, so part of it may have been written. Run the restore again to complete it; see the administrative log.`0');
+            } else {
+                output('`$The full overwrite was not carried out; the account is unchanged. See the administrative log.`0');
+            }
             return;
         }
         $result = charrestore_restore_preferences((int) $account['acctid'], $snapshot['prefs'], $context);
