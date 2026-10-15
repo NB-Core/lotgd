@@ -266,6 +266,12 @@ function charrestore_restore_overwrite_refused(int $acctid, string $reason, arra
  * (MyISAM) it still runs, but a failure may leave the account partly written,
  * and the log and the security log say so.
  *
+ * That is decided on purpose (NB-Core/lotgd#1588), not an oversight to fix by
+ * refusing: the overwrite writes nothing but the snapshot's own values, so
+ * running it again completes a partial one and leaves a complete one as it is.
+ * Refusing instead shut the restore out of installations that never converted
+ * their tables, for a failure the administrator can simply repeat.
+ *
  * The target is logged out, whatever the snapshot says: a session still open on
  * it must not carry on with the restored credentials and superuser flags. The
  * administrator's own account is refused, since the save at the end of their own
@@ -328,7 +334,8 @@ function charrestore_restore_overwrite_account(
     }
 
     // On MyISAM the transaction below is a formality: what was written before
-    // a failure stays. The restore still runs; a failure is reported as such.
+    // a failure stays. The restore still runs, on purpose (see the docblock);
+    // a failure is reported as such and running it again completes it.
     $atomic = charrestore_restore_tables_transactional($connection);
     $writing = false;
 
@@ -556,7 +563,7 @@ function charrestore_restore_render_preview(array $context, string $file, string
             return;
         }
         if (!charrestore_restore_tables_transactional(charrestore_restore_connection())) {
-            output('`n`$These tables cannot roll back (e.g. MyISAM): if the restore fails halfway, what was already written stays.`0');
+            output('`n`$These tables cannot roll back (e.g. MyISAM): if the restore fails halfway, what was already written stays; running the restore again completes it.`0');
         }
         output('`n`$Destructive: this restores the snapshot account fields and preferences over the current user while preserving the existing account ID, and logs the user out.`0`n');
         rawoutput(\Lotgd\Forms::postButton(
@@ -611,7 +618,7 @@ function charrestore_restore_finish(array $context, string $file, string $baseUr
             if ($restored) {
                 output('`#The current user was fully overwritten with the snapshot account fields and preferences; the account ID was preserved.`0');
             } elseif ($mayBePartial) {
-                output('`$The full overwrite failed. These tables cannot roll back, so part of it may have been written; check the account and the administrative log.`0');
+                output('`$The full overwrite failed. These tables cannot roll back, so part of it may have been written. Run the restore again to complete it; see the administrative log.`0');
             } else {
                 output('`$The full overwrite was not carried out; the account is unchanged. See the administrative log.`0');
             }
