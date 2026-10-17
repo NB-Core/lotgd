@@ -164,31 +164,59 @@ function get_module_info(string $shortname, bool $with_db = true): array
     return Modules::getModuleInfo($shortname, $with_db);
 }
 
+/**
+ * Legacy lifecycle cleanup for the current module, managed by the core.
+ * Automatic upgrades wipe normal/event hooks before _install(); module
+ * installers should only declare desired registrations.
+ *
+ * @see HookHandler::wipeHooks()
+ */
 function module_wipehooks(): void
 {
     HookHandler::wipeHooks();
 }
 
+/** Register an event hook in _install(); replaces the same module/type. */
 function module_addeventhook(string $type, string $chance): void
 {
     HookHandler::addEventHook($type, $chance);
 }
 
+/**
+ * Legacy low-level removal helper used by core event registration.
+ * Module authors should omit obsolete hooks from _install() and rely on the
+ * automatic upgrade cleanup. This permanently changes the current module's
+ * registrations; it does not just suppress output for the current request.
+ *
+ * @see HookHandler::dropEventHook()
+ */
 function module_dropeventhook(string $type): void
 {
     HookHandler::dropEventHook($type);
 }
 
+/**
+ * Legacy low-level removal helper used by core hook registration.
+ * Module authors should declare desired hooks in _install(), not call this
+ * directly. Automatic upgrades remove obsolete registrations before _install().
+ * Guard callback output to hide a link/text on one page. This helper instead
+ * permanently removes a registration for ModuleManager's current module.
+ * Retained for compatibility; this guidance is not a runtime access check.
+ *
+ * @see HookHandler::dropHook()
+ */
 function module_drophook(string $hookname, $functioncall = false): void
 {
     HookHandler::dropHook($hookname, $functioncall);
 }
 
+/** Register a hook in _install() at priority 50; replaces the matching registration. */
 function module_addhook(string $hookname, $functioncall = false, $whenactive = false): void
 {
     HookHandler::addHook($hookname, $functioncall, $whenactive);
 }
 
+/** Register a hook in _install(); replaces the same module/location/callback. */
 function module_addhook_priority(string $hookname, int $priority = 50, $functioncall = false, $whenactive = false): void
 {
     HookHandler::addHookPriority($hookname, $priority, $functioncall, $whenactive);

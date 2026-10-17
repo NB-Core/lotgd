@@ -208,6 +208,15 @@ class Installer
         return true;
     }
 
+    /**
+     * Install a module and invoke its _install() callback.
+     *
+     * Unlike the automatic upgrade in Modules::inject(), this method does not
+     * itself wipe existing hooks before the callback. A forced install deletes
+     * the module row before injection, so it must not be described as a full
+     * rebuild of obsolete hooks. Module callbacks should declare desired hooks;
+     * see docs/Hooks.md for the lifecycle and cleanup helpers.
+     */
     public static function install(string $module, bool $force = true): bool
     {
         global $session;

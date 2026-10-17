@@ -91,6 +91,10 @@ class Modules
 
     /**
      * Inject a module into runtime if available.
+     *
+     * When a stored module's metadata/file timestamp needs updating, wipe its
+     * normal and event hooks before rerunning _install(). The callback must
+     * redeclare every desired registration; omitted hooks stay removed.
      */
     public static function inject(string $moduleName, bool $force = false, bool $withDb = true): bool
     {
@@ -1374,6 +1378,11 @@ class Modules
 
     /**
      * Remove all hooks and event hooks for the current module.
+     *
+     * Core lifecycle cleanup used before automatic upgrades and on uninstall.
+     * The module comes from ModuleManager::getMostRecentModule(); this does not
+     * wipe registrations belonging to other modules. It removes persistent
+     * registrations, not just callbacks/output for the current request.
      */
     public static function wipeHooks(): void
     {
@@ -1431,6 +1440,8 @@ class Modules
      *
      * This is called from {@see addEventHook()} before inserting a new hook so
      * the table never contains duplicate rows.
+     * Module code should use the registration API in _install(); automatic
+     * upgrades remove obsolete hooks through wipeHooks().
      */
     public static function dropEventHook(string $type): void
     {
@@ -1453,7 +1464,13 @@ class Modules
     }
 
     /**
-     * Remove a hook from a module.
+     * Remove one persistent registration for ModuleManager's current module.
+     *
+     * Used internally by addHookPriority() to replace a registration matching
+     * module, location and callback (default: <module>_dohook). Module authors
+     * should declare desired hooks in _install() and rely on automatic upgrade
+     * cleanup, rather than invoke this helper. Page-specific output suppression
+     * belongs in the callback. Kept callable for backward compatibility.
      */
     public static function dropHook(string $hookname, $functioncall = false): void
     {
@@ -1482,7 +1499,9 @@ class Modules
     }
 
     /**
-     * Register a hook for a module.
+     * Register a hook for the current module at default priority 50.
+     *
+     * Call from _install(); replaces the same module/location/callback.
      */
     public static function addHook(string $hookname, $functioncall = false, $whenactive = false): void
     {
@@ -1490,7 +1509,10 @@ class Modules
     }
 
     /**
-     * Register a hook with explicit priority.
+     * Register a hook with explicit priority for the current module.
+     *
+     * Call from _install(); dropHook() replaces only the matching registration.
+     * Full obsolete-hook cleanup is handled by the automatic upgrade lifecycle.
      */
     public static function addHookPriority(string $hookname, int $priority = 50, $functioncall = false, $whenactive = false): void
     {
