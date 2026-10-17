@@ -42,6 +42,15 @@ Before doing anything:
 2. Keep your `config` folder (but update as noted below).  
 3. Run `composer install` to pull required dependencies.
 
+### Module hook cache cleanup
+
+Automatic module updates and uninstalls now invalidate the shared hook,
+prepared-hook and event cache families, including request-local preloads.
+Previously, removed registrations could remain in cached lists until expiry.
+`DataCache::massinvalidate()` now normalizes filename prefixes like cache
+writes do, so prefixes such as `module_prepare` also remove their on-disk
+entries. No module API changes or manual hook deletion are required.
+
 ### 2.0.8 is the first release since 2.0.5
 
 2.0.6 and 2.0.7 were never published, so an update from 2.0.5 takes every

@@ -1399,9 +1399,15 @@ class Modules
             ['module' => ParameterType::STRING]
         );
 
-        DataCache::getInstance()->invalidatedatacache('hook-' . $module);
-
-        DataCache::getInstance()->invalidatedatacache('module_prepare');
+        // Cached hook lists can include multiple modules and survive removal
+        // of a registration that _install() no longer adds. Rebuild all hook
+        // families, including the current request's preloaded dispatch lists.
+        self::$modulehookQueries = [];
+        self::$modulePreload = [];
+        $cache = DataCache::getInstance();
+        $cache->massinvalidate('hook-');
+        $cache->massinvalidate('module_prepare');
+        $cache->massinvalidate('event-');
     }
 
     /**

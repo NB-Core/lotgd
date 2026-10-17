@@ -47,6 +47,11 @@ An automatic update is detected from the stored file timestamp/metadata when
 the module is injected; changing an output condition alone does not require
 manually dropping a registration.
 
+`wipeHooks()` also invalidates the shared `hook-*`, `module_prepare-*` and
+`event-*` cache families in memory/on disk and clears request-local hook
+preloads. This prevents removed registrations from surviving in cached lists;
+other modules' registrations remain in the database and are loaded again.
+
 `wipeHooks()`, `dropHook()` and `dropEventHook()` are low-level helpers for core
 lifecycle/registration work. Normal module code should declare registrations in
 `_install()` and let the automatic update rebuild them. `addHookPriority()`

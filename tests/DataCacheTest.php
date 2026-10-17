@@ -63,6 +63,27 @@ final class DataCacheTest extends TestCase
         $this->assertFileExists(DataCache::getInstance()->makecachetempname('other'));
     }
 
+    public function testMassInvalidateNormalizesFilenamePrefix(): void
+    {
+        $cache = DataCache::getInstance();
+        $key = 'module_prepare-' . md5('village');
+        $this->assertTrue($cache->updatedatacache($key, ['old hook']));
+        $this->assertTrue($cache->updatedatacache('modulesettings-other', ['keep']));
+        // Preserve cleanup of files named using the old, unnormalized prefix.
+        $legacyFile = $this->cacheDir . '/' . DATACACHE_FILENAME_PREFIX . 'module_prepare-legacy';
+        file_put_contents($legacyFile, 'legacy');
+
+        $cache->massinvalidate('module_prepare');
+
+        $this->assertFalse($cache->datacache($key));
+        $this->assertFileDoesNotExist($cache->makecachetempname($key));
+        $this->assertFileDoesNotExist($legacyFile);
+        // Reload from disk, without relying on in-memory invalidation.
+        DataCache::resetState();
+        $this->assertFalse(DataCache::getInstance()->datacache($key));
+        $this->assertSame(['keep'], DataCache::getInstance()->datacache('modulesettings-other'));
+    }
+
     public function testUpdateCacheFailureOnBadPath(): void
     {
         $invalidPath = '/dev/null/' . uniqid();
