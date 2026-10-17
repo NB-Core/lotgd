@@ -197,13 +197,17 @@ class DataCache
                     }
                 }
             }
+            // Match the same encoded/normalized filenames as cache writes.
+            // For example, module_prepare-* is stored as module-prepare-*.
+            // Continue matching legacy files with the unnormalized prefix too.
+            $filenamePrefix = basename($this->makecachetempname($name));
             $name = DATACACHE_FILENAME_PREFIX . $name;
             if (self::$path == '') {
                 self::$path = $this->resolveCachePath($settings);
             }
             $dir = dir(self::$path);
             while (false !== ($file = $dir->read())) {
-                if (strpos($file, $name) !== false) {
+                if (strpos($file, $name) !== false || strpos($file, $filenamePrefix) !== false) {
                     $this->invalidatedatacache(self::$path . '/' . $file, false);
                 }
             }

@@ -14,6 +14,8 @@ These hooks should return an associative array of token => output fragments. The
 fragments and swaps them into the footer template, so always append to the array instead of overwriting it.
 
 ## Table of Contents
+
+- [Registration and Lifecycle](#registration-and-lifecycle)
 - [Core Pages](#core-pages)
 - [Combat and Progression](#combat-and-progression)
 - [Town Services and Shops](#town-services-and-shops)
@@ -22,6 +24,48 @@ fragments and swaps them into the footer template, so always append to the array
 - [Administration and Tools](#administration-and-tools)
 - [Module Utilities](#module-utilities)
 - [Installer and Configuration](#installer-and-configuration)
+
+## Registration and Lifecycle
+
+Declare all desired hooks in `<module>_install()` using
+`module_addhook()`, `module_addhook_priority()` and `module_addeventhook()`
+(or the corresponding `Lotgd\Modules\HookHandler` methods). Registration uses
+`ModuleManager::getMostRecentModule()` as the module name. Normal hooks match by
+module, location and callback; event hooks match by module and event type.
+Registering the same match replaces it rather than adding a duplicate.
+
+The core's lifecycle paths differ:
+
+| Path | Existing hook cleanup |
+| --- | --- |
+| Automatic update in `Modules::inject()` | Calls `wipeHooks()` before rerunning `<module>_install()`. All normal and event hooks of that module are removed and the callback redeclares the desired set. Omitting an obsolete hook is sufficient. |
+| Successful uninstall / forced uninstall cleanup | Calls `wipeHooks()` to remove that module's normal and event hooks. |
+| Explicit `Installer::install()` | Does not itself wipe hooks before the callback. In particular, `$force = true` deletes the module row before injection, bypassing the automatic update's cleanup of that row. Do not assume every `_install()` invocation starts with an empty hook set. |
+| Direct call to `<module>_install()` | Bypasses the core lifecycle; no automatic cleanup. |
+
+An automatic update is detected from the stored file timestamp/metadata when
+the module is injected; changing an output condition alone does not require
+manually dropping a registration.
+
+`wipeHooks()` also invalidates the shared `hook-*`, `module_prepare-*` and
+`event-*` cache families in memory/on disk and clears request-local hook
+preloads. This prevents removed registrations from surviving in cached lists;
+other modules' registrations remain in the database and are loaded again.
+
+`wipeHooks()`, `dropHook()` and `dropEventHook()` are low-level helpers for core
+lifecycle/registration work. Normal module code should declare registrations in
+`_install()` and let the automatic update rebuild them. `addHookPriority()`
+already calls `dropHook()` for its matching registration, and `addEventHook()`
+likewise calls `dropEventHook()`. Calling a drop helper first is unnecessary.
+The legacy `module_wipehooks()`, `module_drophook()` and
+`module_dropeventhook()` wrappers remain callable for backward compatibility;
+this guidance does not introduce an access restriction or remove those APIs.
+
+These helpers persistently delete registrations for the implicit current
+module. They do not just hide output or disable a callback for one request, and
+calling them under the wrong module context can affect another module's
+registrations. To hide a link or text on a particular page, keep the hook and
+guard only the relevant output inside its callback.
 
 ## Core Pages
 

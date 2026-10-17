@@ -113,31 +113,63 @@ class HookHandler
         Modules::loadModulePrefs($module, $user);
     }
 
+    /**
+     * Lifecycle helper: remove all hooks/event hooks for the current module.
+     *
+     * Automatic upgrades call this before the module's _install() callback;
+     * uninstall paths also perform this cleanup. Module installers should
+     * declare their desired registrations, not invoke cleanup themselves.
+     *
+     * @see Modules::wipeHooks()
+     */
     public static function wipeHooks(): void
     {
         Modules::wipeHooks();
     }
 
+    /** Register an event hook in _install(); replaces the same module/type. */
     public static function addEventHook(string $type, string $chance): void
     {
         Modules::addEventHook($type, $chance);
     }
 
+    /**
+     * Low-level removal used by event registration; not a display control.
+     *
+     * Uses ModuleManager's current module, not an explicit module argument.
+     * Module code should declare desired hooks in _install() and let the
+     * automatic upgrade rebuild them, rather than call this directly.
+     *
+     * @see Modules::dropEventHook()
+     */
     public static function dropEventHook(string $type): void
     {
         Modules::dropEventHook($type);
     }
 
+    /**
+     * Low-level removal used by registration; not a display control.
+     *
+     * Permanently deletes a registration for ModuleManager's current module.
+     * Module code should register desired hooks in _install(), omitting removed
+     * ones for the automatic upgrade to clean up. To suppress output on one
+     * page, guard that output in the callback instead of changing registrations.
+     * Kept callable for legacy compatibility; no runtime access restriction.
+     *
+     * @see Modules::dropHook()
+     */
     public static function dropHook(string $hookname, $functioncall = false): void
     {
         Modules::dropHook($hookname, $functioncall);
     }
 
+    /** Register a hook in _install() with default priority 50; replaces its match. */
     public static function addHook(string $hookname, $functioncall = false, $whenactive = false): void
     {
         Modules::addHook($hookname, $functioncall, $whenactive);
     }
 
+    /** Register a hook in _install(); replaces the same module/location/callback. */
     public static function addHookPriority(string $hookname, int $priority = 50, $functioncall = false, $whenactive = false): void
     {
         Modules::addHookPriority($hookname, $priority, $functioncall, $whenactive);
