@@ -124,6 +124,9 @@ class Account
     #[ORM\Column(name: 'page_revision', type: 'integer', options: ['unsigned' => true, 'default' => 0])]
     private int $page_revision = 0;
 
+    #[ORM\Column(type: 'integer', options: ['unsigned' => true, 'default' => 0])]
+    private int $version = 0;
+
     #[ORM\Column(type: 'boolean')]
     private bool $loggedin = false;
 

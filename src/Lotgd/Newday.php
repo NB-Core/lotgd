@@ -22,6 +22,7 @@ class Newday
     public static function dbCleanup(): void
     {
         global $session;
+        Action::guardImplicitCommit('Newday::dbCleanup()');
         Settings::getInstance()->saveSetting("lastdboptimize", date("Y-m-d H:i:s"));
         // Fetch all table names at once to avoid leaving an unbuffered
         // result active which can cause "Cannot execute queries while other
@@ -194,6 +195,23 @@ class Newday
             );
             GameLog::log(
                 'Deleted ' . $affectedRows . ' records from ' . Database::prefix('faillog') . " older than $timestamp.",
+                GameLog::CATEGORY_MAINTENANCE,
+                false,
+                $session['user']['acctid'] ?? 0
+            );
+        }
+
+        // Guarded actions only need their log while a form could still be sent
+        // again: a day is ample. The table exists once the migration has run.
+        if (Database::tableExists(Database::prefix('action_log'))) {
+            $timestamp = self::calculateExpirationTimestamp('1 days');
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('action_log') . ' WHERE created < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            GameLog::log(
+                'Deleted ' . $affectedRows . ' records from ' . Database::prefix('action_log') . " older than $timestamp.",
                 GameLog::CATEGORY_MAINTENANCE,
                 false,
                 $session['user']['acctid'] ?? 0

@@ -245,6 +245,7 @@ register_shutdown_function(static function (): void {
 // Results scripted per statement, for a page whose branch depends on what a
 // conditional update reports -- a lost page-revision claim, for instance.
 \Lotgd\MySQL\Database::getDoctrineConnection()->statementResultsByPattern = (array) ($spec['statement_results'] ?? []);
+\Lotgd\MySQL\Database::getDoctrineConnection()->queryResultsByPattern = (array) ($spec['query_results'] ?? []);
 
 // From the farm, so that the page's own relative lookups resolve the way they
 // do in an installed game -- above all file_exists('installer.php'), which

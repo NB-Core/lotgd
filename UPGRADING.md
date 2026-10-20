@@ -306,6 +306,35 @@ that declares regions (Aurora does). For such a player only:
 rest. A web server that serves `assets/` already serves them. Custom Twig skins
 keep the full page until they mark their regions; see `docs/ReactiveCore.md`.
 
+### Guarded bank actions (opt-in, off by default)
+
+Migration `Version20261021000001` adds `accounts.version` (an unsigned integer,
+default 0) and the table `action_log`. Unlike the setting below, the column is
+in use as soon as the migration ran: every save that changes the game state
+moves the account's version on by one, and a bank transfer moves the
+recipient's on. Seeing a page (`laston`, the navigation, the page revision)
+does not. Old `action_log` rows are deleted after a day by the daily cleanup.
+
+The game setting *Run bank actions as guarded transactions* (`guarded_actions`,
+*Game Setup*, off by default) runs the bank's deposit, withdrawal, loan and
+transfer as one transaction each, once per form: a form sent twice shows the
+first booking, and a booking racing another change to the same account books
+nothing and tells the player.
+
+For module authors:
+
+- `Accounts::saveUser()` behaves as before; it is now `Accounts::persist()`
+  followed by `Accounts::finishRequest()`.
+- Code that may run inside a guarded action must not take `LOCK TABLES`, run
+  DDL or `OPTIMIZE TABLE`: `module_sem_acquire()` throws a `LogicException`
+  there instead of committing the action. Outside a guarded action nothing
+  changes.
+- A write to another player's account should move their version on
+  (`… version = version + 1`), so their guarded actions notice it.
+
+The Doctrine metadata cache is now keyed to the entity files, so the new
+column is picked up after the update without clearing the cache by hand.
+
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
 
 If you are coming directly from **1.3.2** (or earlier 1.x):

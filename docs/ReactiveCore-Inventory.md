@@ -18,13 +18,13 @@ The scanner (`Lotgd\QA\ReactiveCoreInventory`) is a report, not a gate: it
 always exits 0. It is token based, so comments and docblocks do not count, and
 its matches are deliberately broad. Each category below says how to read it.
 
-## Summary (after Phase 2)
+## Summary (after Phase 3)
 
 | Category | Core | `NB-Core/modules`¹ | Why it matters |
 |---|---:|---:|---|
 | `finish_path` | 185 | 351 | Every place a request can end or persist the account; a unit of work needs one defined end. |
-| `accounts_write` | 39 | 35 | SQL writes to `accounts` outside `saveUser()`; an optimistic lock (`version`) must cover each one. |
-| `transaction_breaker` | 8 | 32 | `LOCK TABLES`, DDL and `OPTIMIZE`/`ANALYZE`/`REPAIR TABLE` implicitly commit an open MySQL transaction; own transactions cannot nest. |
+| `accounts_write` | 41 | 35 | SQL writes to `accounts` outside `saveUser()`; an optimistic lock (`version`) must cover each one. |
+| `transaction_breaker` | 9 | 32 | `LOCK TABLES`, DDL and `OPTIMIZE`/`ANALYZE`/`REPAIR TABLE` implicitly commit an open MySQL transaction; own transactions cannot nest. |
 | `side_effect` | 151 | 156 | Mail, HTTP and data-cache writes survive a rollback and must move behind the commit. |
 | `inline_script` | 44 | 55 | `<script>` emitted into page output does not run after a partial swap. |
 
@@ -37,6 +37,16 @@ the lost revision claim in `ForcedNavigation`, the two partial endings in
 for it in `PartialRenderer::canRender()` and the pattern `PageParts` uses to
 drop the mail slot's script for partial players). The tables below describe the code as
 reviewed in Phase 0.
+
+Phase 3 added two `accounts` matches – the version-checked write in
+`Accounts::persistChecked()` and the account lock in `Action::run()`
+(`SELECT version … FOR UPDATE`, which the token scanner reads as an update) –
+and one transaction breaker, `Action::run()`'s own `beginTransaction()`.
+Since Phase 3 the bank transfer (`bank.php`) credits the recipient with
+`version = version + 1`, and the four runtime breakers below –
+`newday.php`'s settings lock, `Newday::dbCleanup()`, `Modules::inject()` and
+`Modules::semAcquire()` – refuse to run inside a guarded action
+(`Action::guardImplicitCommit()`) instead of committing it.
 
 ## Finish paths
 
