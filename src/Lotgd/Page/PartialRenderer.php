@@ -20,6 +20,7 @@ final class PartialRenderer
 {
     public const HEADER_PARTIAL = 'X-Lotgd-Partial';
     public const HEADER_REVISION = 'X-Lotgd-Page-Revision';
+    public const HEADER_ASYNC_STATE = 'X-Lotgd-Async-State';
     public const REQUEST_HEAD_SERVER_KEY = 'HTTP_X_LOTGD_HEAD';
 
     /** Template variables that end up in <head>. */
@@ -30,8 +31,10 @@ final class PartialRenderer
      */
     public static function render(PageState $state, int $pageRevision): array
     {
-        $body = $state->content;
-        $body .= '<title>' . htmlspecialchars($state->title(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</title>';
+        // First: htmx only takes a <title> at the top level of the answer,
+        // and page content may leave elements open that would swallow it.
+        $body = '<title>' . htmlspecialchars($state->title(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</title>';
+        $body .= $state->content;
         $body .= self::outOfBand('[data-lotgd-region="nav"]', $state->region('nav'));
         $body .= self::outOfBand('[data-lotgd-region="stats"]', $state->region('stats'));
         foreach (PageState::REGIONS['header'] as $slot) {
@@ -41,12 +44,21 @@ final class PartialRenderer
             );
         }
 
+        $headers = [
+            self::HEADER_PARTIAL => '1',
+            self::HEADER_REVISION => (string) $pageRevision,
+        ];
+        if ($state->asyncState !== []) {
+            // ASCII only, so it is a valid header value whatever the section is called.
+            $headers[self::HEADER_ASYNC_STATE] = (string) json_encode(
+                $state->asyncState,
+                JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+            );
+        }
+
         return [
             'body' => $body,
-            'headers' => [
-                self::HEADER_PARTIAL => '1',
-                self::HEADER_REVISION => (string) $pageRevision,
-            ],
+            'headers' => $headers,
         ];
     }
 
@@ -85,9 +97,11 @@ final class PartialRenderer
      * A short hash of what the page puts in <head>, so the client can tell
      * the server which head it is showing.
      *
-     * Cache busters, the canonical link (it names the page) and the partial
-     * client's own meta tags are left out: they change from page to page
-     * without the head loading anything else.
+     * Cache busters, the canonical link (it names the page), the partial
+     * client's own meta tags and the four values the AJAX polling script
+     * starts from are left out: they change from page to page without the
+     * head loading anything else, and a partial answer carries the polling
+     * values in its X-Lotgd-Async-State header.
      *
      * @param array<string,mixed> $templateVars
      */
@@ -99,6 +113,11 @@ final class PartialRenderer
         }
         $head = (string) preg_replace('/<meta name="lotgd-[a-z-]+" content="[^"]*">/', '', $head);
         $head = (string) preg_replace('/<link rel="canonical" href="[^"]*" \/>/', '', $head);
+        $head = (string) preg_replace(
+            '/var lotgd_(?:comment_section|lastCommentId|lastUnreadMailId|lastUnreadMailCount) = [^;]*;/',
+            '',
+            $head
+        );
         $head = (string) preg_replace('/\?v=[0-9]+/', '', $head);
 
         return substr(hash('sha256', $head), 0, 16);

@@ -195,6 +195,9 @@ if (($spec['token'] ?? null) !== null) {
     $_SESSION['session']['csrf'][\Lotgd\Forms::csrfScope()] = $token;
     $_POST[\Lotgd\Security\Csrf::FORM_FIELD] = $token;
     $_POST[\Lotgd\Security\Csrf::FIELD] = $token;
+    if (!empty($spec['async_token'])) {
+        $_SESSION['session']['csrf'][\Lotgd\Security\Csrf::SCOPE_ASYNC] = $token;
+    }
 }
 
 // Everything seeded; hand the session back so common.php can open it itself.

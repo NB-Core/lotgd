@@ -36,8 +36,9 @@ final class PartialModeTest extends TestCase
     public static function allowList(): iterable
     {
         yield 'forest' => ['forest.php', 'GET', '', true];
-        yield 'the village, until its commentary script is a region' => ['village.php', 'GET', '', false];
-        yield 'the inn, likewise' => ['inn.php', 'GET', '', false];
+        yield 'village' => ['village.php', 'GET', '', true];
+        yield 'inn' => ['inn.php', 'GET', '', true];
+        yield 'the bartender' => ['inn.php', 'GET', 'bartender', false];
         yield 'lower-case method' => ['forest.php', 'get', '', true];
         yield 'a forest fight' => ['forest.php', 'GET', 'search', false];
         yield 'a post' => ['forest.php', 'POST', '', false];
@@ -109,6 +110,46 @@ final class PartialModeTest extends TestCase
         self::assertNotSame(PartialRenderer::headSignature($head), PartialRenderer::headSignature($module));
     }
 
+    public function testTheHeadSignatureIgnoresTheValuesTheAjaxPollingStartsFrom(): void
+    {
+        $polling = static fn (string $section, int $comment, int $mail, int $count): array => ['headscript_pre' => '<script>'
+            . 'var lotgd_async_csrf_token = "t";'
+            . 'var lotgd_comment_section = ' . json_encode($section) . ';'
+            . 'var lotgd_lastCommentId = ' . $comment . ';'
+            . 'var lotgd_lastUnreadMailId = ' . $mail . ';'
+            . 'var lotgd_lastUnreadMailCount = ' . $count . ';'
+            . 'var lotgd_poll_interval_ms = 10000;</script>'];
+
+        self::assertSame(
+            PartialRenderer::headSignature($polling('village', 12, 3, 1)),
+            PartialRenderer::headSignature($polling('inn', 40, 7, 0))
+        );
+        $otherInterval = $polling('village', 12, 3, 1);
+        $otherInterval['headscript_pre'] = str_replace('10000', '5000', $otherInterval['headscript_pre']);
+        self::assertNotSame(PartialRenderer::headSignature($polling('village', 12, 3, 1)), PartialRenderer::headSignature($otherInterval));
+    }
+
+    public function testThePartialAnswerCarriesTheAjaxStateOnlyForAjaxPlayers(): void
+    {
+        $plain = new PageState(PageState::TEMPLATE_PAGE, true, '', '', '<p>Inn</p>');
+        $ajax = new PageState(
+            PageState::TEMPLATE_PAGE,
+            true,
+            '',
+            '',
+            '<p>Inn</p>',
+            asyncState: ['commentSection' => "inn's <room>", 'lastCommentId' => 40, 'lastUnreadMailId' => 7, 'lastUnreadMailCount' => 0]
+        );
+
+        self::assertArrayNotHasKey('X-Lotgd-Async-State', PartialRenderer::render($plain, 1)['headers']);
+        $header = PartialRenderer::render($ajax, 1)['headers']['X-Lotgd-Async-State'];
+        self::assertMatchesRegularExpression('/^[\x20-\x7e]+$/', $header, 'A header value stays printable ASCII.');
+        self::assertSame(
+            ['commentSection' => "inn's <room>", 'lastCommentId' => 40, 'lastUnreadMailId' => 7, 'lastUnreadMailCount' => 0],
+            json_decode($header, true)
+        );
+    }
+
     public function testThePartialAnswerCarriesEveryRegionAndTheRevision(): void
     {
         $state = new PageState(
@@ -126,8 +167,11 @@ final class PartialModeTest extends TestCase
         $answer = PartialRenderer::render($state, 7);
 
         self::assertSame(['X-Lotgd-Partial' => '1', 'X-Lotgd-Page-Revision' => '7'], $answer['headers']);
-        self::assertStringStartsWith('<p>Forest</p>', $answer['body'], 'The content region is the primary swap target.');
-        self::assertStringContainsString('<title>The &lt;Forest&gt;</title>', $answer['body']);
+        self::assertStringStartsWith(
+            '<title>The &lt;Forest&gt;</title><p>Forest</p>',
+            $answer['body'],
+            'The title comes first, where content that leaves an element open cannot swallow it; the content follows as the primary swap target.'
+        );
         self::assertStringContainsString(
             '<div hx-swap-oob="innerHTML:[data-lotgd-region=&quot;nav&quot;]"><a href="village.php">Village</a></div>',
             $answer['body']

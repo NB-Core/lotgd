@@ -173,9 +173,36 @@
         regions.run('destroy', document);
     });
 
-    document.addEventListener('htmx:afterSettle', function () {
+    document.addEventListener('htmx:afterSettle', function (event) {
+        applyAsyncState(event.detail && event.detail.xhr);
         regions.run('init', document);
     });
+
+    /*
+     * AJAX players: the polling script in <head> starts from the comment
+     * section and the last ids of the page it was loaded with. A partial
+     * answer brings the values for the new page.
+     */
+    function applyAsyncState(xhr) {
+        const raw = xhr && xhr.getResponseHeader ? xhr.getResponseHeader('X-Lotgd-Async-State') : null;
+        if (!raw) {
+            return;
+        }
+        let state;
+        try {
+            state = JSON.parse(raw);
+        } catch (e) {
+            return;
+        }
+        if (typeof state.commentSection === 'string') {
+            window.lotgd_comment_section = state.commentSection;
+        }
+        ['lastCommentId', 'lastUnreadMailId', 'lastUnreadMailCount'].forEach(function (key) {
+            if (typeof state[key] === 'number') {
+                window['lotgd_' + key] = state[key];
+            }
+        });
+    }
 
     document.addEventListener('htmx:sendError', recover);
     document.addEventListener('htmx:timeout', recover);
@@ -184,6 +211,103 @@
     document.addEventListener('htmx:historyCacheMiss', function (event) {
         event.preventDefault();
         recover();
+    });
+
+    /*
+     * Commentary preview (Forms::previewField()): the field carries its
+     * settings in data-lotgd-preview instead of an inline script. The output
+     * matches the inline previewtext<name>() function it replaces.
+     */
+    function renderPreview(field) {
+        let cfg;
+        try {
+            cfg = JSON.parse(field.getAttribute('data-lotgd-preview') || '{}');
+        } catch (e) {
+            return;
+        }
+        const t = field.value || '';
+        let l = cfg.limit;
+        let out = "<span class='colLtWhite'>" + (cfg.start || '') + ' ';
+        let end = '</span>';
+        let x = 0;
+
+        if (cfg.talkline !== null && cfg.talkline !== undefined) {
+            if (t.substr(0, 2) === '::') {
+                x = 2;
+                out += '</span><span class="colLtWhite">';
+            } else if (t.substr(0, 1) === ':') {
+                x = 1;
+                out += '</span><span class="colLtWhite">';
+            } else if (t.substr(0, 3) === '/me') {
+                x = 3;
+                out += '</span><span class="colLtWhite">';
+            } else if (cfg.gamemaster && t.substr(0, 5) === '/game') {
+                x = 5;
+                out = '<span class="colLtWhite">';
+            } else {
+                out += '</span><span class="colDkCyan">' + cfg.talkline + ', </span><span class="colLtCyan">';
+                end += '</span><span class="colDkCyan">';
+            }
+        }
+
+        if (cfg.showCharsLeft) {
+            if (x !== 0) {
+                if (field.maxLength !== cfg.maxChars) {
+                    field.maxLength = cfg.maxChars;
+                }
+                l = cfg.maxChars;
+            } else {
+                field.maxLength = l;
+            }
+            let charsleft = '';
+            if (l - t.length < 0) {
+                charsleft += '<span class="colLtRed">';
+            }
+            charsleft += cfg.youHave + (l - t.length) + cfg.charsLeft + '<br>';
+            if (l - t.length < 0) {
+                charsleft += '</span>';
+            }
+            const counter = document.getElementById('charsleft' + cfg.name);
+            if (counter) {
+                counter.innerHTML = charsleft + '<br/>';
+            }
+        }
+
+        const colors = cfg.colors || {};
+        for (; x < t.length; x++) {
+            const y = t.substr(x, 1);
+            if (y === '<') {
+                out += '&lt;';
+            } else if (y === '>') {
+                out += '&gt;';
+            } else if (y === '`') {
+                if (x < t.length - 1) {
+                    const z = t.substr(x + 1, 1);
+                    if (z === '0') {
+                        out += '</span>';
+                    } else if (Object.prototype.hasOwnProperty.call(colors, z)) {
+                        out += '</span><span class="' + colors[z] + '">';
+                    }
+                    x++;
+                }
+            } else {
+                out += y;
+            }
+        }
+
+        const target = document.getElementById('previewtext' + cfg.name);
+        if (target) {
+            target.innerHTML = out + end + '<br/>';
+        }
+    }
+
+    ['keyup', 'input'].forEach(function (type) {
+        document.addEventListener(type, function (event) {
+            const field = event.target;
+            if (field && field.hasAttribute && field.hasAttribute('data-lotgd-preview')) {
+                renderPreview(field);
+            }
+        });
     });
 
     document.addEventListener('keypress', function (event) {

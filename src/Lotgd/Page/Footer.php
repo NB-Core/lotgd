@@ -150,6 +150,14 @@ class Footer
             if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('async/setup.php')) {
                     require_once 'async/setup.php';
+                    // The per-page values the polling script starts from. A
+                    // partial answer carries them, since it has no <head>.
+                    $asyncState = [
+                        'commentSection' => (string) ($session['last_comment_section'] ?? ''),
+                        'lastCommentId' => (int) ($session['lastcommentid'] ?? 0),
+                        'lastUnreadMailId' => (int) ($lastUnreadMailId ?? 0),
+                        'lastUnreadMailCount' => (int) ($lastUnreadMailCount ?? 0),
+                    ];
                 }
             }
         } else {
@@ -158,7 +166,7 @@ class Footer
 
         // The partial client binds the access keys itself, from the links in
         // the navigation region, so its quick keys follow every swap.
-        $partialClient = PartialMode::isEnabledFor($session['user'] ?? []) && PartialMode::skinSupportsRegions();
+        $partialClient = PartialMode::clientActive($session['user'] ?? []);
         if ($partialClient) {
             Output::requireVendorAsset('htmx', 'js');
             Output::requireVendorAsset('lotgd-partial', 'js');
@@ -304,7 +312,8 @@ class Footer
             $statsOutput,
             $quickKeys,
             PageParts::$twigVars,
-            $headSignature
+            $headSignature,
+            $asyncState ?? []
         );
     }
 

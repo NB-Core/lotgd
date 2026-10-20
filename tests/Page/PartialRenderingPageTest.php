@@ -49,6 +49,22 @@ final class PartialRenderingPageTest extends TestCase
         );
     }
 
+    public function testAnAjaxPlayerKeepsOneHeadAcrossPagesAndGetsThePollingState(): void
+    {
+        $prefs = ['partialrender' => 1, 'ajax' => 1];
+        $settings = ['partial_render' => 1, 'ajax' => 1];
+
+        $innHead = $this->headOf('inn.php', $prefs, $settings);
+        self::assertSame($innHead, $this->headOf('forest.php', $prefs, $settings), 'The polling values must not make every page a new head.');
+
+        $run = $this->request('forest.php', self::PARTIAL_REQUEST + ['HTTP_X_LOTGD_HEAD' => $innHead], [], $prefs, $settings);
+
+        self::assertSame('1', $run->header('X-Lotgd-Partial'), $this->context($run));
+        $state = json_decode((string) $run->header('X-Lotgd-Async-State'), true);
+        self::assertIsArray($state, $this->context($run));
+        self::assertSame(['commentSection', 'lastCommentId', 'lastUnreadMailId', 'lastUnreadMailCount'], array_keys($state));
+    }
+
     public function testAPageWantingAnotherHeadIsShownFromTheStoredCopy(): void
     {
         $run = $this->request('forest.php', self::PARTIAL_REQUEST + ['HTTP_X_LOTGD_HEAD' => 'not-this-head']);
@@ -177,9 +193,13 @@ final class PartialRenderingPageTest extends TestCase
     /**
      * The head signature a full page of $page carries, as the client would send it.
      */
-    private function headOf(string $page): string
+    /**
+     * @param array<string,mixed> $prefs
+     * @param array<string,mixed> $settings
+     */
+    private function headOf(string $page, array $prefs = ['partialrender' => 1], array $settings = ['partial_render' => 1]): string
     {
-        $full = $this->request($page, []);
+        $full = $this->request($page, [], [], $prefs, $settings);
         self::assertSame(1, preg_match('/<meta name="lotgd-head" content="([0-9a-f]+)">/', $full->html, $match), $this->context($full));
 
         return $match[1];

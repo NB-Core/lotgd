@@ -295,7 +295,7 @@ the game setting *Allow partial rendering* (`partial_render`, *Game Setup*, off
 by default), the player's preference *Change pages in place* and a Twig skin
 that declares regions (Aurora does). For such a player only:
 
-- the forest is swapped in; every other page still loads normally;
+- the village, the forest and the inn are swapped in; every other page still loads normally;
 - a link followed from a page that was already left in another tab or on
   another device is turned away and shows the latest page (`badnav.php`)
   instead of running a second time (this applies with the setting and the

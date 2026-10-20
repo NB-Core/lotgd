@@ -11,6 +11,7 @@ use Lotgd\Output;
 use Lotgd\Security\Csrf;
 use Lotgd\Security\Escape;
 use Lotgd\Translator;
+use Lotgd\Page\PartialMode;
 use Lotgd\Http;
 use Lotgd\DataCache;
 use Lotgd\GameLog;
@@ -583,8 +584,23 @@ class Forms
         $charsleft = Translator::translateInline(' characters left.');
         $startdiv = $startdiv === false ? '' : $startdiv;
 
-        $encodedStart = addslashes($output->appoencode($startdiv));
         $maxChars = (int) Settings::getInstance()->getSetting('maxchars', 200);
+
+        if (PartialMode::clientActive(is_array($session['user'] ?? null) ? $session['user'] : [])) {
+            return self::declarativePreviewField(
+                $name,
+                $output->appoencode($startdiv),
+                $talkline,
+                $showcharsleft,
+                $info,
+                $scriptOutput,
+                $maxChars,
+                $youhave,
+                $charsleft
+            );
+        }
+
+        $encodedStart = addslashes($output->appoencode($startdiv));
 
         $script = <<<JS
 <script language="JavaScript">
@@ -713,6 +729,72 @@ JS;
             } else {
                 $script .= '>';
             }
+        }
+
+        $add = Translator::translateInline('Add');
+        $returnscript = $script . "<div id='previewtext{$name}'></div>";
+        $script .= "<input type='submit' class='button' value='{$add}'><br>";
+        $script .= "<div id='previewtext{$name}'></div>";
+
+        if ($scriptOutput) {
+            $output->rawOutput($script);
+        }
+
+        return $returnscript;
+    }
+
+    /**
+     * The preview field for a player whose pages the partial client swaps in.
+     *
+     * Same elements, ids and attributes as previewField() renders, without
+     * the inline <script> and onKeyUp handlers: a swapped-in page does not
+     * run scripts, so the preview is described in a data-lotgd-preview
+     * attribute and assets/js/lotgd.partial.js renders it.
+     *
+     * @param array<string,mixed>|bool $info
+     */
+    private static function declarativePreviewField(
+        string $name,
+        string $startHtml,
+        string|bool $talkline,
+        bool $showcharsleft,
+        array|bool $info,
+        bool $scriptOutput,
+        int $maxChars,
+        string $youhave,
+        string $charsleft
+    ): string {
+        global $session;
+        $output = Output::getInstance();
+
+        $limit = is_array($info) && isset($info['maxlength']) ? (int) $info['maxlength'] : $maxChars;
+        $config = [
+            'name' => $name,
+            'start' => $startHtml,
+            'talkline' => $talkline === false ? null : (string) $talkline,
+            'gamemaster' => (((int) ($session['user']['superuser'] ?? 0)) & SU_IS_GAMEMASTER) === SU_IS_GAMEMASTER,
+            'maxChars' => $maxChars,
+            'limit' => $limit,
+            'showCharsLeft' => $showcharsleft,
+            'youHave' => $youhave,
+            'charsLeft' => $charsleft,
+            'colors' => (object) $output->getColors(),
+        ];
+        $preview = ' data-lotgd-preview="' . htmlspecialchars((string) json_encode($config), ENT_QUOTES, 'UTF-8') . '"';
+
+        $script = $showcharsleft ? "<span id='charsleft{$name}'></span>" : '';
+
+        if (!is_array($info)) {
+            $script .= "<input name='{$name}' id='input{$name}' maxsize='" . ($maxChars + 100) . "'{$preview}>";
+        } else {
+            $isTextarea = isset($info['type']) && $info['type'] == 'textarea';
+            $script .= $isTextarea
+                ? "<textarea name='{$name}' id='input{$name}'{$preview} "
+                : "<input name='{$name}' id='input{$name}'{$preview} ";
+            foreach ($info as $key => $val) {
+                $script .= "$key='$val'";
+            }
+            $script .= $isTextarea ? '></textarea>' : '>';
         }
 
         $add = Translator::translateInline('Add');

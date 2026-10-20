@@ -26,15 +26,16 @@ its matches are deliberately broad. Each category below says how to read it.
 | `accounts_write` | 39 | 35 | SQL writes to `accounts` outside `saveUser()`; an optimistic lock (`version`) must cover each one. |
 | `transaction_breaker` | 8 | 32 | `LOCK TABLES`, DDL and `OPTIMIZE`/`ANALYZE`/`REPAIR TABLE` implicitly commit an open MySQL transaction; own transactions cannot nest. |
 | `side_effect` | 151 | 156 | Mail, HTTP and data-cache writes survive a rollback and must move behind the commit. |
-| `inline_script` | 43 | 55 | `<script>` emitted into page output does not run after a partial swap. |
+| `inline_script` | 44 | 55 | `<script>` emitted into page output does not run after a partial swap. |
 
 ¹ Without `_old_dragonprime_snapshot/`, which is not shipped.
 
 Phase 2 added six finish paths (the partial exits in `PartialMode::preCheck()`,
 the lost revision claim in `ForcedNavigation`, the two partial endings in
 `Footer::pageFooter()` and the `HX-Redirect` in `Redirect::redirect()`), one
-`accounts` write (the revision claim) and one `<script` match (the check for
-it in `PartialRenderer::canRender()`). The tables below describe the code as
+`accounts` write (the revision claim) and two `<script` matches (the check
+for it in `PartialRenderer::canRender()` and the pattern `PageParts` uses to
+drop the mail slot's script for partial players). The tables below describe the code as
 reviewed in Phase 0.
 
 ## Finish paths

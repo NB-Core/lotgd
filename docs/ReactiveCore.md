@@ -29,7 +29,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 |---|---|---|
 | 0 | Inventory (`composer qa:reactive-inventory`, [inventory](ReactiveCore-Inventory.md)) | done |
 | 1 | `PageState`: the footer assembles one typed state object; renderers only turn it into HTML. Output unchanged. | done |
-| 2 | Partial rendering for display-only operations (HTMX), page revisions, HTTP contract | done (the forest; see below) |
+| 2 | Partial rendering for display-only operations (HTMX), page revisions, HTTP contract | done (village, forest, inn; see below) |
 | 3 | Guarded game actions: `Action::run()`, split `saveUser()`, optimistic locking | planned |
 | 4 | Transactional outbox, relay, polling transport | planned |
 | 5 | Grants: server-issued one-shot navigation for other players | planned |
@@ -69,10 +69,9 @@ player's preference `partialrender`. Everything below only applies to such a
 player on a skin with regions; everyone else gets exactly the game of before.
 
 - **Allow-list** (`Lotgd\Page\PartialMode::ALLOWLIST`, script → method →
-  `op`): only `forest.php` without `op`, by GET. The village and the inn are
-  left off because their commentary block emits an inline preview script;
-  they would always take the late fallback. They join once the commentary
-  registers a region lifecycle.
+  `op`): `village.php`, `forest.php` and `inn.php` without `op`, by GET.
+  Commentary paging and refresh links carry no `op` and swap in too; posting
+  a comment is a form and loads the page normally.
 - **Early fallback**: `PartialMode::preCheck()` runs in `common.php` before
   forced navigation. A partial request for any other page gets
   `HX-Redirect` to the same URL and an empty body; the page has not run.
@@ -88,10 +87,28 @@ player on a skin with regions; everyone else gets exactly the game of before.
   redirected to `badnav.php` (full page) and does not save the account.
   Same-browser double clicks never reach the server twice: the client sends
   one request at a time, and PHP's session lock serialises the rest.
-- **Answer**: `Lotgd\Page\PartialRenderer` – the content region as body,
-  every other region as an `hx-swap-oob` element addressed by
-  `[data-lotgd-region=…]`, plus `<title>`. Headers `X-Lotgd-Partial: 1`,
-  `X-Lotgd-Page-Revision`, `Vary: HX-Request`.
+- **Answer**: `Lotgd\Page\PartialRenderer` – `<title>` first (htmx only
+  takes a top-level title, and page content may leave elements open), then
+  the content region, then every other region as an `hx-swap-oob` element
+  addressed by `[data-lotgd-region=…]`. Headers `X-Lotgd-Partial: 1`,
+  `X-Lotgd-Page-Revision`, `Vary: HX-Request`, and for AJAX players
+  `X-Lotgd-Async-State` (below).
+- **Commentary preview**: for a partial player `Forms::previewField()` renders
+  the same elements and ids without the inline `previewtext<name>()` script
+  and `onKeyUp` handlers; the field carries its settings (start markup, talk
+  line, limits, colour map, the `/game` prefix for gamemasters) as JSON in
+  `data-lotgd-preview`, and the client renders the preview from it. Classic
+  players keep the inline script byte for byte.
+- **AJAX players**: the polling script in `<head>` (`async/setup.php`) starts
+  from four per-page values – comment section, last comment id, last unread
+  mail id and count. They are left out of the head signature, and every
+  partial answer carries them as ASCII JSON in `X-Lotgd-Async-State`; the
+  client sets `lotgd_comment_section`, `lotgd_lastCommentId`,
+  `lotgd_lastUnreadMailId` and `lotgd_lastUnreadMailCount` after the swap, so
+  polling follows the page. The mail slot's copy of the same values
+  (`async/maillink.php`, an inline script) is dropped for partial players.
+  The timeout warning needs nothing: it is computed on the server from
+  `laston`, which every partial request updates.
 - **Late fallback**: the page is stored as usual and answered
   `HX-Redirect: badnav.php`, which shows it, when any region (content, nav,
   stats, a header slot) contains `<script`, when the page wants a different
@@ -112,13 +129,21 @@ player on a skin with regions; everyone else gets exactly the game of before.
   key handler for these players); `lotgd.regions.register(name, {init, destroy})`
   for code that has to run per swap.
 
-Verified in a browser (Chromium via Playwright) against MariaDB 11.4:
-village → forest swapped in with both navigation copies updated and one
-revision claimed; forest → village as a page change without the village
-running twice; quick key; Back to `badnav.php`; a double click sends one
-request; a stale second tab ends on `badnav.php` without running its link;
-without JavaScript the game is unchanged. Two connections racing the claim
-from the same revision: one updates a row, the other none.
+Verified in a browser (Chromium via Playwright) against MariaDB 11.4, with
+and without the AJAX preference: village → forest → village → inn → village
+swapped in without a reload, both navigation copies updated, one revision
+claimed per change; a page off the allow-list (the bank) loads as a page
+change without running twice; the comment preview renders colour codes and
+the characters-left counter on a swapped page; posting a comment loads the
+page normally; for AJAX players polling follows the swapped page and a
+comment posted elsewhere appears; quick key; Back to `badnav.php`; a double
+click sends one request; a stale second tab ends on `badnav.php` without
+running its link; without JavaScript the game is unchanged. Two connections
+racing the claim from the same revision: one updates a row, the other none.
+
+A page stored before a player turned partial rendering on, or before an
+update changed the head signature, has another head; the first change from
+it is one full page, every later one swaps.
 
 ## Binding acceptance criteria
 

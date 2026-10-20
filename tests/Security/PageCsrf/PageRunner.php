@@ -95,7 +95,7 @@ final class PageRunner
         array $server = [],
         array $statementResults = []
     ): PageOutcome {
-        return self::run($page, $superuser, $get, $post, self::TOKEN, $globals, $settings, $method, $server, $statementResults);
+        return self::run($page, $superuser, $get, $post, self::TOKEN, $globals, $settings, $method, $server, $statementResults, true);
     }
 
     /**
@@ -105,6 +105,7 @@ final class PageRunner
      * @param array<string,mixed>  $settings Game settings beyond the harness defaults.
      * @param array<string,string> $server
      * @param array<string,int>    $statementResults
+     * @param bool                 $asyncToken Seed the async CSRF token, as one session would carry it.
      */
     private static function run(
         string $page,
@@ -116,7 +117,8 @@ final class PageRunner
         array $settings = [],
         string $method = 'POST',
         array $server = [],
-        array $statementResults = []
+        array $statementResults = [],
+        bool $asyncToken = false
     ): PageOutcome {
         $root = dirname(__DIR__, 3);
 
@@ -134,6 +136,9 @@ final class PageRunner
             'method' => $method,
             'server' => $server,
             'statement_results' => $statementResults,
+            // withRequest() runs stand for pages of one session: the async
+            // token, which an AJAX player's <head> carries, is the same.
+            'async_token' => $asyncToken,
         ];
 
         // The page's own markup goes to a file of this run's own rather than to

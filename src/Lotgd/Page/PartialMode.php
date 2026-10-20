@@ -34,15 +34,16 @@ final class PartialMode
      * here; anything that changes state stays a full page until guarded game
      * actions exist (Phase 3).
      *
-     * The village and the inn are not on it yet: their commentary block emits
-     * an inline preview script, so they would always take the late fallback
-     * and land on badnav.php. They join once the commentary registers a
-     * region lifecycle instead.
+     * The village and the inn carry a commentary block; for a partial
+     * player its preview field is declarative markup the client handles
+     * (Forms::previewField()), so it swaps in like any other region content.
      *
      * @var array<string,array<string,list<string>>>
      */
     public const ALLOWLIST = [
+        'village.php' => ['GET' => ['']],
         'forest.php' => ['GET' => ['']],
+        'inn.php' => ['GET' => ['']],
     ];
 
     public const REQUEST_HEADER = 'HTTP_HX_REQUEST';
@@ -110,6 +111,18 @@ final class PartialMode
         $prefs = $user['prefs'] ?? [];
 
         return self::settingEnabled() && is_array($prefs) && !empty($prefs['partialrender']);
+    }
+
+    /**
+     * The partial client runs on this player's pages: partial rendering is
+     * on for them and the skin declares regions. Code that would otherwise
+     * emit an inline script asks this to emit declarative markup instead.
+     *
+     * @param array<string,mixed> $user The session user, with prefs unserialized.
+     */
+    public static function clientActive(array $user): bool
+    {
+        return self::isEnabledFor($user) && self::skinSupportsRegions();
     }
 
     /**
