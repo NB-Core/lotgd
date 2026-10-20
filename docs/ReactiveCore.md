@@ -78,8 +78,11 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `HX-Redirect` to the same URL and an empty body; the page has not run.
 - **Page revision**: `accounts.page_revision` (migration
   `Version20261020000001`). `ForcedNavigation` claims it with
-  `UPDATE … SET page_revision = page_revision + 1 WHERE acctid = :id AND page_revision = :loaded`
-  right after accepting the navigation. A request that loses the claim was
+  `UPDATE … SET page_revision = page_revision + 1, allowednavs = '' WHERE acctid = :id AND page_revision = :loaded`
+  right after accepting the navigation. Clearing the stored links in the same
+  statement makes consuming them atomic: a request that read the row before
+  the claim loses the update, and one that reads it afterwards finds no links
+  until the winner saves its new ones. A request turned away like this was
   started from a page another request already left (second tab, second
   device): it is answered `409 {"reload":"badnav.php"}` (partial) or
   redirected to `badnav.php` (full page) and does not save the account.
@@ -89,9 +92,14 @@ player on a skin with regions; everyone else gets exactly the game of before.
   every other region as an `hx-swap-oob` element addressed by
   `[data-lotgd-region=…]`, plus `<title>`. Headers `X-Lotgd-Partial: 1`,
   `X-Lotgd-Page-Revision`, `Vary: HX-Request`.
-- **Late fallback**: a page whose content contains `<script`, or a player who
-  turned the preference off, is stored as usual and answered
-  `HX-Redirect: badnav.php`, which shows the stored page.
+- **Late fallback**: the page is stored as usual and answered
+  `HX-Redirect: badnav.php`, which shows it, when any region (content, nav,
+  stats, a header slot) contains `<script`, when the page wants a different
+  `<head>` than the one the client shows, or when the player turned the
+  preference off. Full pages for partial players carry
+  `<meta name="lotgd-head">`, a hash of the head markup without cache
+  busters, the canonical link and the client's own meta tags; the client
+  sends it back as `X-Lotgd-Head`.
 - **Redirects** (`Redirect::redirect()`, e.g. the new day or a login timeout)
   inside a partial request are `HX-Redirect` page changes.
 - **Client** (`assets/js/lotgd.partial.js`, after htmx 2.0.4 from

@@ -93,12 +93,14 @@ class ForcedNavigation
      * Claim the page this navigation started from, for a player with partial
      * rendering on.
      *
-     * The allowed links were read with the account; moving page_revision on
-     * from the value read in the same row, with a conditional update, makes
-     * consuming them atomic. A second request that started from the same page
-     * -- a double click, another tab, another device -- finds the revision
-     * already moved and is turned away before the page runs. It must not save
-     * either, or its empty navigation would overwrite the winner's.
+     * The allowed links were read with the account. One conditional update
+     * moves page_revision on from the value read in the same row *and* clears
+     * the stored links, so consuming them is atomic: a second request that
+     * read the same row -- a double click, another tab, another device --
+     * loses the update, and one that reads the row afterwards finds no links
+     * to follow. Either way it is turned away before the page runs, and must
+     * not save, or its empty navigation would overwrite the winner's. The
+     * winner writes its new links when it saves.
      *
      * Players without partial rendering keep today's behaviour exactly.
      */
@@ -113,16 +115,21 @@ class ForcedNavigation
         $loaded = (int) $session['user']['page_revision'];
         $claimed = Database::getDoctrineConnection()->executeStatement(
             'UPDATE ' . Database::prefix('accounts')
-            . ' SET page_revision = page_revision + 1 WHERE acctid = :acctid AND page_revision = :revision',
+            . " SET page_revision = page_revision + 1, allowednavs = ''"
+            . ' WHERE acctid = :acctid AND page_revision = :revision',
             ['acctid' => (int) $session['user']['acctid'], 'revision' => $loaded],
             ['acctid' => ParameterType::INTEGER, 'revision' => ParameterType::INTEGER]
         );
 
         if ((int) $claimed === 1) {
-            // Written already; keep saveUser()'s diff from writing it again.
+            // Written already; keep saveUser()'s diff from writing the revision
+            // again, and make it always write the new links, even when they
+            // serialize to what was stored before the claim cleared them.
             $session['user']['page_revision'] = $loaded + 1;
             $baseaccount['page_revision'] = $loaded + 1;
             self::$baseAccount['page_revision'] = $loaded + 1;
+            $baseaccount['allowednavs'] = '';
+            self::$baseAccount['allowednavs'] = '';
 
             return;
         }

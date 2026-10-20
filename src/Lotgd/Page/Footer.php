@@ -39,7 +39,8 @@ class Footer
         // swapped in, so the player is sent to the stored page instead.
         $partial = null;
         if (PartialMode::isActive()) {
-            $partial = PartialRenderer::canRender($state)
+            $clientHead = $_SERVER[PartialRenderer::REQUEST_HEAD_SERVER_KEY] ?? null;
+            $partial = PartialRenderer::canRender($state, is_string($clientHead) ? $clientHead : null)
                 && PartialMode::skinSupportsRegions()
                 && PartialMode::isEnabledFor($session['user'] ?? [])
                 ? PartialRenderer::render($state, (int) ($session['user']['page_revision'] ?? 0))
@@ -286,6 +287,13 @@ class Footer
         }
         $navInstance->setHeader($header);
 
+        $headSignature = PartialRenderer::headSignature(PageParts::$twigVars);
+        if ($partialClient && $isTwig) {
+            // After the signature, which leaves lotgd-* meta tags out anyway.
+            PageParts::$twigVars['headscript_mid'] = (PageParts::$twigVars['headscript_mid'] ?? '')
+                . '<meta name="lotgd-head" content="' . $headSignature . '">';
+        }
+
         return new PageState(
             PageState::TEMPLATE_PAGE,
             $isTwig,
@@ -295,7 +303,8 @@ class Footer
             $builtnavs,
             $statsOutput,
             $quickKeys,
-            PageParts::$twigVars
+            PageParts::$twigVars,
+            $headSignature
         );
     }
 

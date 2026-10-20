@@ -63,11 +63,50 @@ final class PartialModeTest extends TestCase
         self::assertFalse(PartialMode::isRequested(), 'A history restore is a full page load.');
     }
 
-    public function testAPageWithAnInlineScriptOrAPopupIsNotSwappedIn(): void
+    /**
+     * @return iterable<string,array{PageState,bool}>
+     */
+    public static function swappable(): iterable
     {
-        self::assertTrue(PartialRenderer::canRender(new PageState(PageState::TEMPLATE_PAGE, true, '', '', '<p>Forest</p>')));
-        self::assertFalse(PartialRenderer::canRender(new PageState(PageState::TEMPLATE_PAGE, true, '', '', '<SCRIPT>x()</SCRIPT>')));
-        self::assertFalse(PartialRenderer::canRender(new PageState(PageState::TEMPLATE_POPUP, true, '', '', '<p>Mail</p>')));
+        $page = static fn (string $content = '<p>Forest</p>', string $nav = '', string $stats = '', array $vars = []): PageState
+            => new PageState(PageState::TEMPLATE_PAGE, true, '', '', $content, $nav, $stats, [], $vars, 'head');
+
+        yield 'a plain page' => [$page(), true];
+        yield 'a script in the content' => [$page('<SCRIPT>x()</SCRIPT>'), false];
+        yield 'a script in the navigation' => [$page('<p>Forest</p>', '<script>nav()</script>'), false];
+        yield 'a script in the stats' => [$page('<p>Forest</p>', '', '<script>stats()</script>'), false];
+        yield 'a script in a header slot' => [$page('<p>Forest</p>', '', '', ['mail' => '<script>mail()</script>']), false];
+        yield 'a popup' => [new PageState(PageState::TEMPLATE_POPUP, true, '', '', '<p>Mail</p>', templateVars: [], headSignature: 'head'), false];
+    }
+
+    #[DataProvider('swappable')]
+    public function testOnlyAPageWithoutScriptsInAnyRegionIsSwappedIn(PageState $state, bool $swappable): void
+    {
+        self::assertSame($swappable, PartialRenderer::canRender($state, 'head'));
+    }
+
+    public function testAPageWantingAnotherHeadIsNotSwappedIn(): void
+    {
+        $state = new PageState(PageState::TEMPLATE_PAGE, true, '', '', '<p>Forest</p>', templateVars: [], headSignature: 'head');
+
+        self::assertFalse(PartialRenderer::canRender($state, 'other'));
+        self::assertFalse(PartialRenderer::canRender($state, null), 'A client that sent no head signature gets a full page.');
+    }
+
+    public function testTheHeadSignatureIgnoresCacheBustersTheCanonicalLinkAndTheClientsOwnMetaTags(): void
+    {
+        $head = [
+            'headscript_pre' => '<link rel="canonical" href="https://example.org/village.php" />',
+            'headscript_mid' => '<script src="/a.js?v=1"></script><meta name="lotgd-page-revision" content="1">',
+        ];
+        $later = [
+            'headscript_pre' => '<link rel="canonical" href="https://example.org/forest.php" />',
+            'headscript_mid' => '<script src="/a.js?v=2"></script><meta name="lotgd-page-revision" content="9">',
+        ];
+        $module = ['headscript_mid' => '<script src="/a.js?v=1"></script><script src="/module.js"></script>'];
+
+        self::assertSame(PartialRenderer::headSignature($head), PartialRenderer::headSignature($later));
+        self::assertNotSame(PartialRenderer::headSignature($head), PartialRenderer::headSignature($module));
     }
 
     public function testThePartialAnswerCarriesEveryRegionAndTheRevision(): void

@@ -33,7 +33,7 @@ final class PartialRenderingPageTest extends TestCase
 
     public function testAnAllowedPageAnswersWithRegionsAndClaimsTheRevision(): void
     {
-        $run = $this->request('forest.php', self::PARTIAL_REQUEST);
+        $run = $this->request('forest.php', self::PARTIAL_REQUEST + ['HTTP_X_LOTGD_HEAD' => $this->headOf('forest.php')]);
 
         self::assertSame('1', $run->header('X-Lotgd-Partial'), $this->context($run));
         self::assertSame('1', $run->header('X-Lotgd-Page-Revision'));
@@ -42,6 +42,19 @@ final class PartialRenderingPageTest extends TestCase
         self::assertStringContainsString('hx-swap-oob="innerHTML:[data-lotgd-region=&quot;nav&quot;]"', $run->html);
         self::assertStringContainsString('<title>The Forest</title>', $run->html);
         self::assertCount(1, $run->statementsContaining(self::REVISION_CLAIM));
+        self::assertCount(
+            1,
+            $run->statementsContaining("allowednavs = ''"),
+            'The claim must clear the stored links in the same statement, or a request that reads the row after it could follow them too.'
+        );
+    }
+
+    public function testAPageWantingAnotherHeadIsShownFromTheStoredCopy(): void
+    {
+        $run = $this->request('forest.php', self::PARTIAL_REQUEST + ['HTTP_X_LOTGD_HEAD' => 'not-this-head']);
+
+        self::assertSame('badnav.php', $run->header('HX-Redirect'), $this->context($run));
+        self::assertNull($run->header('X-Lotgd-Partial'));
     }
 
     public function testAPageOffTheAllowListBecomesAPageChangeBeforeItRuns(): void
@@ -159,6 +172,17 @@ final class PartialRenderingPageTest extends TestCase
             $server,
             $statementResults
         );
+    }
+
+    /**
+     * The head signature a full page of $page carries, as the client would send it.
+     */
+    private function headOf(string $page): string
+    {
+        $full = $this->request($page, []);
+        self::assertSame(1, preg_match('/<meta name="lotgd-head" content="([0-9a-f]+)">/', $full->html, $match), $this->context($full));
+
+        return $match[1];
     }
 
     private function context(PageOutcome $run): string

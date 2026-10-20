@@ -114,6 +114,15 @@
         }
     });
 
+    // Which <head> this page has; the server answers with a full page when
+    // the next one needs another.
+    document.addEventListener('htmx:configRequest', function (event) {
+        const meta = document.querySelector('meta[name="lotgd-head"]');
+        if (meta) {
+            event.detail.headers['X-Lotgd-Head'] = meta.getAttribute('content') || '';
+        }
+    });
+
     document.addEventListener('htmx:beforeRequest', function (event) {
         if (inFlight) {
             // A second click while the first is under way would only be
