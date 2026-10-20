@@ -16,15 +16,15 @@
 {% set right_sidebar %}
     {{ verticalad|raw }}
     {{ bodyad|raw }}
-    {{ stats|raw }}<br/>
+    <div data-lotgd-region="stats">{{ stats|raw }}</div><br/>
     {{ paypal|raw }}
 {% endset %}
 <div class="container-fluid">
     <div class="row page-header align-items-end">
         <div class="col-sm-4 pageheader-left">
             <div class="d-flex gap-2">
-                <div class="motd">{{ motd|raw }}</div>
-                <div class="petition">{{ petition|raw }}</div>
+                <div class="motd" data-lotgd-region="header" data-lotgd-slot="motd">{{ motd|raw }}</div>
+                <div class="petition" data-lotgd-region="header" data-lotgd-slot="petition">{{ petition|raw }}</div>
             </div>
         </div>
         <div class="col-sm-4 pageheader-center text-center">
@@ -34,9 +34,9 @@
             <nav class="mail-nav justify-content-end" aria-label="Player notifications">
                 <span class="mail-nav__link">
                     <img src="{{ '/' ~ template_path }}/assets/mail.png" alt="Mail">
-                    <strong>{{ mail|raw }}</strong>
+                    <strong data-lotgd-region="header" data-lotgd-slot="mail">{{ mail|raw }}</strong>
                 </span>
-                <span class="mail-nav__link">
+                <span class="mail-nav__link" data-lotgd-region="header" data-lotgd-slot="petitiondisplay">
                     {{ petitiondisplay|raw }}
                 </span>
             </nav>
@@ -58,10 +58,10 @@
         <nav class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content">
             <div class="navad-wrapper">{{ navad|raw }}</div>
             <img src="{{ '/' ~ template_path }}/assets/nav-top.png" alt="" class="nav-top">
-            <div class="nav-container" role="navigation">{{ nav|raw }}</div>
+            <div class="nav-container" role="navigation" data-lotgd-region="nav">{{ nav|raw }}</div>
             <img src="{{ '/' ~ template_path }}/assets/nav-bottom.png" alt="" class="nav-bottom">
         </nav>
-        <main class="col flex-grow-1 main-content">
+        <main class="col flex-grow-1 main-content" data-lotgd-region="content">
             {{ content|raw }}
         </main>
         <aside class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content">
@@ -84,7 +84,7 @@
     </div>
     <div class="offcanvas-body">
         {{ navad|raw }}
-        {{ nav|raw }}
+        <div data-lotgd-region="nav">{{ nav|raw }}</div>
     </div>
 </div>
 

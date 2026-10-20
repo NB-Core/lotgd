@@ -12,6 +12,7 @@ use Lotgd\Serialization;
 use Lotgd\Output;
 use Lotgd\Redirect;
 use Lotgd\PhpGenericEnvironment;
+use Lotgd\Page\PartialMode;
 
 class ForcedNavigation
 {
@@ -70,6 +71,7 @@ class ForcedNavigation
             Database::freeResult($result);
             if (isset($session['allowednavs'][$requestUri]) && $session['allowednavs'][$requestUri] && $overrideforced !== true) {
                 $session['allowednavs'] = [];
+                self::consumePageRevision();
             } else {
                 if ($overrideforced !== true) {
                     Redirect::redirect('badnav.php', 'Navigation not allowed to ' . $requestUri);
@@ -85,5 +87,57 @@ class ForcedNavigation
                 Redirect::redirect('index.php?op=timeout', 'Not logged in: ' . $requestUri);
             }
         }
+    }
+
+    /**
+     * Claim the page this navigation started from, for a player with partial
+     * rendering on.
+     *
+     * The allowed links were read with the account; moving page_revision on
+     * from the value read in the same row, with a conditional update, makes
+     * consuming them atomic. A second request that started from the same page
+     * -- a double click, another tab, another device -- finds the revision
+     * already moved and is turned away before the page runs. It must not save
+     * either, or its empty navigation would overwrite the winner's.
+     *
+     * Players without partial rendering keep today's behaviour exactly.
+     */
+    private static function consumePageRevision(): void
+    {
+        global $session, $baseaccount;
+
+        if (!PartialMode::isEnabledFor($session['user']) || !array_key_exists('page_revision', $session['user'])) {
+            return;
+        }
+
+        $loaded = (int) $session['user']['page_revision'];
+        $claimed = Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('accounts')
+            . ' SET page_revision = page_revision + 1 WHERE acctid = :acctid AND page_revision = :revision',
+            ['acctid' => (int) $session['user']['acctid'], 'revision' => $loaded],
+            ['acctid' => ParameterType::INTEGER, 'revision' => ParameterType::INTEGER]
+        );
+
+        if ((int) $claimed === 1) {
+            // Written already; keep saveUser()'s diff from writing it again.
+            $session['user']['page_revision'] = $loaded + 1;
+            $baseaccount['page_revision'] = $loaded + 1;
+            self::$baseAccount['page_revision'] = $loaded + 1;
+
+            return;
+        }
+
+        if (!defined('NO_SAVE_USER')) {
+            define('NO_SAVE_USER', true);
+        }
+
+        if (PartialMode::isActive()) {
+            http_response_code(409);
+            PartialMode::sendHeader('Content-Type: application/json; charset=UTF-8');
+            echo json_encode(['reload' => 'badnav.php']);
+            exit();
+        }
+
+        Redirect::redirect('badnav.php', 'Page revision ' . $loaded . ' was already consumed by another request');
     }
 }

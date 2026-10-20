@@ -9,6 +9,7 @@ use Lotgd\Output;
 use Lotgd\Nav;
 use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
+use Lotgd\Page\PartialMode;
 
 class Redirect
 {
@@ -46,6 +47,12 @@ class Redirect
         $host = PhpGenericEnvironment::getServer('HTTP_HOST');
         $http = PhpGenericEnvironment::getServer('SERVER_PORT') == 443 ? 'https' : 'http';
         $uri = rtrim(dirname(PhpGenericEnvironment::getServer('PHP_SELF')), '/\\');
+        if (PartialMode::isActive()) {
+            // The client would follow a Location inside its request and swap
+            // the target page into a region. A redirect is a real page change.
+            PartialMode::sendHeader('HX-Redirect: ' . str_replace(["\r", "\n"], '', $location));
+            exit();
+        }
         header("Location: $http://$host$uri/$location");
 
     //fall through if this does not work!

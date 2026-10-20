@@ -12,5 +12,13 @@
         "version": "2.3.7",
         "css": "assets/vendor/datatables/datatables.min.css",
         "js": "assets/vendor/datatables/datatables.min.js"
+    },
+    "htmx": {
+        "version": "2.0.4",
+        "js": "assets/vendor/htmx/htmx.min.js"
+    },
+    "lotgd-partial": {
+        "version": "1.0.0",
+        "js": "assets/js/lotgd.partial.js"
     }
 }

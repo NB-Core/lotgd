@@ -21,13 +21,31 @@ final class PageOutcome
      * @param list<string> $statements Everything that went through executeStatement().
      * @param list<string> $queries    Everything that went through executeQuery().
      * @param string       $html       Everything the page wrote to stdout.
+     * @param list<string> $headers    Headers sent through PartialMode::sendHeader(), in order.
      */
     public function __construct(
         public readonly array $statements,
         public readonly array $queries,
         public readonly int|false $status,
         public readonly string $html = '',
+        public readonly array $headers = [],
     ) {
+    }
+
+    /**
+     * The value of the last header named $name sent through PartialMode, or null.
+     */
+    public function header(string $name): ?string
+    {
+        $value = null;
+        foreach ($this->headers as $header) {
+            [$headerName, $headerValue] = array_pad(explode(':', $header, 2), 2, '');
+            if (strcasecmp(trim($headerName), $name) === 0) {
+                $value = trim($headerValue);
+            }
+        }
+
+        return $value;
     }
 
     /**

@@ -29,7 +29,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 |---|---|---|
 | 0 | Inventory (`composer qa:reactive-inventory`, [inventory](ReactiveCore-Inventory.md)) | done |
 | 1 | `PageState`: the footer assembles one typed state object; renderers only turn it into HTML. Output unchanged. | done |
-| 2 | Partial rendering for display-only operations (HTMX), page revisions, HTTP contract | planned |
+| 2 | Partial rendering for display-only operations (HTMX), page revisions, HTTP contract | done (the forest; see below) |
 | 3 | Guarded game actions: `Action::run()`, split `saveUser()`, optimistic locking | planned |
 | 4 | Transactional outbox, relay, polling transport | planned |
 | 5 | Grants: server-issued one-shot navigation for other players | planned |
@@ -50,17 +50,67 @@ fragments on top of the same state.
 
 A skin that wants partial rendering marks its regions with
 `data-lotgd-region="<name>"` on the element that wraps the corresponding
-variable:
+variable, and declares `"regions": true` in its `config.json`:
 
-| Region | Twig variable(s) |
-|---|---|
-| `content` | `content` |
-| `nav` | `nav` |
-| `stats` | `stats` |
-| `header` | `motd`, `mail`, `petition`, `petitiondisplay` |
+| Region | Twig variable(s) | Markup |
+|---|---|---|
+| `content` | `content` | exactly one element; the swap target |
+| `nav` | `nav` | any number of elements (Aurora has the sidebar and the mobile menu) |
+| `stats` | `stats` | any number of elements |
+| `header` | `motd`, `mail`, `petition`, `petitiondisplay` | one element per slot, with `data-lotgd-slot="<variable>"` |
 
-A skin without these markers, and every legacy `.htm` template, always gets
-the full page.
+A skin without the declaration, and every legacy `.htm` template, always gets
+the full page. Aurora is the first skin that declares regions.
+
+## Phase 2 – as built
+
+Switched on by the game setting `partial_render` (off by default) **and** the
+player's preference `partialrender`. Everything below only applies to such a
+player on a skin with regions; everyone else gets exactly the game of before.
+
+- **Allow-list** (`Lotgd\Page\PartialMode::ALLOWLIST`, script → method →
+  `op`): only `forest.php` without `op`, by GET. The village and the inn are
+  left off because their commentary block emits an inline preview script;
+  they would always take the late fallback. They join once the commentary
+  registers a region lifecycle.
+- **Early fallback**: `PartialMode::preCheck()` runs in `common.php` before
+  forced navigation. A partial request for any other page gets
+  `HX-Redirect` to the same URL and an empty body; the page has not run.
+- **Page revision**: `accounts.page_revision` (migration
+  `Version20261020000001`). `ForcedNavigation` claims it with
+  `UPDATE … SET page_revision = page_revision + 1 WHERE acctid = :id AND page_revision = :loaded`
+  right after accepting the navigation. A request that loses the claim was
+  started from a page another request already left (second tab, second
+  device): it is answered `409 {"reload":"badnav.php"}` (partial) or
+  redirected to `badnav.php` (full page) and does not save the account.
+  Same-browser double clicks never reach the server twice: the client sends
+  one request at a time, and PHP's session lock serialises the rest.
+- **Answer**: `Lotgd\Page\PartialRenderer` – the content region as body,
+  every other region as an `hx-swap-oob` element addressed by
+  `[data-lotgd-region=…]`, plus `<title>`. Headers `X-Lotgd-Partial: 1`,
+  `X-Lotgd-Page-Revision`, `Vary: HX-Request`.
+- **Late fallback**: a page whose content contains `<script`, or a player who
+  turned the preference off, is stored as usual and answered
+  `HX-Redirect: badnav.php`, which shows the stored page.
+- **Redirects** (`Redirect::redirect()`, e.g. the new day or a login timeout)
+  inside a partial request are `HX-Redirect` page changes.
+- **Client** (`assets/js/lotgd.partial.js`, after htmx 2.0.4 from
+  `assets/vendor/htmx/`): boosts links in the `content` and `nav` regions;
+  forms, popup links (`onclick`), `target` links and other hosts stay
+  ordinary; never runs swapped-in scripts; a response without
+  `X-Lotgd-Partial` or with an older revision is not swapped; 409 and errors
+  go to `badnav.php`; Back/Forward go to `badnav.php`; quick keys are bound
+  from the access keys in the navigation region (replacing the inline
+  key handler for these players); `lotgd.regions.register(name, {init, destroy})`
+  for code that has to run per swap.
+
+Verified in a browser (Chromium via Playwright) against MariaDB 11.4:
+village → forest swapped in with both navigation copies updated and one
+revision claimed; forest → village as a page change without the village
+running twice; quick key; Back to `badnav.php`; a double click sends one
+request; a stale second tab ends on `badnav.php` without running its link;
+without JavaScript the game is unchanged. Two connections racing the claim
+from the same revision: one updates a row, the other none.
 
 ## Binding acceptance criteria
 

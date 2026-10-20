@@ -118,6 +118,9 @@ function get_all_tables()
         'allowednavs' => array(
             'name' => 'allowednavs', 'type' => 'mediumtext' //what navs is he allowed to access (excluding anonymous ones
             ),
+        'page_revision' => array(
+            'name' => 'page_revision', 'type' => 'int(11) unsigned', 'default' => '0' // navigation revision partial rendering consumes atomically
+            ),
         'loggedin' => array(
             'name' => 'loggedin', 'type' => 'tinyint(4) unsigned', 'default' => '0' //is he currently logged in? (note to check for a timeout too!)
             ),

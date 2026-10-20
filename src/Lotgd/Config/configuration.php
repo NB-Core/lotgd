@@ -27,6 +27,8 @@ $setup = array(
     "motditems" => "How many items should be shown on the motdlist,int",
     "ajax" => "Turn on AJAX support?,bool",
     "Ajax means you have refreshed content (mail;tab headline) without having ppl to reload the whole page,note",
+    "partial_render" => "Allow partial rendering (page changes swap only the changed parts; Twig skins that declare regions)?,bool",
+    "Each player still turns it on in their preferences. Off by default. While a player uses it, a second click or tab on the same page is turned away instead of running twice,note",
 
     "SMTP Mail Settings,title",
     "gameadminemail" => "Admin Email",

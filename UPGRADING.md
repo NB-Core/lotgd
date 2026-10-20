@@ -285,6 +285,27 @@ turns this off; see the Administrator Guide. The unused setting `corenewspath`,
 a leftover of the old custom news URL, is no longer offered; a stored value is
 ignored.
 
+### Partial rendering (opt-in, off by default)
+
+Migration `Version20261020000001` adds `accounts.page_revision` (an unsigned
+integer, default 0). Nothing reads or writes it until partial rendering is on.
+
+Partial rendering changes a page in place instead of loading it again. It needs
+the game setting *Allow partial rendering* (`partial_render`, *Game Setup*, off
+by default), the player's preference *Change pages in place* and a Twig skin
+that declares regions (Aurora does). For such a player only:
+
+- the forest is swapped in; every other page still loads normally;
+- a link followed from a page that was already left in another tab or on
+  another device is turned away and shows the latest page (`badnav.php`)
+  instead of running a second time (this applies with the setting and the
+  preference alone, on any skin);
+- Back and Forward show the latest page instead of re-running an old link.
+
+`assets/vendor/htmx/` and `assets/js/` are new and must be uploaded with the
+rest. A web server that serves `assets/` already serves them. Custom Twig skins
+keep the full page until they mark their regions; see `docs/ReactiveCore.md`.
+
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
 
 If you are coming directly from **1.3.2** (or earlier 1.x):

@@ -81,6 +81,13 @@ class DoctrineConnection
     public array $executeStatements = [];
     /** @var array<int,int> */
     public array $executeStatementResults = [];
+    /**
+     * Regex => value executeStatement() returns for a matching statement,
+     * checked before everything else.
+     *
+     * @var array<string,int>
+     */
+    public array $statementResultsByPattern = [];
     public array $lastExecuteStatementParams = [];
     public array $lastExecuteStatementTypes = [];
     public array $executeQueryParams = [];
@@ -476,6 +483,11 @@ class DoctrineConnection
         ];
         $this->lastExecuteStatementParams = $params;
         $this->lastExecuteStatementTypes = $types;
+        foreach ($this->statementResultsByPattern as $pattern => $result) {
+            if (preg_match($pattern, $sql) === 1) {
+                return (int) $result;
+            }
+        }
         if ($this->executeStatementResults !== []) {
             return (int) array_shift($this->executeStatementResults);
         }

@@ -17,6 +17,7 @@ use Lotgd\Accounts;
 use Lotgd\Settings;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\ForcedNavigation;
+use Lotgd\Page\PartialMode;
 use Lotgd\Nav;
 use Lotgd\LocalConfig;
 use Lotgd\PageParts;
@@ -503,6 +504,9 @@ $session['lasthit'] = strtotime("now");
 
 PhpGenericEnvironment::setup($session);
 if (!AJAX_MODE) {
+    // Before anything changes state: a partial request this page cannot
+    // answer becomes a normal page change to the same URL here.
+    PartialMode::preCheck();
     ForcedNavigation::doForcedNav(ALLOW_ANONYMOUS, OVERRIDE_FORCED_NAV);
 }
 
