@@ -13,6 +13,7 @@ use Lotgd\Output;
 use Lotgd\Redirect;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Page\PartialMode;
+use Lotgd\Page\PartialRenderer;
 
 class ForcedNavigation
 {
@@ -116,7 +117,12 @@ class ForcedNavigation
         }
 
         $loaded = (int) $session['user']['page_revision'];
-        $claimed = Database::getDoctrineConnection()->executeStatement(
+        // A partial client says which revision it shows. The account row only
+        // knows the latest one, and the latest page may offer the same link
+        // as the page a stale tab still shows (the inn links to the inn).
+        $shown = $_SERVER[PartialRenderer::REQUEST_REVISION_SERVER_KEY] ?? null;
+        $stale = PartialMode::isActive() && is_string($shown) && ctype_digit($shown) && (int) $shown !== $loaded;
+        $claimed = $stale ? 0 : Database::getDoctrineConnection()->executeStatement(
             'UPDATE ' . Database::prefix('accounts')
             . " SET page_revision = page_revision + 1, allowednavs = ''"
             . ' WHERE acctid = :acctid AND page_revision = :revision',

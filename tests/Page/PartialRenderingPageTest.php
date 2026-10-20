@@ -99,6 +99,34 @@ final class PartialRenderingPageTest extends TestCase
         );
     }
 
+    public function testALinkFromAPageAnotherTabHasLeftIsTurnedAwayEvenIfTheLatestPageOffersIt(): void
+    {
+        // The account is at revision 3; this tab still shows revision 2, and
+        // the latest page happens to allow the same address.
+        $run = $this->request(
+            'forest.php',
+            self::PARTIAL_REQUEST + ['HTTP_X_LOTGD_PAGE_REVISION' => '2'],
+            [],
+            ['partialrender' => 1],
+            ['partial_render' => 1],
+            ['page_revision' => 3]
+        );
+
+        self::assertSame(409, $run->status, $this->context($run));
+        self::assertSame([], $run->statementsContaining(self::REVISION_CLAIM), 'Nothing is claimed for a stale page.');
+        self::assertSame([], $run->statementsContaining('UPDATE accounts'), 'And the turned-away request does not save.');
+
+        $current = $this->request(
+            'forest.php',
+            self::PARTIAL_REQUEST + ['HTTP_X_LOTGD_PAGE_REVISION' => '3', 'HTTP_X_LOTGD_HEAD' => $this->headOf('forest.php')],
+            [],
+            ['partialrender' => 1],
+            ['partial_render' => 1],
+            ['page_revision' => 3]
+        );
+        self::assertSame('1', $current->header('X-Lotgd-Partial'), $this->context($current));
+    }
+
     public function testALostClaimOnAFullPageGoesToTheStoredPage(): void
     {
         $run = $this->request('forest.php', [], ['/' . preg_quote(self::REVISION_CLAIM, '/') . '/' => 0]);

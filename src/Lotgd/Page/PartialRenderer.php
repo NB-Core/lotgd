@@ -22,6 +22,7 @@ final class PartialRenderer
     public const HEADER_REVISION = 'X-Lotgd-Page-Revision';
     public const HEADER_ASYNC_STATE = 'X-Lotgd-Async-State';
     public const REQUEST_HEAD_SERVER_KEY = 'HTTP_X_LOTGD_HEAD';
+    public const REQUEST_REVISION_SERVER_KEY = 'HTTP_X_LOTGD_PAGE_REVISION';
 
     /** Template variables that end up in <head>. */
     private const HEAD_VARIABLES = ['headscript_pre', 'headscript_mid', 'headscript', 'script'];
