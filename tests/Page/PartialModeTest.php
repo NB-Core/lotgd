@@ -185,6 +185,17 @@ final class PartialModeTest extends TestCase
         }
     }
 
+    public function testAStoredPageIsShownAgainWithTheCurrentRevision(): void
+    {
+        $stored = '<head><meta name="lotgd-page-revision" content="3"></head><body>village</body>';
+
+        self::assertSame(
+            '<head><meta name="lotgd-page-revision" content="7"></head><body>village</body>',
+            PartialRenderer::withRevision($stored, 7)
+        );
+        self::assertSame('<p>classic</p>', PartialRenderer::withRevision('<p>classic</p>', 7), 'A page without the meta tag is left alone.');
+    }
+
     public function testThePreferenceAloneDoesNotTurnItOn(): void
     {
         // No Settings instance in a unit test: the game setting reads as off.

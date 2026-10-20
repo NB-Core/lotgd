@@ -124,6 +124,25 @@ final class PartialRenderer
         return substr(hash('sha256', $head), 0, 16);
     }
 
+    /**
+     * A stored page shown again (badnav.php) with the current page revision.
+     *
+     * The copy carries the revision it was rendered with; the revision may
+     * have moved on since (a login, a redirect) while the page's links are
+     * exactly the ones allowed again. Left as it was, the partial client
+     * would report a revision that is no longer current and be turned away
+     * on every link.
+     */
+    public static function withRevision(string $html, int $pageRevision): string
+    {
+        return (string) preg_replace(
+            '/<meta name="lotgd-page-revision" content="\d+">/',
+            '<meta name="lotgd-page-revision" content="' . $pageRevision . '">',
+            $html,
+            1
+        );
+    }
+
     private static function outOfBand(string $selector, string $markup): string
     {
         return '<div hx-swap-oob="innerHTML:' . htmlspecialchars($selector, ENT_QUOTES, 'UTF-8') . '">'

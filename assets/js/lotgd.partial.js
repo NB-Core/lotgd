@@ -38,13 +38,26 @@
     htmx.config.defaultSwapStyle = 'innerHTML';
     htmx.config.scrollIntoViewOnBoost = false;
 
-    let displayedRevision = readRevision();
+    // The revision the page shows, read once the document is parsed (this
+    // script runs from <head>, ahead of the meta tag). null while the page
+    // does not say -- a page stored before partial rendering was on for
+    // this player: then nothing is sent, and the server decides from its
+    // own row as before.
+    let displayedRevision = null;
+    document.addEventListener('DOMContentLoaded', function () {
+        if (displayedRevision === null) {
+            displayedRevision = readRevision();
+        }
+    });
     let inFlight = false;
 
     function readRevision() {
         const meta = document.querySelector('meta[name="lotgd-page-revision"]');
-        const value = meta ? parseInt(meta.getAttribute('content') || '0', 10) : 0;
-        return Number.isNaN(value) ? 0 : value;
+        if (!meta) {
+            return null;
+        }
+        const value = parseInt(meta.getAttribute('content') || '', 10);
+        return Number.isNaN(value) ? null : value;
     }
 
     function recover() {
@@ -123,7 +136,12 @@
         if (meta) {
             event.detail.headers['X-Lotgd-Head'] = meta.getAttribute('content') || '';
         }
-        event.detail.headers['X-Lotgd-Page-Revision'] = String(displayedRevision);
+        if (displayedRevision === null) {
+            displayedRevision = readRevision();
+        }
+        if (displayedRevision !== null) {
+            event.detail.headers['X-Lotgd-Page-Revision'] = String(displayedRevision);
+        }
     });
 
     document.addEventListener('htmx:beforeRequest', function (event) {
