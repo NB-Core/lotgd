@@ -23,8 +23,9 @@ use Lotgd\MySQL\Database;
  *  4. look the action id up in action_log: the same submission again is
  *     answered from its stored result -- even though its page is stale by
  *     now --, the same id with other parameters is refused;
- *  5. compare the locked version with the one the page was read with: a
- *     change by another tab, device or player is a conflict, nothing runs;
+ *  5. compare the locked version with the one this request read the account
+ *     with and with the one the form was shown with: a change by another
+ *     tab, device or player is a conflict, nothing runs;
  *  6. snapshot the session state the action may change;
  *  7. run the action;
  *  8. persist the account (version-checked) and log the action with its
@@ -42,6 +43,7 @@ final class Action
 {
     private const ID_PATTERN = '/^[0-9a-f]{32}$/';
     public const FIELD = 'action_id';
+    public const VERSION_FIELD = 'action_version';
 
     private static bool $running = false;
 
@@ -110,7 +112,15 @@ final class Action
                 return ActionResult::rejected('action-id-reused');
             }
 
-            if ($current === false || (int) $current !== (int) ($baseaccount['version'] ?? -1)) {
+            // Two versions must still hold: the one this request read the
+            // account with (a change while it ran), and the one the form was
+            // shown with (a change in another tab or by another player since).
+            $shownWith = self::postedVersion();
+            if (
+                $current === false
+                || (int) $current !== (int) ($baseaccount['version'] ?? -1)
+                || ($shownWith !== null && $shownWith !== (int) $current)
+            ) {
                 self::finish($conn, false);
 
                 return ActionResult::conflict();
@@ -252,11 +262,29 @@ final class Action
     }
 
     /**
-     * The hidden form field that carries a fresh action id.
+     * The hidden form fields that carry a fresh action id and the version of
+     * the account the form is shown with.
      */
     public static function idField(): string
     {
-        return "<input type='hidden' name='" . self::FIELD . "' value='" . self::newId() . "'>";
+        global $session;
+
+        $field = "<input type='hidden' name='" . self::FIELD . "' value='" . self::newId() . "'>";
+        if (isset($session['user']['version'])) {
+            $field .= "<input type='hidden' name='" . self::VERSION_FIELD . "' value='" . (int) $session['user']['version'] . "'>";
+        }
+
+        return $field;
+    }
+
+    /**
+     * The account version the form was shown with, or null when it sent none.
+     */
+    public static function postedVersion(): ?int
+    {
+        $posted = Http::post(self::VERSION_FIELD);
+
+        return is_string($posted) && ctype_digit($posted) ? (int) $posted : null;
     }
 
     /**

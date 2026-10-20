@@ -329,8 +329,10 @@ For module authors:
   DDL or `OPTIMIZE TABLE`: `module_sem_acquire()` throws a `LogicException`
   there instead of committing the action. Outside a guarded action nothing
   changes.
-- A write to another player's account should move their version on
-  (`… version = version + 1`), so their guarded actions notice it.
+- A write to an account's game state should move its version on
+  (`… version = version + 1`), so that player's guarded actions notice it.
+  The core does this everywhere (PvP, clans, the user editor, donations,
+  mount refunds, bios); module writes do not yet.
 
 The Doctrine metadata cache is now keyed to the entity files, so the new
 column is picked up after the update without clearing the cache by hand.

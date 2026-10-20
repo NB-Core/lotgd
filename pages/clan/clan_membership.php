@@ -93,7 +93,7 @@ function clanMembership(): void
                 $sql = sprintf(
                     <<<'SQL'
                         UPDATE %s
-                        SET clanrank = GREATEST(0, LEAST(%d, %d))
+                        SET clanrank = GREATEST(0, LEAST(%d, %d)), version = version + 1
                         WHERE acctid = %d
                     SQL,
                     Database::prefix('accounts'),
@@ -133,7 +133,7 @@ function clanMembership(): void
         $sql = sprintf(
             <<<'SQL'
                 UPDATE %s
-                SET clanrank = %d, clanid = 0, clanjoindate = '%s'
+                SET clanrank = %d, clanid = 0, clanjoindate = '%s', version = version + 1
                 WHERE acctid = %d AND clanrank <= %d
             SQL,
             Database::prefix('accounts'),

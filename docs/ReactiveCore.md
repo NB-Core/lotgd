@@ -182,8 +182,9 @@ every change to the game state, whatever the setting.
      returns the stored result (`replayed`), another hash is `rejected`
      (`action-id-reused`). This comes before the version comparison, so a
      form already booked gets its result although its page is stale by now;
-  5. the locked version against the one this request read the account with:
-     different → `conflict`, nothing runs;
+  5. the locked version against the one this request read the account with
+     and the one the form was shown with: either different → `conflict`,
+     nothing runs;
   6. snapshot of `$session['user']`, buffs, allowed navs, `$companions` and
      `$baseaccount`;
   7. `fn()`, returning what the page shows (JSON-serialisable);
@@ -199,14 +200,17 @@ every change to the game state, whatever the setting.
   reason. No log row is left behind, so the same form may be sent again.
   `Lotgd\Action\ActionResult` carries `status` (`done`, `replayed`,
   `conflict`, `rejected`), `data` and `reason`.
-- **What "conflict" covers**: the version is compared with the one *this
-  request* read, not with the one the form was shown with. A change between
-  showing a form and sending it is not a conflict – the bank checks the
-  amounts against the account as it is now, and the change survives. What is
-  caught is a change *while the request runs*: another tab, another device or
-  another player's credit landing between reading the account and booking.
-  Without the guard such a page-end save writes its old balance over the
-  credit; `GuardedActionMariaDbTest` shows both.
+- **What "conflict" covers**: two versions must still hold when the account
+  is locked – the one this request read the account with (a change while the
+  request runs) and the one the form was shown with (`Action::idField()`
+  also writes `action_version`). So a change between showing a form and
+  sending it – another tab booked, a transfer arrived, a PvP fight took
+  gold – is a conflict: nothing is booked, and an old "withdraw all" cannot
+  take gold that arrived after it was shown. A form without the field (an
+  older page) is checked against the request's version only. A form already
+  booked is still a replay: the log is read before the versions are
+  compared. Without the guard a page-end save of a stale page writes its old
+  balance over a credit; `GuardedActionMariaDbTest` shows both.
 - **Why the account row is locked first and the log read is plain**: a
   locking read of the not-yet-existing log row takes a gap lock, and two
   players' first actions (whose rows fall into the same gap) then deadlock
@@ -253,6 +257,8 @@ no log row, its retry books once and a second retry is a replay; the same
 form from two connections at once books once (`done` + `replayed`). In a
 browser (Chromium via Playwright): a deposit sent again shows the first
 booking and books nothing; Back to a booked form ends on `badnav.php`; a
+form shown before the account changed elsewhere books nothing and the change
+survives; a
 transfer credits the recipient once, mails them once, and sent again books
 nothing; with the setting off the forms carry no action id and the bank
 behaves as before.
@@ -267,11 +273,19 @@ LOTGD_INTEGRATION_ROOT=/path/to/installed/game composer test -- tests/Integratio
 It creates its own accounts and removes them; without the variable it is
 skipped.
 
-Not yet covered, and open for the next steps: the other writes to `accounts`
-listed in the [inventory](ReactiveCore-Inventory.md) (PvP, clans, admin
-editors) do not move `version` yet; data cache keys are not invalidated on
-rollback (the bank touches none); outbox events (Phase 4) and grant
-consumption (Phase 5) do not exist yet.
+Every other gameplay write to `accounts` in the core moves the version on
+too: PvP (flag, loss, win), clan membership and leadership, the user editor
+and its "fix navigation", bio blocks, donation points, mount refunds, the
+referrer award and the dragon point reset. `tests/QA/AccountsVersionBumpTest.php`
+fails for a new `UPDATE accounts` without `version = version + 1` unless it
+is listed there as bookkeeping (login, `laston`, `lasthit`, the stored
+navigation, the page revision claim, expiry notices, logging banned players
+out).
+
+Not yet covered, and open for the next steps: module writes to `accounts`
+(see the [inventory](ReactiveCore-Inventory.md)); data cache keys are not
+invalidated on rollback (the bank touches none); outbox events (Phase 4) and
+grant consumption (Phase 5) do not exist yet.
 
 ## Binding acceptance criteria
 

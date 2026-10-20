@@ -60,6 +60,7 @@ final class ActionTest extends TestCase
 
     protected function tearDown(): void
     {
+        unset($_POST[Action::VERSION_FIELD]);
         Action::resetState();
         Accounts::setAccountEntity(null);
         unset($GLOBALS['session'], $GLOBALS['baseaccount'], $GLOBALS['companions']);
@@ -172,6 +173,46 @@ final class ActionTest extends TestCase
         self::assertSame(ActionResult::CONFLICT, $result->status);
         self::assertSame(100, $GLOBALS['session']['user']['gold']);
         self::assertContains('ROLLBACK', $this->connection()->queries);
+    }
+
+    public function testAFormShownBeforeTheAccountChangedIsAConflict(): void
+    {
+        // Shown at version 2; another tab has booked since, the account is at 3.
+        $_POST[Action::VERSION_FIELD] = '2';
+        $ran = false;
+
+        $result = Action::run('bank.withdraw', self::ID, [], static function () use (&$ran): array {
+            $ran = true;
+
+            return [];
+        });
+
+        self::assertSame(ActionResult::CONFLICT, $result->status);
+        self::assertFalse($ran);
+        self::assertSame(['START TRANSACTION', 'version lock', 'action_log lookup', 'ROLLBACK'], $this->steps());
+    }
+
+    public function testAFormShownWithTheCurrentVersionRuns(): void
+    {
+        $_POST[Action::VERSION_FIELD] = '3';
+
+        $result = Action::run('bank.withdraw', self::ID, [], static fn (): array => []);
+
+        self::assertSame(ActionResult::DONE, $result->status);
+    }
+
+    public function testABookedFormSentAgainIsAReplayAlthoughItsVersionIsOld(): void
+    {
+        $_POST[Action::VERSION_FIELD] = '2';
+        $this->connection()->queryResultsByPattern = [self::LOG_LOOKUP => [[
+            'action_name' => 'bank.withdraw',
+            'params_hash' => Action::paramsHash('bank.withdraw', []),
+            'result' => '{}',
+        ]]] + $this->connection()->queryResultsByPattern;
+
+        $result = Action::run('bank.withdraw', self::ID, [], static fn (): array => []);
+
+        self::assertSame(ActionResult::REPLAYED, $result->status);
     }
 
     public function testTheSameIdWithOtherParametersIsRefused(): void
@@ -349,7 +390,11 @@ final class ActionTest extends TestCase
     {
         self::assertMatchesRegularExpression('/^[0-9a-f]{32}$/', Action::newId());
         self::assertNotSame(Action::newId(), Action::newId());
-        self::assertMatchesRegularExpression("/^<input type='hidden' name='action_id' value='[0-9a-f]{32}'>$/", Action::idField());
+        self::assertMatchesRegularExpression(
+            "/^<input type='hidden' name='action_id' value='[0-9a-f]{32}'><input type='hidden' name='action_version' value='3'>$/",
+            Action::idField(),
+            'The form carries the version of the account it is shown with.'
+        );
     }
 
     public function testTheParameterHashDoesNotDependOnKeyOrder(): void

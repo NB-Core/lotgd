@@ -25,7 +25,7 @@ if ($session['user']['clanrank'] >= CLAN_LEADER) {
             //highest ranking member (or oldest member in the
             //event of a tie).  This will capture even people
             //who applied for membership.
-            $sql = "UPDATE " . Database::prefix("accounts") . " SET clanrank=" . CLAN_LEADER . " WHERE acctid={$row['acctid']}";
+            $sql = "UPDATE " . Database::prefix("accounts") . " SET clanrank=" . CLAN_LEADER . ", version = version + 1 WHERE acctid={$row['acctid']}";
             Database::query($sql);
             $output->output("`^Promoting %s`^ to leader as they are the highest ranking member (or oldest member in the event of a tie).`n`n", $row['name']);
         } else {
@@ -35,7 +35,7 @@ if ($session['user']['clanrank'] >= CLAN_LEADER) {
             Database::query($sql);
             //just in case we goofed, we don't want to have to worry
             //about people being associated with a deleted clan.
-            $sql = "UPDATE " . Database::prefix("accounts") . " SET clanid=0,clanrank=" . CLAN_APPLICANT . ",clanjoindate='" . DATETIME_DATEMIN . "' WHERE clanid={$session['user']['clanid']}";
+            $sql = "UPDATE " . Database::prefix("accounts") . " SET clanid=0,clanrank=" . CLAN_APPLICANT . ",clanjoindate='" . DATETIME_DATEMIN . "', version = version + 1 WHERE clanid={$session['user']['clanid']}";
             Database::query($sql);
             $output->output("`^As you were the last member of this clan, it has been deleted.");
             GameLog::log("Clan " . $session['user']['clanid'] . " has been deleted, last member gone", GameLog::CATEGORY_CLAN);

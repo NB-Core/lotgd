@@ -50,6 +50,7 @@ final class GuardedBankPageTest extends TestCase
         foreach (['deposit', 'withdraw', 'borrow'] as $op) {
             $guarded = PageRunner::withRequest('bank.php', 0, 'GET', ['op' => $op], [], $this->globals(), ['guarded_actions' => 1]);
             self::assertMatchesRegularExpression("/name='action_id' value='[0-9a-f]{32}'/", $guarded->html, $op);
+            self::assertStringContainsString("name='action_version' value='0'", $guarded->html, $op);
 
             $plain = PageRunner::withRequest('bank.php', 0, 'GET', ['op' => $op], [], $this->globals(), ['guarded_actions' => 0]);
             self::assertStringNotContainsString('action_id', $plain->html, $op);
@@ -90,6 +91,21 @@ final class GuardedBankPageTest extends TestCase
     public function testAnAccountChangedSinceTheFormWasShownBooksNothing(): void
     {
         $run = $this->post('depositfinish', ['amount' => '30'], [self::VERSION_LOCK => [['version' => 9]]]);
+
+        self::assertStringContainsString('Your account has changed since you filled in that slip', $run->html, $this->context($run));
+        self::assertSame(['START TRANSACTION', 'version lock', 'action_log lookup', 'ROLLBACK'], $this->steps($run));
+    }
+
+    public function testAFormShownBeforeTheAccountChangedBooksNothing(): void
+    {
+        // Shown at version 4; something else moved the account on to 5 since.
+        $run = $this->post(
+            'withdrawfinish',
+            ['amount' => '0'],
+            [self::VERSION_LOCK => [['version' => 5]]],
+            post: ['action_id' => self::ID, 'action_version' => '4'],
+            account: ['version' => 5]
+        );
 
         self::assertStringContainsString('Your account has changed since you filled in that slip', $run->html, $this->context($run));
         self::assertSame(['START TRANSACTION', 'version lock', 'action_log lookup', 'ROLLBACK'], $this->steps($run));

@@ -42,8 +42,9 @@ Phase 3 added two `accounts` matches – the version-checked write in
 `Accounts::persistChecked()` and the account lock in `Action::run()`
 (`SELECT version … FOR UPDATE`, which the token scanner reads as an update) –
 and one transaction breaker, `Action::run()`'s own `beginTransaction()`.
-Since Phase 3 the bank transfer (`bank.php`) credits the recipient with
-`version = version + 1`, and the four runtime breakers below –
+Since Phase 3 every gameplay write in the core table below moves the version
+on (`version = version + 1`; `tests/QA/AccountsVersionBumpTest.php` keeps it
+that way), and the four runtime breakers below –
 `newday.php`'s settings lock, `Newday::dbCleanup()`, `Modules::inject()` and
 `Modules::semAcquire()` – refuse to run inside a guarded action
 (`Action::guardImplicitCommit()`) instead of committing it.
