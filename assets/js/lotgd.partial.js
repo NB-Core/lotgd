@@ -115,12 +115,15 @@
     });
 
     // Which <head> this page has; the server answers with a full page when
-    // the next one needs another.
+    // the next one needs another. And which revision it shows: a link from
+    // a page another tab has left since is turned away, even when the
+    // latest page offers the same link.
     document.addEventListener('htmx:configRequest', function (event) {
         const meta = document.querySelector('meta[name="lotgd-head"]');
         if (meta) {
             event.detail.headers['X-Lotgd-Head'] = meta.getAttribute('content') || '';
         }
+        event.detail.headers['X-Lotgd-Page-Revision'] = String(displayedRevision);
     });
 
     document.addEventListener('htmx:beforeRequest', function (event) {

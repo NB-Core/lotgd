@@ -85,6 +85,10 @@ player on a skin with regions; everyone else gets exactly the game of before.
   started from a page another request already left (second tab, second
   device): it is answered `409 {"reload":"badnav.php"}` (partial) or
   redirected to `badnav.php` (full page) and does not save the account.
+  The client also sends the revision it shows (`X-Lotgd-Page-Revision`);
+  one that is not the account's current revision is turned away the same
+  way, so a stale tab cannot follow a link merely because the latest page
+  offers the same address.
   Same-browser double clicks never reach the server twice: the client sends
   one request at a time, and PHP's session lock serialises the rest.
 - **Answer**: `Lotgd\Page\PartialRenderer` – `<title>` first (htmx only
