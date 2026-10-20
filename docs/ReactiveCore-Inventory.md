@@ -18,13 +18,13 @@ The scanner (`Lotgd\QA\ReactiveCoreInventory`) is a report, not a gate: it
 always exits 0. It is token based, so comments and docblocks do not count, and
 its matches are deliberately broad. Each category below says how to read it.
 
-## Summary (core `master` at the start of the work)
+## Summary (after Phase 1)
 
 | Category | Core | `NB-Core/modules`¹ | Why it matters |
 |---|---:|---:|---|
-| `finish_path` | 181 | 351 | Every place a request can end or persist the account; a unit of work needs one defined end. |
+| `finish_path` | 179 | 351 | Every place a request can end or persist the account; a unit of work needs one defined end. |
 | `accounts_write` | 38 | 35 | SQL writes to `accounts` outside `saveUser()`; an optimistic lock (`version`) must cover each one. |
-| `transaction_breaker` | 7 | 32 | `LOCK TABLES` and DDL implicitly commit an open MySQL transaction; own transactions cannot nest. |
+| `transaction_breaker` | 8 | 32 | `LOCK TABLES`, DDL and `OPTIMIZE`/`ANALYZE`/`REPAIR TABLE` implicitly commit an open MySQL transaction; own transactions cannot nest. |
 | `side_effect` | 151 | 156 | Mail, HTTP and data-cache writes survive a rollback and must move behind the commit. |
 | `inline_script` | 42 | 55 | `<script>` emitted into page output does not run after a partial swap. |
 
@@ -39,8 +39,8 @@ How a request ends today:
 | `Footer::pageFooter()` / `page_footer()` | 93 | Normal end: builds navs, stats, renders, `saveUser()`, `session_write_close()`, `exit`. |
 | `popupFooter()` / `popup_footer()` | 11 | Popup end; also calls `saveUser()`. |
 | `Redirect::redirect()` / `redirect()` | 30 | Sets `allowednavs` to the target, stores a fallback `$session['output']`, calls `saveUser()`, sends `Location`. |
-| Direct `saveUser()` | 10 | `badnav.php`, `login.php` (×2), `motd.php`, `pages/inn/inn_room.php`, the three footer paths, `Redirect`, and the legacy wrapper `lib/saveuser.php`. |
-| `exit` / `die` | 37 | Mostly after `header()`/download output; each one ends a request without the footer. |
+| Direct `saveUser()` | 9 | `badnav.php`, `login.php` (×2), `motd.php`, `pages/inn/inn_room.php`, the page and popup footer, `Redirect`, and the legacy wrapper `lib/saveuser.php`. |
+| `exit` / `die` | 36 | Mostly after `header()`/download output; each one ends a request without the footer. |
 
 What `saveUser()` does, in order, and why it cannot simply be called twice:
 
@@ -79,6 +79,7 @@ treatment before Phase 3 is switched on for the pages they hook into.
 | Site | What | Risk |
 |---|---|---|
 | `newday.php:370` | `LOCK TABLES settings WRITE` during the game-day rollover | **Runs inside a normal gameplay request.** A request transaction opened in `common.php` would be committed implicitly here. `Action::run()` must never wrap the new-day path until this lock is replaced. |
+| `src/Lotgd/Newday.php:39` | `OPTIMIZE TABLE` for every game table in `Newday::dbCleanup()` | Runs during the game-day rollover of a gameplay request unless `newdaycron` is set (then from `cron.php`). Same constraint as the settings lock above. |
 | `src/Lotgd/Modules.php:176` | `LOCK TABLES modules WRITE` in `Modules::inject()` when a module file's mtime differs from the stored one | **Reachable from any request** that dispatches a hook right after a module file was deployed, not only from the module manager. |
 | `src/Lotgd/Modules.php:1564` | `LOCK TABLES module_settings WRITE` in `Modules::semAcquire()` (`module_sem_acquire()`) | Callable by any module at runtime. |
 | `src/Lotgd/MySQL/TableDescriptor.php:406,431` | `ALTER TABLE` / `CREATE TABLE` | Installer / module install; DDL commits implicitly. |

@@ -17,8 +17,9 @@ namespace Lotgd\QA;
  *                         Accounts::saveUser(), i.e. writes an optimistic
  *                         lock would have to cover.
  *  - transaction_breaker: statements that end or forbid an open transaction
- *                         under MySQL (LOCK TABLES, DDL) and code that opens
- *                         its own transaction.
+ *                         under MySQL (LOCK TABLES, DDL, OPTIMIZE/ANALYZE/
+ *                         REPAIR TABLE) and code that opens its own
+ *                         transaction.
  *  - side_effect:         work that cannot be rolled back (e-mail, HTTP,
  *                         data cache writes).
  *  - inline_script:       markup that emits a <script> element, which a
@@ -68,6 +69,9 @@ final class ReactiveCoreInventory
         '/tools/',
         '/tests/',
         '/node_modules/',
+        // Archived copy of the old DragonPrime modules in the modules
+        // repository; it is not shipped and would count every module twice.
+        '/_old_dragonprime_snapshot/',
         'src/Lotgd/QA/ReactiveCoreInventory.php',
     ];
 
@@ -104,7 +108,9 @@ final class ReactiveCoreInventory
 
     private const SQL_WRITE_PATTERN = '/\b(?:UPDATE|INSERT\s+(?:IGNORE\s+)?INTO|DELETE\s+FROM|REPLACE\s+INTO)\b/i';
     private const ACCOUNTS_TABLE_PATTERN = '/prefix\s*\(\s*[\'"]accounts[\'"]\s*\)|\baccounts\b(?!_)/i';
-    private const BREAKER_SQL_PATTERN = '/\b(?:LOCK\s+TABLES?|(?:CREATE|ALTER|DROP|TRUNCATE|RENAME)\s+TABLE)\b/i';
+    // DDL and the table maintenance statements, all of which MySQL commits
+    // implicitly.
+    private const BREAKER_SQL_PATTERN = '/\b(?:LOCK\s+TABLES?|(?:CREATE|ALTER|DROP|TRUNCATE|RENAME|OPTIMIZE|ANALYZE|REPAIR)\s+TABLE)\b/i';
     private const INLINE_SCRIPT_PATTERN = '/<script\b/i';
 
     /**

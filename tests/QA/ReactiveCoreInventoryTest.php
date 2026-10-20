@@ -31,6 +31,7 @@ final class ReactiveCoreInventoryTest extends TestCase
         ];
         yield 'lock tables' => ["Database::query('LOCK TABLES settings WRITE');", ReactiveCoreInventory::CATEGORY_TRANSACTION_BREAKER, 'LOCK TABLES'];
         yield 'ddl' => ["\$sql = 'ALTER TABLE foo ADD x INT';", ReactiveCoreInventory::CATEGORY_TRANSACTION_BREAKER, 'ALTER TABLE'];
+        yield 'table maintenance' => ["\$conn->executeQuery('OPTIMIZE TABLE ' . \$t);", ReactiveCoreInventory::CATEGORY_TRANSACTION_BREAKER, 'OPTIMIZE TABLE'];
         yield 'own transaction' => ['$conn->beginTransaction();', ReactiveCoreInventory::CATEGORY_TRANSACTION_BREAKER, 'beginTransaction()'];
         yield 'phpmailer' => ['$m = new PHPMailer(true);', ReactiveCoreInventory::CATEGORY_SIDE_EFFECT, 'new PHPMailer'];
         yield 'cache write' => ["invalidatedatacache('x');", ReactiveCoreInventory::CATEGORY_SIDE_EFFECT, 'invalidatedatacache()'];
@@ -65,28 +66,31 @@ final class ReactiveCoreInventoryTest extends TestCase
         $this->assertSame([], (new ReactiveCoreInventory())->scanSource($source, 'example.php'));
     }
 
-    public function testCollectScansCoreRootsAndExtraRootsButSkipsTests(): void
+    public function testCollectScansCoreRootsAndExtraRootsButSkipsTestsAndTheArchive(): void
     {
         $root = sys_get_temp_dir() . '/lotgd-inventory-' . bin2hex(random_bytes(4));
         $modules = $root . '-modules';
         mkdir($root . '/src', 0777, true);
         mkdir($root . '/tests', 0777, true);
         mkdir($modules . '/forest', 0777, true);
+        mkdir($modules . '/_old_dragonprime_snapshot', 0777, true);
         file_put_contents($root . '/village.php', "<?php\npage_footer();\n");
         file_put_contents($root . '/src/A.php', "<?php\n\$c->beginTransaction();\n");
         file_put_contents($root . '/tests/T.php', "<?php\nexit();\n");
         file_put_contents($modules . '/forest/m.php', "<?php\nredirect('forest.php');\n");
+        file_put_contents($modules . '/_old_dragonprime_snapshot/old.php', "<?php\nredirect('forest.php');\n");
 
         try {
             $findings = (new ReactiveCoreInventory())->collect($root, [$modules]);
         } finally {
-            foreach ([$root . '/village.php', $root . '/src/A.php', $root . '/tests/T.php', $modules . '/forest/m.php'] as $file) {
+            foreach ([$root . '/village.php', $root . '/src/A.php', $root . '/tests/T.php', $modules . '/forest/m.php', $modules . '/_old_dragonprime_snapshot/old.php'] as $file) {
                 unlink($file);
             }
             rmdir($root . '/src');
             rmdir($root . '/tests');
             rmdir($root);
             rmdir($modules . '/forest');
+            rmdir($modules . '/_old_dragonprime_snapshot');
             rmdir($modules);
         }
 
@@ -95,6 +99,7 @@ final class ReactiveCoreInventoryTest extends TestCase
         $this->assertContains('src/A.php', $files);
         $this->assertContains(basename($modules) . '/forest/m.php', $files);
         $this->assertNotContains('tests/T.php', $files);
+        $this->assertNotContains(basename($modules) . '/_old_dragonprime_snapshot/old.php', $files);
 
         $summary = ReactiveCoreInventory::summarize($findings);
         $this->assertSame(2, $summary[ReactiveCoreInventory::CATEGORY_FINISH_PATH]);
