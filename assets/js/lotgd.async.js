@@ -367,7 +367,10 @@
             if (stopped || interval() === 0) {
                 return;
             }
-            if (document.hidden) {
+            // A hidden tab keeps polling the player's updates: their desktop
+            // notifications are for exactly that case. Only a realtime-only
+            // poll (regions nobody looks at) waits for the tab to show.
+            if (document.hidden && !settings().updates) {
                 window.setTimeout(tick, base);
                 return;
             }

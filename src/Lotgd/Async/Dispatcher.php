@@ -179,7 +179,11 @@ final class Dispatcher
         }
         $reflection = new \ReflectionMethod($class, $method);
 
-        return $reflection->isPublic()
+        // PHP resolves method names case-insensitively; the policy in
+        // async/process.php does not. Only the declared spelling is a call,
+        // so "AFFECTEDUSERS" cannot slip past a requirement on "affectedUsers".
+        return $reflection->getName() === $method
+            && $reflection->isPublic()
             && !$reflection->isStatic()
             && $reflection->getDeclaringClass()->getName() === $class;
     }
