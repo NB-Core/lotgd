@@ -18,6 +18,8 @@ use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Page as PageSingleton;
+use Lotgd\Realtime;
+use Lotgd\Realtime\Poll;
 
 class Footer
 {
@@ -109,6 +111,20 @@ class Footer
 
         $builtnavs = Nav::buildNavs();
 
+        // Before the regions are built: what they show is at least this new.
+        $realtime = Realtime::enabledFor($session['user'] ?? []);
+        $realtimeMeta = '';
+        if ($realtime) {
+            $acctid = (int) ($session['user']['acctid'] ?? 0);
+            $realtimeMeta = '<meta name="lotgd-realtime" content="async/poll.php|'
+                . max(5, (int) $settings->getSetting('realtime_poll_seconds', 10)) . '">'
+                . '<meta name="lotgd-event-cursor" content="' . Poll::startCursor() . '">'
+                . '<meta name="lotgd-region-versions" content="' . htmlspecialchars((string) json_encode([
+                    'mail' => Poll::regionVersion('mail', $acctid),
+                    'stats' => Poll::regionVersion('stats', $acctid),
+                ]), ENT_QUOTES, 'UTF-8') . '">';
+        }
+
         Buffs::restoreBuffFields();
         Buffs::calculateBuffFields();
 
@@ -173,6 +189,9 @@ class Footer
             Output::addHeadMarkup(
                 '<meta name="lotgd-page-revision" content="' . (int) ($session['user']['page_revision'] ?? 0) . '">'
             );
+            if ($realtime) {
+                Output::addHeadMarkup($realtimeMeta);
+            }
         }
 
         $header = PageParts::insertHeadScript($header, $pre_headscript, $headscript);

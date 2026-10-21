@@ -218,6 +218,29 @@ class Newday
             );
         }
 
+        // Realtime events only need to outlive the longest a player stays on
+        // one page; a poll older than that resynchronises. Both tables exist
+        // once the migration has run.
+        if (Database::tableExists(Database::prefix('event_deliveries'))) {
+            $timestamp = self::calculateExpirationTimestamp((int) $settings->getSetting('realtime_retention_hours', 24) . ' hours');
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('event_deliveries') . ' WHERE created < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            $affectedRows += $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('events') . ' WHERE relayed_at IS NOT NULL AND relayed_at < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            GameLog::log(
+                'Deleted ' . $affectedRows . ' realtime events older than ' . $timestamp . '.',
+                GameLog::CATEGORY_MAINTENANCE,
+                false,
+                $session['user']['acctid'] ?? 0
+            );
+        }
+
         // DEBUG mode writes two rows per page view plus one per module hook. It
         // was the only log table with no retention at all, so a forgotten debug
         // session grew it without bound.

@@ -31,6 +31,10 @@ $setup = array(
     "Each player still turns it on in their preferences. Off by default. While a player uses it, a second click or tab on the same page is turned away instead of running twice,note",
     "guarded_actions" => "Run bank actions as guarded transactions (a form sent twice books once)?,bool",
     "Each deposit, withdrawal and transfer runs in one database transaction and is logged with the id its form carried. Off by default,note",
+    "realtime_enabled" => "Show new mail and incoming transfers without a page change (realtime, needs partial rendering)?,bool",
+    "realtime_poll_seconds" => "Seconds between two realtime polls of a page,range,5,120,5",
+    "realtime_retention_hours" => "Hours realtime events are kept for players to catch up,range,1,168,1",
+    "Players with partial rendering on poll async/poll.php; events are relayed after the change commits and by cron.php (bit 16). Off by default,note",
 
     "SMTP Mail Settings,title",
     "gameadminemail" => "Admin Email",

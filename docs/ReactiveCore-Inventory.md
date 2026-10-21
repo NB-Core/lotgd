@@ -115,7 +115,7 @@ stay out of `Action::run()` until they are rewritten to `SELECT … FOR UPDATE`.
 | Kind | Core sites | Notes |
 |---|---:|---|
 | Data cache invalidation/update | 125 (`invalidatedatacache` 80, `massinvalidate` 29, `updatedatacache` 16) | After a rollback the cache may hold the discarded state; Phase 3 invalidates the touched keys on rollback. |
-| `Mail::systemMail()` | 15 | Writes the in-game mail row (rolls back) **and** may send e-mail (does not). |
+| `Mail::systemMail()` | 15 | Writes the in-game mail row (rolls back) **and** may send e-mail (does not). Since Phase 4 the e-mail goes out through `Action::afterCommit()`, so in a guarded action only after the commit, and the mail's realtime announcement commits with the row. |
 | E-mail transport | 5 (`new PHPMailer` in `Mail::send()`, 4 × `mail()`) | Must become an outbox job. |
 | HTTP | 6 (`PullUrl::pull` 2, `curl_exec` 2, `fsockopen` 2) | Version check, payment verification; outside gameplay actions. |
 

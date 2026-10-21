@@ -1158,6 +1158,93 @@ function get_all_tables()
             'name' => 'created', 'type' => 'key', 'columns' => 'created'
             ),
         ),
+    'events' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'id' => array(
+            'name' => 'id', 'type' => 'bigint(20) unsigned', 'extra' => 'auto_increment'
+            ),
+        'event_id' => array(
+            'name' => 'event_id', 'type' => 'char(32)', 'default' => ''
+            ),
+        'channel' => array(
+            'name' => 'channel', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'type' => array(
+            'name' => 'type', 'type' => 'varchar(32)', 'default' => ''
+            ),
+        'payload' => array(
+            'name' => 'payload', 'type' => 'text'
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'relayed_at' => array(
+            'name' => 'relayed_at', 'type' => 'datetime', 'null' => '1'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'id'
+            ),
+        'key-event_id' => array(
+            'name' => 'event_id', 'type' => 'unique key', 'columns' => 'event_id'
+            ),
+        'key-pending' => array(
+            'name' => 'pending', 'type' => 'key', 'columns' => 'relayed_at,id'
+            ),
+        ),
+    'event_deliveries' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'seq' => array(
+            'name' => 'seq', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'event_id' => array(
+            'name' => 'event_id', 'type' => 'char(32)', 'default' => ''
+            ),
+        'channel' => array(
+            'name' => 'channel', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'type' => array(
+            'name' => 'type', 'type' => 'varchar(32)', 'default' => ''
+            ),
+        'payload' => array(
+            'name' => 'payload', 'type' => 'text'
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'seq'
+            ),
+        'key-channel_seq' => array(
+            'name' => 'channel_seq', 'type' => 'key', 'columns' => 'channel,seq'
+            ),
+        'key-created' => array(
+            'name' => 'created', 'type' => 'key', 'columns' => 'created'
+            ),
+        ),
+    'relay_sequence' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'id' => array(
+            'name' => 'id', 'type' => 'tinyint(3) unsigned', 'default' => '1'
+            ),
+        'next_seq' => array(
+            'name' => 'next_seq', 'type' => 'bigint(20) unsigned', 'default' => '1'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'id'
+            ),
+        ),
     'twofactorauth_passkeys' => array(
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',

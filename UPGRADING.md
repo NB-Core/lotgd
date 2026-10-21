@@ -337,6 +337,32 @@ For module authors:
 The Doctrine metadata cache is now keyed to the entity files, so the new
 column is picked up after the update without clearing the cache by hand.
 
+### Realtime mail and transfers (opt-in, off by default)
+
+Migration `Version20261022000001` adds the tables `events`, `event_deliveries`
+and `relay_sequence`. Nothing writes or reads them while the game setting
+*Show new mail and incoming transfers without a page change*
+(`realtime_enabled`, *Game Setup*) is off.
+
+With it on, players who have partial rendering on (game setting, their
+preference and a skin with regions) see a new mail and incoming money on the
+page they have open. The page polls `async/poll.php` every
+`realtime_poll_seconds` (default 10). Events are relayed right after the
+change commits; add bit 16 to the `cron.php` call (for example
+`php cron.php 31`) so that events left behind by an interrupted request are
+relayed too. Events are kept `realtime_retention_hours` (default 24).
+
+`async/poll.php` is new and must be reachable like `async/process.php`.
+
+For module authors:
+
+- `Mail::systemMail()` sends its notification e-mail after the guarded action
+  it is part of commits (outside one: at once, as before).
+- To announce a change of your own to a player's open page, call
+  `Realtime::announce('user-' . $acctid, '<type>', ['region' => 'mail'|'stats',
+  'version' => <int>])` with the change, or `Realtime::publish()` inside
+  `Action::run()`.
+
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
 
 If you are coming directly from **1.3.2** (or earlier 1.x):

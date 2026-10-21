@@ -119,7 +119,7 @@ final class GuardedBankPageTest extends TestCase
         self::assertSame([], $this->steps($run));
     }
 
-    public function testATransferCreditsTheRecipientConditionallyAndMailsAfterTheCommit(): void
+    public function testATransferCreditsTheRecipientConditionallyAndMailsInTheSameTransaction(): void
     {
         $run = $this->post('transfer3', ['to' => 'bob', 'amount' => '10'], [self::RECIPIENT => [self::BOB]]);
 
@@ -129,8 +129,46 @@ final class GuardedBankPageTest extends TestCase
         self::assertStringContainsString('version = version + 1', $credit[0], 'The recipient\'s pages must notice the money arrived.');
         self::assertStringContainsString('AND locked = 0 AND transferredtoday < :received', $credit[0]);
         self::assertSame(
-            ['START TRANSACTION', 'version lock', 'action_log lookup', 'credit', 'checked update', 'log insert', 'COMMIT', 'debuglog', 'mail'],
+            // The recipient's mail commits or rolls back with the credit (Phase 4).
+            ['START TRANSACTION', 'version lock', 'action_log lookup', 'credit', 'mail', 'checked update', 'log insert', 'COMMIT', 'debuglog'],
             $this->steps($run)
+        );
+    }
+
+    public function testWithRealtimeOnTheRecipientsAnnouncementsCommitWithTheTransfer(): void
+    {
+        $run = PageRunner::withRequest(
+            'bank.php',
+            0,
+            'POST',
+            ['op' => 'transfer3'],
+            ['action_id' => self::ID, 'to' => 'bob', 'amount' => '10'],
+            $this->globals(),
+            ['guarded_actions' => 1, 'realtime_enabled' => 1],
+            [],
+            [],
+            [self::RECIPIENT => [self::BOB], self::VERSION_LOCK => [['version' => 0]]]
+        );
+
+        $named = [];
+        foreach ($run->queries as $sql) {
+            $sql = (string) $sql;
+            if (str_starts_with($sql, 'INSERT INTO mail')) {
+                $named[] = 'mail';
+            } elseif (str_starts_with($sql, 'INSERT INTO events')) {
+                $named[] = 'event';
+            } elseif (in_array($sql, ['START TRANSACTION', 'COMMIT'], true)) {
+                $named[] = $sql;
+            } elseif (str_starts_with($sql, 'INSERT INTO event_deliveries') || str_contains($sql, 'FROM relay_sequence')) {
+                $named[] = 'relay';
+            }
+        }
+        $named = array_values(array_filter($named, static fn (string $s, int $i): bool => $i === 0 || $s !== 'relay' || $named[$i - 1] !== 'relay', ARRAY_FILTER_USE_BOTH));
+
+        self::assertSame(
+            ['START TRANSACTION', 'mail', 'event', 'event', 'COMMIT', 'START TRANSACTION', 'relay'],
+            array_slice($named, 0, 7),
+            'The mail row and both announcements (mail, stats) are written before the commit and relayed after it.'
         );
     }
 

@@ -1,0 +1,191 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Lotgd\Tests\Realtime;
+
+use Lotgd\Realtime\Poll;
+use Lotgd\Settings;
+use Lotgd\Tests\Stubs\Database;
+use Lotgd\Tests\Stubs\DbMysqli;
+use Lotgd\Tests\Stubs\DoctrineConnection;
+use Lotgd\Tests\Stubs\DummySettings;
+use Lotgd\TwigTemplate;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * What async/poll.php answers (Lotgd\Realtime\Poll::handle()).
+ *
+ * What is pinned is who may read what: the channels come from the account
+ * the request read, never from the request; a cross-site request without the
+ * custom header gets nothing; a player for whom realtime is off gets nothing.
+ */
+#[PreserveGlobalState(false)]
+final class PollEndpointTest extends TestCase
+{
+    private const POLL = ['REQUEST_METHOD' => 'GET', 'HTTP_X_LOTGD_POLL' => '1'];
+    private const LATEST = '/SELECT COALESCE\(MAX\(seq\), 0\) FROM event_deliveries/';
+    private const OLDEST = '/SELECT COALESCE\(MIN\(seq\), 0\) FROM event_deliveries/';
+    private const EVENTS = '/FROM event_deliveries WHERE channel IN/';
+
+    private DoctrineConnection $connection;
+    private string $cacheDir = '';
+
+    protected function setUp(): void
+    {
+        class_exists(DbMysqli::class);
+        class_exists(Database::class);
+        $this->connection = new DoctrineConnection();
+        Database::setDoctrineConnection($this->connection);
+        Settings::setInstance(new DummySettings(['realtime_enabled' => 1, 'partial_render' => 1]));
+        $this->cacheDir = sys_get_temp_dir() . '/lotgd-poll-' . bin2hex(random_bytes(4));
+        mkdir($this->cacheDir, 0700, true);
+        TwigTemplate::init('aurora', $this->cacheDir);
+
+        $GLOBALS['session'] = [
+            'loggedin' => true,
+            'user' => ['acctid' => 7, 'name' => 'Tester', 'loggedin' => 1, 'version' => 5, 'prefs' => ['partialrender' => 1]],
+        ];
+    }
+
+    protected function tearDown(): void
+    {
+        TwigTemplate::deactivate();
+        Database::resetDoctrineConnection();
+        unset($GLOBALS['session']);
+        if (is_dir($this->cacheDir)) {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($this->cacheDir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            );
+            foreach ($iterator as $item) {
+                $item->isDir() ? rmdir($item->getPathname()) : unlink($item->getPathname());
+            }
+            rmdir($this->cacheDir);
+        }
+    }
+
+    public function testACursorOfZeroStillGetsEveryRetainedAnnouncement(): void
+    {
+        // Older announcements do no harm: the page ignores versions it shows.
+        $this->connection->queryResultsByPattern = [
+            self::LATEST => [['m' => 41]],
+            self::OLDEST => [['m' => 1]],
+            self::EVENTS => [['seq' => 2, 'event_id' => str_repeat('c', 32), 'type' => 'mail', 'payload' => '{"region":"mail","version":3}']],
+        ];
+
+        self::assertSame(
+            ['cursor' => 41, 'events' => [['seq' => 2, 'id' => str_repeat('c', 32), 'type' => 'mail', 'region' => 'mail', 'version' => 3]]],
+            Poll::handle(['cursor' => '0'], self::POLL, 100.0)['body']
+        );
+    }
+
+    public function testACursorAheadOfTheLatestNumberResynchronises(): void
+    {
+        $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 41]]];
+
+        self::assertSame(['cursor' => 41, 'events' => [], 'resync' => true], Poll::handle(['cursor' => '99'], self::POLL, 100.0)['body']);
+    }
+
+    public function testRegionFetchesRightAfterAPollAreNotRateLimited(): void
+    {
+        $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 1]], self::OLDEST => [['m' => 1]], '/SELECT name,alive,location/' => [], '/AS seencount/' => [['seencount' => 0, 'notseen' => 0]]];
+
+        self::assertSame(200, Poll::handle(['cursor' => '1'], self::POLL, 100.0)['status']);
+        self::assertSame(200, Poll::handle(['region' => 'stats'], self::POLL, 100.1)['status']);
+        self::assertSame(200, Poll::handle(['region' => 'stats'], self::POLL, 100.2)['status']);
+    }
+
+    public function testAStoredPageShownAgainStopsPollingWhenRealtimeIsOffNow(): void
+    {
+        $stored = '<head><meta name="lotgd-realtime" content="async/poll.php|10"><meta name="lotgd-event-cursor" content="5">'
+            . '<meta name="lotgd-region-versions" content="{}"><meta name="lotgd-page-revision" content="3"></head>';
+
+        self::assertSame($stored, Poll::storedPage($stored, $GLOBALS['session']['user']), 'Kept while realtime is on.');
+
+        Settings::setInstance(new DummySettings(['realtime_enabled' => 0, 'partial_render' => 1]));
+        self::assertSame('<head><meta name="lotgd-page-revision" content="3"></head>', Poll::storedPage($stored, $GLOBALS['session']['user']));
+    }
+
+    public function testThePlayerGetsTheAnnouncementsOfTheirOwnChannelAfterTheCursor(): void
+    {
+        $this->connection->queryResultsByPattern = [
+            self::LATEST => [['m' => 43]],
+            self::OLDEST => [['m' => 1]],
+            self::EVENTS => [
+                ['seq' => 42, 'event_id' => str_repeat('a', 32), 'type' => 'mail', 'payload' => '{"region":"mail","version":9}'],
+            ],
+        ];
+
+        $answer = Poll::handle(['cursor' => '40', 'channel' => 'user-1'], self::POLL, 100.0);
+
+        self::assertSame(200, $answer['status']);
+        self::assertSame(
+            ['cursor' => 43, 'events' => [['seq' => 42, 'id' => str_repeat('a', 32), 'type' => 'mail', 'region' => 'mail', 'version' => 9]]],
+            $answer['body']
+        );
+        $read = array_values(array_filter($this->connection->fetchAllLog, static fn (array $q): bool => preg_match(self::EVENTS, $q['sql']) === 1));
+        self::assertSame(['user-7'], $read[0]['params']['channels'], 'The channel is the account read from the database, whatever the request asks for.');
+        self::assertSame(40, $read[0]['params']['cursor']);
+    }
+
+    public function testACursorFromBeforeTheRetentionAsksThePageToReloadItsRegions(): void
+    {
+        $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 90]], self::OLDEST => [['m' => 50]]];
+
+        self::assertSame(['cursor' => 90, 'events' => [], 'resync' => true], Poll::handle(['cursor' => '3'], self::POLL, 100.0)['body']);
+    }
+
+    public function testARegionIsAnsweredWithItsVersion(): void
+    {
+        $this->connection->queryResultsByPattern = ['/SELECT name,alive,location/' => []];
+
+        $answer = Poll::handle(['region' => 'stats'], self::POLL, 100.0);
+
+        self::assertSame(200, $answer['status']);
+        self::assertSame('stats', $answer['body']['region']);
+        self::assertSame(5, $answer['body']['version'], 'The account version the region shows.');
+        self::assertIsString($answer['body']['html']);
+    }
+
+    public function testAnUnknownRegionIsRefused(): void
+    {
+        self::assertSame(400, Poll::handle(['region' => 'nav'], self::POLL, 100.0)['status']);
+    }
+
+    public function testWithoutTheCustomHeaderNothingIsRead(): void
+    {
+        self::assertSame(400, Poll::handle(['cursor' => '0'], ['REQUEST_METHOD' => 'GET'], 100.0)['status']);
+        self::assertSame(405, Poll::handle(['cursor' => '0'], ['REQUEST_METHOD' => 'POST'] + self::POLL, 100.0)['status']);
+        self::assertSame([], $this->connection->queries);
+    }
+
+    public function testWithRealtimeOffForThePlayerNothingIsRead(): void
+    {
+        $GLOBALS['session']['user']['prefs'] = ['partialrender' => 0];
+        self::assertSame(404, Poll::handle(['cursor' => '0'], self::POLL, 100.0)['status']);
+
+        $GLOBALS['session']['user']['prefs'] = ['partialrender' => 1];
+        Settings::setInstance(new DummySettings(['realtime_enabled' => 0, 'partial_render' => 1]));
+        self::assertSame(404, Poll::handle(['cursor' => '0'], self::POLL, 100.0)['status']);
+        self::assertSame([], $this->connection->queries);
+    }
+
+    public function testALoggedOutPlayerIsToldToLogIn(): void
+    {
+        // ForcedNavigation leaves this behind for a poll whose login expired.
+        $GLOBALS['session'] = ['loggedin' => false];
+
+        self::assertSame(401, Poll::handle(['cursor' => '0'], self::POLL, 100.0)['status']);
+    }
+
+    public function testPollingFasterThanTheRateLimitIsRefused(): void
+    {
+        $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 1]], self::OLDEST => [['m' => 1]]];
+
+        self::assertSame(200, Poll::handle(['cursor' => '1'], self::POLL, 100.0)['status']);
+        self::assertSame(429, Poll::handle(['cursor' => '1'], self::POLL, 100.2)['status']);
+        self::assertSame(200, Poll::handle(['cursor' => '1'], self::POLL, 101.5)['status']);
+    }
+}

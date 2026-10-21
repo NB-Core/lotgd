@@ -22,6 +22,7 @@ use Lotgd\Output;
 use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\PlayerSearch;
+use Lotgd\Realtime;
 use Lotgd\Sanitize;
 use Lotgd\Settings;
 use Lotgd\Translator;
@@ -265,12 +266,21 @@ if ($op == "") {
         if ($guarded && (int) $credited !== 1) {
             throw new ActionAborted('recipient-changed');
         }
-        $senderName = $session['user']['name'];
-        Action::afterCommit(static function () use ($recipient, $senderName, $amt): void {
-            $subj = array("`^You have received a money transfer!`0");
-            $body = array("`&%s`6 has transferred `^%s`6 gold to your bank account!", $senderName, $amt);
-            Mail::systemMail($recipient, $subj, $body);
-        });
+        // Guarded, the mail row and its announcement commit or roll back with
+        // the credit; only the e-mail waits for the commit.
+        $subj = array("`^You have received a money transfer!`0");
+        $body = array("`&%s`6 has transferred `^%s`6 gold to your bank account!", $session['user']['name'], $amt);
+        Mail::systemMail($recipient, $subj, $body);
+        if (Realtime::enabled()) {
+            Realtime::announce(Realtime::userChannel($recipient), 'bank', [
+                'region' => 'stats',
+                'version' => (int) Database::getDoctrineConnection()->fetchOne(
+                    'SELECT version FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                    ['acctid' => $recipient],
+                    ['acctid' => ParameterType::INTEGER]
+                ),
+            ]);
+        }
 
         return $shown;
     });

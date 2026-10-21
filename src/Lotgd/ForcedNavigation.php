@@ -14,6 +14,7 @@ use Lotgd\Redirect;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Page\PartialMode;
 use Lotgd\Page\PartialRenderer;
+use Lotgd\Realtime\Poll;
 
 class ForcedNavigation
 {
@@ -28,6 +29,9 @@ class ForcedNavigation
         $requestUri = PhpGenericEnvironment::getRequestUri();
         Output::getInstance()->rawOutput("<!--\nAllowAnonymous: " . ($anonymous ? "True" : "False") . "\nOverride Forced Nav: " . ($overrideforced ? "True" : "False") . "\n-->");
         if (isset($session['loggedin']) && $session['loggedin']) {
+            if (Realtime::enabled() && !(defined('AJAX_MODE') && AJAX_MODE)) {
+                Poll::noteStartCursor();
+            }
             $result = Database::getDoctrineConnection()->executeQuery(
                 'SELECT * FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
                 ['acctid' => (int) ($session['user']['acctid'] ?? 0)],
