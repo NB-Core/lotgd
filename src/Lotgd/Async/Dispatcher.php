@@ -87,6 +87,24 @@ final class Dispatcher
     }
 
     /**
+     * What the rate limit counts the call under: class and method, and for
+     * a region fetch the region too -- an announcement of mail and of stats
+     * at once is two fetches right after each other, each allowed.
+     */
+    public function rateKey(): string
+    {
+        $context = $this->describe();
+        $key = $context['class'] . '::' . $context['method'];
+        $call = $this->parse();
+        if ($call !== null && $call['class'] === 'Realtime' && $call['method'] === 'region') {
+            $region = $call['args'][0] ?? '';
+            $key .= ':' . (is_string($region) && preg_match('/^[a-z]{1,16}\z/', $region) === 1 ? $region : '?');
+        }
+
+        return $key;
+    }
+
+    /**
      * Run the named call and return its response.
      *
      * @throws \InvalidArgumentException For a class, method or arguments that do not resolve.

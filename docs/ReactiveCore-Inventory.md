@@ -128,7 +128,9 @@ handler, which Phase 2 replaces by a region `init`). Modules add 55 more.
 Pages that emit them stay on full-page rendering until they register a
 region lifecycle instead (Phase 2 compatibility list).
 
-## Async (Jaxon) state
+## Async state
+
+Snapshot taken before Phase 6a: Jaxon was the transport then; since 6a every async call goes through `async/process.php` and `Lotgd\Async\Dispatcher` (see [Phase 6a](ReactiveCore.md)). The rest of this section still describes the polling intervals and DOM ownership.
 
 - Endpoint: `async/process.php`, runs with `OVERRIDE_FORCED_NAV`, rate limited
   by `ajax_rate_limit_seconds` (1.0 s), CSRF scope `Csrf::SCOPE_ASYNC`.
@@ -136,10 +138,10 @@ region lifecycle instead (Phase 2 compatibility list).
   `lotgd_async_is_session_readonly_callable()` – `Bans::affectedUsers`,
   `Commentary::commentaryRefresh|pollUpdates|test`, `Mail::mailStatus`,
   `Timeout::timeoutStatus`. `commentaryText` deliberately keeps the lock
-  because it persists the last-seen comment. A Phase 4 poll endpoint joins this list.
+  because it persists the last-seen comment. The Phase 4 poll endpoint joined this list; since 6a it is `Realtime::poll`/`Realtime::region` on `async/process.php`.
 - Polling intervals: mail every `check_mail_timeout_seconds` (10 s), timeout
   every `check_timeout_seconds` (5 s).
-- DOM owned by Jaxon: the mail link (`maillink`), the notification area
+- DOM owned by the async client (formerly Jaxon): the mail link (`maillink`), the notification area
   (`notify`) and the commentary blocks. HTMX regions in Phase 2 must stay
   disjoint from these.
 

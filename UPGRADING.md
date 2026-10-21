@@ -353,13 +353,13 @@ and `relay_sequence`. Nothing writes or reads them while the game setting
 
 With it on, players who have partial rendering on (game setting, their
 preference and a skin with regions) see a new mail and incoming money on the
-page they have open. The page polls `async/poll.php` every
+page they have open. The page polls `async/process.php` (`async/poll.php` until Phase 6a) every
 `realtime_poll_seconds` (default 10). Events are relayed right after the
 change commits; add bit 16 to the `cron.php` call (for example
 `php cron.php 31`) so that events left behind by an interrupted request are
 relayed too. Events are kept `realtime_retention_hours` (default 24).
 
-`async/poll.php` is new and must be reachable like `async/process.php`; it
+The poll uses `async/process.php`, which must be reachable; it
 follows `ajax_rate_limit_seconds` from `config/async.settings.php`. The
 outbox needs its tables and `mail` in InnoDB, like the guarded actions.
 
@@ -394,6 +394,42 @@ grant with `Grant::claim()` inside `Action::run()` and still checks what it
 does on fresh rows. A skin with `"regions": true` can add a header slot
 `grants` (`data-lotgd-region="header" data-lotgd-slot="grants"`, variable
 `grants`).
+
+### One async endpoint; Jaxon removed (Phase 6a)
+
+Every async call (comment refresh, mail link, timeout warning, realtime poll
+and region fetches, bans, passkeys) now goes through `async/process.php` and
+one browser client, `assets/js/lotgd.async.js`. Jaxon (`jaxon-php/jaxon-core`,
+`async/common/jaxon.php`, `async/js/lotgd.jaxon.js`, the vendored
+`async/js/vendor/jaxon`, `async/maillink.php`) and `async/poll.php` are gone.
+
+For operators:
+
+- Nothing to configure. `config/async.settings.php` keeps its keys and still
+  applies (rate limit, `csrf_mode`, intervals).
+- The instruction to promote `csrf_mode` to `enforce` now refers to
+  `Async csrf` lines in `error_log`. The other log lines were renamed the same
+  way: `Async rate limit hit`, `Async authorization:` and `Async bad request`
+  (they were `Jaxon rate limit hit`, `Jaxon authorization:` and
+  `Jaxon bad request`). Adjust log alerts that match the old text.
+- Every request to the endpoint must carry the header `X-Lotgd-Async: 1`;
+  without it the answer is `400`. The shipped client sends it, so a page loaded
+  before the upgrade needs a reload.
+- `async/poll.php` no longer exists; web server rules that mention it can go.
+  `vendor/` shrinks (Jaxon and its dependencies are not installed any more).
+
+For module authors:
+
+- Replace Jaxon calls in browser code with
+  `lotgd.async.call('Class', 'method', [args])`.
+- Register server handlers through the hook `async-handlers`, returning
+  `['Name' => FQCN]`; a request names the registered `Name`, never a PHP class.
+- A handler class returns `Lotgd\Async\Response` (`assign`, `append`, `title`,
+  `call`, `data`) instead of `Jaxon\Response\Response`.
+- `window.getJaxonHandlers()`, `window.Lotgd.Async.Handler.<Class>.<method>(...)`
+  and `window.jaxon.config.requestURI` remain as a deprecated shim so old
+  module code keeps working; see [docs/Deprecations.md](docs/Deprecations.md).
+  It is removed in the next major release.
 
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
 
@@ -511,23 +547,24 @@ modules.
     because the loader merges `config/async.settings.php` over the shipped
     `.dist` defaults, so **no action is required to upgrade**.
   - **Still ships as `log`**, and the reason has changed. The transport is now
-    verified — the Jaxon client runtime is served from `async/js/vendor/jaxon`
+    verified — the client runtime (Jaxon until Phase 6a, now `assets/js/lotgd.async.js`) is served from your own installation
     instead of a CDN, and the header was confirmed to reach the server in a
     real browser against those files. What remains is the upgrade itself.
   - That check found a real defect, which is why the earlier release would have
     logged a failure on every poll: Jaxon defaults `httpRequestOptions.mode` to
     `no-cors`, under which the browser silently drops every non-safelisted
-    request header — on same-origin requests too. `async/js/lotgd.jaxon.js` now
-    sets `same-origin`.
+    request header — on same-origin requests too. The Jaxon client
+    was fixed to `same-origin`; its replacement `assets/js/lotgd.async.js` uses
+    `same-origin` too.
   - Set `'csrf_mode' => 'log'` if you carry local modifications to the async
     client and want evidence first. Failures are recorded as
-    `Jaxon csrf <reason>` in `error_log`, naming the handler.
+    `Async csrf <reason>` in `error_log` (`Jaxon csrf <reason>` before Phase 6a), naming the handler.
   - A browser tab left open across the upgrade holds the **old** inlined client,
     which has neither the `same-origin` fix nor the recovery handler added here.
     Enforcing immediately would leave those tabs polling into a 403 with nothing
     but a manual reload to fix it, which is why this stays on `log` for now.
   - **When to promote:** deploy, let open tabs age out (any page load delivers
-    the new client), confirm `error_log` carries no `Jaxon csrf` lines, then set
+    the new client), confirm `error_log` carries no `Async csrf` lines, then set
     `'csrf_mode' => 'enforce'` at a time of your choosing. Clients rendered
     after the upgrade recover on their own: a refusal stops the polling loop and
     reloads the page once, guarded in `sessionStorage` so a persistent failure
@@ -545,14 +582,12 @@ modules.
     timeout polling, never a game action.
 
 - **Async client assets**
-  - The Jaxon browser runtime is no longer fetched from `cdn.jsdelivr.net`. It
-    ships in `async/js/vendor/jaxon` and is served from your own installation.
+  - The async browser client is no longer fetched from `cdn.jsdelivr.net`. It
+    ships in `assets/js/lotgd.async.js` (Jaxon's runtime in `async/js/vendor/jaxon` before Phase 6a) and is served from your own installation.
     Nothing to configure; the files are part of the release archive.
-  - If your deployment blocks or rewrites `/async/js/`, allow it: without those
+  - If your deployment blocks or rewrites `/assets/js/`, allow it: without those
     files the async layer does not load at all.
-  - `tests/Async/check-jaxon-assets.sh` verifies the files against recorded
-    checksums and reports when upstream has moved on. Nothing proposes that
-    update automatically, because the files are not a declared dependency.
+  - `tests/Async/check-jaxon-assets.sh` (before Phase 6a) verified the vendored Jaxon files; it is removed together with them.
 
 - **Mail**  
   - Uses **PHPMailer** via Composer.  

@@ -33,7 +33,8 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 | 3 | Guarded game actions: `Action::run()`, split `saveUser()`, optimistic locking | done (pilot: the bank; see below) |
 | 4 | Transactional outbox, relay, polling transport | done (pilot: new mail and incoming transfers; see below) |
 | 5 | Grants: server-issued one-shot navigation for other players | done (pilot: accepting a clan applicant; see below) |
-| 6 | SSE / Mercure transport | planned |
+| 6 | One async transport and popups as in-page overlay | 6a done: one async transport (Jaxon removed; see below); 6b planned: popups as in-page overlay (mail, MOTD) |
+| 7 | SSE / Mercure transport | planned |
 
 ## Phase 1 – PageState
 
@@ -110,7 +111,7 @@ player on a skin with regions; everyone else gets exactly the game of before.
   client sets `lotgd_comment_section`, `lotgd_lastCommentId`,
   `lotgd_lastUnreadMailId` and `lotgd_lastUnreadMailCount` after the swap, so
   polling follows the page. The mail slot's copy of the same values
-  (`async/maillink.php`, an inline script) is dropped for partial players.
+  (`async/maillink.php`, an inline script, removed in Phase 6a) is dropped for partial players.
   The timeout warning needs nothing: it is computed on the server from
   `laston`, which every partial request updates.
 - **Late fallback**: the page is stored as usual and answered
@@ -337,7 +338,7 @@ or reads the new tables.
   - incoming transfer: with `guarded_actions` on, the bank writes the
     recipient's mail inside the transfer's transaction (Phase 3 sent it after
     the commit) and announces `stats` with the recipient's new account version.
-- **Poll endpoint** `async/poll.php` (`Lotgd\Realtime\Poll`):
+- **Poll endpoint** `async/poll.php` (`Lotgd\Realtime\Poll`; folded into `async/process.php` as the handler `Realtime` in Phase 6a, see "Phase 6a – as built"; the text below is the Phase 4 state):
   - GET only, header `X-Lotgd-Poll: 1` required (a custom header forces a CORS
     preflight, which is never answered, so another site cannot read it). `401`
     when logged out (`ForcedNavigation` re-reads the account on every poll, so
@@ -371,7 +372,7 @@ or reads the new tables.
   of it only when the answer's version is still higher. A failed fetch is
   retried with the next poll; an announcement that arrives while a fetch of
   the same region is on its way is fetched right after it.
-- **Jaxon**: `Commentary::pollUpdates()` leaves the mail link out for players
+- **Commentary poll** (Jaxon until Phase 6a): `Commentary::pollUpdates()` leaves the mail link out for players
   the realtime poll runs for, so the two never write the same region.
 
 Verified against MariaDB 11.4 (`tests/Integration/RealtimeMariaDbTest.php`,
@@ -392,7 +393,7 @@ and sends no polls. The Phase 2 and Phase 3 browser runs pass unchanged with
 realtime on.
 
 Deviation from the criteria: the poll endpoint is a page of its own
-(`async/poll.php`) rather than a Jaxon handler, so it does not join the
+(`async/poll.php`) rather than a Jaxon handler (Phase 6a folded it into the `Realtime` handler of `async/process.php`), so it did not join the
 read-only allow-list in `async/process.php`; it releases the session itself.
 Not yet covered: clan, section and global channels (commentary), and module
 sources.
@@ -485,6 +486,64 @@ Deviation from the concept: `Nav::grant()` takes the group (`target_key`) as
 a parameter of its own and no `method` (every grant is used by a POST). The
 grant's text is stored in the language of the player who started it.
 
+## Phase 6a – as built
+
+No setting: it replaces the transport for everything async and changes no
+game rule.
+
+- **Endpoint**: `async/process.php` only. `async/poll.php`, `Poll::handle()`,
+  `async/maillink.php`, Jaxon (`jaxon-php/jaxon-core` and dependencies,
+  `async/common/jaxon.php`, `async/js/lotgd.jaxon.js`, `async/js/vendor/jaxon`,
+  `tests/Async/check-jaxon-assets.sh`) are removed.
+- **Request**: POST with one field `call` = JSON `{class, method, args}`;
+  headers `X-Lotgd-Async: 1` (required, else `400`; a custom header forces a
+  CORS preflight whatever the CSRF mode) and `X-LotGD-Csrf`.
+- **Policies kept**: authentication, the unauthenticated allow-list, superuser
+  bits, CSRF (`log`/`enforce`), the denied-request throttle, the read-only
+  session release, the JSON error format with megauser diagnostics. Rate limits
+  are per call in `$_SESSION['lastrequest'][class::method]`, per region for
+  `Realtime.region`. Log lines are
+  `Async csrf`, `Async rate limit hit`, `Async authorization:`,
+  `Async bad request` (were `Jaxon …`).
+- **Dispatcher** (`Lotgd\Async\Dispatcher`): the class is a registered name,
+  never a PHP class from the request. Core: `Bans`, `Commentary`, `Mail`,
+  `Realtime`, `Timeout`, `TwoFactorAuthPasskey`; modules add handlers through
+  the hook `async-handlers` (`['Name' => FQCN]`). Only public methods the
+  class declares itself; `EXCLUDED` keeps PHP-only methods out
+  (`Commentary::test`, `Timeout::getInstance`, the passkey setters).
+- **Response** (`Lotgd\Async\Response`): commands `assign`, `append`, `title`
+  and `call` (only functions the client allows) plus `data`; JSON
+  `{status, commands, data}`.
+- **Realtime handler**: `Realtime.poll` (announcements after the cursor, for
+  realtime-only players) and `Realtime.region(name)` (the region fetch of
+  Phase 4) with the semantics of Phase 4 (`resync`, region allowance, session
+  released).
+- **Single poll**: one loop per interval. `Commentary.pollUpdates(section,
+  lastId, cursor)` carries the realtime cursor and answers announcements with
+  the comments; realtime-only players call `Realtime.poll` instead. Region
+  fetches are `Realtime.region(name)` on the same endpoint.
+- **Client** (`assets/js/lotgd.async.js`): page configuration is in
+  `<meta name="lotgd-async">` written by `async/setup.php` (no inline
+  scripts); `<meta name="lotgd-realtime">` now holds only the interval in
+  seconds.
+- **Shim** (deprecated, removal next major): `window.getJaxonHandlers()`,
+  `window.Lotgd.Async.Handler.<Class>.<method>(...)` and
+  `window.jaxon.config.requestURI` keep old module code working (the
+  `twofactorauth` passkey bridge and its callback
+  `twofactorauthHandleJaxonResponse`).
+
+Verification: unit suites `tests/Async`, `tests/Ajax` and `tests/Realtime`
+pass. In a browser, as a classic AJAX player and as a partial + realtime
+player: a comment posted from elsewhere appears, the mail link updates, only
+`process.php` is called, there is one poll per interval, a region fetch uses
+the same endpoint, a superuser `Bans` call works, and a request without
+`X-Lotgd-Async` is answered `400`. The Phase 2 to 5 browser suites pass; two
+of their checks read the old transport (a Jaxon global, `poll.php` URLs) and
+now read `lotgd.async.state()` and the `process.php` calls.
+
+Phase 6b (planned): popups (mail, MOTD) as an in-page overlay instead of a
+browser window. SSE / Mercure moved to Phase 7.
+
 ## Binding acceptance criteria
 
 Each later phase is merged only when its criteria hold.
@@ -510,7 +569,7 @@ Each later phase is merged only when its criteria hold.
 5. Navigation region is swapped as a whole first; a fine-grained diff later
    needs explicit, language-independent ids on sections and items.
 6. Inline scripts are not executed after a swap; regions register
-   `init`/`destroy`. Jaxon and HTMX own disjoint regions.
+   `init`/`destroy`. The async client (Jaxon before Phase 6a) and HTMX own disjoint regions.
 
 ### Phase 3 – guarded actions
 

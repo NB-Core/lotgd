@@ -47,10 +47,14 @@ This project aims to preserve legacy compatibility while moving to a modern stac
   - Replacement: Doctrine DBAL prepared statements via `Database::getDoctrineConnection()` (or equivalent Doctrine abstractions).
   - Removal target: Next major release (3.0) for core/refactored paths; module maintainers should migrate before upgrading.
 
-- Custom Ajax endpoints not using Jaxon
+- Custom Ajax endpoints not using the async endpoint
   - Status: Deprecated
-  - Replacement: Jaxon-based async calls under `async/`
-  - Migration: Wrap Ajax actions with Jaxon controllers; adhere to rate limiting.
+  - Replacement: a handler class returning `Lotgd\Async\Response`, registered through the hook `async-handlers`, called with `lotgd.async.call()`; served by `async/process.php`
+  - Migration: Wrap Ajax actions in an async handler; adhere to rate limiting.
+- Jaxon-era client shim: `window.getJaxonHandlers()`, `window.Lotgd.Async.Handler.<Class>.<method>(...)` and `window.jaxon.config.requestURI`
+  - Status: Deprecated (since Phase 6a, when Jaxon was removed); kept so older module code, such as the `twofactorauth` passkey bridge and its callback `twofactorauthHandleJaxonResponse`, keeps working
+  - Replacement: `lotgd.async.call('Class', 'method', [args])` from `assets/js/lotgd.async.js`; server handlers return `Lotgd\Async\Response` instead of `Jaxon\Response\Response`
+  - Removal target: Next major release (3.0)
 - Async setting `mail_debug` (`config/async.settings.php`)
   - Status: Deprecated, still honoured in 2.x
   - Replacement: `debug_console`

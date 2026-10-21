@@ -743,7 +743,10 @@ function lotgd_async_process_entrypoint(): void
         $now       = microtime(true);
         $threshold = $ajax_rate_limit_seconds ?? 1.0; // from async settings with fallback
 
-        $rateKey = $requestContext['class'] . '::' . $requestContext['method'];
+        // Test doubles of the dispatcher may not have rateKey().
+        $rateKey = method_exists($asyncDispatcher, 'rateKey')
+            ? $asyncDispatcher->rateKey()
+            : $requestContext['class'] . '::' . $requestContext['method'];
         if (!isset($_SESSION['lastrequest']) || !is_array($_SESSION['lastrequest'])) {
             $_SESSION['lastrequest'] = [];
         }

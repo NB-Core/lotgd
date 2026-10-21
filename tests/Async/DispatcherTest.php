@@ -246,5 +246,13 @@ namespace Lotgd\Tests\Async {
 
             self::assertSame(['region' => null], $response->getData());
         }
+
+        public function testEachRegionHasARateLimitOfItsOwn(): void
+        {
+            self::assertSame('Lotgd.Async.Handler.Realtime::region:mail', $this->dispatcher(['class' => 'Realtime', 'method' => 'region', 'args' => ['mail']])->rateKey());
+            self::assertSame('Lotgd.Async.Handler.Realtime::region:stats', $this->dispatcher(['class' => 'Realtime', 'method' => 'region', 'args' => ['stats']])->rateKey());
+            self::assertSame('Lotgd.Async.Handler.Realtime::region:?', $this->dispatcher(['class' => 'Realtime', 'method' => 'region', 'args' => ["x\ny"]])->rateKey());
+            self::assertSame('Lotgd.Async.Handler.Commentary::pollUpdates', $this->dispatcher(['class' => 'Commentary', 'method' => 'pollUpdates', 'args' => ['village']])->rateKey());
+        }
     }
 }
