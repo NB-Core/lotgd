@@ -22,6 +22,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- An installation brought its database up to date by itself only when the game's version changed. A migration added without a new version (a development branch, a hotfix) was never applied unless an administrator ran `bin/doctrine migrations:migrate`, and a missing column then failed every login with "your login was incorrect". The game also records the newest migration it applied (setting `schema_migration`) and upgrades when the code ships a newer one (`Lotgd\Upgrade\SchemaUpgrade::LATEST_MIGRATION`); webspace-only installations need no command line for it.
 - *Character Restorer*'s e-mail hash conversion listed each snapshot with an account id it never read, which raised "Undefined variable $acctid_acc" once per snapshot.
 - The game settings reported *Saved:* with nothing after it for a setting that was not saved. The red "No" was written as `"`$No`0"`, in double quotes, so PHP read `$No` as an undefined variable.
 - *reCAPTCHA v2* (`recaptcha_v2`) reported every failed check as `not-available`: it read the error codes from `$answer`, a variable that does not exist, instead of from Google's answer.
