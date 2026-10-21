@@ -121,13 +121,12 @@ if ($op == "") {
         $preview = Translator::translateInline("Preview Transfer");
         $output->rawOutput("<form action='bank.php?op=transfer2' method='POST'>" . Forms::csrfField());
         $output->output("Transfer how much: ");
-        $output->rawOutput("<input name='amount' id='amount' width='5'>");
+        $output->rawOutput("<input name='amount' id='amount' width='5' autofocus>");
         $output->outputNotl("`n");
         $output->output("To: ");
         $output->rawOutput("<input name='to'>");
         $output->output(" (partial names are ok, you will be asked to confirm the transaction before it occurs).`n");
         $output->rawOutput("<input type='submit' class='button' value='$preview'></form>");
-        $output->rawOutput("<script language='javascript'>document.getElementById('amount').focus();</script>");
         Nav::add("", "bank.php?op=transfer2");
     } else {
         $output->output("`@Elessa`6 tells you that she refuses to transfer money for someone who is in debt.");
@@ -167,12 +166,11 @@ if ($op == "") {
         $msg = Translator::translateInline("Preview Transfer");
         $output->rawOutput("<form action='bank.php?op=transfer2' method='POST'>" . Forms::csrfField());
         $output->output("Transfer how much: ");
-        $output->rawOutput("<input name='amount' id='amount' width='5' value='$amt'><br>");
+        $output->rawOutput("<input name='amount' id='amount' width='5' value='$amt' autofocus><br>");
         $output->output("To: ");
         $output->rawOutput("<input name='to' value='" . HTMLEntities($to, ENT_COMPAT, $charset) . "'>");
         $output->output(" (partial names are ok, you will be asked to confirm the transaction before it occurs).`n");
         $output->rawOutput("<input type='submit' class='button' value='$msg'></form>");
-        $output->rawOutput("<script language='javascript'>document.getElementById('amount').focus();</script>", true);
         Nav::add("", "bank.php?op=transfer2");
     } elseif ($matchCount > 1) {
         $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>" . Forms::csrfField() . $actionField);
@@ -328,10 +326,9 @@ if ($op == "") {
     $pay = Translator::translateInline("`^Pay off how much?");
     $output->outputNotl($session['user']['goldinbank'] >= 0 ? $dep : $pay);
     $dep = Translator::translateInline("Deposit");
-    $output->rawOutput(" <input id='input' name='amount' width=5 > <input type='submit' class='button' value='$dep'>");
+    $output->rawOutput(" <input id='input' name='amount' width=5 autofocus> <input type='submit' class='button' value='$dep'>");
     $output->output("`n`iEnter 0 or nothing to deposit it all`i");
     $output->rawOutput("</form>");
-    $output->rawOutput("<script language='javascript'>document.getElementById('input').focus();</script>", true);
     Nav::add("", "bank.php?op=depositfinish");
 } elseif ($op == "depositfinish") {
     $amountPost = Http::post('amount');
@@ -377,10 +374,9 @@ if ($op == "") {
     $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>" . Forms::csrfField() . $actionField);
     $output->outputNotl($session['user']['goldinbank'] >= 0 ? $balance : $debt, number_format(abs($session['user']['goldinbank']), 0, $point, $sep));
     $output->output("`6\"`@How much would you like to borrow `&%s`@?  At your level, you may borrow up to a total of `^%s`@ from the bank.`6\"`n`n", $session['user']['name'], $maxborrow);
-    $output->rawOutput(" <input id='input' name='amount' width=5 > <input type='hidden' name='borrow' value='x'><input type='submit' class='button' value='$borrow'>");
+    $output->rawOutput(" <input id='input' name='amount' width=5 autofocus> <input type='hidden' name='borrow' value='x'><input type='submit' class='button' value='$borrow'>");
     $output->output("`n(Money will be withdrawn until you have none left, the remainder will be borrowed)");
     $output->rawOutput("</form>");
-    $output->rawOutput("<script language='javascript'>document.getElementById('input').focus();</script>");
     Nav::add("", "bank.php?op=withdrawfinish");
 } elseif ($op == "withdraw") {
     $withdraw = Translator::translateInline("Withdraw");
@@ -389,10 +385,9 @@ if ($op == "") {
     $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>" . Forms::csrfField() . $actionField);
     $output->outputNotl($session['user']['goldinbank'] >= 0 ? $balance : $debt, number_format(abs($session['user']['goldinbank']), 0, $point, $sep));
     $output->output("`6\"`@How much would you like to withdraw `&%s`@?`6\"`n`n", $session['user']['name']);
-    $output->rawOutput("<input id='input' name='amount' width=5 > <input type='submit' class='button' value='$withdraw'>");
+    $output->rawOutput("<input id='input' name='amount' width=5 autofocus> <input type='submit' class='button' value='$withdraw'>");
     $output->output("`n`iEnter 0 or nothing to withdraw it all`i");
     $output->rawOutput("</form>");
-    $output->rawOutput("<script language='javascript'>document.getElementById('input').focus();</script>");
     Nav::add("", "bank.php?op=withdrawfinish");
 } elseif ($op == "withdrawfinish") {
     $amountPost = Http::post('amount');

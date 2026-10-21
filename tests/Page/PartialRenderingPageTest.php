@@ -49,6 +49,46 @@ final class PartialRenderingPageTest extends TestCase
         );
     }
 
+    /**
+     * @return iterable<string,array{0:string,1:array<string,string>}>
+     */
+    public static function displayPages(): iterable
+    {
+        // The village, the gardens and the news render their error page in the
+        // harness (their queries are not stubbed); the browser run covers them.
+        yield 'a hall of fame list' => ['hof.php', ['op' => 'gems']];
+        yield 'the list of warriors' => ['list.php', []];
+        yield 'the stables' => ['stables.php', []];
+        yield 'the weapon shop' => ['weapons.php', []];
+        yield 'the healer' => ['healer.php', []];
+        yield 'the bank\'s deposit form' => ['bank.php', ['op' => 'deposit']];
+    }
+
+    /**
+     * @param array<string,string> $get
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('displayPages')]
+    public function testTheDisplayPagesSwapInLikeTheForest(string $page, array $get): void
+    {
+        $head = $this->headOf($page, ['partialrender' => 1], ['partial_render' => 1], $get);
+        self::assertSame($this->headOf('forest.php'), $head, 'One head for every page, or the client falls back on each change.');
+
+        $run = $this->request($page, self::PARTIAL_REQUEST + ['HTTP_X_LOTGD_HEAD' => $head], [], ['partialrender' => 1], ['partial_render' => 1], [], $get);
+
+        self::assertSame('1', $run->header('X-Lotgd-Partial'), $this->context($run));
+        self::assertStringNotContainsString('<script', $run->html);
+        self::assertCount(1, $run->statementsContaining(self::REVISION_CLAIM));
+    }
+
+    public function testAnAttackIsNeverAnsweredPartially(): void
+    {
+        $run = $this->request('pvp.php', self::PARTIAL_REQUEST, [], ['partialrender' => 1], ['partial_render' => 1], [], ['act' => 'attack', 'name' => 'bob']);
+
+        self::assertNull($run->header('X-Lotgd-Partial'));
+        self::assertStringStartsWith('pvp.php?', (string) $run->header('HX-Redirect'), $this->context($run));
+        self::assertSame([], $run->statementsContaining('accounts'), 'The fight must not have started.');
+    }
+
     public function testAnAjaxPlayerKeepsOneHeadAcrossPagesAndGetsThePollingState(): void
     {
         $prefs = ['partialrender' => 1, 'ajax' => 1];
@@ -75,11 +115,11 @@ final class PartialRenderingPageTest extends TestCase
 
     public function testAPageOffTheAllowListBecomesAPageChangeBeforeItRuns(): void
     {
-        $run = $this->request('bank.php', self::PARTIAL_REQUEST);
+        $run = $this->request('prefs.php', self::PARTIAL_REQUEST);
 
         // The URI is already reduced to the script and its query at this point,
         // which the client resolves against the page it is on.
-        self::assertSame('bank.php', $run->header('HX-Redirect'));
+        self::assertSame('prefs.php', $run->header('HX-Redirect'));
         self::assertSame('', $run->html);
         // Bootstrap may touch the settings table; the page itself, the forced
         // navigation and saveUser() write to accounts, and none of them ran.
@@ -197,7 +237,8 @@ final class PartialRenderingPageTest extends TestCase
         array $statementResults = [],
         array $prefs = ['partialrender' => 1],
         array $settings = ['partial_render' => 1],
-        array $account = []
+        array $account = [],
+        array $get = []
     ): PageOutcome {
         $row = $account + self::PLAYER + [
             'lasthit' => date('Y-m-d H:i:s'),
@@ -209,7 +250,7 @@ final class PartialRenderingPageTest extends TestCase
             $page,
             0,
             'GET',
-            [],
+            $get,
             [],
             ['accounts_table' => [1 => $row]],
             $settings + ['defaultskin' => 'twig:aurora'],
@@ -225,9 +266,9 @@ final class PartialRenderingPageTest extends TestCase
      * @param array<string,mixed> $prefs
      * @param array<string,mixed> $settings
      */
-    private function headOf(string $page, array $prefs = ['partialrender' => 1], array $settings = ['partial_render' => 1]): string
+    private function headOf(string $page, array $prefs = ['partialrender' => 1], array $settings = ['partial_render' => 1], array $get = []): string
     {
-        $full = $this->request($page, [], [], $prefs, $settings);
+        $full = $this->request($page, [], [], $prefs, $settings, [], $get);
         self::assertSame(1, preg_match('/<meta name="lotgd-head" content="([0-9a-f]+)">/', $full->html, $match), $this->context($full));
 
         return $match[1];

@@ -42,14 +42,33 @@ final class PartialModeTest extends TestCase
         yield 'lower-case method' => ['forest.php', 'get', '', true];
         yield 'a forest fight' => ['forest.php', 'GET', 'search', false];
         yield 'a post' => ['forest.php', 'POST', '', false];
-        yield 'a page off the list' => ['bank.php', 'GET', '', false];
+        yield 'a page off the list' => ['prefs.php', 'GET', '', false];
         yield 'a module page' => ['runmodule.php', 'GET', '', false];
+        yield 'the gardens' => ['gardens.php', 'GET', '', true];
+        yield 'a hall of fame list' => ['hof.php', 'GET', 'gems', true];
+        yield 'an unknown hall of fame list' => ['hof.php', 'GET', 'secret', false];
+        yield 'examining a mount' => ['stables.php', 'GET', 'examine', true];
+        yield 'buying a mount' => ['stables.php', 'GET', 'buymount', false];
+        yield 'the bank\'s deposit form' => ['bank.php', 'GET', 'deposit', true];
+        yield 'a bank booking' => ['bank.php', 'POST', 'depositfinish', false];
+        yield 'a weapon purchase' => ['weapons.php', 'GET', 'buy', false];
+        yield 'training' => ['train.php', 'GET', 'challenge', false];
+        yield 'a clan list' => ['clan.php', 'GET', 'list', true];
+        yield 'leaving a clan' => ['clan.php', 'GET', 'withdraw', false];
+        yield 'a graveyard fight' => ['graveyard.php', 'GET', 'fight', false];
     }
 
     #[DataProvider('allowList')]
     public function testTheAllowListMatchesScriptMethodAndOp(string $script, string $method, string $op, bool $allowed): void
     {
         self::assertSame($allowed, PartialMode::isAllowed($script, $method, $op));
+    }
+
+    public function testAParameterThatMakesAPageActIsNeverPartial(): void
+    {
+        self::assertTrue(PartialMode::isAllowed('pvp.php', 'GET', '', []), 'The list of players.');
+        self::assertFalse(PartialMode::isAllowed('pvp.php', 'GET', '', ['act' => 'attack', 'name' => 'x']), 'An attack.');
+        self::assertTrue(PartialMode::isAllowed('pvp.php', 'GET', '', ['act' => '']), 'An empty value is no act.');
     }
 
     public function testOnlyAnHtmxRequestThatIsNotAHistoryRestoreIsPartial(): void

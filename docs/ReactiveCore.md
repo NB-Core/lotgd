@@ -71,6 +71,17 @@ player on a skin with regions; everyone else gets exactly the game of before.
 
 - **Allow-list** (`Lotgd\Page\PartialMode::ALLOWLIST`, script → method →
   `op`): `village.php`, `forest.php` and `inn.php` without `op`, by GET.
+  Phase 6c added the other places that only display: the gardens, the rock,
+  the shades, the graveyard, the lodge, the gypsy, the hall of fame (its
+  lists), the list of warriors, bios, the news, about, referrals, the
+  stables (and examining a mount), the weapon and armour shops, the
+  mercenary camp, the healer, the trainer (and his question), the clan halls
+  and clan list, the player list for PvP and the bank with its forms (every
+  booking is a POST). `PartialMode::FORBIDDEN_PARAMETERS` names a parameter
+  that turns an allowed page into an action -- `pvp.php?act=attack` -- and
+  such a request is a page change before it runs. The bank's focus scripts
+  are `autofocus` now, which the partial client applies after a swap; the
+  clan detail editor folds with `<details>`.
   Commentary paging and refresh links carry no `op` and swap in too; posting
   a comment is a form and loads the page normally.
 - **Early fallback**: `PartialMode::preCheck()` runs in `common.php` before

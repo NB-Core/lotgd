@@ -44,6 +44,38 @@ final class PartialMode
         'village.php' => ['GET' => ['']],
         'forest.php' => ['GET' => ['']],
         'inn.php' => ['GET' => ['']],
+        'gardens.php' => ['GET' => ['']],
+        'rock.php' => ['GET' => ['']],
+        'shades.php' => ['GET' => ['']],
+        'graveyard.php' => ['GET' => ['']],
+        'lodge.php' => ['GET' => ['', 'points']],
+        'gypsy.php' => ['GET' => ['', 'talk']],
+        'hof.php' => ['GET' => ['', 'kills', 'money', 'gems', 'charm', 'tough', 'resurrects', 'days']],
+        'list.php' => ['GET' => ['', 'clan']],
+        'bio.php' => ['GET' => ['']],
+        'news.php' => ['GET' => ['']],
+        'about.php' => ['GET' => ['', 'setup', 'listmodules', 'license']],
+        'referral.php' => ['GET' => ['']],
+        'stables.php' => ['GET' => ['', 'examine']],
+        'weapons.php' => ['GET' => ['']],
+        'armor.php' => ['GET' => ['']],
+        'mercenarycamp.php' => ['GET' => ['']],
+        'healer.php' => ['GET' => ['']],
+        'train.php' => ['GET' => ['', 'question']],
+        // The forms only: every booking is a POST.
+        'bank.php' => ['GET' => ['', 'transfer', 'deposit', 'withdraw', 'borrow']],
+        'clan.php' => ['GET' => ['', 'list']],
+        'pvp.php' => ['GET' => ['']],
+    ];
+
+    /**
+     * Parameters that make an allowed (script, op) do something: pvp.php
+     * without an op lists the players, with act=attack it starts a fight.
+     *
+     * @var array<string,list<string>>
+     */
+    public const FORBIDDEN_PARAMETERS = [
+        'pvp.php' => ['act'],
     ];
 
     public const REQUEST_HEADER = 'HTTP_HX_REQUEST';
@@ -67,7 +99,7 @@ final class PartialMode
             return;
         }
 
-        if (self::settingEnabled() && self::isAllowed(self::script(), self::method(), self::op())) {
+        if (self::settingEnabled() && self::isAllowed(self::script(), self::method(), self::op(), $_GET)) {
             self::$active = true;
 
             return;
@@ -95,9 +127,21 @@ final class PartialMode
             && ($_SERVER[self::HISTORY_RESTORE_HEADER] ?? '') !== 'true';
     }
 
-    public static function isAllowed(string $script, string $method, string $op): bool
+    /**
+     * @param array<string,mixed> $query The request's query parameters, for FORBIDDEN_PARAMETERS.
+     */
+    public static function isAllowed(string $script, string $method, string $op, array $query = []): bool
     {
-        return in_array($op, self::ALLOWLIST[$script][strtoupper($method)] ?? [], true);
+        if (!in_array($op, self::ALLOWLIST[$script][strtoupper($method)] ?? [], true)) {
+            return false;
+        }
+        foreach (self::FORBIDDEN_PARAMETERS[$script] ?? [] as $parameter) {
+            if (isset($query[$parameter]) && $query[$parameter] !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 // addnews ready
 // translator ready
@@ -44,16 +45,21 @@ if ($ret == "") {
     $return = Sanitize::cmdSanitize($ret);
 }
 
-$char = Http::get('char');
-//Legacy support
-if (is_numeric($char)) {
-    $where = "acctid = $char";
+$char = (string) Http::get('char');
+// An account id (legacy links) or a login, always as a bound parameter: the
+// value comes straight from the URL.
+if (ctype_digit($char)) {
+    $where = 'acctid = :char';
+    $charType = ParameterType::INTEGER;
+    $charValue = (int) $char;
 } else {
-    $where = "login = '$char'";
+    $where = 'login = :char';
+    $charType = ParameterType::STRING;
+    $charValue = $char;
 }
 $sql = "SELECT login, name, level, sex, title, specialty, hashorse, acctid, resurrections, bio, dragonkills, race, clanname, clanshort, clanrank, " . Database::prefix("accounts") . ".clanid, laston, loggedin FROM " . Database::prefix("accounts") . " LEFT JOIN " . Database::prefix("clans") . " ON " . Database::prefix("accounts") . ".clanid = " . Database::prefix("clans") . ".clanid WHERE $where";
-$result = Database::query($sql);
-if ($target = Database::fetchAssoc($result)) {
+$target = Database::getDoctrineConnection()->fetchAssociative($sql, ['char' => $charValue], ['char' => $charType]);
+if (is_array($target)) {
     // Let a module get the values if necessary
     $target = HookHandler::hook("biotarget", $target);
     $target['login'] = rawurlencode($target['login']);
