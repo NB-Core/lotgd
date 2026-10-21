@@ -44,6 +44,46 @@ final class SchemaUpgradeTest extends TestCase
         self::assertFalse($asked, 'every page passes here; the table check must only run on a version change');
     }
 
+    public function testANewMigrationWithoutANewVersionUpgradesToo(): void
+    {
+        // A development branch or a hotfix adds a migration and keeps the version.
+        self::assertTrue(SchemaUpgrade::canUpgradeItself(self::CODE, self::CODE, static fn (): bool => true, 'Version20250101000000'));
+        // Before the newest migration was first recorded.
+        self::assertTrue(SchemaUpgrade::canUpgradeItself(self::CODE, self::CODE, static fn (): bool => true, ''));
+        self::assertFalse(SchemaUpgrade::canUpgradeItself(self::CODE, self::CODE, static fn (): bool => true, SchemaUpgrade::LATEST_MIGRATION));
+    }
+
+    public function testTheNewestMigrationTheCodeNamesIsTheNewestFile(): void
+    {
+        $files = array_map(
+            static fn (string $path): string => basename($path, '.php'),
+            glob(dirname(__DIR__, 2) . '/migrations/Version*.php') ?: []
+        );
+        sort($files);
+
+        self::assertSame(end($files), SchemaUpgrade::LATEST_MIGRATION, 'Raise SchemaUpgrade::LATEST_MIGRATION with every new migration.');
+    }
+
+    public function testANewMigrationIsAppliedAndRecordedUnderTheSameVersion(): void
+    {
+        $settings = new DummySettings(['installer_version' => self::CODE, SchemaUpgrade::MIGRATION_SETTING => 'Version20250101000000']);
+
+        $outcome = $this->upgrade($settings, $this->runner(['Lotgd\\Migrations\\' . SchemaUpgrade::LATEST_MIGRATION]), $this->lock(true))->run(self::CODE);
+
+        self::assertSame(SchemaUpgrade::UPGRADED, $outcome);
+        self::assertSame(self::CODE, $settings->getSetting('installer_version'));
+        self::assertSame(SchemaUpgrade::LATEST_MIGRATION, $settings->getSetting(SchemaUpgrade::MIGRATION_SETTING));
+    }
+
+    public function testASuccessfulUpgradeRecordsTheNewestMigration(): void
+    {
+        $settings = new DummySettings(['installer_version' => self::INSTALLED]);
+
+        $this->upgrade($settings, $this->runner([]), $this->lock(true))->run(self::CODE);
+
+        self::assertSame(SchemaUpgrade::LATEST_MIGRATION, $settings->getSetting(SchemaUpgrade::MIGRATION_SETTING));
+    }
+
     public function testAFreshInstallStillNeedsTheInstaller(): void
     {
         self::assertFalse(SchemaUpgrade::canUpgradeItself(self::CODE, '-1', static fn (): bool => true));
@@ -97,7 +137,7 @@ final class SchemaUpgradeTest extends TestCase
     public function testARequestThatFindsTheWorkDoneDoesNotMigrateAgain(): void
     {
         // The lock was free again because the other request finished.
-        $settings = new DummySettings(['installer_version' => self::CODE]);
+        $settings = new DummySettings(['installer_version' => self::CODE, SchemaUpgrade::MIGRATION_SETTING => SchemaUpgrade::LATEST_MIGRATION]);
         $runner = $this->createMock(MigrationRunner::class);
         $runner->expects(self::never())->method('migrate');
 
