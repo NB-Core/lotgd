@@ -478,8 +478,10 @@ Once the legacy upgrade is complete:
 On the bundled Twig skins, mail and the message of the day open in a dialog inside the page
 instead of a browser window. Nothing to configure; a skin of your own and the
 legacy templates keep the window. A Twig skin opts in with `"overlay": true`
-in its `config.json`; the dialog brings its own styles and uses Bootstrap's
-colours where the skin loads Bootstrap.
+in its `config.json` and gives the dialog its colours in its stylesheet:
+`--lotgd-overlay-bg`, `--lotgd-overlay-fg`, `--lotgd-overlay-border` and
+`--lotgd-overlay-scheme` (`dark`, or `light dark` for a skin that follows the
+system's dark mode). Every bundled skin does; without them the dialog is dark.
 
 - With *Force the MOTD popup* (`forcedmotdpopup`) on, a new MOTD opens in that
   dialog by itself. The module `motd_js_popup` (jquery-modal from a CDN, in

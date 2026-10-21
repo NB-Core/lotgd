@@ -574,7 +574,11 @@ its `config.json` (Aurora) shows popup pages -- pages that end with
 `Footer::popupFooter()`, so far mail and the MOTD -- in a dialog inside the
 page. A skin without the declaration, every legacy `.htm` template, and a
 browser without JavaScript keep the window. Every bundled Twig skin declares
-it.
+it. The dialog's colours come from the skin (`--lotgd-overlay-bg`, `-fg`,
+`-border`, `-scheme` in its `style.css`): aurora, aurora_test and modern are
+always dark, aurora_minimal, puritanic and puritanic_ai follow the system's
+dark mode through their own palette variables. Bootstrap's `--bs-body-bg` is
+not used, since no skin switches Bootstrap to its dark theme and it is white.
 
 - **Server** (`Lotgd\Page\Overlay`): a request with `X-Lotgd-Overlay: 1` to a
   popup page is answered with its content alone, the title percent-encoded in

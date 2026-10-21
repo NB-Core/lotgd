@@ -68,6 +68,19 @@ final class RegionContractTest extends TestCase
     }
 
     #[DataProvider('skins')]
+    public function testTheSkinGivesTheDialogItsColours(string $skin): void
+    {
+        // Without them the dialog falls back to a dark default, which is
+        // wrong for a light skin; Bootstrap's own variables are white even
+        // on dark skins (assets/css/lotgd.overlay.css).
+        $css = (string) file_get_contents(dirname(__DIR__, 2) . "/templates_twig/{$skin}/assets/style.css");
+
+        foreach (['bg', 'fg', 'border', 'scheme'] as $part) {
+            self::assertMatchesRegularExpression("/--lotgd-overlay-{$part}\\s*:/", $css, "{$skin}: --lotgd-overlay-{$part}");
+        }
+    }
+
+    #[DataProvider('skins')]
     public function testEveryRegionHoldsItsVariableAndNothingElse(string $skin): void
     {
         $xpath = $this->render($skin);

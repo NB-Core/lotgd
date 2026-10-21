@@ -1,12 +1,21 @@
-/* Popup pages inside the page (assets/js/lotgd.overlay.js). */
+/*
+ * Popup pages inside the page (assets/js/lotgd.overlay.js).
+ *
+ * The colours are the skin's: it sets --lotgd-overlay-bg, -fg, -border and
+ * -scheme in its style.css from its own palette, so a skin that follows the
+ * system's dark mode gets a dark dialog there too. Bootstrap's --bs-body-bg
+ * is not used: no bundled skin switches Bootstrap to its dark theme, so it is
+ * white on dark skins as well. Without the variables the dialog is dark.
+ */
 .lotgd-overlay {
     width: min(720px, calc(100vw - 32px));
     max-height: calc(100vh - 64px);
     padding: 0;
-    border: 1px solid rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--lotgd-overlay-border, rgba(255, 255, 255, 0.18));
     border-radius: 6px;
-    background: var(--bs-body-bg, #1b1b1b);
-    color: var(--bs-body-color, #e0e0e0);
+    background: var(--lotgd-overlay-bg, #1b1b1b);
+    color: var(--lotgd-overlay-fg, #e0e0e0);
+    color-scheme: var(--lotgd-overlay-scheme, dark);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
     overflow: hidden;
 }
@@ -26,7 +35,7 @@
     justify-content: space-between;
     gap: 12px;
     padding: 10px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid var(--lotgd-overlay-border, rgba(255, 255, 255, 0.18));
 }
 
 .lotgd-overlay__title {
