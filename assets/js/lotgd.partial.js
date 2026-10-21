@@ -432,10 +432,15 @@
                 return;
             }
             fetching[region] = true;
+            const asked = wanted[region];
             get('region=' + encodeURIComponent(region)).then(function (answer) {
-                // The server's answer is the current state, whatever version
-                // the announcement named; only a failed fetch is tried again.
-                delete wanted[region];
+                // The answer is the state when it was rendered, whatever
+                // version the announcement named. A newer announcement that
+                // came while it was on its way is kept and fetched next;
+                // a failed fetch is tried again with the next poll.
+                if ((wanted[region] || 0) <= asked) {
+                    delete wanted[region];
+                }
                 if (answer && typeof answer.html === 'string' && answer.version > (versions[region] || 0)) {
                     versions[region] = answer.version;
                     document.querySelectorAll(REGION_SELECTORS[region]).forEach(function (element) {
@@ -447,6 +452,9 @@
                 }
             }).catch(function () {}).then(function () {
                 fetching[region] = false;
+                if ((wanted[region] || 0) > asked) {
+                    refresh(region, wanted[region]);
+                }
             });
         }
 

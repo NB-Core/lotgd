@@ -39,6 +39,7 @@ final class PollEndpointTest extends TestCase
         $this->connection = new DoctrineConnection();
         Database::setDoctrineConnection($this->connection);
         Settings::setInstance(new DummySettings(['realtime_enabled' => 1, 'partial_render' => 1]));
+        \Lotgd\Realtime::resetState();
         $this->cacheDir = sys_get_temp_dir() . '/lotgd-poll-' . bin2hex(random_bytes(4));
         mkdir($this->cacheDir, 0700, true);
         TwigTemplate::init('aurora', $this->cacheDir);
@@ -88,13 +89,24 @@ final class PollEndpointTest extends TestCase
         self::assertSame(['cursor' => 41, 'events' => [], 'resync' => true], Poll::handle(['cursor' => '99'], self::POLL, 100.0)['body']);
     }
 
+    public function testEachRegionHasARateLimitOfItsOwn(): void
+    {
+        $this->connection->queryResultsByPattern = ['/SELECT name,alive,location/' => []];
+
+        self::assertSame(200, Poll::handle(['region' => 'stats'], self::POLL, 100.0, 2.0)['status']);
+        self::assertSame(429, Poll::handle(['region' => 'stats'], self::POLL, 101.0, 2.0)['status'], 'A client asking again and again is turned away.');
+        self::assertSame(200, Poll::handle(['region' => 'stats'], self::POLL, 102.5, 2.0)['status'], 'The configured limit, not a fixed second.');
+    }
+
     public function testRegionFetchesRightAfterAPollAreNotRateLimited(): void
     {
         $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 1]], self::OLDEST => [['m' => 1]], '/SELECT name,alive,location/' => [], '/AS seencount/' => [['seencount' => 0, 'notseen' => 0]]];
 
+        Database::$queryCacheResults['mail-7'] = [['seencount' => 0, 'notseen' => 0]];
+
         self::assertSame(200, Poll::handle(['cursor' => '1'], self::POLL, 100.0)['status']);
         self::assertSame(200, Poll::handle(['region' => 'stats'], self::POLL, 100.1)['status']);
-        self::assertSame(200, Poll::handle(['region' => 'stats'], self::POLL, 100.2)['status']);
+        self::assertSame(200, Poll::handle(['region' => 'mail'], self::POLL, 100.2)['status']);
     }
 
     public function testAStoredPageShownAgainStopsPollingWhenRealtimeIsOffNow(): void
@@ -169,7 +181,7 @@ final class PollEndpointTest extends TestCase
         $GLOBALS['session']['user']['prefs'] = ['partialrender' => 1];
         Settings::setInstance(new DummySettings(['realtime_enabled' => 0, 'partial_render' => 1]));
         self::assertSame(404, Poll::handle(['cursor' => '0'], self::POLL, 100.0)['status']);
-        self::assertSame([], $this->connection->queries);
+        self::assertSame([], preg_grep('/event_deliveries/', $this->connection->queries), 'No announcements are read.');
     }
 
     public function testALoggedOutPlayerIsToldToLogIn(): void

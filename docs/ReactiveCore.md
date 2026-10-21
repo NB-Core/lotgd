@@ -294,7 +294,9 @@ grant consumption (Phase 5) do not exist yet.
 ## Phase 4 – as built
 
 Switched on by the game setting `realtime_enabled` (*Show new mail and
-incoming transfers without a page change*, off by default). A player's pages
+incoming transfers without a page change*, off by default), and only when
+`events`, `event_deliveries`, `relay_sequence` and `mail` are transactional
+(the relay's numbering rests on a row lock held until commit). A player's pages
 poll when it is on **and** the partial client runs for them (Phase 2), since
 that client is what swaps the announced regions. Without it, nothing writes
 or reads the new tables.
@@ -346,11 +348,13 @@ or reads the new tables.
   - `?cursor=n`: the deliveries of those channels after `n`, at most 100, and
     the next cursor. A cursor below the oldest kept delivery, or above the
     latest number, answers `resync`: the page fetches its regions again.
-    Rate limited by `ajax_rate_limit_seconds`.
+    Rate limited by `ajax_rate_limit_seconds` from the async settings
+    (`config/async.settings.php`, loaded like `async/process.php` does).
   - `?region=mail|stats`: `{region, version, html}`, the current content as
     the page renders it (`PageParts::mailLink()`, `PageParts::charStats()`)
-    and its version (highest message id, account version). Not rate limited:
-    the client fetches only what an announcement names.
+    and its version (highest message id, account version). Each region has an
+    allowance of its own under the same limit, so the fetches that follow a
+    poll pass and a client asking again and again does not.
 - **Snapshot and cursor**: `ForcedNavigation` notes the highest delivery number
   **before** it reads the account, which the regions show; the footer computes
   the region versions before it builds the regions. The page carries
@@ -365,7 +369,8 @@ or reads the new tables.
   and only moves the cursor forward. For an announcement whose version is
   higher than the one shown, it fetches the region and replaces every element
   of it only when the answer's version is still higher. A failed fetch is
-  retried with the next poll.
+  retried with the next poll; an announcement that arrives while a fetch of
+  the same region is on its way is fetched right after it.
 - **Jaxon**: `Commentary::pollUpdates()` leaves the mail link out for players
   the realtime poll runs for, so the two never write the same region.
 

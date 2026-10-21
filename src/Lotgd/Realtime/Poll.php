@@ -26,11 +26,13 @@ final class Poll
     private static ?int $startCursor = null;
 
     /**
-     * @param array<string,mixed> $query  The request's query parameters.
-     * @param array<string,mixed> $server The request's server variables.
+     * @param array<string,mixed> $query     The request's query parameters.
+     * @param array<string,mixed> $server    The request's server variables.
+     * @param float               $rateLimit Seconds between two polls, and between two fetches of one region
+     *                                       (ajax_rate_limit_seconds of the async settings).
      * @return array{status:int,body:array<string,mixed>}
      */
-    public static function handle(array $query, array $server, float $now): array
+    public static function handle(array $query, array $server, float $now, float $rateLimit = 1.0): array
     {
         global $session;
 
@@ -54,15 +56,22 @@ final class Poll
 
         $region = $query['region'] ?? null;
         if ($region !== null) {
-            // Fetched right after an announcement, one per region it names;
-            // the poll's rate limit would turn these away.
-            return is_string($region) && in_array($region, self::REGIONS, true)
-                ? self::answer(200, self::region($region, $acctid))
-                : self::answer(400, ['error' => 'region']);
+            if (!is_string($region) || !in_array($region, self::REGIONS, true)) {
+                return self::answer(400, ['error' => 'region']);
+            }
+            // A fetch follows an announcement right after a poll, so each
+            // region has an allowance of its own; rendering it is the cost
+            // the limit protects.
+            $key = 'lastregion_' . $region;
+            if (isset($session[$key]) && ($now - (float) $session[$key]) < $rateLimit) {
+                return self::answer(429, ['error' => 'rate']);
+            }
+            $session[$key] = $now;
+
+            return self::answer(200, self::region($region, $acctid));
         }
 
-        $threshold = (float) ($GLOBALS['ajax_rate_limit_seconds'] ?? 1.0);
-        if (isset($session['lastpoll']) && ($now - (float) $session['lastpoll']) < $threshold) {
+        if (isset($session['lastpoll']) && ($now - (float) $session['lastpoll']) < $rateLimit) {
             return self::answer(429, ['error' => 'rate']);
         }
         $session['lastpoll'] = $now;

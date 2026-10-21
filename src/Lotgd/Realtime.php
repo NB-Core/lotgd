@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd;
 
 use Lotgd\MySQL\Database;
+use Lotgd\MySQL\StorageEngine;
 use Lotgd\Page\PartialMode;
 use Lotgd\Realtime\Relay;
 
@@ -24,12 +25,31 @@ use Lotgd\Realtime\Relay;
  */
 final class Realtime
 {
+    /** Tables the outbox writes. */
+    public const TABLES = ['events', 'event_deliveries', 'relay_sequence', 'mail'];
+
+    private static ?bool $transactional = null;
+
     /**
      * Whether the game runs the realtime outbox at all (setting realtime_enabled).
      */
     public static function enabled(): bool
     {
-        return Settings::hasInstance() && (int) Settings::getInstance()->getSetting('realtime_enabled', 0) === 1;
+        if (!Settings::hasInstance() || (int) Settings::getInstance()->getSetting('realtime_enabled', 0) !== 1) {
+            return false;
+        }
+
+        // The relay's numbering rests on a row lock held until commit, and an
+        // event must roll back with its change: MyISAM provides neither.
+        return self::$transactional ??= StorageEngine::nonTransactional(self::TABLES) === [];
+    }
+
+    /**
+     * For tests.
+     */
+    public static function resetState(): void
+    {
+        self::$transactional = null;
     }
 
     /**

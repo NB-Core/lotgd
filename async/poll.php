@@ -15,8 +15,15 @@ define('OVERRIDE_FORCED_NAV', true);
 define('ALLOW_ANONYMOUS', true);
 
 require_once __DIR__ . '/common/bootstrap.php';
+// The async settings (ajax_rate_limit_seconds and the rest), as process.php loads them.
+require_once __DIR__ . '/common/settings.php';
 
-$lotgdPoll = \Lotgd\Realtime\Poll::handle($_GET, $_SERVER, microtime(true));
+$lotgdPoll = \Lotgd\Realtime\Poll::handle(
+    $_GET,
+    $_SERVER,
+    microtime(true),
+    (float) ($ajax_rate_limit_seconds ?? 1.0)
+);
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }

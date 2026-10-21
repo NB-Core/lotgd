@@ -37,6 +37,7 @@ final class RealtimeTest extends TestCase
         $this->connection = new DoctrineConnection();
         Database::setDoctrineConnection($this->connection);
         Action::resetState();
+        Realtime::resetState();
 
         $settings = new DummySettings(['realtime_enabled' => 1]);
         Settings::setInstance($settings);
@@ -147,6 +148,20 @@ final class RealtimeTest extends TestCase
     {
         $this->expectException(\LogicException::class);
         Action::run('bank.transfer', self::ID, [], static fn (): array => ['n' => Relay::run()]);
+    }
+
+    public function testWithAMyIsamTableTheOutboxStaysOff(): void
+    {
+        $this->connection->queryResultsByPattern['/information_schema\.TABLES/'] = [
+            ['TABLE_NAME' => 'events', 'ENGINE' => 'InnoDB'],
+            ['TABLE_NAME' => 'event_deliveries', 'ENGINE' => 'InnoDB'],
+            ['TABLE_NAME' => 'relay_sequence', 'ENGINE' => 'MyISAM'],
+            ['TABLE_NAME' => 'mail', 'ENGINE' => 'InnoDB'],
+        ];
+
+        self::assertFalse(Realtime::enabled());
+        Realtime::notify('user-2', 'mail', ['region' => 'mail', 'version' => 1]);
+        self::assertSame([], $this->steps());
     }
 
     public function testWithTheSettingOffNothingIsWritten(): void

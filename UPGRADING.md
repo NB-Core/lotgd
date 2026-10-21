@@ -359,7 +359,9 @@ change commits; add bit 16 to the `cron.php` call (for example
 `php cron.php 31`) so that events left behind by an interrupted request are
 relayed too. Events are kept `realtime_retention_hours` (default 24).
 
-`async/poll.php` is new and must be reachable like `async/process.php`.
+`async/poll.php` is new and must be reachable like `async/process.php`; it
+follows `ajax_rate_limit_seconds` from `config/async.settings.php`. The
+outbox needs its tables and `mail` in InnoDB, like the guarded actions.
 
 For module authors:
 
