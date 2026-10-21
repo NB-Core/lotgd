@@ -56,6 +56,12 @@ a{
     margin-bottom: 4px;
 }
 
+/* Below the MoTD link, which floats at full width (a.hotmotd): beside it the
+   bar would be squeezed to nothing and spill into the content column. */
+nav .mail-nav {
+    clear: both;
+}
+
 .action-bar__link,
 .mail-nav__link {
     display: inline-flex;
