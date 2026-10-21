@@ -33,7 +33,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 | 3 | Guarded game actions: `Action::run()`, split `saveUser()`, optimistic locking | done (pilot: the bank; see below) |
 | 4 | Transactional outbox, relay, polling transport | done (pilot: new mail and incoming transfers; see below) |
 | 5 | Grants: server-issued one-shot navigation for other players | done (pilot: accepting a clan applicant; see below) |
-| 6 | One async transport and popups as in-page overlay | 6a done: one async transport (Jaxon removed); 6b done: popups as in-page overlay (mail, MOTD); see below |
+| 6 | One async transport and popups as in-page overlay | 6a done: one async transport (Jaxon removed); 6b done: popups as in-page overlay (mail, MOTD); 6c done: partial rendering for every display page; live commentary done; see below |
 | 7 | SSE / Mercure transport | planned |
 
 ## Phase 1 – PageState
@@ -419,8 +419,8 @@ realtime on.
 Deviation from the criteria: the poll endpoint is a page of its own
 (`async/poll.php`) rather than a Jaxon handler (Phase 6a folded it into the `Realtime` handler of `async/process.php`), so it did not join the
 read-only allow-list in `async/process.php`; it releases the session itself.
-Not yet covered: clan, section and global channels (commentary), and module
-sources.
+Commentary sections got channels of their own later (see *Live commentary*);
+not yet covered: clan and global channels, and module sources.
 
 ## Phase 5 – as built
 
@@ -615,6 +615,61 @@ Close" (dialog closes, mail sent, header link updated), check all and delete
 forced MOTD opens by itself once and not again after it was read; on a legacy
 skin the link has no overlay attribute and opens a window. The earlier
 browser suites pass.
+
+## Live commentary – as built
+
+New comments reach the players reading a section without a page change. It
+needs nothing new: with `realtime_enabled` on, a player for whom realtime
+runs (partial rendering on, a skin with regions) gets them announced; a player
+with only the AJAX preference keeps polling for them as before.
+
+**Who reads a section.** A section is read outside its page only if a page
+showed it to the player in this session -- the page is what decides who
+reads it (`superuser.php`, `viewpetition.php`, `clan.php`, the hook
+`blockcommentarea`) -- and the account read for the request still passes the
+page's own check for the sections that belong to someone: `clan-<id>` for a
+member of that clan, `superuser…` for a superuser who is not a translator
+alone, `pet-<id>` with `SU_EDIT_PETITIONS`. `Commentary::viewCommentary()`
+remembers the last eight sections it rendered (`$session['commentary_sections']`,
+the final name after hooks such as `sectionedchats`), and
+`Commentary::mayRead()` checks both. `commentaryText`, `commentaryRefresh`,
+`pollUpdates` and `Realtime.poll` answer nothing for any other section.
+Before, they took the section from the request, so any logged-in player could
+read a clan hall, the Grotto or a petition by naming it.
+
+**What a page asks for.** The async state names the section the page shows
+(`Commentary::shownSection()`), or `''` when it shows none; a page without
+commentary no longer polls the last section it showed.
+
+**Announcement.** `Commentary::injectRawComment()`, the one way comments are
+written, announces `{region: commentary, version: <comment id>}` on the
+channel `section-<section>` (`Realtime::sectionChannel()`), on its own
+transaction like any `announce()`. `Realtime.poll(cursor, section)` adds that
+channel when `mayRead()` allows it; the request names the section, the server
+decides whether its channel is read. A realtime poll does not look for
+comments itself: an announcement newer than the last comment shown makes the
+client fetch the lines after it with `Commentary.commentaryRefresh`, once,
+and again only if another arrived meanwhile; a `resync` fetches too. An
+answer the 50-line limit cut short says `more`, and the client fetches the
+rest after a pause of 1.5 s (the rate limit); a fetch that fails is tried
+again with the next poll.
+
+**Rendering.** The fetched lines are filtered and hooked as on the page:
+comments of locked accounts are left out, and every line passes the hook
+`viewcommentary`. At most 50 lines per fetch (`more` when cut short). The [Del] buttons are drawn by
+the page only (they need its navigation and token).
+
+Not live: deletions and moderation (they show on the next page change, as
+before), comments a module writes with its own SQL instead of
+`injectrawcomment()`, and a moderator's undelete in `moderate.php`.
+
+Verified in a browser (three players, Chromium against MariaDB): A writes in
+the village; B (realtime) sees it without a reload after one poll and one
+fetch, and B's polls look for no comments; C (AJAX only) sees it by polling;
+60 comments at once all reach B (two fetches); a fetch that fails is
+retried with the next poll; A writes in the clan hall; B, not a member, gets nothing by naming `clan-14`
+to `commentaryRefresh` or `pollUpdates`; in the forest, B's poll names no
+section. The earlier browser suites pass.
 
 ## Binding acceptance criteria
 

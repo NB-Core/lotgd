@@ -34,6 +34,84 @@ class Commentary
      */
     private static bool $emptypost = false;
 
+    /** How many sections a player's session remembers as shown. */
+    private const SHOWN_SECTIONS = 8;
+
+    /**
+     * The section this request showed, '' when it showed none.
+     */
+    private static string $shownSection = '';
+
+    /**
+     * The section this request rendered, '' when it rendered none: the async
+     * client asks for updates of this one only.
+     */
+    public static function shownSection(): string
+    {
+        return self::$shownSection;
+    }
+
+    /**
+     * For tests.
+     */
+    public static function resetState(): void
+    {
+        self::$shownSection = '';
+    }
+
+    /**
+     * Whether the player may read $section outside a page (the async
+     * handlers, the realtime channel): a page must have shown it to them in
+     * this session -- the page is what decides who reads a section -- and the
+     * account read for this request must still pass the checks the pages
+     * make for the sections that belong to someone.
+     *
+     * @param array<string,mixed> $user The session user, as read for this request.
+     */
+    public static function mayRead(string $section, array $user): bool
+    {
+        global $session;
+
+        if ($section === '' || empty($user['loggedin'])) {
+            return false;
+        }
+        if (!in_array($section, (array) ($session['commentary_sections'] ?? []), true)) {
+            return false;
+        }
+
+        $superuser = (int) ($user['superuser'] ?? 0);
+        if (preg_match('/^clan-(\d+)/', $section, $match) === 1) {
+            // clan.php shows the clan hall to members only.
+            return (int) ($user['clanid'] ?? 0) === (int) $match[1]
+                && (int) ($user['clanrank'] ?? CLAN_APPLICANT) > CLAN_APPLICANT;
+        }
+        if (str_starts_with($section, 'superuser')) {
+            // superuser.php: anyone with a grotto bit, but not a translator alone.
+            return ($superuser & (0xFFFFFFFF & ~SU_DOESNT_GIVE_GROTTO)) !== 0 && $superuser !== SU_IS_TRANSLATOR;
+        }
+        if (str_starts_with($section, 'pet-')) {
+            return ($superuser & SU_EDIT_PETITIONS) !== 0;
+        }
+
+        return true;
+    }
+
+    /**
+     * A page showed $section: remember it for mayRead().
+     */
+    private static function noteShown(string $section): void
+    {
+        global $session;
+
+        self::$shownSection = $section;
+        $shown = array_values(array_filter(
+            (array) ($session['commentary_sections'] ?? []),
+            static fn ($known): bool => $known !== $section
+        ));
+        array_unshift($shown, $section);
+        $session['commentary_sections'] = array_slice($shown, 0, self::SHOWN_SECTIONS);
+    }
+
     /**
      * Determine whether the last action was a double post.
      */
@@ -305,13 +383,25 @@ SQL;
      */
     public static function injectRawComment(string $section, int $author, string $comment): void
     {
-        Database::getDoctrineConnection()->executeStatement(
+        $conn = Database::getDoctrineConnection();
+        $conn->executeStatement(
             'INSERT INTO ' . Database::prefix('commentary') . ' (postdate,section,author,comment) VALUES (:postdate, :section, :author, :comment)',
             ['postdate' => date('Y-m-d H:i:s'), 'section' => $section, 'author' => $author, 'comment' => $comment],
             ['postdate' => ParameterType::STRING, 'section' => ParameterType::STRING, 'author' => ParameterType::INTEGER, 'comment' => ParameterType::STRING]
         );
+        // Read before anything else runs a statement: Realtime::enabled()
+        // asks the database the first time in a process.
+        $commentId = (int) $conn->lastInsertId();
         DataCache::getInstance()->invalidatedatacache("comments-{$section}");
         DataCache::getInstance()->invalidatedatacache('comments-or11');
+
+        // Players reading the section fetch the new line (docs/ReactiveCore.md,
+        // live commentary); the version is the comment id, which only grows.
+        Realtime::announce(
+            Realtime::sectionChannel($section),
+            'comment',
+            ['region' => 'commentary', 'version' => $commentId]
+        );
     }
 
     /**
@@ -686,6 +776,7 @@ SQL;
         if (isset($args['block']) && ($args['block'] == 'yes')) {
             return null;
         }
+        self::noteShown($section);
 
         if ($schema === false) {
             $schema = Translator::getNamespace();

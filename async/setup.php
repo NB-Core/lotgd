@@ -64,7 +64,8 @@ $asyncClientConfig = [
     'updates' => (int) \Lotgd\Settings::getInstance()->getSetting('ajax', 1) === 1 && !empty($session['user']['prefs']['ajax']),
     'polling' => !$isTwoFactorChallengeRoute,
     'interval' => Timeout::getInstance()->getCheckMailTimeoutSeconds() * 1000,
-    'section' => (string) ($session['last_comment_section'] ?? ''),
+    // The section this page shows; '' when it shows none, so nothing is polled.
+    'section' => \Lotgd\Commentary::shownSection(),
     'lastCommentId' => (int) ($session['lastcommentid'] ?? 0),
     'lastMailId' => (int) $lastUnreadMailId,
     'mailCount' => (int) $lastUnreadMailCount,
