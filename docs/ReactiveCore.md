@@ -630,11 +630,14 @@ channel when `mayRead()` allows it; the request names the section, the server
 decides whether its channel is read. A realtime poll does not look for
 comments itself: an announcement newer than the last comment shown makes the
 client fetch the lines after it with `Commentary.commentaryRefresh`, once,
-and again only if another arrived meanwhile; a `resync` fetches once too.
+and again only if another arrived meanwhile; a `resync` fetches too. An
+answer the 50-line limit cut short says `more`, and the client fetches the
+rest after a pause of 1.5 s (the rate limit); a fetch that fails is tried
+again with the next poll.
 
 **Rendering.** The fetched lines are filtered and hooked as on the page:
 comments of locked accounts are left out, and every line passes the hook
-`viewcommentary`. At most 50 lines per fetch. The [Del] buttons are drawn by
+`viewcommentary`. At most 50 lines per fetch (`more` when cut short). The [Del] buttons are drawn by
 the page only (they need its navigation and token).
 
 Not live: deletions and moderation (they show on the next page change, as
@@ -644,7 +647,8 @@ before), comments a module writes with its own SQL instead of
 Verified in a browser (three players, Chromium against MariaDB): A writes in
 the village; B (realtime) sees it without a reload after one poll and one
 fetch, and B's polls look for no comments; C (AJAX only) sees it by polling;
-A writes in the clan hall; B, not a member, gets nothing by naming `clan-14`
+60 comments at once all reach B (two fetches); a fetch that fails is
+retried with the next poll; A writes in the clan hall; B, not a member, gets nothing by naming `clan-14`
 to `commentaryRefresh` or `pollUpdates`; in the forest, B's poll names no
 section. The earlier browser suites pass.
 

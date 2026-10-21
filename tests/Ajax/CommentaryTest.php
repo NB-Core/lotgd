@@ -116,7 +116,7 @@ STUBS
             $this->assertSame($expectedHtml, $commands[0]['value']);
 
             $this->assertSame(
-                ['section' => 'test-section', 'lastId' => 2],
+                ['section' => 'test-section', 'lastId' => 2, 'more' => false],
                 $response->getData()['commentary'] ?? null
             );
 
@@ -150,7 +150,7 @@ STUBS
             $this->assertSame($expectedHtml, $commands[0]['value']);
 
             $this->assertSame(
-                ['section' => 'test-section', 'lastId' => 2],
+                ['section' => 'test-section', 'lastId' => 2, 'more' => false],
                 $response->getData()['commentary'] ?? null
             );
 
@@ -170,6 +170,20 @@ STUBS
             self::assertSame([], $handler->commentaryRefresh('clan-5', 0)->getData());
             self::assertSame([], $handler->commentaryText(['section' => 'clan-5', 'schema' => 's', 'viewonly' => true])->getCommands());
             self::assertCount(1, Database::$mockResults, 'The comments were never queried.');
+        }
+
+        public function testAnAnswerCutShortByTheLimitSaysThereIsMore(): void
+        {
+            $rows = [];
+            for ($id = 1; $id <= 50; $id++) {
+                $rows[] = ['commentid' => $id, 'comment' => 'Line ' . $id, 'acctid' => 2, 'name' => 'U',
+                    'superuser' => 0, 'clanrank' => 0, 'clanshort' => ''];
+            }
+            Database::$mockResults = [$rows];
+
+            $data = (new Commentary())->commentaryRefresh('test-section', 0)->getData()['commentary'];
+
+            self::assertSame(['section' => 'test-section', 'lastId' => 50, 'more' => true], $data);
         }
     }
 }

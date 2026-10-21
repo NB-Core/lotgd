@@ -122,6 +122,39 @@ final class LiveCommentaryTest extends TestCase
         self::assertSame(['region' => 'commentary', 'version' => 1], json_decode((string) $events[0]['params']['payload'], true));
     }
 
+    public function testTheCommentIdIsReadBeforeTheOutboxAsksTheDatabaseAnything(): void
+    {
+        // The first Realtime::enabled() in a process (cron, a script) asks
+        // information_schema; after that, the insert's id is gone.
+        $connection = new class extends DoctrineConnection {
+            public int $readsAtInsert = -1;
+            public int $readsAtId = -1;
+
+            public function executeStatement(string $sql, array $params = [], array $types = []): int
+            {
+                $result = parent::executeStatement($sql, $params, $types);
+                if (str_starts_with($sql, 'INSERT INTO commentary')) {
+                    $this->readsAtInsert = count($this->fetchAllLog);
+                }
+
+                return $result;
+            }
+
+            public function lastInsertId(): string
+            {
+                $this->readsAtId = count($this->fetchAllLog);
+
+                return '1';
+            }
+        };
+        Database::setDoctrineConnection($connection);
+
+        Commentary::injectRawComment('village', 7, 'Hello');
+
+        self::assertNotSame([], preg_grep('/information_schema/', array_map(static fn (array $q): string => (string) $q['sql'], $connection->fetchAllLog)));
+        self::assertSame($connection->readsAtInsert, $connection->readsAtId, 'Nothing ran between the insert and reading its id.');
+    }
+
     public function testWithRealtimeOffACommentIsOnlyWritten(): void
     {
         Settings::setInstance(new DummySettings(['realtime_enabled' => 0]));

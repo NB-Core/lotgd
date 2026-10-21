@@ -383,23 +383,25 @@ SQL;
      */
     public static function injectRawComment(string $section, int $author, string $comment): void
     {
-        Database::getDoctrineConnection()->executeStatement(
+        $conn = Database::getDoctrineConnection();
+        $conn->executeStatement(
             'INSERT INTO ' . Database::prefix('commentary') . ' (postdate,section,author,comment) VALUES (:postdate, :section, :author, :comment)',
             ['postdate' => date('Y-m-d H:i:s'), 'section' => $section, 'author' => $author, 'comment' => $comment],
             ['postdate' => ParameterType::STRING, 'section' => ParameterType::STRING, 'author' => ParameterType::INTEGER, 'comment' => ParameterType::STRING]
         );
+        // Read before anything else runs a statement: Realtime::enabled()
+        // asks the database the first time in a process.
+        $commentId = (int) $conn->lastInsertId();
         DataCache::getInstance()->invalidatedatacache("comments-{$section}");
         DataCache::getInstance()->invalidatedatacache('comments-or11');
 
         // Players reading the section fetch the new line (docs/ReactiveCore.md,
         // live commentary); the version is the comment id, which only grows.
-        if (Realtime::enabled()) {
-            Realtime::announce(
-                Realtime::sectionChannel($section),
-                'comment',
-                ['region' => 'commentary', 'version' => (int) Database::getDoctrineConnection()->lastInsertId()]
-            );
-        }
+        Realtime::announce(
+            Realtime::sectionChannel($section),
+            'comment',
+            ['region' => 'commentary', 'version' => $commentId]
+        );
     }
 
     /**

@@ -110,7 +110,12 @@ class Commentary
         if ($html !== '') {
             $objResponse->append("{$section}-comment", 'innerHTML', $html);
             // The client polls on from here (lotgd.async.js).
-            $objResponse->data('commentary', ['section' => $section, 'lastId' => (int) $newId]);
+            // `more`: the limit cut the answer short; the client asks again.
+            $objResponse->data('commentary', [
+                'section' => $section,
+                'lastId' => (int) $newId,
+                'more' => count($rows) === self::REFRESH_LIMIT,
+            ]);
             if ($lastId > 0 && $lastId < $newId) {
                 $objResponse->call('lotgdCommentNotify', count($comments));
             }
