@@ -24,7 +24,7 @@ final class RealtimePageTest extends TestCase
 
         self::assertStringContainsString('<meta name="lotgd-realtime" content="async/poll.php|10">', $run->html);
         self::assertStringContainsString('<meta name="lotgd-event-cursor" content="17">', $run->html);
-        self::assertMatchesRegularExpression('/<meta name="lotgd-region-versions" content="\{&quot;mail&quot;:\d+,&quot;stats&quot;:\d+\}">/', $run->html);
+        self::assertMatchesRegularExpression('/<meta name="lotgd-region-versions" content="\{&quot;mail&quot;:\d+,&quot;stats&quot;:\d+,&quot;grants&quot;:\d+\}">/', $run->html);
 
         $cursor = array_keys(preg_grep(self::CURSOR, $run->queries));
         $account = array_keys(preg_grep(self::ACCOUNT, $run->queries));

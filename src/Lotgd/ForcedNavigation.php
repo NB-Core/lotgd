@@ -80,6 +80,11 @@ class ForcedNavigation
             } elseif ($overrideforced !== true && Action::isReplayOf((int) $session['user']['acctid'], $requestUri)) {
                 $session['allowednavs'] = [];
                 self::consumePageRevision();
+            } elseif ($overrideforced !== true && Grant::isOfferedTo((int) $session['user']['acctid'], $requestUri)) {
+                // The view link of an open grant, perhaps shown by a realtime
+                // update after the page was built. It only displays.
+                $session['allowednavs'] = [];
+                self::consumePageRevision();
             } else {
                 if ($overrideforced !== true) {
                     Redirect::redirect('badnav.php', 'Navigation not allowed to ' . $requestUri);

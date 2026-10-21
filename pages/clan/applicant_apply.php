@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Clan\Application;
 use Lotgd\Mail;
 use Lotgd\Http;
 use Lotgd\Nav;
@@ -32,10 +33,14 @@ if ($to > 0) {
     $result = Database::query($sql);
     $sql = "DELETE FROM " .  Database::prefix("mail") . " WHERE msgfrom=0 AND seen=0 AND subject='" . Database::escape(serialize($apply_subj)) . "'";
     Database::query($sql);
+    $officers = [];
     while ($row = Database::fetchAssoc($result)) {
         $msg = array("`^You have a new clan applicant!  `&%s`^ has completed a membership application for your clan!",$session['user']['name']);
         Mail::systemMail($row['acctid'], $apply_subj, $msg);
+        $officers[] = (int) $row['acctid'];
     }
+    // With grants on, each officer is also offered to accept right away.
+    Application::offer((int) $session['user']['acctid'], (string) $session['user']['name'], $to, $officers);
 
     // send reminder mail if clan of choice has a description
 

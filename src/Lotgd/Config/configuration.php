@@ -34,6 +34,9 @@ $setup = array(
     "realtime_enabled" => "Show new mail and incoming transfers without a page change (realtime, needs partial rendering)?,bool",
     "realtime_poll_seconds" => "Seconds between two realtime polls of a page,range,5,120,5",
     "realtime_retention_hours" => "Hours realtime events are kept for players to catch up,range,1,168,1",
+    "grants_enabled" => "Offer clan officers a one-time link to accept a new applicant (grants)?,bool",
+    "grant_ttl_hours" => "Hours such a link stays valid,range,1,720,1",
+    "Needs guarded actions. The first officer to use the link accepts the applicant; the others' links close. Off by default,note",
     "Players with partial rendering on poll async/poll.php; events are relayed after the change commits and by cron.php (bit 16). Needs the realtime tables in InnoDB. Off by default,note",
 
     "SMTP Mail Settings,title",

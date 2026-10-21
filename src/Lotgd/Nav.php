@@ -326,6 +326,33 @@ class Nav
     }
 
     /**
+     * Offer $acctid a one-time link for something this player started
+     * (docs/ReactiveCore.md, Phase 5). The link shows up on that player's
+     * pages until it is used, voided or expires; see Grant::issue().
+     *
+     * @param array<string,mixed> $target What the grant is about, for the page that uses it.
+     *
+     * @return int The grant's id, 0 when grants are off.
+     */
+    public static function grant(
+        int $acctid,
+        string $action,
+        array $target,
+        string $targetKey,
+        string $text,
+        string $viewLink,
+        int $ttlSeconds
+    ): int {
+        global $session;
+
+        if (!Grant::enabled()) {
+            return 0;
+        }
+
+        return Grant::issue($acctid, $action, $target, $targetKey, $text, $viewLink, $ttlSeconds, (int) ($session['user']['acctid'] ?? 0));
+    }
+
+    /**
      * Add a link without translating the label.
      *
      * @param string|array $text    Link label or header text

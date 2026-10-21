@@ -18,6 +18,7 @@ use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Page as PageSingleton;
+use Lotgd\Grant;
 use Lotgd\Realtime;
 use Lotgd\Realtime\Poll;
 
@@ -109,6 +110,18 @@ class Footer
         $script = ScriptName::current();
         list($header, $footer) = PageParts::applyFooterHooks($header, $footer, $script);
 
+        // Open grants (docs/ReactiveCore.md, Phase 5): a navigation section on
+        // every skin, and the header slot grants that realtime updates. Their
+        // version is read before they are listed.
+        $grantsVersion = 0;
+        $grantsHtml = '';
+        $grantee = (int) ($session['user']['acctid'] ?? 0);
+        if ($grantee > 0 && !empty($session['user']['loggedin']) && Grant::enabled()) {
+            $grantsVersion = Grant::regionVersion($grantee);
+            Grant::addNavs($grantee);
+            $grantsHtml = Grant::regionHtml($grantee);
+        }
+
         $builtnavs = Nav::buildNavs();
 
         // Before the regions are built: what they show is at least this new.
@@ -120,6 +133,7 @@ class Footer
             $regionVersions = [
                 'mail' => Poll::regionVersion('mail', $acctid),
                 'stats' => Poll::regionVersion('stats', $acctid),
+                'grants' => $grantsVersion,
             ];
             $realtimeMeta = '<meta name="lotgd-realtime" content="async/poll.php|'
                 . max(5, (int) $settings->getSetting('realtime_poll_seconds', 10)) . '">'
@@ -276,6 +290,7 @@ class Footer
         list($header, $footer) = PageParts::assembleMailLink($header, $footer);
         list($header, $footer) = PageParts::assemblePetitionLink($header, $footer);
         list($header, $footer) = PageParts::assemblePetitionDisplay($header, $footer);
+        list($header, $footer) = PageParts::replaceHeaderFooterTokens($header, $footer, ['grants' => $grantsHtml]);
         $sourcelink = 'source.php?url=' . preg_replace('/[?].*/', '', (PhpGenericEnvironment::getRequestUri()));
 
         $output = Output::getInstance();

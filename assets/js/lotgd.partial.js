@@ -387,6 +387,7 @@
      */
     const REGION_SELECTORS = {
         mail: '[data-lotgd-region="header"][data-lotgd-slot="mail"]',
+        grants: '[data-lotgd-region="header"][data-lotgd-slot="grants"]',
         stats: '[data-lotgd-region="stats"]'
     };
 

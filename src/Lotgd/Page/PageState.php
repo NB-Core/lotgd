@@ -33,7 +33,7 @@ final class PageState
         'content' => ['content'],
         'nav' => ['nav'],
         'stats' => ['stats'],
-        'header' => ['motd', 'mail', 'petition', 'petitiondisplay'],
+        'header' => ['motd', 'mail', 'petition', 'petitiondisplay', 'grants'],
     ];
 
     /**

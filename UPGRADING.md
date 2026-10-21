@@ -372,6 +372,29 @@ For module authors:
   'version' => <int>])` with the change, or `Realtime::publish()` inside
   `Action::run()`.
 
+### Grants: accepting clan applicants (opt-in, off by default)
+
+Migration `Version20261023000001` adds the table `granted_navs`. Nothing
+writes or reads it while the game setting *Offer clan officers a one-time link
+to accept a new applicant* (`grants_enabled`, *Game Setup*) is off; it also
+needs *Run bank actions as guarded transactions* (`guarded_actions`) and the
+table in InnoDB.
+
+With it on, a clan application offers each officer a link *Accept … into the
+clan* (under *Waiting for you* in the navigation, and in the Aurora header
+with realtime on), valid `grant_ttl_hours` (default 168). Applications still
+send the officers their mail, and the membership page works as before.
+
+The clan membership page now changes ranks and removes players only within
+the officer's own clan.
+
+For module authors: `Nav::grant($acctid, $action, $target, $groupKey, $text,
+$viewLink, $ttlSeconds)` offers a player a link; the page behind it uses the
+grant with `Grant::claim()` inside `Action::run()` and still checks what it
+does on fresh rows. A skin with `"regions": true` can add a header slot
+`grants` (`data-lotgd-region="header" data-lotgd-slot="grants"`, variable
+`grants`).
+
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
 
 If you are coming directly from **1.3.2** (or earlier 1.x):

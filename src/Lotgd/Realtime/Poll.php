@@ -6,6 +6,7 @@ namespace Lotgd\Realtime;
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Buffs;
+use Lotgd\Grant;
 use Lotgd\MySQL\Database;
 use Lotgd\PageParts;
 use Lotgd\Realtime;
@@ -21,7 +22,7 @@ use Lotgd\Realtime;
 final class Poll
 {
     public const REQUEST_HEADER = 'HTTP_X_LOTGD_POLL';
-    public const REGIONS = ['mail', 'stats'];
+    public const REGIONS = ['mail', 'stats', 'grants'];
     private const PAGE_SIZE = 100;
 
     private static ?int $startCursor = null;
@@ -156,6 +157,10 @@ final class Poll
             );
         }
 
+        if ($region === 'grants') {
+            return Grant::enabled() ? Grant::regionVersion($acctid) : 0;
+        }
+
         return (int) ($session['user']['version'] ?? 0);
     }
 
@@ -220,6 +225,8 @@ final class Poll
         $version = self::regionVersion($region, $acctid);
         if ($region === 'mail') {
             $html = !empty($session['user']['prefs']['ajax']) ? "<div id='maillink'>" . PageParts::mailLink() . '</div>' : PageParts::mailLink();
+        } elseif ($region === 'grants') {
+            $html = Grant::enabled() ? Grant::regionHtml($acctid) : '';
         } else {
             // As the footer does: buffs whose values are expressions are
             // evaluated for the stats and put back afterwards.
