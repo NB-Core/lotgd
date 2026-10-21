@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Lotgd\Clan;
 
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Action;
 use Lotgd\Action\ActionAborted;
+use Lotgd\DebugLog;
 use Lotgd\Grant;
 use Lotgd\Mail;
+use Lotgd\Modules\HookHandler;
 use Lotgd\MySQL\Database;
 use Lotgd\Nav;
 use Lotgd\Settings;
@@ -73,7 +76,8 @@ final class Application
      * closes, for every officer, with the membership.
      *
      * @param array<string,mixed> $officer The session user accepting.
-     * @return array{applicant:int,name:string} The accepted player.
+     * @return array{applicant:int,name:string,handled:bool} The accepted player; handled when a
+     *         clan-setrank module decided the admission instead.
      */
     public static function accept(int $grantId, array $officer, string $actionId): array
     {
@@ -88,6 +92,32 @@ final class Application
 
         $conn = Database::getDoctrineConnection();
         $accounts = Database::prefix('accounts');
+        // Still an applicant of this clan, and held so until the action ends.
+        $row = $conn->fetchAssociative(
+            "SELECT name, login FROM {$accounts} WHERE acctid = :applicant AND clanid = :clanid AND clanrank = :applicantrank FOR UPDATE",
+            ['applicant' => $applicant, 'clanid' => $clanid, 'applicantrank' => CLAN_APPLICANT],
+            ['applicant' => ParameterType::INTEGER, 'clanid' => ParameterType::INTEGER, 'applicantrank' => ParameterType::INTEGER]
+        );
+        if (!is_array($row)) {
+            // Withdrawn, or applied elsewhere, after the grant was issued.
+            throw new ActionAborted('applicant-gone');
+        }
+        $name = (string) $row['name'];
+
+        // The hook the membership page runs for the same rank change: a
+        // module may decide the admission itself.
+        $args = HookHandler::hook('clan-setrank', [
+            'setrank' => CLAN_MEMBER,
+            'login' => (string) $row['login'],
+            'name' => $name,
+            'acctid' => $applicant,
+            'clanid' => $clanid,
+            'oldrank' => CLAN_APPLICANT,
+        ]);
+        if (!empty($args['handled'])) {
+            return ['applicant' => $applicant, 'name' => $name, 'handled' => true];
+        }
+
         $joined = $conn->executeStatement(
             "UPDATE {$accounts} SET clanrank = :member, clanjoindate = :now, version = version + 1"
             . ' WHERE acctid = :applicant AND clanid = :clanid AND clanrank = :applicantrank',
@@ -106,15 +136,13 @@ final class Application
             ]
         );
         if ($joined !== 1) {
-            // Withdrawn, or applied elsewhere, after the grant was issued.
             throw new ActionAborted('applicant-gone');
         }
+        $officerName = (string) $officer['name'];
+        Action::afterCommit(static function () use ($officerName, $name, $applicant): void {
+            DebugLog::add("Player {$officerName} accepted {$name} into the clan.", $applicant);
+        });
 
-        $name = (string) $conn->fetchOne(
-            "SELECT name FROM {$accounts} WHERE acctid = :applicant",
-            ['applicant' => $applicant],
-            ['applicant' => ParameterType::INTEGER]
-        );
         $clanname = (string) $conn->fetchOne(
             'SELECT clanname FROM ' . Database::prefix('clans') . ' WHERE clanid = :clanid',
             ['clanid' => $clanid],
@@ -127,6 +155,6 @@ final class Application
             ['`&%s`^ has accepted your application: you are now a member of `&%s`^.', (string) $officer['name'], $clanname]
         );
 
-        return ['applicant' => $applicant, 'name' => $name];
+        return ['applicant' => $applicant, 'name' => $name, 'handled' => false];
     }
 }

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Lotgd\Realtime;
 
 use Doctrine\DBAL\ParameterType;
-use Lotgd\MySQL\Database;
+use Lotgd\Buffs;
 use Lotgd\Grant;
+use Lotgd\MySQL\Database;
 use Lotgd\PageParts;
 use Lotgd\Realtime;
 
@@ -219,13 +220,23 @@ final class Poll
     {
         global $session;
 
-        $html = match ($region) {
-            'mail' => !empty($session['user']['prefs']['ajax']) ? "<div id='maillink'>" . PageParts::mailLink() . '</div>' : PageParts::mailLink(),
-            'grants' => Grant::enabled() ? Grant::regionHtml($acctid) : '',
-            default => PageParts::charStats(),
-        };
+        // The version first: content rendered after it is at least that new,
+        // so the version never claims a change the html does not show.
+        $version = self::regionVersion($region, $acctid);
+        if ($region === 'mail') {
+            $html = !empty($session['user']['prefs']['ajax']) ? "<div id='maillink'>" . PageParts::mailLink() . '</div>' : PageParts::mailLink();
+        } elseif ($region === 'grants') {
+            $html = Grant::enabled() ? Grant::regionHtml($acctid) : '';
+        } else {
+            // As the footer does: buffs whose values are expressions are
+            // evaluated for the stats and put back afterwards.
+            Buffs::restoreBuffFields();
+            Buffs::calculateBuffFields();
+            $html = PageParts::charStats();
+            Buffs::restoreBuffFields();
+        }
 
-        return ['region' => $region, 'version' => self::regionVersion($region, $acctid), 'html' => $html];
+        return ['region' => $region, 'version' => $version, 'html' => $html];
     }
 
     /**

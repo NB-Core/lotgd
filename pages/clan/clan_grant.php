@@ -45,7 +45,12 @@ if (!Grant::enabled() || $grantId <= 0) {
         switch ($result->status) {
             case ActionResult::DONE:
             case ActionResult::REPLAYED:
-                $output->output("`&%s`7 is now a member of your clan.", (string) ($result->data['name'] ?? ''));
+                if (!empty($result->data['handled'])) {
+                    // A clan-setrank module decided the admission itself.
+                    $output->output("`7The application of `&%s`7 has been dealt with.", (string) ($result->data['name'] ?? ''));
+                } else {
+                    $output->output("`&%s`7 is now a member of your clan.", (string) ($result->data['name'] ?? ''));
+                }
                 break;
             case ActionResult::CONFLICT:
                 $output->output("`7Your account has changed since you opened the application. Nothing has been decided; please open it again.");

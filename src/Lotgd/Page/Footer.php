@@ -127,16 +127,19 @@ class Footer
         // Before the regions are built: what they show is at least this new.
         $realtime = Realtime::enabledFor($session['user'] ?? []);
         $realtimeMeta = '';
+        $regionVersions = [];
         if ($realtime) {
             $acctid = (int) ($session['user']['acctid'] ?? 0);
+            $regionVersions = [
+                'mail' => Poll::regionVersion('mail', $acctid),
+                'stats' => Poll::regionVersion('stats', $acctid),
+                'grants' => $grantsVersion,
+            ];
             $realtimeMeta = '<meta name="lotgd-realtime" content="async/poll.php|'
                 . max(5, (int) $settings->getSetting('realtime_poll_seconds', 10)) . '">'
                 . '<meta name="lotgd-event-cursor" content="' . Poll::startCursor() . '">'
-                . '<meta name="lotgd-region-versions" content="' . htmlspecialchars((string) json_encode([
-                    'mail' => Poll::regionVersion('mail', $acctid),
-                    'stats' => Poll::regionVersion('stats', $acctid),
-                    'grants' => $grantsVersion,
-                ]), ENT_QUOTES, 'UTF-8') . '">';
+                . '<meta name="lotgd-region-versions" content="'
+                . htmlspecialchars((string) json_encode($regionVersions), ENT_QUOTES, 'UTF-8') . '">';
         }
 
         Buffs::restoreBuffFields();
@@ -347,7 +350,8 @@ class Footer
             $quickKeys,
             PageParts::$twigVars,
             $headSignature,
-            $asyncState ?? []
+            $asyncState ?? [],
+            $regionVersions
         );
     }
 

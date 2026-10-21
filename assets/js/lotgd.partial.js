@@ -198,8 +198,27 @@
 
     document.addEventListener('htmx:afterSettle', function (event) {
         applyAsyncState(event.detail && event.detail.xhr);
+        applyRegionVersions(event.detail && event.detail.xhr);
         regions.run('init', document);
     });
+
+    /*
+     * Realtime players: a partial answer swapped in the stats and header
+     * slots too. Their versions come with it; set by startRealtime().
+     */
+    let syncRegionVersions = function () {};
+
+    function applyRegionVersions(xhr) {
+        const raw = xhr && xhr.getResponseHeader ? xhr.getResponseHeader('X-Lotgd-Region-Versions') : null;
+        if (!raw) {
+            return;
+        }
+        try {
+            syncRegionVersions(JSON.parse(raw) || {});
+        } catch (e) {
+            // Keep the versions there are.
+        }
+    }
 
     /*
      * AJAX players: the polling script in <head> starts from the comment
@@ -403,6 +422,19 @@
         const seen = [];
         const fetching = {};
         const wanted = {};
+        // What the page shows now is what the partial answer rendered: a
+        // fetch still on its way is applied only if it is newer, and a newer
+        // state shown before the swap is fetched again.
+        syncRegionVersions = function (shown) {
+            Object.keys(shown).forEach(function (region) {
+                const version = Number(shown[region]) || 0;
+                const before = versions[region] || 0;
+                versions[region] = version;
+                if (before > version) {
+                    refresh(region, before);
+                }
+            });
+        };
         let delay = interval;
         let stopped = false;
 

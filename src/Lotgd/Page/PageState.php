@@ -52,6 +52,8 @@ final class PageState
      * @param array<string,int|string> $asyncState The values the AJAX polling script starts
      *                                            from (comment section, last ids); empty
      *                                            when the player has AJAX off.
+     * @param array<string,int>       $regionVersions The version of each realtime region as
+     *                                            this page shows it; empty without realtime.
      */
     public function __construct(
         public readonly string $template,
@@ -65,6 +67,7 @@ final class PageState
         public readonly array $templateVars = [],
         public readonly string $headSignature = '',
         public readonly array $asyncState = [],
+        public readonly array $regionVersions = [],
     ) {
     }
 

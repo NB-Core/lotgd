@@ -23,6 +23,7 @@ final class ClanGrantPageTest extends TestCase
     private const GROUP_LOCK = '/FROM granted_navs WHERE target_key = :key ORDER BY id FOR UPDATE/';
     private const FIND = '/FROM granted_navs WHERE id = :id AND acctid = :acctid AND used_at IS NULL/';
     private const ACCEPT = '/UPDATE accounts SET clanrank = :member/';
+    private const APPLICANT_LOCK = '/SELECT name, login FROM accounts WHERE acctid = :applicant AND clanid = :clanid AND clanrank = :applicantrank FOR UPDATE/';
     private const CLAN = ['/FROM clans WHERE clanid=\'5\'/' => [['clanid' => 5, 'clanname' => 'Fives', 'clanshort' => 'V', 'clandesc' => '', 'clanmotd' => '']]];
 
     public function testTheViewShowsTheApplicationAndAFormThatAccepts(): void
@@ -49,19 +50,20 @@ final class ClanGrantPageTest extends TestCase
 
         self::assertStringContainsString('is now a member of your clan', $run->html, $this->context($run));
         self::assertSame(
-            ['START TRANSACTION', 'version lock', 'key', 'group lock', 'close', 'accept', 'mail', 'log', 'COMMIT'],
+            ['START TRANSACTION', 'version lock', 'key', 'group lock', 'close', 'applicant lock', 'accept', 'mail', 'log', 'COMMIT', 'debuglog'],
             $this->steps($run)
         );
     }
 
     public function testAnApplicantWhoWithdrewIsNotAcceptedAndTheGrantStaysAsItWas(): void
     {
-        $run = $this->post(statements: [self::ACCEPT => 0]);
+        $run = $this->post([self::APPLICANT_LOCK => []]);
 
         self::assertStringContainsString('withdrawn the application', $run->html, $this->context($run));
         $steps = $this->steps($run);
         self::assertSame('ROLLBACK', end($steps));
         self::assertNotContains('mail', $steps);
+        self::assertNotContains('accept', $steps);
         self::assertNotContains('COMMIT', $steps);
     }
 
@@ -158,6 +160,7 @@ final class ClanGrantPageTest extends TestCase
                 self::VERSION_LOCK => [['version' => 0]],
                 self::KEY_LOOKUP => [['target_key' => 'clan-applicant-9']],
                 self::GROUP_LOCK => [$this->grant()],
+                self::APPLICANT_LOCK => [['name' => 'Nine', 'login' => 'nine']],
             ]
         );
     }
@@ -210,6 +213,10 @@ final class ClanGrantPageTest extends TestCase
                 $steps[] = 'group lock';
             } elseif (str_starts_with($sql, 'UPDATE granted_navs SET used_at')) {
                 $steps[] = 'close';
+            } elseif (preg_match(self::APPLICANT_LOCK, $sql) === 1) {
+                $steps[] = 'applicant lock';
+            } elseif (str_starts_with($sql, 'INSERT INTO debuglog')) {
+                $steps[] = 'debuglog';
             } elseif (preg_match(self::ACCEPT, $sql) === 1) {
                 $steps[] = 'accept';
             } elseif (str_starts_with($sql, 'INSERT INTO mail')) {
