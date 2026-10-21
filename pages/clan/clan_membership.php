@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Clan\Application;
 use Lotgd\Nav;
 use Lotgd\Http;
 use Lotgd\MySQL\Database;
@@ -67,19 +68,22 @@ function clanMembership(): void
             <<<'SQL'
                 SELECT name, login, clanrank
                 FROM %s
-                WHERE acctid = %d
+                WHERE acctid = %d AND clanid = %d
                 LIMIT 1
             SQL,
             Database::prefix('accounts'),
-            $whoacctid
+            $whoacctid,
+            $session['user']['clanid']
         );
 
         $result = Database::query($sql);
         $row = Database::fetchAssoc($result);
-        $who = $row['login'];
-        $whoname = $row['name'];
+        // Only a player of this clan: the posted id is the officer's to pick,
+        // the clan is not.
+        $who = is_array($row) ? $row['login'] : '';
+        $whoname = is_array($row) ? $row['name'] : '';
 
-        if ($setrank > 0) {
+        if ($setrank > 0 && is_array($row)) {
             $args = Modules::hook('clan-setrank', [
                 'setrank' => $setrank,
                 'login' => $who,
@@ -94,33 +98,42 @@ function clanMembership(): void
                     <<<'SQL'
                         UPDATE %s
                         SET clanrank = GREATEST(0, LEAST(%d, %d)), version = version + 1
-                        WHERE acctid = %d
+                        WHERE acctid = %d AND clanid = %d
                     SQL,
                     Database::prefix('accounts'),
                     $session['user']['clanrank'],
                     $setrank,
-                    $whoacctid
+                    $whoacctid,
+                    $session['user']['clanid']
                 );
 
                 Database::query($sql);
+                if ((int) $row['clanrank'] === CLAN_APPLICANT) {
+                    // Decided here: the officers' offers for it close.
+                    Application::withdraw($whoacctid);
+                }
                 DebugLog::add("Player {$session['user']['name']} changed rank of {$whoname} to {$setrank}.", $whoacctid);
             }
         }
     }
 
     // Removal
+    $row = false;
     if ($remove > 0) {
         $sql = sprintf(
             <<<'SQL'
                 SELECT name, login, clanrank
                 FROM %s
-                WHERE acctid = %d
+                WHERE acctid = %d AND clanid = %d
             SQL,
             Database::prefix('accounts'),
-            $remove
+            $remove,
+            $session['user']['clanid']
         );
 
         $row = Database::fetchAssoc(Database::query($sql));
+    }
+    if ($remove > 0 && is_array($row)) {
         $args = Modules::hook('clan-setrank', [
             'setrank' => 0,
             'login' => $row['login'],
@@ -134,16 +147,18 @@ function clanMembership(): void
             <<<'SQL'
                 UPDATE %s
                 SET clanrank = %d, clanid = 0, clanjoindate = '%s', version = version + 1
-                WHERE acctid = %d AND clanrank <= %d
+                WHERE acctid = %d AND clanid = %d AND clanrank <= %d
             SQL,
             Database::prefix('accounts'),
             CLAN_APPLICANT,
             DATETIME_DATEMIN,
             $remove,
+            $session['user']['clanid'],
             $session['user']['clanrank']
         );
 
         Database::query($sql);
+        Application::withdraw($remove);
         DebugLog::add(
             "Player {$session['user']['name']} removed player {$row['login']} from {$claninfo['clanname']}.",
             $remove

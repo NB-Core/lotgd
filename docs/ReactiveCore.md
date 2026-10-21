@@ -32,7 +32,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 | 2 | Partial rendering for display-only operations (HTMX), page revisions, HTTP contract | done (village, forest, inn; see below) |
 | 3 | Guarded game actions: `Action::run()`, split `saveUser()`, optimistic locking | done (pilot: the bank; see below) |
 | 4 | Transactional outbox, relay, polling transport | done (pilot: new mail and incoming transfers; see below) |
-| 5 | Grants: server-issued one-shot navigation for other players | planned |
+| 5 | Grants: server-issued one-shot navigation for other players | done (pilot: accepting a clan applicant; see below) |
 | 6 | SSE / Mercure transport | planned |
 
 ## Phase 1 – PageState
@@ -396,6 +396,94 @@ Deviation from the criteria: the poll endpoint is a page of its own
 read-only allow-list in `async/process.php`; it releases the session itself.
 Not yet covered: clan, section and global channels (commentary), and module
 sources.
+
+## Phase 5 – as built
+
+Switched on by the game setting `grants_enabled` (*Offer clan officers a
+one-time link to accept a new applicant*, off by default). Grants are used
+inside guarded actions, so they also need `guarded_actions` and a
+transactional `granted_navs` table; without all three nothing writes or reads
+the table and clan applications work as before (a mail to every officer).
+
+- **Schema** (migration `Version20261023000001`): `granted_navs` (`id`,
+  `acctid` the player it is for, `granted_by`, `action`, `target` (JSON),
+  `target_key` the group, `text`, `link` the exact view URI, `method`,
+  `created`, `expires_at`, `used_at`, `used_by_action_id`, `changed_us` the
+  microsecond of the last change). `Newday::commentCleanup()` drops used and
+  expired grants after seven days. `grant_ttl_hours` (168) is how long one
+  stays open.
+- **Issuing** (`Nav::grant()` → `Lotgd\Grant::issue()`): one row per player,
+  the view link with `&grant=<id>` appended, and a `grants` announcement on
+  the player's channel (Phase 4), in whatever transaction holds the change.
+- **Using** (`Grant::claim()`, only inside `Action::run()`): read the grant's
+  `target_key`, lock **the whole group** with `… WHERE target_key = :key ORDER
+  BY id FOR UPDATE`, check the own row (this player's, open, not expired; else
+  `ActionAborted` `grant-missing` | `grant-used` | `grant-expired`), then close
+  every open grant of the group with the action id and announce the change to
+  each of their players. Two players using grants of one group queue on the
+  same locks in the same order instead of deadlocking, and the second finds
+  the group closed. The close commits with the action: an action that fails
+  afterwards rolls it back, and the grants are open again.
+- **Voiding** (`Grant::voidTarget()`): the thing offered went away another way
+  (the applicant withdrew, applied elsewhere, was accepted or removed through
+  the membership page): the group's open grants close, their players hear it.
+- **Display**: the footer adds the open grants of the player as a navigation
+  section *Waiting for you* on every skin (before the navigation is built,
+  so the links are allowed navigations). Aurora also has a header slot
+  `grants` (`data-lotgd-region="header" data-lotgd-slot="grants"`) that the
+  realtime client swaps: `Poll::REGIONS` gains `grants` (content: the open
+  grants as links, version: the highest `changed_us` of the player's grants),
+  and `lotgd-region-versions` carries its version.
+- **Navigation**: a link swapped into the slot after the page was built is
+  not in `allowednavs`. `ForcedNavigation` lets a **GET** through when it is
+  exactly the view link of an open grant of this player
+  (`Grant::isOfferedTo()`, the session counter `&c=…` removed). That request
+  only displays; the POST that decides is registered by the page as usual,
+  checked for CSRF, and consumes the grant inside its action. A used,
+  voided or expired grant's link ends on `badnav.php`.
+
+### Pilot: accepting a clan applicant
+
+- `pages/clan/applicant_apply.php`: after the officers' mail, every officer
+  gets a grant `clan.accept` with target `{applicant, clan}` and group
+  `clan-applicant-<acctid>` (`Lotgd\Clan\Application::offer()`), after the
+  player's earlier offers are voided.
+- `clan.php?op=grant&grant=<id>` (`pages/clan/clan_grant.php`): the GET shows
+  the application and a form with the CSRF token and the action id; the POST
+  runs `Action::run('clan.accept', …)` → `Application::accept()`: claim the
+  grant; the accepting player must still be an officer of that clan;
+  `UPDATE accounts SET clanrank = <member>, clanjoindate, version = version + 1
+  WHERE acctid = :applicant AND clanid = :clan AND clanrank = <applicant>`
+  (no row → `applicant-gone`, rolled back); the applicant's mail in the same
+  transaction. Replayed, conflicting and refused results each have a text.
+- The applicant withdrawing, and an officer changing the applicant's rank or
+  removing them on the membership page, void the group.
+- Fixed with it: the membership page's rank change and removal looked the
+  player up and wrote them by account id alone; an officer could post any
+  account id and change ranks in another clan. Lookup and writes now also
+  require `clanid` = the officer's clan.
+
+Verified against MariaDB 11.4 (`tests/Integration/GrantMariaDbTest.php`,
+opt-in like Phase 3):
+- two officers accepting the same applicant at the same moment: one `done`,
+  the other `rejected` (`grant-used`), the applicant a member once, one mail,
+  no deadlock;
+- an acceptance that throws after claiming leaves both grants open and the
+  applicant an applicant; the same officer can then accept;
+- an expired grant is refused; an applicant who withdrew is not accepted and
+  the grant stays open (rolled back).
+
+In a browser (three players, Chromium against MariaDB): the applicant applies,
+both officers' grants slot shows *Accept Nina into the clan* without a reload;
+one officer opens the slot link (not in their allowed navigations) and
+accepts; the applicant is a member and has the mail; the other officer's slot
+empties without a reload, the stale link in their navigation shows *already
+been decided*; the used view link ends on `badnav.php`. The Phase 2–4 browser
+runs pass unchanged.
+
+Deviation from the concept: `Nav::grant()` takes the group (`target_key`) as
+a parameter of its own and no `method` (every grant is used by a POST). The
+grant's text is stored in the language of the player who started it.
 
 ## Binding acceptance criteria
 

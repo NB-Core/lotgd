@@ -6,6 +6,7 @@ namespace Lotgd\Realtime;
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
+use Lotgd\Grant;
 use Lotgd\PageParts;
 use Lotgd\Realtime;
 
@@ -20,7 +21,7 @@ use Lotgd\Realtime;
 final class Poll
 {
     public const REQUEST_HEADER = 'HTTP_X_LOTGD_POLL';
-    public const REGIONS = ['mail', 'stats'];
+    public const REGIONS = ['mail', 'stats', 'grants'];
     private const PAGE_SIZE = 100;
 
     private static ?int $startCursor = null;
@@ -155,6 +156,10 @@ final class Poll
             );
         }
 
+        if ($region === 'grants') {
+            return Grant::enabled() ? Grant::regionVersion($acctid) : 0;
+        }
+
         return (int) ($session['user']['version'] ?? 0);
     }
 
@@ -214,9 +219,11 @@ final class Poll
     {
         global $session;
 
-        $html = $region === 'mail'
-            ? (!empty($session['user']['prefs']['ajax']) ? "<div id='maillink'>" . PageParts::mailLink() . '</div>' : PageParts::mailLink())
-            : PageParts::charStats();
+        $html = match ($region) {
+            'mail' => !empty($session['user']['prefs']['ajax']) ? "<div id='maillink'>" . PageParts::mailLink() . '</div>' : PageParts::mailLink(),
+            'grants' => Grant::enabled() ? Grant::regionHtml($acctid) : '',
+            default => PageParts::charStats(),
+        };
 
         return ['region' => $region, 'version' => self::regionVersion($region, $acctid), 'html' => $html];
     }

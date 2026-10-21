@@ -60,6 +60,8 @@ if ($detail > 0) {
         require_once __DIR__ . "/pages/clan/list.php";
 } elseif ($op == "waiting") {
         require_once __DIR__ . "/pages/clan/waiting.php";
+} elseif ($op == "grant") {
+        require_once __DIR__ . "/pages/clan/clan_grant.php";
 } elseif ($session['user']['clanrank'] == CLAN_APPLICANT) {
         require_once __DIR__ . "/pages/clan/applicant.php";
 } else {

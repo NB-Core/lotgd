@@ -159,6 +159,12 @@ foreach ((array) ($spec['globals'] ?? []) as $name => $value) {
         $GLOBALS['accounts_table'] = $value + $GLOBALS['accounts_table'];
         continue;
     }
+    // Results of Database::queryCached() by cache name -- the clan row
+    // common.php loads for a player in a clan, for instance.
+    if ($name === '__query_cache' && is_array($value)) {
+        \Lotgd\MySQL\Database::$queryCacheResults = $value + \Lotgd\MySQL\Database::$queryCacheResults;
+        continue;
+    }
 
     $GLOBALS[$name] = $value;
 }

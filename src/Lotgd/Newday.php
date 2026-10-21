@@ -241,6 +241,23 @@ class Newday
             );
         }
 
+        // A used, voided or expired grant is only kept to answer for itself
+        // for a while. The table exists once the migration has run.
+        if (Database::tableExists(Database::prefix('granted_navs'))) {
+            $timestamp = self::calculateExpirationTimestamp('7 days');
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('granted_navs') . ' WHERE (used_at IS NOT NULL AND used_at < :timestamp) OR expires_at < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            GameLog::log(
+                'Deleted ' . $affectedRows . ' records from ' . Database::prefix('granted_navs') . " older than $timestamp.",
+                GameLog::CATEGORY_MAINTENANCE,
+                false,
+                $session['user']['acctid'] ?? 0
+            );
+        }
+
         // DEBUG mode writes two rows per page view plus one per module hook. It
         // was the only log table with no retention at all, so a forgotten debug
         // session grew it without bound.

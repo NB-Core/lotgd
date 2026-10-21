@@ -1245,6 +1245,64 @@ function get_all_tables()
             'columns' => 'id'
             ),
         ),
+    'granted_navs' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'id' => array(
+            'name' => 'id', 'type' => 'bigint(20) unsigned', 'extra' => 'auto_increment'
+            ),
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'granted_by' => array(
+            'name' => 'granted_by', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'action' => array(
+            'name' => 'action', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'target' => array(
+            'name' => 'target', 'type' => 'text'
+            ),
+        'target_key' => array(
+            'name' => 'target_key', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'text' => array(
+            'name' => 'text', 'type' => 'varchar(255)', 'default' => ''
+            ),
+        'link' => array(
+            'name' => 'link', 'type' => 'varchar(255)', 'default' => ''
+            ),
+        'method' => array(
+            'name' => 'method', 'type' => 'varchar(8)', 'default' => 'POST'
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'expires_at' => array(
+            'name' => 'expires_at', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'used_at' => array(
+            'name' => 'used_at', 'type' => 'datetime', 'null' => '1'
+            ),
+        'used_by_action_id' => array(
+            'name' => 'used_by_action_id', 'type' => 'char(32)', 'default' => ''
+            ),
+        'changed_us' => array(
+            'name' => 'changed_us', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'id'
+            ),
+        'key-open_for' => array(
+            'name' => 'open_for', 'type' => 'key', 'columns' => 'acctid,used_at,expires_at'
+            ),
+        'key-target_key' => array(
+            'name' => 'target_key', 'type' => 'key', 'columns' => 'target_key'
+            ),
+        ),
     'twofactorauth_passkeys' => array(
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',

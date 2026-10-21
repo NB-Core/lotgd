@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Runner;
 
 use Lotgd\DataCache;
+use Lotgd\Grant;
 use Lotgd\Mail;
 use Lotgd\Modules;
 use Lotgd\Nav;
@@ -46,5 +47,6 @@ final class ResetSharedState implements PreparationStartedSubscriber
         Mail::resetSettings();
         Modules::resetState();
         Nav::resetState();
+        Grant::resetState();
     }
 }
