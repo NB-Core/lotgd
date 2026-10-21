@@ -18,7 +18,6 @@ use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Page as PageSingleton;
-use Lotgd\Encounter;
 use Lotgd\Grant;
 use Lotgd\Presence;
 use Lotgd\Realtime;
@@ -141,10 +140,9 @@ class Footer
                 'stats' => Poll::regionVersion('stats', $acctid),
                 'grants' => $grantsVersion,
             ];
-            if (Encounter::enabled()) {
-                $regionVersions['presence'] = Poll::regionVersion('presence', $acctid);
-                $regionVersions['encounter'] = Poll::regionVersion('encounter', $acctid);
-            }
+            // Regions in the content (encounter.php): versioned by the page,
+            // before it rendered them.
+            $regionVersions += Poll::notedRegionVersions();
             $realtimeMeta = '<meta name="lotgd-realtime" content="'
                 . max(5, (int) $settings->getSetting('realtime_poll_seconds', 10)) . '">'
                 . '<meta name="lotgd-event-cursor" content="' . Poll::startCursor() . '">'

@@ -12,6 +12,7 @@ use Lotgd\Nav\VillageNav;
 use Lotgd\Output;
 use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
+use Lotgd\Realtime\Poll;
 use Lotgd\Sanitize;
 use Lotgd\Translator;
 
@@ -31,6 +32,8 @@ $op = (string) Http::get('op');
 $id = (int) Http::get('id');
 $me = (int) $session['user']['acctid'];
 $isPost = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST';
+// Asked once: a refusal is logged by the guard itself.
+$unverified = $isPost && Forms::isUnverifiedRequest();
 
 Header::pageHeader('The Duelling Ground');
 $output->output('`c`b`$The Duelling Ground`b`c`n');
@@ -68,7 +71,7 @@ $refused = static function (ActionResult $result) use ($output): void {
 
 if (!Encounter::enabled()) {
     $output->output('`7The duelling ground is closed.');
-} elseif ($isPost && Forms::isUnverifiedRequest()) {
+} elseif ($unverified) {
     http_response_code(400);
     $output->output("`7The herald cannot take this form; nothing was done. Please look again.`n`n");
 } elseif ($isPost) {
@@ -100,7 +103,10 @@ if (!Encounter::enabled()) {
     }
 }
 
-if (Encounter::enabled() && !($isPost && Forms::isUnverifiedRequest())) {
+if (Encounter::enabled() && !$unverified) {
+    // The versions before the content: a change in between comes again.
+    Poll::noteRegionVersion('encounter', Poll::regionVersion('encounter', $me));
+    Poll::noteRegionVersion('presence', Poll::regionVersion('presence', $me));
     $encounter = $op === 'view' && $id > 0 ? Encounter::find($id, $me) : null;
     if ($encounter !== null) {
         $view = Encounter::viewLink($id);

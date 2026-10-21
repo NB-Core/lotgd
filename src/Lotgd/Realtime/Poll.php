@@ -29,6 +29,8 @@ final class Poll
     public const PAGE_SIZE = 100;
 
     private static ?int $startCursor = null;
+    /** @var array<string,int> */
+    private static array $notedVersions = [];
 
     /**
      * The channels a player reads, from the account read now (the poll's and
@@ -84,11 +86,30 @@ final class Poll
     }
 
     /**
+     * A page that shows a region in its content notes its version before it
+     * renders it; the footer sends it with the others. Noted after the
+     * render, a change in between would claim content the page lacks.
+     */
+    public static function noteRegionVersion(string $region, int $version): void
+    {
+        self::$notedVersions[$region] = $version;
+    }
+
+    /**
+     * @return array<string,int>
+     */
+    public static function notedRegionVersions(): array
+    {
+        return self::$notedVersions;
+    }
+
+    /**
      * For tests.
      */
     public static function resetState(): void
     {
         self::$startCursor = null;
+        self::$notedVersions = [];
     }
 
     /**

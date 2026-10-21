@@ -189,8 +189,9 @@ final class Encounter
         self::requireOpen($row, self::PENDING);
 
         if ($accept) {
-            self::change($row, self::ACCEPTED, time() + self::ACCEPTED_SECONDS);
-            $encounter = $row + ['state' => self::ACCEPTED];
+            $expires = time() + self::ACCEPTED_SECONDS;
+            // The row as it now stands, for the modules that build on it.
+            $encounter = array_merge($row, self::change($row, self::ACCEPTED, $expires));
             Action::afterCommit(static function () use ($encounter): void {
                 HookHandler::hook('encounter-accepted', ['encounter' => $encounter]);
             });
@@ -464,8 +465,9 @@ final class Encounter
 
     /**
      * @param array<string,mixed> $row
+     * @return array<string,mixed> The fields written.
      */
-    private static function change(array $row, string $state, ?int $expires = null): void
+    private static function change(array $row, string $state, ?int $expires = null): array
     {
         $id = (int) $row['id'];
         $changed = Presence::now();
@@ -484,6 +486,9 @@ final class Encounter
             );
         }
         self::announce($id, [(int) $row['challenger'], (int) $row['opponent']], $changed);
+
+        return ['state' => $state, 'changed_us' => $changed]
+            + ($expires !== null ? ['expires_at' => date('Y-m-d H:i:s', $expires)] : []);
     }
 
     /**

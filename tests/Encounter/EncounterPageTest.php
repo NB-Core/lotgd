@@ -37,6 +37,12 @@ final class EncounterPageTest extends TestCase
         self::assertStringNotContainsString("name='target' value='1'", $run->html, 'Not oneself.');
         self::assertStringNotContainsString("name='target' value='3'", $run->html, 'Not someone in the forest.');
         self::assertStringContainsString("data-lotgd-region='encounter'", $run->html);
+        self::assertMatchesRegularExpression('/<meta name="lotgd-region-versions" content="[^"]*&quot;presence&quot;:\d+/', $run->html);
+        self::assertMatchesRegularExpression('/<meta name="lotgd-region-versions" content="[^"]*&quot;encounter&quot;:\d+/', $run->html);
+        $version = array_key_first(preg_grep('/COALESCE\(MAX\(changed_us\), 0\) FROM presence/', $run->queries));
+        $list = array_key_first(preg_grep('/SELECT p\.acctid, a\.name/', $run->queries));
+        self::assertNotNull($version);
+        self::assertLessThan($list, $version, 'The version is read before the list it stands for.');
         self::assertDoesNotMatchRegularExpression('~<script(?![^>]*\bsrc=)~', (string) preg_replace('~^.*<body~s', '', $run->html), 'No inline script: the page swaps in place.');
     }
 
