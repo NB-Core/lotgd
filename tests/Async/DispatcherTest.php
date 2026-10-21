@@ -254,5 +254,13 @@ namespace Lotgd\Tests\Async {
             self::assertSame('Lotgd.Async.Handler.Realtime::region:?', $this->dispatcher(['class' => 'Realtime', 'method' => 'region', 'args' => ["x\ny"]])->rateKey());
             self::assertSame('Lotgd.Async.Handler.Commentary::pollUpdates', $this->dispatcher(['class' => 'Commentary', 'method' => 'pollUpdates', 'args' => ['village']])->rateKey());
         }
+
+        public function testOnlyTheDeclaredSpellingOfAMethodIsACall(): void
+        {
+            // PHP would run affectedUsers for this; the privilege table keys on the
+            // declared spelling, so a call that does not use it must not run.
+            $this->expectException(\InvalidArgumentException::class);
+            $this->dispatcher(['class' => 'Bans', 'method' => 'AFFECTEDUSERS', 'args' => ['1.2.3.4', '']])->processRequest();
+        }
     }
 }
