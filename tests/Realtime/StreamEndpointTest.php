@@ -93,6 +93,25 @@ final class StreamEndpointTest extends TestCase
         self::assertSame([403, 'csrf_invalid'], lotgd_stream_refusal());
     }
 
+    public function testARefusedTokenIsRecordedInTheErrorLogOnly(): void
+    {
+        $log = tempnam(sys_get_temp_dir(), 'lotgd-stream-log');
+        ini_set('error_log', (string) $log);
+        $_GET['csrf'] = 'x';
+
+        ob_start();
+        lotgd_stream_entrypoint(ob_get_level());
+        $answer = (string) ob_get_clean();
+
+        self::assertSame('{"status":"error","error":"csrf_invalid"}', $answer);
+        $line = (string) file_get_contents((string) $log);
+        unlink((string) $log);
+        self::assertStringContainsString('Async stream refused', $line);
+        self::assertStringContainsString('csrf_invalid', $line);
+        self::assertStringNotContainsString($this->token, $line, 'Never the token.');
+        self::assertSame([], preg_grep('/^INSERT INTO gamelog/', array_map('strval', $this->connection->queries)), 'No row per refusal.');
+    }
+
     public function testACrossSiteRequestIsRefusedEvenWithTheToken(): void
     {
         $_SERVER['HTTP_SEC_FETCH_SITE'] = 'cross-site';
