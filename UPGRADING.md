@@ -376,6 +376,13 @@ For module authors:
   `Realtime::announce('user-' . $acctid, '<type>', ['region' => 'mail'|'stats',
   'version' => <int>])` with the change, or `Realtime::publish()` inside
   `Action::run()`.
+- New comments are announced on `section-<section>` by
+  `injectrawcomment()`/`Commentary::injectRawComment()`; a module that inserts
+  into `commentary` with its own SQL is not announced and should use that
+  function.
+- The async comment calls answer only for a section a page showed the player
+  (`Commentary::mayRead()`). Module JavaScript that asked for a section its
+  page never rendered with `viewcommentary()`/`commentDisplay()` gets nothing.
 
 ### Grants: accepting clan applicants (opt-in, off by default)
 

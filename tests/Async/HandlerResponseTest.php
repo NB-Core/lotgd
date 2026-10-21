@@ -26,7 +26,11 @@ namespace Lotgd\Tests\Async {
         protected function setUp(): void
         {
             global $session, $output;
-            $session = [];
+            // A player whose page showed these sections (Commentary::mayRead()).
+            $session = [
+                'user' => ['acctid' => 1, 'loggedin' => 1, 'superuser' => 0],
+                'commentary_sections' => ['section', "Trader's \\ Den"],
+            ];
             $_SERVER['SCRIPT_NAME'] = 'test.php';
             $_SERVER['REQUEST_URI'] = '/async/process.php';
             $output = new class {
