@@ -81,6 +81,18 @@ function lotgd_stream_entrypoint(int $keepBuffers = 0): void
     global $session;
 
     $refusal = lotgd_stream_refusal();
+    if ($refusal !== null && $refusal[0] === 403) {
+        // A cross-site request or a token that does not match: what the
+        // async endpoint records for the same refusal. Error log only -- a
+        // browser can repeat it at will (the page retries a refused stream).
+        \Lotgd\SecurityLog::event(
+            'Async stream refused',
+            ['reason' => $refusal[1]],
+            (int) ($session['user']['acctid'] ?? 0) ?: null,
+            \Lotgd\GameLog::SEVERITY_WARNING,
+            false
+        );
+    }
     if ($refusal !== null) {
         if (!headers_sent()) {
             http_response_code($refusal[0]);

@@ -511,11 +511,17 @@
     function pollOnce() {
         if (settings().updates) {
             // No section: the page shows no commentary, none is asked for.
-            // With realtime on, new comments are announced, not looked for.
+            // With realtime on, new comments are announced, not looked for;
+            // while the stream announces them, the poll names no section, or
+            // it would fetch the same lines as the announcement's fetch.
+            const live = streaming();
+            if (live) {
+                retryWanted();
+            }
             return call('Commentary', 'pollUpdates', [
-                state.section || '',
+                live ? '' : (state.section || ''),
                 state.lastCommentId || 0,
-                realtime.on && !streaming() ? realtime.cursor : null
+                realtime.on && !live ? realtime.cursor : null
             ]).then(function (data) {
                 if (data.commentary && data.commentary.section === state.section) {
                     state.lastCommentId = Math.max(state.lastCommentId, Number(data.commentary.lastId) || 0);
