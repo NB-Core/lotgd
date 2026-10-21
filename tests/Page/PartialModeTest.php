@@ -150,6 +150,18 @@ final class PartialModeTest extends TestCase
         );
     }
 
+    public function testThePartialAnswerCarriesTheVersionsOfTheRealtimeRegionsItSwaps(): void
+    {
+        $plain = new PageState(PageState::TEMPLATE_PAGE, true, '', '', '<p>Inn</p>');
+        $realtime = new PageState(PageState::TEMPLATE_PAGE, true, '', '', '<p>Inn</p>', regionVersions: ['mail' => 12, 'stats' => 4]);
+
+        self::assertArrayNotHasKey('X-Lotgd-Region-Versions', PartialRenderer::render($plain, 1)['headers']);
+        self::assertSame(
+            ['mail' => 12, 'stats' => 4],
+            json_decode(PartialRenderer::render($realtime, 1)['headers']['X-Lotgd-Region-Versions'], true)
+        );
+    }
+
     public function testThePartialAnswerCarriesEveryRegionAndTheRevision(): void
     {
         $state = new PageState(

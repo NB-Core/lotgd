@@ -161,6 +161,35 @@ final class PollEndpointTest extends TestCase
         self::assertIsString($answer['body']['html']);
     }
 
+    public function testTheStatsOfAPlayerWithAnExpressionBuffAreRendered(): void
+    {
+        // A buff like the troll's racial strength stores its modifier as an
+        // expression; the footer evaluates it before the stats, so must the poll.
+        $this->connection->queryResultsByPattern = ['/SELECT name,alive,location/' => []];
+        $GLOBALS['session']['user'] += [
+            'race' => 'Troll', 'alive' => 1, 'superuser' => 0, 'level' => 5, 'experience' => 0, 'dragonkills' => 0,
+            'attack' => 10, 'defense' => 10, 'strength' => 10, 'dexterity' => 10, 'intelligence' => 10,
+            'constitution' => 10, 'wisdom' => 10, 'weapondmg' => 0, 'armordef' => 0, 'hitpoints' => 10,
+            'maxhitpoints' => 10, 'turns' => 10, 'playerfights' => 3, 'spirits' => 0, 'gold' => 0, 'goldinbank' => 0,
+            'gems' => 0, 'weapon' => 'Fists', 'armor' => 'T-Shirt', 'hashorse' => 0, 'soulpoints' => 0,
+            'gravefights' => 0, 'deathpower' => 0,
+        ];
+        $GLOBALS['session']['bufflist'] = ['racialbenefit' => [
+            'name' => 'Trollish Strength', 'atkmod' => '(<attack>?(1+((1+floor(<level>/5))/<attack>)):0)',
+            'allowinpvp' => 1, 'allowintrain' => 1, 'rounds' => -1, 'schema' => 'module-racetroll',
+        ]];
+
+        $answer = Poll::handle(['region' => 'stats'], self::POLL, 100.0);
+
+        self::assertSame(200, $answer['status']);
+        self::assertIsString($answer['body']['html']);
+        self::assertSame(
+            '(<attack>?(1+((1+floor(<level>/5))/<attack>)):0)',
+            $GLOBALS['session']['bufflist']['racialbenefit']['atkmod'],
+            'Put back as it was stored.'
+        );
+    }
+
     public function testAnUnknownRegionIsRefused(): void
     {
         self::assertSame(400, Poll::handle(['region' => 'nav'], self::POLL, 100.0)['status']);
