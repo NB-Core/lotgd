@@ -407,6 +407,12 @@ class DoctrineConnection
             return $scripted;
         }
 
+        // Every table of the stub database is InnoDB unless a test scripts
+        // otherwise (queryResultsByPattern is consulted first).
+        if (str_contains($sql, 'information_schema.TABLES') && isset($params['names']) && is_array($params['names'])) {
+            return array_map(static fn ($name): array => ['TABLE_NAME' => (string) $name, 'ENGINE' => 'InnoDB'], $params['names']);
+        }
+
         if (!empty(Database::$mockResults)) {
             $rows = array_shift(Database::$mockResults);
 

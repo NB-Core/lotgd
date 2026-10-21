@@ -321,6 +321,13 @@ transfer as one transaction each, once per form: a form sent twice shows the
 first booking, and a booking racing another change to the same account books
 nothing and tells the player.
 
+The setting only takes effect when `accounts`, `action_log` and `mail` are
+InnoDB (or another transactional engine). An installation upgraded from an old
+release may still have MyISAM tables; a rollback could not undo a write to
+them, so the bank keeps booking as before until they are converted, for
+example `ALTER TABLE accounts ENGINE=InnoDB;`. Check with
+`SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();`.
+
 For module authors:
 
 - `Accounts::saveUser()` behaves as before; it is now `Accounts::persist()`

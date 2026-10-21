@@ -152,7 +152,11 @@ it is one full page, every later one swaps.
 ## Phase 3 – as built
 
 Switched on by the game setting `guarded_actions` (*Run bank actions as
-guarded transactions*, off by default). The schema parts are not switched:
+guarded transactions*, off by default), and only when `accounts`,
+`action_log` and `mail` are in a transactional engine
+(`Lotgd\MySQL\StorageEngine`, checked once per request): a MyISAM table
+left from an old release would keep its writes through a rollback, so the
+game runs its actions as before until it is converted. The schema parts are not switched:
 once migration `Version20261021000001` ran, `accounts.version` moves on with
 every change to the game state, whatever the setting.
 
