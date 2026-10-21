@@ -32,6 +32,17 @@ final class RealtimePageTest extends TestCase
         self::assertLessThan($account[0], $cursor[0], 'The cursor is read before the account the regions show.');
     }
 
+    public function testWithServerSentEventsThePageNamesTheStream(): void
+    {
+        $polled = $this->page(['realtime_enabled' => 1]);
+        $streamed = $this->page(['realtime_enabled' => 1, 'realtime_transport' => 'sse']);
+
+        self::assertStringNotContainsString('lotgd-realtime-stream', $polled->html);
+        self::assertStringContainsString('<meta name="lotgd-realtime-stream" content="/async/stream.php">', $streamed->html);
+        // Polling stays the fallback: the page carries its settings too.
+        self::assertStringContainsString('<meta name="lotgd-realtime" content="10">', $streamed->html);
+    }
+
     public function testWithoutTheSettingThePageIsAsBefore(): void
     {
         $run = $this->page(['realtime_enabled' => 0]);

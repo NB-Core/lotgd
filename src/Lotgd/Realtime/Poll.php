@@ -23,7 +23,7 @@ use Lotgd\Realtime;
 final class Poll
 {
     public const REGIONS = ['mail', 'stats', 'grants'];
-    private const PAGE_SIZE = 100;
+    public const PAGE_SIZE = 100;
 
     private static ?int $startCursor = null;
 
@@ -76,10 +76,11 @@ final class Poll
     public static function storedPage(string $html, array $user): string
     {
         if (Realtime::enabledFor($user)) {
-            return $html;
+            // Stored while the stream was on: the page polls now.
+            return Stream::enabled() ? $html : (string) preg_replace('/<meta name="lotgd-realtime-stream" content="[^"]*">/', '', $html);
         }
 
-        return (string) preg_replace('/<meta name="lotgd-(?:realtime|event-cursor|region-versions)" content="[^"]*">/', '', $html);
+        return (string) preg_replace('/<meta name="lotgd-(?:realtime|realtime-stream|event-cursor|region-versions)" content="[^"]*">/', '', $html);
     }
 
     /**

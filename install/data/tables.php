@@ -1245,6 +1245,25 @@ function get_all_tables()
             'columns' => 'id'
             ),
         ),
+    'realtime_streams' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'token' => array(
+            'name' => 'token', 'type' => 'char(32)', 'default' => ''
+            ),
+        'started' => array(
+            'name' => 'started', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'acctid'
+            ),
+        ),
     'granted_navs' => array(
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',

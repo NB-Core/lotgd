@@ -84,13 +84,13 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
         }
         Footer::pageFooter();
     }
-    echo \Lotgd\Realtime\Poll::storedPage(
+    echo \Lotgd\Page\StoredPage::withSessionToken(\Lotgd\Realtime\Poll::storedPage(
         \Lotgd\Page\Overlay::storedPage(
             PartialRenderer::withRevision((string) $row['output'], (int) ($session['user']['page_revision'] ?? 0)),
             !empty($session['needtoviewmotd'])
         ),
         $session['user']
-    );
+    ));
     $session['debug'] = "";
     $session['user']['allowednavs'] = $session['allowednavs'];
     Accounts::saveUser();

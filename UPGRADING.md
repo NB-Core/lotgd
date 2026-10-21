@@ -392,6 +392,23 @@ For module authors:
   (`Commentary::mayRead()`). Module JavaScript that asked for a section its
   page never rendered with `viewcommentary()`/`commentDisplay()` gets nothing.
 
+### Realtime as server-sent events (opt-in, off by default)
+
+Migration `Version20261024000001` adds the table `realtime_streams`. Nothing
+reads or writes it while the game setting *How pages receive realtime events*
+(`realtime_transport`, *Game Setup*) is `poll`, the default.
+
+At `sse`, each realtime page keeps a request to `async/stream.php` open for
+`realtime_stream_seconds` (default 50) and reconnects. Turn it on only where
+the server can hold one PHP worker per player online (Apache
+`MaxRequestWorkers`, PHP-FPM `pm.max_children`) and no proxy buffers the
+response: the endpoint sends `X-Accel-Buffering: no` for nginx; other proxies
+must flush `text/event-stream` responses. On shared webspace keep `poll`.
+Pages fall back to polling by themselves when the stream cannot run.
+
+`async/stream.php` must be reachable like `async/process.php`. It always
+checks the async CSRF token, whatever `csrf_mode` is.
+
 ### Grants: accepting clan applicants (opt-in, off by default)
 
 Migration `Version20261023000001` adds the table `granted_navs`. Nothing
