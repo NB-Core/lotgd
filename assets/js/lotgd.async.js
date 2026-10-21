@@ -39,7 +39,10 @@
     const REGION_SELECTORS = {
         mail: '[data-lotgd-region="header"][data-lotgd-slot="mail"]',
         grants: '[data-lotgd-region="header"][data-lotgd-slot="grants"]',
-        stats: '[data-lotgd-region="stats"]'
+        stats: '[data-lotgd-region="stats"]',
+        // In the content of the pages that show them (encounter.php).
+        presence: '[data-lotgd-region="presence"]',
+        encounter: '[data-lotgd-region="encounter"]'
     };
     const allowed = {};
     // Functions a page defines after this file loads and that answers may
@@ -263,6 +266,12 @@
 
     function refresh(region, version) {
         if (!REGION_SELECTORS[region] || version <= (realtime.versions[region] || 0)) {
+            return;
+        }
+        if (!document.querySelector(REGION_SELECTORS[region])) {
+            // Not on this page: who is where changes all the time, and a
+            // page that shows it later brings its own version.
+            delete realtime.wanted[region];
             return;
         }
         // Remembered until a fetch succeeds, so one that fails is tried

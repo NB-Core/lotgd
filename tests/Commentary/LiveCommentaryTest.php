@@ -180,8 +180,8 @@ final class LiveCommentaryTest extends TestCase
             $this->connection->fetchAllLog,
             static fn (array $query): bool => preg_match(self::EVENTS, $query['sql']) === 1
         ));
-        self::assertSame(['user-7', 'section-village'], $read[0]['params']['channels']);
-        self::assertSame(['user-7'], $read[1]['params']['channels'], 'A section the request names but no page showed is left out.');
+        self::assertSame(['user-7', 'section-village', 'presence'], $read[0]['params']['channels']);
+        self::assertSame(['user-7', 'presence'], $read[1]['params']['channels'], 'A section the request names but no page showed is left out.');
     }
 
     public function testAPollForAPageWithoutCommentaryReadsNoComments(): void

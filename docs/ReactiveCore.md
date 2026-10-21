@@ -34,7 +34,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 | 4 | Transactional outbox, relay, polling transport | done (pilot: new mail and incoming transfers; see below) |
 | 5 | Grants: server-issued one-shot navigation for other players | done (pilot: accepting a clan applicant; see below) |
 | 6 | One async transport and popups as in-page overlay | 6a done: one async transport (Jaxon removed); 6b done: popups as in-page overlay (mail, MOTD); 6c done: partial rendering for every display page; live commentary done; see below |
-| 7 | SSE transport (Mercure not planned) | SSE done, opt-in; see below |
+| 7 | SSE transport, presence, live encounters | SSE done, opt-in; presence and live challenges done (the duel itself next); see below |
 
 ## Phase 1 – PageState
 
@@ -745,6 +745,72 @@ stream reconnects; a swap to the forest reopens it without a section; with
 `poll` no page names the stream. The earlier browser suites pass with
 `poll`, and the commentary suite with `sse` too, apart from its checks of
 the poll's arguments.
+
+## Presence and live encounters – as built
+
+The groundwork for live player-to-player interaction, live PvP above all:
+who is online and where, and a challenge one player sends another that is
+answered on the spot and opens a session the two share. The duel itself --
+its rounds over the encounter's channel -- is the next step.
+
+**Presence** (`Lotgd\Presence`, table `presence`, with `realtime_enabled`).
+The page footer notes a coarse place for the script of every page
+(`Presence::PLACES`: village, inn, gardens, forest, clan, shades, arena;
+anything else is `elsewhere`; the hook `presence-place` lets a module name
+its own). It writes the row only when the place changed or the last write is
+a minute old, and announces only a change of place, coming back after a
+timeout, and a logout, on the channel `presence` (`{region: presence,
+version: changed_us}`). A logout keeps the row, marked gone, so the region's
+version still grows. A player who times out without a request is left out of
+the next list; the list is not announced for it. Every realtime page reads
+the channel; only a page that shows the region `presence` fetches it.
+
+**Encounters** (`Lotgd\Encounter`, tables `encounters` and
+`encounter_slots`, game setting `live_encounters`, off by default; needs
+`realtime_enabled`, `grants_enabled`, `guarded_actions` and InnoDB). The
+duelling ground (`encounter.php`, a link in the village) lists who is around,
+in a region `presence` inside one challenge form, with a button for each
+player who may be challenged: in the village, the inn, the gardens or at the
+duelling ground (`Presence::PEACEFUL`) -- never someone in a fight, among the
+shades, or on a page of their own. Every step is a POST inside
+`Action::run()`:
+
+- *challenge*: the opponent's place is checked again on the row read now;
+  both players take their slot in `encounter_slots` in the order of their
+  ids (its primary key keeps a player in one open encounter; two players
+  challenging each other at once queue on the lower id's row, and the second
+  finds it taken -- no deadlock); the opponent is offered a grant
+  (`encounter-<id>`, valid `encounter_challenge_seconds`, default 120) that
+  shows in their navigation and header without a reload. A stale slot is
+  freed by its own row, never by a range: a range delete would lock the gaps
+  the inserts write into.
+- *answer* (the opponent): uses the grant up, then accepts (the encounter is
+  open for 30 minutes and runs the hook `encounter-accepted` after the
+  commit) or declines (both slots free).
+- *withdraw* (the challenger, while unanswered): the grant closes.
+- *leave* (either player, once accepted): the encounter ends.
+
+Each change is published to both players' `user-*` channels and to the
+encounter's own channel `encounter-<id>`, which the poll and the stream read
+for every open encounter of the player (`Poll::channels()`, shared by
+both). The region `encounter` says where the player's latest encounter
+stands; it links to it only when the player's page registered that link
+(the key with its session counter, from `allowednavs` read now), so a
+region swap never offers a link that badnav.php would refuse. The
+opponent's view link is the grant's, which `Grant::isOfferedTo()` allows.
+
+Verified against MariaDB (`tests/Integration/EncounterMariaDbTest.php`):
+two players challenging each other at once open one encounter; two
+challengers for one opponent open one, and the other is told the opponent
+is busy; an answer racing a withdrawal decides once. In a browser (two
+players, Chromium against MariaDB, with `sse` and with `poll`): Dora's
+button disappears from Admin's list when she walks into the forest and
+returns when she is back, without a reload; Admin's challenge appears in
+Dora's header without a reload; she accepts, and Admin's page says so
+without a reload; leaving ends it on both pages; a withdrawn challenge
+disappears from Dora's header by itself; a declined one shows on Admin's
+page; a button used after its player left for the forest is refused; Dora
+leaves the list when she logs out. The earlier browser suites pass.
 
 ## Binding acceptance criteria
 

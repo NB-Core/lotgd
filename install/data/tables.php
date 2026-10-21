@@ -1264,6 +1264,96 @@ function get_all_tables()
             'columns' => 'acctid'
             ),
         ),
+    'presence' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'place' => array(
+            'name' => 'place', 'type' => 'varchar(32)', 'default' => ''
+            ),
+        'seen' => array(
+            'name' => 'seen', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'changed_us' => array(
+            'name' => 'changed_us', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'acctid'
+            ),
+        'key-seen' => array(
+            'name' => 'seen', 'type' => 'key', 'columns' => 'seen'
+            ),
+        ),
+    'encounters' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'id' => array(
+            'name' => 'id', 'type' => 'int(11) unsigned', 'extra' => 'auto_increment'
+            ),
+        'kind' => array(
+            'name' => 'kind', 'type' => 'varchar(16)', 'default' => ''
+            ),
+        'challenger' => array(
+            'name' => 'challenger', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'opponent' => array(
+            'name' => 'opponent', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'state' => array(
+            'name' => 'state', 'type' => 'varchar(16)', 'default' => ''
+            ),
+        'grant_id' => array(
+            'name' => 'grant_id', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'expires_at' => array(
+            'name' => 'expires_at', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'changed_us' => array(
+            'name' => 'changed_us', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'id'
+            ),
+        'key-challenger' => array(
+            'name' => 'challenger', 'type' => 'key', 'columns' => 'challenger'
+            ),
+        'key-opponent' => array(
+            'name' => 'opponent', 'type' => 'key', 'columns' => 'opponent'
+            ),
+        'key-created' => array(
+            'name' => 'created', 'type' => 'key', 'columns' => 'created'
+            ),
+        ),
+    'encounter_slots' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'encounter_id' => array(
+            'name' => 'encounter_id', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'acctid'
+            ),
+        'key-encounter_id' => array(
+            'name' => 'encounter_id', 'type' => 'key', 'columns' => 'encounter_id'
+            ),
+        ),
     'granted_navs' => array(
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',

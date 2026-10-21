@@ -18,7 +18,9 @@ use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Page as PageSingleton;
+use Lotgd\Encounter;
 use Lotgd\Grant;
+use Lotgd\Presence;
 use Lotgd\Realtime;
 use Lotgd\Realtime\Poll;
 use Lotgd\Realtime\Stream;
@@ -111,6 +113,9 @@ class Footer
         $script = ScriptName::current();
         list($header, $footer) = PageParts::applyFooterHooks($header, $footer, $script);
 
+        // Where the player is, for who is online (Phase 7).
+        Presence::note($session['user'] ?? [], $script);
+
         // Open grants (docs/ReactiveCore.md, Phase 5): a navigation section on
         // every skin, and the header slot grants that realtime updates. Their
         // version is read before they are listed.
@@ -136,6 +141,10 @@ class Footer
                 'stats' => Poll::regionVersion('stats', $acctid),
                 'grants' => $grantsVersion,
             ];
+            if (Encounter::enabled()) {
+                $regionVersions['presence'] = Poll::regionVersion('presence', $acctid);
+                $regionVersions['encounter'] = Poll::regionVersion('encounter', $acctid);
+            }
             $realtimeMeta = '<meta name="lotgd-realtime" content="'
                 . max(5, (int) $settings->getSetting('realtime_poll_seconds', 10)) . '">'
                 . '<meta name="lotgd-event-cursor" content="' . Poll::startCursor() . '">'

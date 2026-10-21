@@ -1,0 +1,152 @@
+<?php
+
+declare(strict_types=1);
+
+use Lotgd\Action;
+use Lotgd\Action\ActionResult;
+use Lotgd\Encounter;
+use Lotgd\Forms;
+use Lotgd\Http;
+use Lotgd\Nav;
+use Lotgd\Nav\VillageNav;
+use Lotgd\Output;
+use Lotgd\Page\Footer;
+use Lotgd\Page\Header;
+use Lotgd\Sanitize;
+use Lotgd\Translator;
+
+/**
+ * The duelling ground (docs/ReactiveCore.md, Phase 7): who is online, a
+ * challenge to one of them, and the encounter it opens. Every change is a
+ * POST inside Action::run(); the GETs only display. Both pages show the
+ * regions `presence` and `encounter`, which realtime keeps current.
+ */
+
+require_once __DIR__ . '/common.php';
+
+Translator::getInstance()->setSchema('encounter');
+
+$output = Output::getInstance();
+$op = (string) Http::get('op');
+$id = (int) Http::get('id');
+$me = (int) $session['user']['acctid'];
+$isPost = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST';
+
+Header::pageHeader('The Duelling Ground');
+$output->output('`c`b`$The Duelling Ground`b`c`n');
+
+/**
+ * A button posting to $link with the form's token and a new action id.
+ */
+$button = static function (string $link, string $label, string $field = '', string $value = ''): string {
+    $extra = $field !== '' ? "<input type='hidden' name='" . htmlspecialchars($field, ENT_QUOTES, 'UTF-8') . "' value='"
+        . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . "'>" : '';
+    Nav::add('', $link);
+
+    return "<form action='" . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . "' method='POST' style='display:inline'>"
+        . Forms::csrfField() . Action::idField() . $extra
+        . "<input type='submit' class='button' value='"
+        . htmlspecialchars(Sanitize::stripAllColorCodes(Translator::translateInline($label)), ENT_QUOTES, 'UTF-8') . "'></form> ";
+};
+
+$refused = static function (ActionResult $result) use ($output): void {
+    if ($result->status === ActionResult::CONFLICT) {
+        $output->output("`7Your account has changed since this page was shown. Nothing was done; please look again.`n`n");
+
+        return;
+    }
+    $output->output(match ($result->reason) {
+        'opponent-away' => "`7They are not around to be challenged: only someone in the village, the inn, the gardens or here can be.`n`n",
+        'opponent-busy' => "`7They are already in an encounter.`n`n",
+        'already-in-encounter' => "`7You are already in an encounter.`n`n",
+        'grant-used', 'encounter-cancelled' => "`7That challenge was withdrawn or already answered.`n`n",
+        'grant-expired', 'encounter-expired' => "`7That challenge has passed.`n`n",
+        'action-id-reused', 'missing-action-id' => "`7This form was already used. Please look again.`n`n",
+        default => "`7That cannot be done now.`n`n",
+    });
+};
+
+if (!Encounter::enabled()) {
+    $output->output('`7The duelling ground is closed.');
+} elseif ($isPost && Forms::isUnverifiedRequest()) {
+    http_response_code(400);
+    $output->output("`7The herald cannot take this form; nothing was done. Please look again.`n`n");
+} elseif ($isPost) {
+    $action = match ($op) {
+        'challenge' => ['encounter.challenge', ['target' => (int) Http::post('target')]],
+        'answer' => ['encounter.answer', ['encounter' => $id, 'accept' => Http::post('answer') === 'accept']],
+        'cancel' => ['encounter.cancel', ['encounter' => $id]],
+        'leave' => ['encounter.leave', ['encounter' => $id]],
+        default => null,
+    };
+    if ($action === null) {
+        $output->output('`7That cannot be done here.');
+    } else {
+        [$name, $params] = $action;
+        $user = $session['user'];
+        $result = Action::run($name, Action::postedId(), $params, static fn (): array => match ($name) {
+            'encounter.challenge' => Encounter::challenge($user, $params['target']),
+            'encounter.answer' => Encounter::answer($user, $params['encounter'], $params['accept']),
+            'encounter.cancel' => Encounter::cancel($user, $params['encounter']),
+            default => Encounter::leave($user, $params['encounter']),
+        });
+        if ($result->status === ActionResult::DONE || $result->status === ActionResult::REPLAYED) {
+            $id = (int) ($result->data['id'] ?? 0);
+            $op = 'view';
+        } else {
+            $refused($result);
+            $op = $id > 0 ? 'view' : '';
+        }
+    }
+}
+
+if (Encounter::enabled() && !($isPost && Forms::isUnverifiedRequest())) {
+    $encounter = $op === 'view' && $id > 0 ? Encounter::find($id, $me) : null;
+    if ($encounter !== null) {
+        $view = Encounter::viewLink($id);
+        $state = (string) $encounter['state'];
+        $challenging = (int) $encounter['challenger'] === $me;
+        // Registered first: the region links to the page it is on.
+        Nav::add('Encounter');
+        Nav::add('Look again', $view);
+        Nav::add('Who is around', 'encounter.php');
+        $output->rawOutput("<p data-lotgd-region='encounter'>" . Encounter::regionHtml($me) . '</p>');
+        if ($state === Encounter::PENDING && $challenging) {
+            $output->rawOutput($button("encounter.php?op=cancel&id={$id}", 'Withdraw the challenge'));
+        } elseif ($state === Encounter::PENDING) {
+            $output->rawOutput(
+                $button("encounter.php?op=answer&id={$id}", 'Accept', 'answer', 'accept')
+                . $button("encounter.php?op=answer&id={$id}", 'Decline', 'answer', 'decline')
+            );
+        } elseif ($state === Encounter::ACCEPTED) {
+            $output->output("`n`7You face each other on the duelling ground. What happens next is up to the two of you.`n`n");
+            $output->rawOutput($button("encounter.php?op=leave&id={$id}", 'Leave the duelling ground'));
+        }
+    } else {
+        if ($op === 'view') {
+            $output->output("`7There is no such encounter for you.`n`n");
+        }
+        $latest = Encounter::latest($me);
+        if ($latest !== null && in_array((string) $latest['state'], [Encounter::PENDING, Encounter::ACCEPTED], true)) {
+            Nav::add('Encounter');
+            Nav::add('Your encounter', Encounter::viewLink((int) $latest['id']));
+            $output->rawOutput("<p data-lotgd-region='encounter'>" . Encounter::regionHtml($me) . '</p>');
+        } else {
+            $output->rawOutput("<p data-lotgd-region='encounter'></p>");
+        }
+        $output->output("`7Warriors who are about now:`n");
+        // One form around the live list: its buttons name the opponent.
+        Nav::add('', 'encounter.php?op=challenge');
+        $output->rawOutput(
+            "<form action='encounter.php?op=challenge' method='POST'>" . Forms::csrfField() . Action::idField()
+            . "<div data-lotgd-region='presence'>" . Encounter::presenceHtml($me) . '</div></form>'
+        );
+        Nav::add('Encounter');
+        Nav::add('Look again', 'encounter.php');
+    }
+}
+
+Nav::add('Navigation');
+VillageNav::render();
+
+Footer::pageFooter();
