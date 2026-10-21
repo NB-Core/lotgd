@@ -263,7 +263,7 @@ assert_status /lib/dbwrapper.php 403
 assert_status /modules/cities.php 403
 # Include-only trees and CLI entry points must not be reachable over HTTP.
 assert_status /pages/about/about_default.php 403
-assert_status /async/common/jaxon.php 403
+assert_status /async/common/settings.php 403
 assert_status /cron.php 403
 assert_status /vendor/autoload.php 403
 assert_status /src/Lotgd/Settings.php 403

@@ -110,23 +110,19 @@ final class PartialModeTest extends TestCase
         self::assertNotSame(PartialRenderer::headSignature($head), PartialRenderer::headSignature($module));
     }
 
-    public function testTheHeadSignatureIgnoresTheValuesTheAjaxPollingStartsFrom(): void
+    public function testTheHeadSignatureIgnoresTheValuesTheAsyncClientStartsFrom(): void
     {
-        $polling = static fn (string $section, int $comment, int $mail, int $count): array => ['headscript_pre' => '<script>'
-            . 'var lotgd_async_csrf_token = "t";'
-            . 'var lotgd_comment_section = ' . json_encode($section) . ';'
-            . 'var lotgd_lastCommentId = ' . $comment . ';'
-            . 'var lotgd_lastUnreadMailId = ' . $mail . ';'
-            . 'var lotgd_lastUnreadMailCount = ' . $count . ';'
-            . 'var lotgd_poll_interval_ms = 10000;</script>'];
+        $page = static fn (string $section, int $comment): array => ['headscript_pre' => '<meta name="lotgd-async" content="'
+            . htmlspecialchars((string) json_encode(['section' => $section, 'lastCommentId' => $comment]), ENT_QUOTES, 'UTF-8')
+            . '"><script src="/assets/js/lotgd.async.js?v=1"></script>'];
 
         self::assertSame(
-            PartialRenderer::headSignature($polling('village', 12, 3, 1)),
-            PartialRenderer::headSignature($polling('inn', 40, 7, 0))
+            PartialRenderer::headSignature($page('village', 12)),
+            PartialRenderer::headSignature($page('inn', 40))
         );
-        $otherInterval = $polling('village', 12, 3, 1);
-        $otherInterval['headscript_pre'] = str_replace('10000', '5000', $otherInterval['headscript_pre']);
-        self::assertNotSame(PartialRenderer::headSignature($polling('village', 12, 3, 1)), PartialRenderer::headSignature($otherInterval));
+        $otherScript = $page('village', 12);
+        $otherScript['headscript_pre'] .= '<script src="/modules/extra.js"></script>';
+        self::assertNotSame(PartialRenderer::headSignature($page('village', 12)), PartialRenderer::headSignature($otherScript));
     }
 
     public function testThePartialAnswerCarriesTheAjaxStateOnlyForAjaxPlayers(): void

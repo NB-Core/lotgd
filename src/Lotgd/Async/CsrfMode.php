@@ -20,25 +20,23 @@ namespace Lotgd\Async;
  * `None`, which is supported.
  *
  * Hence three modes rather than a boolean. The token travels in a custom
- * request header added by `async/js/lotgd.jaxon.js`; {@see self::LOG} exists
+ * request header added by `assets/js/lotgd.async.js`; {@see self::LOG} exists
  * because a broken transport there is invisible from the server side, and
  * polling runs every few seconds for every player with the AJAX preference on,
  * so enforcing a check that silently never receives its token would break all
  * of them at once, with a symptom (polling stops) that looks nothing like the
  * cause.
  *
- * That was not hypothetical. Jaxon defaults `httpRequestOptions.mode` to
- * `no-cors`, under which the browser drops every non-safelisted request header
- * — the async token included, and on same-origin requests too. The first
- * release shipped on LOG for exactly that reason and would have logged a
- * failure on every poll. The client now sets `same-origin`, the Jaxon runtime
- * is served from the tree rather than a CDN, and the header was confirmed to
- * arrive in a real browser against those files.
+ * That was not hypothetical. The Jaxon client this layer used until Phase 6
+ * of docs/ReactiveCore.md defaulted `httpRequestOptions.mode` to `no-cors`,
+ * under which the browser drops every non-safelisted request header — the
+ * async token included, and on same-origin requests too. The first release
+ * shipped on LOG for exactly that reason and would have logged a failure on
+ * every poll. The client sends its requests `same-origin`.
  *
  * The shipped default is still LOG, for a second reason that the transport
- * check does not address: the client is inlined into each page, so a page
- * rendered before an upgrade keeps the old one — no `same-origin`, and no
- * recovery handler. Enforcing at upgrade time would strand those tabs. The
+ * check does not address: a page rendered before an upgrade keeps the old
+ * client until it is reloaded. Enforcing at upgrade time would strand those tabs. The
  * promotion to ENFORCE belongs to the operator, once the tabs have aged out
  * and `error_log` is quiet.
  *

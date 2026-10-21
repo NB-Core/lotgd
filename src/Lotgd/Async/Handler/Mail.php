@@ -9,9 +9,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\PageParts;
 use Lotgd\Settings;
 use Lotgd\Translator;
-use Jaxon\Response\Response;
-
-use function Jaxon\jaxon;
+use Lotgd\Async\Response;
 
 /**
  * Handle asynchronous mail status requests.
@@ -27,30 +25,16 @@ class Mail
         $settings = Settings::getInstance();
 
         if ($args === false || empty($session['user']['acctid'])) {
-            return jaxon()->newResponse();
+            return new Response();
         }
 
         $timeoutSetting = (int) $settings->getSetting('LOGINTIMEOUT', 360); // seconds
         $new = PageParts::mailLink();
         $tabtext = PageParts::mailLinkTabText();
 
-        // Get the highest message ID and unread mail count for the current user
-        $sql = 'SELECT MAX(messageid) AS lastid, SUM(seen=0) AS unread FROM '
-            . Database::prefix('mail')
-            . ' WHERE msgto = :acctid';
-        $conn = Database::getDoctrineConnection();
-        $row = $conn->executeQuery(
-            $sql,
-            ['acctid' => (int) $session['user']['acctid']],
-            ['acctid' => ParameterType::INTEGER]
-        )->fetchAssociative();
-        if ($row === false) {
-            $row = ['lastid' => 0, 'unread' => 0];
-        }
-        $lastMailId = (int) ($row['lastid'] ?? 0);
-        $unreadCount = (int) ($row['unread'] ?? 0);
+        ['lastid' => $lastMailId, 'unread' => $unreadCount] = self::counts((int) $session['user']['acctid']);
 
-        $objResponse = jaxon()->newResponse();
+        $objResponse = new Response();
         $objResponse->assign('maillink', 'innerHTML', $new);
 
         if ($tabtext === '') {
@@ -60,9 +44,29 @@ class Mail
 
         $tabtext = Translator::translateInline('Legend of the Green Dragon', 'home')
             . ' - ' . $tabtext;
-        $objResponse->script->jo('document')->title = $tabtext;
+        $objResponse->title($tabtext);
         $objResponse->call('lotgdMailNotify', $lastMailId, $unreadCount);
 
         return $objResponse;
+    }
+
+    /**
+     * The highest message id and the unread count of a player's mail: what
+     * the page starts from (async/setup.php) and what a poll compares with.
+     *
+     * @return array{lastid:int,unread:int}
+     */
+    public static function counts(int $acctid): array
+    {
+        $row = Database::getDoctrineConnection()->executeQuery(
+            'SELECT MAX(messageid) AS lastid, SUM(seen=0) AS unread FROM ' . Database::prefix('mail') . ' WHERE msgto = :acctid',
+            ['acctid' => $acctid],
+            ['acctid' => ParameterType::INTEGER]
+        )->fetchAssociative();
+
+        return [
+            'lastid' => is_array($row) ? (int) ($row['lastid'] ?? 0) : 0,
+            'unread' => is_array($row) ? (int) ($row['unread'] ?? 0) : 0,
+        ];
     }
 }

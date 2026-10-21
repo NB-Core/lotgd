@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Ajax {
 
-    use Jaxon\Response\Response;
+    use Lotgd\Async\Response;
     use Lotgd\Async\Handler\Mail;
     use Lotgd\Tests\Stubs\Database;
     use Lotgd\Tests\Stubs\DummySettings;
@@ -41,18 +41,17 @@ namespace Lotgd\Tests\Ajax {
             $response = (new Mail())->mailStatus(true);
             $commands = $response->getCommands();
 
-            $assign = array_values(array_filter($commands, fn($c) => ($c['name'] ?? '') === 'node.assign' && ($c['args']['id'] ?? '') === 'maillink'));
+            $assign = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'assign' && ($c['id'] ?? '') === 'maillink'));
             $this->assertNotEmpty($assign);
-            $this->assertStringContainsString('mail.php', $assign[0]['args']['value']);
+            $this->assertStringContainsString('mail.php', $assign[0]['value']);
 
-            $notify = array_values(array_filter($commands, fn($c) => ($c['name'] ?? '') === 'script.exec.call'));
+            $notify = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'call'));
             $this->assertNotEmpty($notify);
-            $this->assertSame('lotgdMailNotify', $notify[0]['args']['func']);
-            $this->assertSame([7, 1], $notify[0]['args']['args']);
-            $title = array_values(array_filter($commands, fn($c) => ($c['name'] ?? '') === 'script.exec.expr'));
+            $this->assertSame('lotgdMailNotify', $notify[0]['fn']);
+            $this->assertSame([7, 1], $notify[0]['args']);
+            $title = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'title'));
             $this->assertNotEmpty($title);
-            $exprData = $title[0]['args']['expr']->jsonSerialize();
-            $this->assertSame('title', $exprData['calls'][1]['_name']);
+            $this->assertStringContainsString('Legend of the Green Dragon', $title[0]['value']);
             $this->assertInstanceOf(Response::class, $response);
         }
 
@@ -70,7 +69,7 @@ namespace Lotgd\Tests\Ajax {
             $response = (new Mail())->mailStatus(true);
             $commands = $response->getCommands();
 
-            $scripts = array_values(array_filter($commands, fn($c) => str_starts_with($c['name'] ?? '', 'script.exec')));
+            $scripts = array_values(array_filter($commands, fn($c) => in_array($c['cmd'] ?? '', ['call', 'title'], true)));
             $this->assertCount(0, $scripts);
         }
 

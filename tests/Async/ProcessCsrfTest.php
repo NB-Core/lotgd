@@ -29,6 +29,7 @@ namespace Lotgd\Tests\Async {
             global $session;
 
             $_GET = [];
+            $_SERVER['HTTP_X_LOTGD_ASYNC'] = '1';
             $_POST = [];
             $_COOKIE = [];
             $_SESSION = [];
@@ -54,12 +55,12 @@ namespace Lotgd\Tests\Async {
             CsrfMode::setMode(CsrfMode::ENFORCE);
         }
 
-        private function installJaxonDouble(): object
+        private function installDispatcherDouble(): object
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public int $processCount = 0;
 
                 public function canProcessRequest(): bool
@@ -67,13 +68,14 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->processCount++;
+                    return new \Lotgd\Async\Response();
                 }
             };
 
-            return $jaxon;
+            return $asyncDispatcher;
         }
 
         /**
@@ -81,8 +83,11 @@ namespace Lotgd\Tests\Async {
          */
         private function dispatch(string $class, string $method): array
         {
-            $_POST['jxncls'] = $class;
-            $_POST['jxnmthd'] = $method;
+            $_POST['call'] = json_encode([
+                'class' => preg_replace('/^Lotgd\.Async\.Handler\./', '', $class),
+                'method' => $method,
+                'args' => [],
+            ], JSON_THROW_ON_ERROR);
 
             ob_start();
             lotgd_async_process_entrypoint();
@@ -131,15 +136,40 @@ namespace Lotgd\Tests\Async {
             return ['policy' => $policy, 'log' => $written];
         }
 
+        /**
+         * The custom header is what makes a cross-site request preflighted.
+         * Without it the call is refused whatever else it carries, and the
+         * handler never runs.
+         */
+        public function testARequestWithoutTheAsyncHeaderIsRefusedAndNotRun(): void
+        {
+            $dispatcher = $this->installDispatcherDouble();
+            $this->login();
+            $_SERVER['HTTP_X_LOTGD_CSRF'] = Csrf::token(Csrf::SCOPE_ASYNC);
+
+            foreach ([null, '', '0', 'true'] as $value) {
+                if ($value === null) {
+                    unset($_SERVER['HTTP_X_LOTGD_ASYNC']);
+                } else {
+                    $_SERVER['HTTP_X_LOTGD_ASYNC'] = $value;
+                }
+                $result = $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');
+
+                self::assertSame(400, $result['status']);
+                self::assertSame('bad_request', $result['payload']['error'] ?? null);
+            }
+            self::assertSame(0, $dispatcher->processCount);
+        }
+
         public function testCorrectHeaderTokenIsDispatched(): void
         {
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $this->login();
             $_SERVER['HTTP_X_LOTGD_CSRF'] = Csrf::token(Csrf::SCOPE_ASYNC);
 
             $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');
 
-            self::assertSame(1, $jaxon->processCount);
+            self::assertSame(1, $asyncDispatcher->processCount);
         }
 
         /**
@@ -148,38 +178,38 @@ namespace Lotgd\Tests\Async {
          */
         public function testCorrectPostedTokenIsDispatched(): void
         {
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $this->login();
             $_POST[Csrf::FIELD] = Csrf::token(Csrf::SCOPE_ASYNC);
 
             $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');
 
-            self::assertSame(1, $jaxon->processCount);
+            self::assertSame(1, $asyncDispatcher->processCount);
         }
 
         public function testMissingTokenIsRefusedWhenEnforced(): void
         {
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $this->login();
             Csrf::token(Csrf::SCOPE_ASYNC);
 
             $result = $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');
 
-            self::assertSame(0, $jaxon->processCount);
+            self::assertSame(0, $asyncDispatcher->processCount);
             self::assertSame(403, $result['status']);
             self::assertSame('csrf_invalid', $result['payload']['error'] ?? null);
         }
 
         public function testWrongTokenIsRefusedWhenEnforced(): void
         {
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $this->login();
             Csrf::token(Csrf::SCOPE_ASYNC);
             $_SERVER['HTTP_X_LOTGD_CSRF'] = str_repeat('a', 64);
 
             $result = $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');
 
-            self::assertSame(0, $jaxon->processCount);
+            self::assertSame(0, $asyncDispatcher->processCount);
             self::assertSame(403, $result['status']);
         }
 
@@ -190,24 +220,24 @@ namespace Lotgd\Tests\Async {
         public function testMissingTokenIsDispatchedInLogMode(): void
         {
             CsrfMode::setMode(CsrfMode::LOG);
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $this->login();
             Csrf::token(Csrf::SCOPE_ASYNC);
 
             $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');
 
-            self::assertSame(1, $jaxon->processCount);
+            self::assertSame(1, $asyncDispatcher->processCount);
         }
 
         public function testTokenIsIgnoredWhenModeIsOff(): void
         {
             CsrfMode::setMode(CsrfMode::OFF);
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $this->login();
 
             $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');
 
-            self::assertSame(1, $jaxon->processCount);
+            self::assertSame(1, $asyncDispatcher->processCount);
         }
 
         /**
@@ -220,11 +250,11 @@ namespace Lotgd\Tests\Async {
          */
         public function testUnauthenticatedPasskeyPathIsNeverRefused(): void
         {
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
 
             $this->dispatch('Lotgd.Async.Handler.TwoFactorAuthPasskey', 'beginAuthentication');
 
-            self::assertSame(1, $jaxon->processCount, 'the login path must not be blocked');
+            self::assertSame(1, $asyncDispatcher->processCount, 'the login path must not be blocked');
         }
 
         /**
@@ -244,7 +274,7 @@ namespace Lotgd\Tests\Async {
             ]);
 
             self::assertTrue($result['policy']['allowed'], 'the login path must not be blocked');
-            self::assertStringContainsString('Jaxon csrf missing', $result['log']);
+            self::assertStringContainsString('Async csrf missing', $result['log']);
             self::assertStringContainsString('TwoFactorAuthPasskey::beginAuthentication', $result['log']);
         }
 
@@ -252,7 +282,7 @@ namespace Lotgd\Tests\Async {
          * The signal the promotion decision rests on.
          *
          * UPGRADING.md tells an operator to set `enforce` once error_log carries
-         * no "Jaxon csrf" lines. That instruction is only worth following if a
+         * no "Async csrf" lines. That instruction is only worth following if a
          * real player's failing poll still produces one.
          */
         public function testAnAuthenticatedFailureIsStillRecorded(): void
@@ -266,7 +296,7 @@ namespace Lotgd\Tests\Async {
                 'method' => 'mailStatus',
             ]);
 
-            self::assertStringContainsString('Jaxon csrf mismatch', $result['log']);
+            self::assertStringContainsString('Async csrf mismatch', $result['log']);
             self::assertStringContainsString('Mail::mailStatus', $result['log']);
         }
 
@@ -373,13 +403,13 @@ namespace Lotgd\Tests\Async {
          */
         public function testCorrectTokenDoesNotSubstituteForALogin(): void
         {
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             Csrf::seed(Csrf::SCOPE_ASYNC, str_repeat('b', 64));
             $_SERVER['HTTP_X_LOTGD_CSRF'] = str_repeat('b', 64);
 
             $result = $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');
 
-            self::assertSame(0, $jaxon->processCount);
+            self::assertSame(0, $asyncDispatcher->processCount);
             self::assertSame(401, $result['status']);
             self::assertSame('authentication_required', $result['payload']['error'] ?? null);
         }
@@ -391,7 +421,7 @@ namespace Lotgd\Tests\Async {
          */
         public function testADeniedRequestDoesNotCreateAToken(): void
         {
-            $this->installJaxonDouble();
+            $this->installDispatcherDouble();
             $this->login();
 
             $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');

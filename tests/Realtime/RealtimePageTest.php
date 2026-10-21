@@ -22,7 +22,7 @@ final class RealtimePageTest extends TestCase
     {
         $run = $this->page(['realtime_enabled' => 1]);
 
-        self::assertStringContainsString('<meta name="lotgd-realtime" content="async/poll.php|10">', $run->html);
+        self::assertStringContainsString('<meta name="lotgd-realtime" content="10">', $run->html);
         self::assertStringContainsString('<meta name="lotgd-event-cursor" content="17">', $run->html);
         self::assertMatchesRegularExpression('/<meta name="lotgd-region-versions" content="\{&quot;mail&quot;:\d+,&quot;stats&quot;:\d+,&quot;grants&quot;:\d+\}">/', $run->html);
 

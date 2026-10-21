@@ -34,7 +34,6 @@ use Lotgd\Http;
 use Lotgd\Mounts;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Security\Escape;
-use Lotgd\Page\PartialMode;
 
 class PageParts
 {
@@ -747,32 +746,8 @@ class PageParts
         $mailHtml = '';
         if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
             if ($settings->getSetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-                $maillink_add_pre = '';
-                $maillink_add_after = '';
-                $setupFile = __DIR__ . '/../../async/setup.php';
-                if (file_exists($setupFile)) {
-                    set_error_handler(fn () => true, E_USER_WARNING);
-                    try {
-                        require_once $setupFile;
-                    } finally {
-                        // Without the finally, anything thrown while loading the
-                        // setup file leaves this handler installed for the rest
-                        // of the request, silently swallowing later warnings.
-                        restore_error_handler();
-                    }
-                }
-                $asyncFile = __DIR__ . '/../../async/maillink.php';
-                if (file_exists($asyncFile)) {
-                    require $asyncFile;
-                }
-                if (PartialMode::clientActive($session['user'])) {
-                    // The script only repeats the polling values <head> already
-                    // sets; the partial client gets them with every answer
-                    // (X-Lotgd-Async-State), and a script in a swapped region
-                    // would not run anyway.
-                    $maillink_add_after = (string) preg_replace('#<script>.*?</script>#s', '', $maillink_add_after);
-                }
-                $mailHtml = $maillink_add_pre . "<div id='maillink'>" . self::mailLink() . "</div>" . $maillink_add_after;
+                // The poll replaces the link by this id (Handler\Mail::mailStatus()).
+                $mailHtml = "<div id='maillink'>" . self::mailLink() . "</div>";
             } else {
                 $mailHtml = self::mailLink();
             }

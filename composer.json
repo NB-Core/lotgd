@@ -4,7 +4,6 @@
         "doctrine/dbal": "^4.4",
         "doctrine/migrations": "^3.9",
         "doctrine/orm": "^3.6",
-        "jaxon-php/jaxon-core": "^5.5",
         "lbuchs/webauthn": "^2.0",
         "phpmailer/phpmailer": "^7.0",
         "symfony/cache": "^7.2",

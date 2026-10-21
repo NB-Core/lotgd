@@ -12,13 +12,8 @@ use PHPUnit\Framework\TestCase;
 
 final class AssembleMailLinkTest extends TestCase
 {
-    private string $asyncFile;
-    private string $backupFile;
-
     protected function setUp(): void
     {
-        $this->asyncFile = dirname(__DIR__) . '/async/maillink.php';
-        $this->backupFile = $this->asyncFile . '.bak';
         Database::$queryCacheResults = [];
     }
 
@@ -28,12 +23,6 @@ final class AssembleMailLinkTest extends TestCase
         unset($session, $settings);
         Settings::setInstance(null);
         Database::$queryCacheResults = [];
-        if (is_file($this->backupFile)) {
-            if (is_file($this->asyncFile)) {
-                unlink($this->asyncFile);
-            }
-            rename($this->backupFile, $this->asyncFile);
-        }
     }
 
     public function testWithoutAjax(): void
@@ -48,19 +37,16 @@ final class AssembleMailLinkTest extends TestCase
         $this->assertStringNotContainsString("<div id='maillink'>", $header);
     }
 
-    public function testWithAjax(): void
+    public function testWithAjaxTheLinkCarriesTheIdThePollReplaces(): void
     {
         global $session, $settings;
         $session = ['user' => ['acctid' => 1, 'loggedin' => true, 'prefs' => ['ajax' => 1]]];
         $settings = new DummySettings(['ajax' => 1]);
         Settings::setInstance($settings);
         Database::$queryCacheResults['mail-1'] = [['seencount' => 0, 'notseen' => 0]];
-        if (file_exists($this->asyncFile)) {
-            rename($this->asyncFile, $this->backupFile);
-        }
-        file_put_contents($this->asyncFile, "<?php\n\$maillink_add_pre='PRE';\n\$maillink_add_after='AFTER';\n");
         [$header] = PageParts::assembleMailLink('{mail}', '');
-        $this->assertStringContainsString("PRE<div id='maillink'>", $header);
-        $this->assertStringContainsString("</div>AFTER", $header);
+        $this->assertStringStartsWith("<div id='maillink'><a href='mail.php'", $header);
+        $this->assertStringEndsWith('</div>', $header);
+        $this->assertStringNotContainsString('<script', $header, 'The async client takes its values from <meta name="lotgd-async">.');
     }
 }

@@ -135,7 +135,7 @@ class Footer
                 'stats' => Poll::regionVersion('stats', $acctid),
                 'grants' => $grantsVersion,
             ];
-            $realtimeMeta = '<meta name="lotgd-realtime" content="async/poll.php|'
+            $realtimeMeta = '<meta name="lotgd-realtime" content="'
                 . max(5, (int) $settings->getSetting('realtime_poll_seconds', 10)) . '">'
                 . '<meta name="lotgd-event-cursor" content="' . Poll::startCursor() . '">'
                 . '<meta name="lotgd-region-versions" content="'
@@ -180,11 +180,13 @@ class Footer
             $favicon = ['favicon-link' => $defaultFaviconLink];
             $favicon        = HookHandler::hook('pageparts-favicon', $favicon);
             $pre_headscript = PageParts::canonicalLink() . $favicon['favicon-link'];
-            if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+            // The async client: for the player's updates (AJAX preference)
+            // and for the realtime poll, which shares its transport.
+            if ($realtime || ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax'])) {
                 if (file_exists('async/setup.php')) {
                     require_once 'async/setup.php';
-                    // The per-page values the polling script starts from. A
-                    // partial answer carries them, since it has no <head>.
+                    // The per-page values the poll starts from. A partial
+                    // answer carries them, since it has no <head>.
                     $asyncState = [
                         'commentSection' => (string) ($session['last_comment_section'] ?? ''),
                         'lastCommentId' => (int) ($session['lastcommentid'] ?? 0),
@@ -388,7 +390,6 @@ class Footer
             $footer = $template['popupfoot'];
         }
         $pre_headscript   = PageParts::canonicalLink();
-        $maillink_add_after = '';
         if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
             if (file_exists('async/setup.php')) {
                 require_once 'async/setup.php';
@@ -399,15 +400,6 @@ class Footer
 
         $output = Output::getInstance();
 
-        if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
-            if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-                if (file_exists('async/maillink.php')) {
-                    require 'async/maillink.php';
-                }
-            } else {
-                $maillink_add_after = '';
-            }
-        }
         $header = PageParts::insertHeadScript($header, $pre_headscript, $headscript);
 
         $page->antiCheatProtection();
@@ -420,7 +412,7 @@ class Footer
             'copyright' => $copyright,
         ]);
 
-        $content = $maillink_add_after . $output->getOutput();
+        $content = $output->getOutput();
         $isTwig = TwigTemplate::isActive();
         if ($isTwig) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, [

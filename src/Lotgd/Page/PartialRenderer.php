@@ -122,11 +122,6 @@ final class PartialRenderer
         }
         $head = (string) preg_replace('/<meta name="lotgd-[a-z-]+" content="[^"]*">/', '', $head);
         $head = (string) preg_replace('/<link rel="canonical" href="[^"]*" \/>/', '', $head);
-        $head = (string) preg_replace(
-            '/var lotgd_(?:comment_section|lastCommentId|lastUnreadMailId|lastUnreadMailCount) = [^;]*;/',
-            '',
-            $head
-        );
         $head = (string) preg_replace('/\?v=[0-9]+/', '', $head);
 
         return substr(hash('sha256', $head), 0, 16);

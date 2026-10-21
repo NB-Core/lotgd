@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Async {
 
-    use Jaxon\Exception\RequestException;
+    use Lotgd\Async\Dispatcher;
     use Lotgd\Async\Handler\TwoFactorAuthPasskey;
     use Lotgd\Security\PasskeyCredentialRepository;
     use Lotgd\Security\PasskeyService;
-    use Nyholm\Psr7Server\ServerRequestCreator;
-    use Psr\Http\Message\ServerRequestInterface;
     use PHPUnit\Framework\Attributes\DataProvider;
     use PHPUnit\Framework\Attributes\PreserveGlobalState;
     use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -99,7 +97,7 @@ namespace Lotgd\Tests\Async {
             ];
         }
 
-        public function testBeginRegistrationSuccessReturnsJaxonPayload(): void
+        public function testBeginRegistrationSuccessReturnsCallbackPayload(): void
         {
             $repo = $this->createMock(PasskeyCredentialRepository::class);
             $repo->method('hasCredentialTable')->willReturn(true);
@@ -249,77 +247,42 @@ namespace Lotgd\Tests\Async {
             self::assertSame(1, (int) ($GLOBALS['twofactorauth_module_prefs'][42]['failed_attempts'] ?? 0));
         }
 
-        public function testJaxonBootstrapExportsOnlyPasskeyAllowlistedMethods(): void
+        public function testDispatcherRegistersThePasskeyHandlerUnderItsHistoricalName(): void
         {
-            require __DIR__ . '/../../async/common/jaxon.php';
+            $dispatcher = new Dispatcher([]);
 
-            global $jaxon;
-            self::assertNotNull($jaxon);
+            self::assertSame(TwoFactorAuthPasskey::class, $dispatcher->classes()['TwoFactorAuthPasskey'] ?? null);
+        }
 
-            $exportedMethods = $this->extractPasskeyExportedMethods((string) $jaxon->getScript());
+        #[DataProvider('ceremonyMethodProvider')]
+        public function testDispatcherDescribesAllowlistedPasskeyCeremonies(string $methodName): void
+        {
+            $dispatcher = new Dispatcher(['call' => json_encode([
+                'class' => 'TwoFactorAuthPasskey',
+                'method' => $methodName,
+                'args' => [],
+            ], JSON_THROW_ON_ERROR)]);
 
-            self::assertContains('beginRegistration', $exportedMethods);
-            self::assertContains('finishRegistration', $exportedMethods);
-            self::assertContains('beginAuthentication', $exportedMethods);
-            self::assertContains('verifyAuthentication', $exportedMethods);
-            self::assertNotContains('setService', $exportedMethods);
-            self::assertNotContains('setRepository', $exportedMethods);
+            self::assertTrue($dispatcher->canProcessRequest());
+            self::assertSame(
+                ['class' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey', 'method' => $methodName],
+                $dispatcher->describe()
+            );
         }
 
         #[DataProvider('excludedPasskeyHelperMethodProvider')]
-        public function testJaxonBootstrapRejectsExcludedPasskeyHelperRequestsBeforeInvocation(string $methodName): void
+        public function testDispatcherRejectsExcludedPasskeyHelperRequestsBeforeInvocation(string $methodName): void
         {
-            require __DIR__ . '/../../async/common/jaxon.php';
+            $dispatcher = new Dispatcher(['call' => json_encode([
+                'class' => 'TwoFactorAuthPasskey',
+                'method' => $methodName,
+                'args' => [],
+            ], JSON_THROW_ON_ERROR)]);
 
-            global $jaxon;
-            self::assertNotNull($jaxon);
+            $this->expectException(\InvalidArgumentException::class);
 
-            $jaxon->setOption('core.response.send', false);
-            $jaxon->di()->set(ServerRequestInterface::class, static fn($container) =>
-                $container->g(ServerRequestCreator::class)
-                    ->fromGlobals()
-                    ->withParsedBody([
-                        'jxncall' => json_encode([
-                            'type' => 'class',
-                            'name' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
-                            'method' => $methodName,
-                            'args' => [],
-                        ], JSON_THROW_ON_ERROR),
-                    ]));
-
-            $this->expectException(RequestException::class);
-            $this->expectExceptionMessage('excluded method');
-
-            $jaxon->processRequest();
+            $dispatcher->processRequest();
         }
-
-        public function testJaxonBootstrapPreservesLegacyNamespaceExportShapeForPasskeyBridge(): void
-        {
-            require __DIR__ . '/../../async/common/jaxon.php';
-
-            global $jaxon;
-            self::assertNotNull($jaxon);
-
-            $script = (string) $jaxon->getScript();
-
-            // Keep historical namespace shape stable for bridge compatibility.
-            self::assertStringContainsString("Lotgd = {", $script);
-            self::assertStringContainsString("TwoFactorAuthPasskey", $script);
-        }
-
-        public function testJaxonBootstrapExportsAuthenticationCallBindings(): void
-        {
-            require __DIR__ . '/../../async/common/jaxon.php';
-
-            global $jaxon;
-            self::assertNotNull($jaxon);
-
-            $script = (string) $jaxon->getScript();
-
-            self::assertStringContainsString('beginAuthentication: (...args) => jx.rc(', $script);
-            self::assertStringContainsString('verifyAuthentication: (...args) => jx.rc(', $script);
-        }
-
 
         public function testBeginAuthenticationRepositoryExceptionReturnsCallbackPayload(): void
         {
@@ -355,7 +318,7 @@ namespace Lotgd\Tests\Async {
         }
 
         /**
-         * Decode the Jaxon command list and return the callback envelope.
+         * Read the command list and return the callback envelope.
          *
          * @param array<int, mixed> $commands
          * @return array{requestId:string,data:array<string,mixed>}
@@ -365,12 +328,12 @@ namespace Lotgd\Tests\Async {
             self::assertNotEmpty($commands);
 
             $first = $commands[0];
-            self::assertSame('script.exec.call', $first['name'] ?? '');
-            self::assertSame('twofactorauthHandleJaxonResponse', $first['args']['func'] ?? '');
+            self::assertSame('call', $first['cmd'] ?? '');
+            self::assertSame('twofactorauthHandleJaxonResponse', $first['fn'] ?? '');
 
             return [
-                'requestId' => (string) ($first['args']['args'][0] ?? ''),
-                'data' => (array) ($first['args']['args'][1] ?? []),
+                'requestId' => (string) ($first['args'][0] ?? ''),
+                'data' => (array) ($first['args'][1] ?? []),
             ];
         }
 
@@ -386,31 +349,16 @@ namespace Lotgd\Tests\Async {
         }
 
         /**
-         * Parse exported passkey methods from generated Jaxon bootstrap script.
-         *
-         * @return array<int, string>
+         * @return array<string, array{0:string}>
          */
-        private function extractPasskeyExportedMethods(string $script): array
+        public static function ceremonyMethodProvider(): array
         {
-            $prefix = 'TwoFactorAuthPasskey: {';
-            $start = strpos($script, $prefix);
-            self::assertNotFalse($start, 'Passkey handler namespace was not exported in Jaxon bootstrap script.');
-
-            $slice = substr($script, (int) $start);
-            self::assertIsString($slice);
-
-            $end = strpos($slice, '},', 0);
-            if ($end === false) {
-                $end = strpos($slice, '}', 0);
-            }
-            self::assertNotFalse($end, 'Unable to parse passkey handler export block from Jaxon bootstrap script.');
-
-            $block = substr($slice, 0, (int) $end);
-            self::assertIsString($block);
-
-            preg_match_all('/^\s*([a-zA-Z0-9_]+):\s+\(\.\.\.args\)\s+=>\s+jx\.rc\(/m', $block, $matches);
-
-            return array_values((array) ($matches[1] ?? []));
+            return [
+                'beginRegistration' => ['beginRegistration'],
+                'finishRegistration' => ['finishRegistration'],
+                'beginAuthentication' => ['beginAuthentication'],
+                'verifyAuthentication' => ['verifyAuthentication'],
+            ];
         }
     }
 }

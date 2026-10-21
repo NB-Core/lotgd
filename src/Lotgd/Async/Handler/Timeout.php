@@ -9,9 +9,7 @@ use Lotgd\MySQL\Database;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Translator;
-use Jaxon\Response\Response;
-
-use function Jaxon\jaxon;
+use Lotgd\Async\Response;
 
 /**
  * Handle asynchronous timeout checks.
@@ -91,7 +89,7 @@ class Timeout
         $settings = Settings::getInstance();
 
         if ($args === false) {
-            return jaxon()->newResponse();
+            return new Response();
         }
 
         if (!isset($session['user'])) {
@@ -106,10 +104,10 @@ class Timeout
             }
 
             if (!$hasTimedOut) {
-                return jaxon()->newResponse();
+                return new Response();
             }
 
-            $objResponse = jaxon()->newResponse();
+            $objResponse = new Response();
             $warning = $output->appoencode('`$`b') . 'TIMEOUT: Your session has timed out!' . $output->appoencode('`b');
             $objResponse->assign('notify', 'innerHTML', $warning);
 
@@ -153,7 +151,7 @@ class Timeout
             $warning = '';
         }
 
-        $objResponse = jaxon()->newResponse();
+        $objResponse = new Response();
         $objResponse->assign('notify', 'innerHTML', $warning);
 
         Translator::enableTranslation(true);

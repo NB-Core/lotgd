@@ -14,10 +14,7 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
         'b6b991a57620e2fb6b2f66f03fe9ddc2' => __DIR__ . '/..' . '/symfony/string/Resources/functions.php',
         '9d2b9fc6db0f153a0a149fefb182415e' => __DIR__ . '/..' . '/symfony/polyfill-php84/bootstrap.php',
-        'db9e11d555cf5192f5980e2511fdf45c' => __DIR__ . '/..' . '/jaxon-php/jaxon-storage/src/helpers.php',
         '2c2415ec15363ede1bff13a287462ba1' => __DIR__ . '/..' . '/symfony/polyfill-php86/bootstrap.php',
-        'd720e59f4656d1e0b830a7edc610e533' => __DIR__ . '/..' . '/jaxon-php/jaxon-core/src/jaxon_ns.php',
-        '5ed186430a4cf167f14acb8364a8f8bf' => __DIR__ . '/..' . '/jaxon-php/jaxon-core/src/jaxon_fn.php',
         '89efb1254ef2d1c5d80096acd12c4098' => __DIR__ . '/..' . '/twig/twig/src/Resources/core.php',
         'ffecb95d45175fd40f75be8a23b34f90' => __DIR__ . '/..' . '/twig/twig/src/Resources/debug.php',
         'c7baa00073ee9c61edf148c51917cfb4' => __DIR__ . '/..' . '/twig/twig/src/Resources/escaper.php',
@@ -56,37 +53,14 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         'P' => 
         array (
             'Psr\\Log\\' => 8,
-            'Psr\\Http\\Server\\' => 16,
-            'Psr\\Http\\Message\\' => 17,
             'Psr\\Container\\' => 14,
             'Psr\\Cache\\' => 10,
             'PHPMailer\\PHPMailer\\' => 20,
-        ),
-        'N' => 
-        array (
-            'Nyholm\\Psr7\\' => 12,
-            'Nyholm\\Psr7Server\\' => 18,
-        ),
-        'M' => 
-        array (
-            'MatthiasMullie\\PathConverter\\' => 29,
-            'MatthiasMullie\\Minify\\' => 22,
         ),
         'L' => 
         array (
             'Lotgd\\Installer\\' => 16,
             'Lotgd\\' => 6,
-            'League\\MimeTypeDetection\\' => 25,
-            'League\\Flysystem\\Local\\' => 23,
-            'League\\Flysystem\\' => 17,
-            'Lagdo\\Facades\\' => 14,
-        ),
-        'J' => 
-        array (
-            'Jaxon\\Utils\\' => 12,
-            'Jaxon\\Storage\\' => 14,
-            'Jaxon\\Config\\' => 13,
-            'Jaxon\\' => 6,
         ),
         'D' => 
         array (
@@ -172,16 +146,6 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         array (
             0 => __DIR__ . '/..' . '/psr/log/src',
         ),
-        'Psr\\Http\\Server\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/psr/http-server-handler/src',
-            1 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
-        ),
-        'Psr\\Http\\Message\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/psr/http-factory/src',
-            1 => __DIR__ . '/..' . '/psr/http-message/src',
-        ),
         'Psr\\Container\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
@@ -194,22 +158,6 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         array (
             0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
         ),
-        'Nyholm\\Psr7\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/nyholm/psr7/src',
-        ),
-        'Nyholm\\Psr7Server\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/nyholm/psr7-server/src',
-        ),
-        'MatthiasMullie\\PathConverter\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/matthiasmullie/path-converter/src',
-        ),
-        'MatthiasMullie\\Minify\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/matthiasmullie/minify/src',
-        ),
         'Lotgd\\Installer\\' => 
         array (
             0 => __DIR__ . '/../..' . '/install/lib',
@@ -217,38 +165,6 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         'Lotgd\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src/Lotgd',
-        ),
-        'League\\MimeTypeDetection\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/league/mime-type-detection/src',
-        ),
-        'League\\Flysystem\\Local\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/league/flysystem-local',
-        ),
-        'League\\Flysystem\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/league/flysystem/src',
-        ),
-        'Lagdo\\Facades\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/lagdo/facades/src',
-        ),
-        'Jaxon\\Utils\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/jaxon-php/jaxon-utils/src',
-        ),
-        'Jaxon\\Storage\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/jaxon-php/jaxon-storage/src',
-        ),
-        'Jaxon\\Config\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/jaxon-php/jaxon-config/src',
-        ),
-        'Jaxon\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/jaxon-php/jaxon-core/src',
         ),
         'Doctrine\\Persistence\\' => 
         array (
@@ -292,23 +208,6 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         ),
     );
 
-    public static $prefixesPsr0 = array (
-        'P' => 
-        array (
-            'Pimple' => 
-            array (
-                0 => __DIR__ . '/..' . '/pimple/pimple/src',
-            ),
-        ),
-        'J' => 
-        array (
-            'JShrink' => 
-            array (
-                0 => __DIR__ . '/..' . '/tedivm/jshrink/src',
-            ),
-        ),
-    );
-
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Deprecated' => __DIR__ . '/..' . '/symfony/polyfill-php84/Resources/stubs/Deprecated.php',
@@ -330,7 +229,6 @@ class ComposerStaticInitd8e1f8a8269139cbe24936b67a550279
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInitd8e1f8a8269139cbe24936b67a550279::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInitd8e1f8a8269139cbe24936b67a550279::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitd8e1f8a8269139cbe24936b67a550279::$prefixesPsr0;
             $loader->classMap = ComposerStaticInitd8e1f8a8269139cbe24936b67a550279::$classMap;
 
         }, null, ClassLoader::class);

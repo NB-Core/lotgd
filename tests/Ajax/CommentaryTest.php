@@ -70,10 +70,10 @@ STUBS
 
             $commands = $response->getCommands();
             $this->assertCount(1, $commands);
-            $this->assertSame('node.assign', $commands[0]['name']);
-            $this->assertSame('test-section', $commands[0]['args']['id']);
-            $this->assertSame('innerHTML', $commands[0]['args']['attr']);
-            $this->assertSame('<div class="block">Mocked Commentary</div>', $commands[0]['args']['value']);
+            $this->assertSame('assign', $commands[0]['cmd']);
+            $this->assertSame('test-section', $commands[0]['id']);
+            $this->assertSame('innerHTML', $commands[0]['prop']);
+            $this->assertSame('<div class="block">Mocked Commentary</div>', $commands[0]['value']);
         }
 
         public function testCommentaryRefreshAppendsNewCommentsAndUpdatesScriptsWithoutNotifyOnInitialLoad(): void
@@ -105,17 +105,19 @@ STUBS
             $response = $handler->commentaryRefresh('test-section', 0);
             $commands = $response->getCommands();
 
-            $this->assertSame('node.append', $commands[0]['name']);
-            $this->assertSame('test-section-comment', $commands[0]['args']['id']);
+            $this->assertSame('append', $commands[0]['cmd']);
+            $this->assertSame('test-section-comment', $commands[0]['id']);
+            $this->assertSame('innerHTML', $commands[0]['prop']);
             $expectedHtml = "<div data-cid='1'><span>First</span></div><div data-cid='2'><span>Second</span></div>";
-            $this->assertSame($expectedHtml, $commands[0]['args']['value']);
+            $this->assertSame($expectedHtml, $commands[0]['value']);
 
-            $this->assertSame('script.exec.expr', $commands[1]['name']);
-            $this->assertInstanceOf(\Jaxon\Script\JsExpr::class, $commands[1]['args']['expr'] ?? null);
-            $exprData = $commands[1]['args']['expr']->jsonSerialize();
-            $this->assertSame('lotgd_lastCommentId', $exprData['calls'][1]['_name']);
+            $this->assertSame(
+                ['section' => 'test-section', 'lastId' => 2],
+                $response->getData()['commentary'] ?? null
+            );
 
-            $this->assertCount(2, $commands);
+            // No notification on the initial load.
+            $this->assertCount(1, $commands);
         }
 
         public function testCommentaryRefreshNotifiesWhenLastIdSmallerThanNewest(): void
@@ -138,18 +140,19 @@ STUBS
             $response = $handler->commentaryRefresh('test-section', 1);
             $commands = $response->getCommands();
 
-            $this->assertSame('node.append', $commands[0]['name']);
-            $this->assertSame('test-section-comment', $commands[0]['args']['id']);
+            $this->assertSame('append', $commands[0]['cmd']);
+            $this->assertSame('test-section-comment', $commands[0]['id']);
             $expectedHtml = "<div data-cid='2'><span>Second</span></div>";
-            $this->assertSame($expectedHtml, $commands[0]['args']['value']);
+            $this->assertSame($expectedHtml, $commands[0]['value']);
 
-            $this->assertSame('script.exec.expr', $commands[1]['name']);
-            $exprData = $commands[1]['args']['expr']->jsonSerialize();
-            $this->assertSame('lotgd_lastCommentId', $exprData['calls'][1]['_name']);
+            $this->assertSame(
+                ['section' => 'test-section', 'lastId' => 2],
+                $response->getData()['commentary'] ?? null
+            );
 
-            $this->assertSame('script.exec.call', $commands[2]['name']);
-            $this->assertSame('lotgdCommentNotify', $commands[2]['args']['func']);
-            $this->assertSame([1], $commands[2]['args']['args']);
+            $this->assertSame('call', $commands[1]['cmd']);
+            $this->assertSame('lotgdCommentNotify', $commands[1]['fn']);
+            $this->assertSame([1], $commands[1]['args']);
         }
     }
 }
