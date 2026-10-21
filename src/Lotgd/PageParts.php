@@ -17,6 +17,7 @@ namespace Lotgd;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
+use Lotgd\Page\Overlay;
 use Lotgd\CharStats;
 use Lotgd\Accounts;
 use Lotgd\PlayerFunctions;
@@ -505,10 +506,10 @@ class PageParts
         $row = self::getMailCounts();
 
         if ($row['notseen'] > 0) {
-            return sprintf("<a href='mail.php' target='_blank' onClick=\"" . self::popup("mail.php") . ";return false;\" class='hotmotd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
+            return sprintf("<a href='mail.php' target='_blank'" . Overlay::attribute() . " onClick=\"" . self::popup("mail.php") . ";return false;\" class='hotmotd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
         }
 
-        return sprintf("<a href='mail.php' target='_blank' onClick=\"" . self::popup("mail.php") . ";return false;\" class='motd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
+        return sprintf("<a href='mail.php' target='_blank'" . Overlay::attribute() . " onClick=\"" . self::popup("mail.php") . ";return false;\" class='motd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
     }
 
 /* same, but only the text for the tab */
@@ -1108,9 +1109,9 @@ class PageParts
     {
         global $session;
         if (isset($session['needtoviewmotd']) && $session['needtoviewmotd']) {
-            return "<a href='motd.php' target='_blank' onClick=\"" . self::popup("motd.php") . ";return false;\" class='hotmotd'><b>" . Translator::translateInline("MoTD") . "</b></a>";
+            return "<a href='motd.php' target='_blank'" . Overlay::attribute() . " onClick=\"" . self::popup("motd.php") . ";return false;\" class='hotmotd'><b>" . Translator::translateInline("MoTD") . "</b></a>";
         } else {
-            return "<a href='motd.php' target='_blank' onClick=\"" . self::popup("motd.php") . ";return false;\" class='motd'><b>" . Translator::translateInline("MoTD") . "</b></a>";
+            return "<a href='motd.php' target='_blank'" . Overlay::attribute() . " onClick=\"" . self::popup("motd.php") . ";return false;\" class='motd'><b>" . Translator::translateInline("MoTD") . "</b></a>";
         }
     }
 }

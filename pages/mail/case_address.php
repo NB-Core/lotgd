@@ -35,8 +35,9 @@ function mailAddress(int $id, string $preop): void
         $forwardlink = "<input type='hidden' name='forwardto' value='$id'>";
     }
 
+    $autofocus = \Lotgd\Page\Overlay::isRequested() ? ' autofocus' : '';
     $output->outputNotl(
-        "`2$to <input name='to' id='to' value=\""
+        "`2$to <input name='to' id='to'$autofocus value=\""
         . htmlentities($preop, ENT_COMPAT, $charset)
         . "\">",
         true
@@ -44,7 +45,9 @@ function mailAddress(int $id, string $preop): void
     $output->outputNotl("<input type='submit' class='button' value=\"$search\">", true);
     $output->rawOutput($forwardlink);
     $output->rawOutput("</form>");
-    $output->rawOutput("<script type='text/javascript'>document.getElementById(\"to\").focus();</script>");
+    if (!\Lotgd\Page\Overlay::isRequested()) {
+        $output->rawOutput("<script type='text/javascript'>document.getElementById(\"to\").focus();</script>");
+    }
 }
 
 mailAddress($id, $preop);

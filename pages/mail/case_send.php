@@ -9,6 +9,7 @@ use Lotgd\Http;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\DataCache;
+use Lotgd\Page\Overlay;
 
 /**
  * Handle sending of in-game mail.
@@ -67,7 +68,12 @@ function mailSend(): void
     $output->output('Your message was sent!`n');
 
     if ($sendClose) {
-        $output->rawOutput("<script language='javascript'>window.close();</script>");
+        if (Overlay::isRequested()) {
+            // The dialog closes once the answer is shown.
+            Overlay::close();
+        } else {
+            $output->rawOutput("<script language='javascript'>window.close();</script>");
+        }
     }
 
     if ($sendBack) {

@@ -464,6 +464,23 @@ Once the legacy upgrade is complete:
 3. This will apply all new **2.x schema changes**.
 4. Watch for any DB prefix issues — these are now supported and should migrate correctly.
 
+
+### Mail and MOTD inside the page (Phase 6b)
+
+On Aurora, mail and the message of the day open in a dialog inside the page
+instead of a browser window. Nothing to configure; other skins and legacy
+templates keep the window. A Twig skin opts in with `"overlay": true` in its
+`config.json` (and loads Bootstrap or styles `.lotgd-overlay` itself).
+
+- With *Force the MOTD popup* (`forcedmotdpopup`) on, a new MOTD opens in that
+  dialog by itself. The module `motd_js_popup` (jquery-modal from a CDN, in
+  the village) is then no longer needed; deactivate it to avoid two popups.
+- For module authors: a link to a popup page gets the dialog by adding
+  `Lotgd\Page\Overlay::attribute()` to its `<a>`. A popup page shown in the
+  dialog runs no `<script>`; use the declarative attributes documented in
+  `assets/js/lotgd.overlay.js`, or check `Overlay::isRequested()` and keep the
+  script for the window.
+
 ### Password recovery for ancient accounts
 
 The browser installer immediately converts the administrator credential used

@@ -3,5 +3,6 @@
   "author": "LotGD Community",
   "license": "MIT",
   "version": "1.0.0",
-  "regions": true
+  "regions": true,
+  "overlay": true
 }

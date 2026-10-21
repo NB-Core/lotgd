@@ -33,7 +33,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 | 3 | Guarded game actions: `Action::run()`, split `saveUser()`, optimistic locking | done (pilot: the bank; see below) |
 | 4 | Transactional outbox, relay, polling transport | done (pilot: new mail and incoming transfers; see below) |
 | 5 | Grants: server-issued one-shot navigation for other players | done (pilot: accepting a clan applicant; see below) |
-| 6 | One async transport and popups as in-page overlay | 6a done: one async transport (Jaxon removed; see below); 6b planned: popups as in-page overlay (mail, MOTD) |
+| 6 | One async transport and popups as in-page overlay | 6a done: one async transport (Jaxon removed); 6b done: popups as in-page overlay (mail, MOTD); see below |
 | 7 | SSE / Mercure transport | planned |
 
 ## Phase 1 – PageState
@@ -541,8 +541,50 @@ the same endpoint, a superuser `Bans` call works, and a request without
 of their checks read the old transport (a Jaxon global, `poll.php` URLs) and
 now read `lotgd.async.state()` and the `process.php` calls.
 
-Phase 6b (planned): popups (mail, MOTD) as an in-page overlay instead of a
-browser window. SSE / Mercure moved to Phase 7.
+SSE / Mercure moved to Phase 7.
+
+## Phase 6b – as built
+
+On by skin, not by setting: a Twig skin that declares `"overlay": true` in
+its `config.json` (Aurora) shows popup pages -- pages that end with
+`Footer::popupFooter()`, so far mail and the MOTD -- in a dialog inside the
+page. Every other skin, and a browser without JavaScript, keeps the window.
+
+- **Server** (`Lotgd\Page\Overlay`): a request with `X-Lotgd-Overlay: 1` to a
+  popup page is answered with its content alone, the title percent-encoded in
+  `X-Lotgd-Overlay-Title`, `X-Lotgd-Overlay-Close: 1` when the page is done
+  (mail's "Send and Close", which used to run `window.close()`). The page runs
+  exactly as in a window; mail and the MOTD override forced navigation, so the
+  page behind the dialog keeps its links and page revision.
+- **Links**: `Overlay::attribute()` adds `data-lotgd-overlay` to the links that
+  open popups (`PageParts::mailLink()`, `motdLink()`, "write mail" on bios,
+  the player list, petitions). The `href` and the window-opening `onclick`
+  stay, as the fallback.
+- **MOTD**: with `forcedmotdpopup`, an unread MOTD is opened by
+  `<meta name="lotgd-overlay-open">` instead of `window.open`; `badnav.php`
+  drops that tag from a stored page once the MOTD has been read. This covers
+  what the module `motd_js_popup` did.
+- **Client** (`assets/js/lotgd.overlay.js`, `assets/css/lotgd.overlay.css`):
+  a native `<dialog>`; a plain click on an overlay link (before its own
+  onclick) fetches the page into it; links and forms inside stay inside
+  (forms with their submitter, redirects followed); an answer that is not an
+  overlay answer opens in a new window; Escape, the close button or the
+  backdrop close it, and the mail region of the header is refreshed
+  (`lotgd.async.refresh('mail')`). Content never runs scripts.
+- **Mail pages without inline scripts** in the overlay (the window path is
+  unchanged byte for byte): inbox "Check all" and "Check by name"
+  (`data-lotgd-check-all`, `data-lotgd-check-by`), the composer's resize
+  buttons, character counter and superuser warning (`data-lotgd-resize`,
+  `data-lotgd-count`, `data-lotgd-su-warning`), the address book focus
+  (`autofocus`).
+
+Verified in a browser (Chromium against MariaDB): on Aurora the inbox opens
+in a dialog and no window; reading, replying (counter, resize), "Send and
+Close" (dialog closes, mail sent, header link updated), check all and delete
+(redirect followed inside), Escape; the page behind keeps its links; a new
+forced MOTD opens by itself once and not again after it was read; on a legacy
+skin the link has no overlay attribute and opens a window. The earlier
+browser suites pass.
 
 ## Binding acceptance criteria
 

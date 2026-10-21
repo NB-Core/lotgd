@@ -85,7 +85,10 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
         Footer::pageFooter();
     }
     echo \Lotgd\Realtime\Poll::storedPage(
-        PartialRenderer::withRevision((string) $row['output'], (int) ($session['user']['page_revision'] ?? 0)),
+        \Lotgd\Page\Overlay::storedPage(
+            PartialRenderer::withRevision((string) $row['output'], (int) ($session['user']['page_revision'] ?? 0)),
+            !empty($session['needtoviewmotd'])
+        ),
         $session['user']
     );
     $session['debug'] = "";

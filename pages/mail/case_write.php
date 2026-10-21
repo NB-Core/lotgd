@@ -139,7 +139,11 @@ function mailWrite(): void
         renderRecipientSelection($toPost, $superusers, $acctidTo, $row, $playerSearch);
     }
 
-    renderSuperuserScript($superusers);
+    if (\Lotgd\Page\Overlay::isRequested()) {
+        renderSuperuserMarker($superusers);
+    } else {
+        renderSuperuserScript($superusers);
+    }
 
     $output->output('`2Subject:');
     $output->rawOutput(
@@ -170,9 +174,24 @@ function mailWrite(): void
     $cols = max(10, $prefs['mailwidth']);
     $rows = max(10, $prefs['mailheight']);
 
-    $output->rawOutput(
-        "<table style='border:0;cellspacing:10'><tr><td><input type='button' onClick=\"increase(textarea1,1);\" value='+' accesskey='+'></td><td><input type='button' onClick=\"increase(textarea1,-1);\" value='-' accesskey='-'></td><td><input type='button' onClick=\"cincrease(textarea1,-1);\" value='<-'></td><td><input type='button' onClick=\"cincrease(textarea1,1);\" value='->' accesskey='-'></td></tr></table>"
-    );
+    $overlay = \Lotgd\Page\Overlay::isRequested();
+    if ($overlay) {
+        // No scripts in the overlay: lotgd.overlay.js reads the attributes.
+        $resize = static fn(string $change, string $label, string $accesskey = ''): string =>
+            "<td><input type='button' data-lotgd-resize=\"$change\" data-lotgd-target='textarea1' value='$label'$accesskey></td>";
+        $output->rawOutput(
+            "<table style='border:0;cellspacing:10'><tr>"
+            . $resize('rows:+1', '+', " accesskey='+'")
+            . $resize('rows:-1', '-', " accesskey='-'")
+            . $resize('cols:-1', '&lt;-')
+            . $resize('cols:+1', '-&gt;', " accesskey='-'")
+            . '</tr></table>'
+        );
+    } else {
+        $output->rawOutput(
+            "<table style='border:0;cellspacing:10'><tr><td><input type='button' onClick=\"increase(textarea1,1);\" value='+' accesskey='+'></td><td><input type='button' onClick=\"increase(textarea1,-1);\" value='-' accesskey='-'></td><td><input type='button' onClick=\"cincrease(textarea1,-1);\" value='<-'></td><td><input type='button' onClick=\"cincrease(textarea1,1);\" value='->' accesskey='-'></td></tr></table>"
+        );
+    }
 
     // mb_substr is necessary if you have chars that take up more than 1 byte.
     $textBody = htmlentities(
@@ -197,19 +216,23 @@ function mailWrite(): void
         $charset
     );
 
+    $keyUp = $overlay ? "data-lotgd-count='sizemsg'" : "onKeyUp='sizeCount(this);'";
     $output->rawOutput(
-        "<textarea id='textarea1' class='input' onKeyUp='sizeCount(this);' name='body' cols='$cols' rows='$rows'>$textBody</textarea>"
+        "<textarea id='textarea1' class='input' $keyUp name='body' cols='$cols' rows='$rows'>$textBody</textarea>"
     );
 
+    $sizeAttributes = $overlay ? sizeCountAttributes() : '';
     $send     = Translator::translateInline('Send');
     $sendClose = Translator::translateInline('Send and Close');
     $sendBack  = Translator::translateInline('Send and back to main Mailbox');
     $output->rawOutput(
-        "<table border='0' cellpadding='0' cellspacing='0' width='100%'><tr><td><input type='submit' class='button' value='$send'></td><td style='width:20px;'></td><td><input type='submit' class='button' value='$sendClose' name='sendclose'></td><td><input type='submit' class='button' value='$sendBack' name='sendback'></td><td align='right'><div id='sizemsg'></div></td></tr></table>"
+        "<table border='0' cellpadding='0' cellspacing='0' width='100%'><tr><td><input type='submit' class='button' value='$send'></td><td style='width:20px;'></td><td><input type='submit' class='button' value='$sendClose' name='sendclose'></td><td><input type='submit' class='button' value='$sendBack' name='sendback'></td><td align='right'><div id='sizemsg'$sizeAttributes></div></td></tr></table>"
     );
     $output->rawOutput('</form>');
 
-    renderSizeCountScript();
+    if (!\Lotgd\Page\Overlay::isRequested()) {
+        renderSizeCountScript();
+    }
 
     if (isset($GLOBALS['forms_output'])) {
         $GLOBALS['forms_output'] = $output->getRawOutput();
@@ -316,7 +339,8 @@ function renderRecipientSelection(
         require_once 'pages/mail/case_address.php';
         popup_footer();
     } else {
-        $output->outputNotl("<select name='to' id='to' onchange='check_su_warning();'>", true);
+        $change = \Lotgd\Page\Overlay::isRequested() ? '' : " onchange='check_su_warning();'";
+        $output->outputNotl("<select name='to' id='to'$change>", true);
         $superusers = [];
 
         foreach ($rows as $candidate) {
@@ -366,10 +390,34 @@ function renderSuperuserScript(array $superusers): void
 }
 
 /**
- * Render textarea resize helper scripts.
+ * The overlay's stand-in for renderSuperuserScript() and check_su_warning():
+ * an empty marker the handler in assets/js/lotgd.overlay.js finds. It shows
+ * the element #warning while the recipient field #to holds one of the logins.
+ */
+function renderSuperuserMarker(array $superusers): void
+{
+    $output = Output::getInstance();
+
+    $map = [];
+    foreach ($superusers as $login) {
+        $map[(string) $login] = true;
+    }
+
+    $output->rawOutput(
+        "<span hidden data-lotgd-su-warning='to' data-lotgd-su-target='warning' data-lotgd-superusers=\""
+        . htmlspecialchars((string) json_encode((object) $map), ENT_QUOTES | ENT_SUBSTITUTE) . "\"></span>"
+    );
+}
+
+/**
+ * Textarea resize helper scripts (window path; the overlay uses
+ * data-lotgd-resize).
  */
 function renderResizeScripts(): void
 {
+    if (\Lotgd\Page\Overlay::isRequested()) {
+        return;
+    }
     $output = Output::getInstance();
 
     $output->rawOutput(
@@ -414,6 +462,36 @@ function renderSizeCountScript(): void
         'check_su_warning();'
     );
     $output->rawOutput('</script>');
+}
+
+/**
+ * Attributes for the #sizemsg element in the overlay: the limit and the two
+ * message templates (XX is the number) that data-lotgd-count writes there,
+ * the same texts renderSizeCountScript() builds for the window.
+ */
+function sizeCountAttributes(): string
+{
+    $mailSizeLimit = (int) Settings::getInstance()->getSetting('mailsizelimit', 1024);
+
+    $under = sprintf(
+        Translator::translateInline('`#Max message size is `@%s`#, you have `^XX`# characters left.'),
+        $mailSizeLimit
+    );
+    $over = sprintf(
+        Translator::translateInline('`$Max message size is `@%s`$, you are over by `^XX`$ characters!'),
+        $mailSizeLimit
+    );
+
+    $template = static function (string $message): string {
+        $parts = explode('XX', $message);
+
+        return '<span>' . appoencode($parts[0]) . '</span>XX<span>' . appoencode($parts[1] ?? '') . '</span>';
+    };
+    $flags = ENT_QUOTES | ENT_SUBSTITUTE;
+
+    return " data-lotgd-count-max='$mailSizeLimit'"
+        . ' data-lotgd-count-under="' . htmlspecialchars($template($under), $flags) . '"'
+        . ' data-lotgd-count-over="' . htmlspecialchars($template($over), $flags) . '"';
 }
 
 if (!defined('LOTGD_MAIL_WRITE_AUTORUN') || LOTGD_MAIL_WRITE_AUTORUN) {

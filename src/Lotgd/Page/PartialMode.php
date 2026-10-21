@@ -130,6 +130,15 @@ final class PartialMode
      */
     public static function skinSupportsRegions(): bool
     {
+        return TwigTemplate::isActive() && self::skinDeclares('regions');
+    }
+
+    /**
+     * Whether the active Twig skin's config.json sets $key to true
+     * (`regions`, `overlay`).
+     */
+    public static function skinDeclares(string $key): bool
+    {
         if (!TwigTemplate::isActive()) {
             return false;
         }
@@ -141,7 +150,7 @@ final class PartialMode
 
         $data = json_decode((string) file_get_contents($config), true);
 
-        return is_array($data) && ($data['regions'] ?? false) === true;
+        return is_array($data) && ($data[$key] ?? false) === true;
     }
 
     /**

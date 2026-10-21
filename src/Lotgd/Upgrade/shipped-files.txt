@@ -257,12 +257,15 @@ src/Lotgd/AddNews.php
 src/Lotgd/AssetManifest.php
 src/Lotgd/Async/CsrfMode.php
 src/Lotgd/Async/DebugMode.php
+src/Lotgd/Async/Dispatcher.php
 src/Lotgd/Async/Handler/Bans.php
 src/Lotgd/Async/Handler/Commentary.php
 src/Lotgd/Async/Handler/Exception.php
 src/Lotgd/Async/Handler/Mail.php
+src/Lotgd/Async/Handler/Realtime.php
 src/Lotgd/Async/Handler/Timeout.php
 src/Lotgd/Async/Handler/TwoFactorAuthPasskey.php
+src/Lotgd/Async/Response.php
 src/Lotgd/Backtrace.php
 src/Lotgd/Bank.php
 src/Lotgd/Bank/Balance.php
@@ -358,6 +361,7 @@ src/Lotgd/Page/AntiCheatData.php
 src/Lotgd/Page/CharStats.php
 src/Lotgd/Page/Footer.php
 src/Lotgd/Page/Header.php
+src/Lotgd/Page/Overlay.php
 src/Lotgd/Page/PageRenderer.php
 src/Lotgd/Page/PageState.php
 src/Lotgd/Page/PartialMode.php
