@@ -185,6 +185,17 @@ if ($name != "") {
         } catch (DbalException | \mysqli_sql_exception $exception) {
             $authQueryFailed = true;
             $acctrow = null;
+            // The player is told their login was incorrect, as for a wrong
+            // password; the administrator needs the cause -- a migration that
+            // did not run, a lost connection. The message names no password:
+            // the driver's text, without the statement's parameters.
+            $failure = sprintf('Login for "%s" failed in the database: %s', $name, $exception->getMessage());
+            error_log('LotGD login: ' . $failure);
+            try {
+                GameLog::log($failure, GameLog::CATEGORY_MAINTENANCE, false, 0, GameLog::SEVERITY_ERROR);
+            } catch (\Throwable) {
+                // Already in the error log.
+            }
         }
 
         if ($acctrow) {
