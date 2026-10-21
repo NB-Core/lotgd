@@ -21,7 +21,42 @@ use Lotgd\Page as PageSingleton;
 
 class Footer
 {
+    /**
+     * End the request with the full page.
+     *
+     * Builds the page state (which runs the page-end hooks), renders it,
+     * stores it for badnav.php, saves the user and exits.
+     */
     public static function pageFooter(bool $saveuser = true): void
+    {
+        global $session;
+
+        $state = self::buildPageState();
+        $browser_output = PageRenderer::render($state);
+
+        if (!isset($session['user']['gensize'])) {
+            $session['user']['gensize'] = 0;
+        }
+        $session['user']['gensize'] += strlen($browser_output);
+        $session['output'] = $browser_output;
+        if ($saveuser === true) {
+            Accounts::saveUser();
+        }
+        unset($session['output']);
+        session_write_close();
+        echo $browser_output;
+        exit();
+    }
+
+    /**
+     * Assemble everything the full page consists of.
+     *
+     * This is where the page end's side effects happen, exactly once: the
+     * built navigation is registered in allowednavs, the footer, favicon,
+     * MOTD-link and stats hooks run, the MOTD check updates the session.
+     * Renderers only read the returned state.
+     */
+    public static function buildPageState(): PageState
     {
         global $session;
         $page      = PageSingleton::getInstance();
@@ -195,35 +230,52 @@ class Footer
 
         Translator::getInstance()->setSchema();
 
-        if (TwigTemplate::isActive()) {
+        $content = $output->getOutput();
+        $isTwig = TwigTemplate::isActive();
+        if ($isTwig) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, [
                 'header' => $header,
                 'footer' => $footer,
-                'content' => $output->getOutput(),
+                'content' => $content,
                 'template_path' => TwigTemplate::getPath(),
             ]);
-            $browser_output = TwigTemplate::render('page.twig', PageParts::$twigVars);
         } else {
             $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
             $header = PageParts::stripAdPlaceholders($header);
-            $browser_output = $header . ($output->getOutput()) . $footer;
         }
         $navInstance->setHeader($header);
-        if (!isset($session['user']['gensize'])) {
-            $session['user']['gensize'] = 0;
-        }
-        $session['user']['gensize'] += strlen($browser_output);
-        $session['output'] = $browser_output;
-        if ($saveuser === true) {
-            Accounts::saveUser();
-        }
-        unset($session['output']);
+
+        return new PageState(
+            PageState::TEMPLATE_PAGE,
+            $isTwig,
+            $header,
+            $footer,
+            $content,
+            $builtnavs,
+            $statsOutput,
+            $quickKeys,
+            PageParts::$twigVars
+        );
+    }
+
+    /**
+     * End the request with a popup window.
+     */
+    public static function popupFooter(): void
+    {
+        $state = self::buildPopupState();
+        $browser_output = PageRenderer::render($state);
+
+        Accounts::saveUser();
         session_write_close();
         echo $browser_output;
         exit();
     }
 
-    public static function popupFooter(): void
+    /**
+     * Assemble everything a popup consists of; see buildPageState().
+     */
+    public static function buildPopupState(): PageState
     {
         global $session;
         $page     = PageSingleton::getInstance();
@@ -271,29 +323,28 @@ class Footer
             'copyright' => $copyright,
         ]);
 
-        if (TwigTemplate::isActive()) {
+        $content = $maillink_add_after . $output->getOutput();
+        $isTwig = TwigTemplate::isActive();
+        if ($isTwig) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, [
                 'header' => $header,
                 'footer' => $footer,
-                'content' => $maillink_add_after . $output->getOutput(),
+                'content' => $content,
                 'template_path' => TwigTemplate::getPath(),
             ]);
-            $browser_output = TwigTemplate::render('popup.twig', PageParts::$twigVars);
-            $navInstance->setHeader($header);
-            Accounts::saveUser();
-            session_write_close();
-            echo $browser_output;
-            exit();
+        } else {
+            $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
+            $header = PageParts::stripAdPlaceholders($header);
         }
-
-        $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
-        $header = PageParts::stripAdPlaceholders($header);
-
-        $browser_output = $header . $maillink_add_after . ($output->getOutput()) . $footer;
         $navInstance->setHeader($header);
-        Accounts::saveUser();
-        session_write_close();
-        echo $browser_output;
-        exit();
+
+        return new PageState(
+            PageState::TEMPLATE_POPUP,
+            $isTwig,
+            $header,
+            $footer,
+            $content,
+            templateVars: PageParts::$twigVars
+        );
     }
 }
