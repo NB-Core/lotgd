@@ -293,7 +293,10 @@ integer, default 0). Nothing reads or writes it until partial rendering is on.
 Partial rendering changes a page in place instead of loading it again. It needs
 the game setting *Allow partial rendering* (`partial_render`, *Game Setup*, off
 by default), the player's preference *Change pages in place* and a Twig skin
-that declares regions (Aurora does). For such a player only:
+that declares regions (every bundled Twig skin does; a skin of your own marks
+its regions as described in docs/ReactiveCore.md, *Region contract for Twig
+skins*, and `tests/Templates/RegionContractTest.php` checks it). For such a
+player only:
 
 - every place that only displays is swapped in -- since Phase 6c not just the
   village, the forest and the inn, but also the gardens, hall of fame, lists,
@@ -472,10 +475,11 @@ Once the legacy upgrade is complete:
 
 ### Mail and MOTD inside the page (Phase 6b)
 
-On Aurora, mail and the message of the day open in a dialog inside the page
-instead of a browser window. Nothing to configure; other skins and legacy
-templates keep the window. A Twig skin opts in with `"overlay": true` in its
-`config.json` (and loads Bootstrap or styles `.lotgd-overlay` itself).
+On the bundled Twig skins, mail and the message of the day open in a dialog inside the page
+instead of a browser window. Nothing to configure; a skin of your own and the
+legacy templates keep the window. A Twig skin opts in with `"overlay": true`
+in its `config.json`; the dialog brings its own styles and uses Bootstrap's
+colours where the skin loads Bootstrap.
 
 - With *Force the MOTD popup* (`forcedmotdpopup`) on, a new MOTD opens in that
   dialog by itself. The module `motd_js_popup` (jquery-modal from a CDN, in

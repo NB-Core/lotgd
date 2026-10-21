@@ -80,6 +80,32 @@ final class PartialRenderingPageTest extends TestCase
         self::assertCount(1, $run->statementsContaining(self::REVISION_CLAIM));
     }
 
+    /**
+     * @return iterable<string,array{0:string}>
+     */
+    public static function skins(): iterable
+    {
+        foreach (glob(dirname(__DIR__, 2) . '/templates_twig/*/config.json') ?: [] as $config) {
+            $skin = basename(dirname($config));
+            yield $skin => [$skin];
+        }
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('skins')]
+    public function testEverySkinSwapsThePageIn(string $skin): void
+    {
+        $settings = ['partial_render' => 1, 'defaultskin' => 'twig:' . $skin];
+        $full = $this->request('forest.php', [], [], ['partialrender' => 1], $settings);
+        self::assertStringContainsString("templates_twig/{$skin}/assets/style.css", $full->html, 'The page was rendered with this skin.');
+        self::assertStringContainsString('data-lotgd-region="content"', $full->html, $this->context($full));
+        self::assertSame(1, preg_match('/<meta name="lotgd-head" content="([0-9a-f]+)">/', $full->html, $match), $this->context($full));
+
+        $run = $this->request('forest.php', self::PARTIAL_REQUEST + ['HTTP_X_LOTGD_HEAD' => $match[1]], [], ['partialrender' => 1], $settings);
+
+        self::assertSame('1', $run->header('X-Lotgd-Partial'), $this->context($run));
+        self::assertStringContainsString('<title>The Forest</title>', $run->html);
+    }
+
     public function testAnAttackIsNeverAnsweredPartially(): void
     {
         $run = $this->request('pvp.php', self::PARTIAL_REQUEST, [], ['partialrender' => 1], ['partial_render' => 1], [], ['act' => 'attack', 'name' => 'bob']);

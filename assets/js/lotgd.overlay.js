@@ -37,7 +37,7 @@
         dialog.setAttribute('aria-labelledby', 'lotgd-overlay-title');
         dialog.innerHTML = '<div class="lotgd-overlay__head">'
             + '<h2 class="lotgd-overlay__title" id="lotgd-overlay-title"></h2>'
-            + '<button type="button" class="lotgd-overlay__close btn-close" aria-label="Close"></button>'
+            + '<button type="button" class="lotgd-overlay__close" aria-label="Close"></button>'
             + '</div><div class="lotgd-overlay__body"></div>';
         document.body.appendChild(dialog);
         bodyElement = dialog.querySelector('.lotgd-overlay__body');

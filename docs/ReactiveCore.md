@@ -56,12 +56,25 @@ variable, and declares `"regions": true` in its `config.json`:
 | Region | Twig variable(s) | Markup |
 |---|---|---|
 | `content` | `content` | exactly one element; the swap target |
-| `nav` | `nav` | any number of elements (Aurora has the sidebar and the mobile menu) |
+| `nav` | `nav` | any number of elements (the sidebar and the mobile menu) |
 | `stats` | `stats` | any number of elements |
-| `header` | `motd`, `mail`, `petition`, `petitiondisplay` | one element per slot, with `data-lotgd-slot="<variable>"` |
+| `header` | `motd`, `mail`, `petition`, `petitiondisplay`, `grants` | one element per slot, with `data-lotgd-slot="<variable>"` |
+
+Each element holds its variable and nothing else: a partial answer replaces
+its inner HTML, so an ad or a label inside it would be lost on the first swap
+(puritanic and modern wrap `content` in a `<div>` of its own for that reason).
+Two optional markers:
+
+- `data-lotgd-title` on an element that shows the page title in the layout:
+  the client sets its text to the new `<title>` after a swap.
+- `data-lotgd-close-on-swap` on a mobile menu (a Bootstrap offcanvas): an open
+  one is closed after a swap, as a page change would have left it.
 
 A skin without the declaration, and every legacy `.htm` template, always gets
-the full page. Aurora is the first skin that declares regions.
+the full page. Every bundled Twig skin declares regions and the overlay
+(aurora, aurora_minimal, aurora_test, modern, puritanic, puritanic_ai);
+`tests/Templates/RegionContractTest.php` renders each one and checks every
+region holds its variable alone, so a skin of your own can be added there.
 
 ## Phase 2 – as built
 
@@ -559,7 +572,9 @@ SSE / Mercure moved to Phase 7.
 On by skin, not by setting: a Twig skin that declares `"overlay": true` in
 its `config.json` (Aurora) shows popup pages -- pages that end with
 `Footer::popupFooter()`, so far mail and the MOTD -- in a dialog inside the
-page. Every other skin, and a browser without JavaScript, keeps the window.
+page. A skin without the declaration, every legacy `.htm` template, and a
+browser without JavaScript keep the window. Every bundled Twig skin declares
+it.
 
 - **Server** (`Lotgd\Page\Overlay`): a request with `X-Lotgd-Overlay: 1` to a
   popup page is answered with its content alone, the title percent-encoded in

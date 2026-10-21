@@ -34,13 +34,25 @@
     font-size: 1.1rem;
 }
 
+/* Its own cross on every skin, with or without Bootstrap. */
 .lotgd-overlay__close {
     flex-shrink: 0;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: 1.5rem;
+    line-height: 1;
+    opacity: 0.75;
     cursor: pointer;
 }
 
-.lotgd-overlay__close:not(.btn-close)::before,
-.lotgd-overlay__close:empty::before {
+.lotgd-overlay__close:hover,
+.lotgd-overlay__close:focus-visible {
+    opacity: 1;
+}
+
+.lotgd-overlay__close::before {
     content: "\00d7";
 }
 
