@@ -37,6 +37,21 @@ final class GuardedBankPageTest extends TestCase
         );
     }
 
+    public function testWithAMyIsamTableLeftTheBankBooksAsBefore(): void
+    {
+        // An installation upgraded from an old release: accounts is MyISAM, so
+        // a rollback could not undo the booking. The guard stays off.
+        $run = $this->post('depositfinish', ['amount' => '30'], ['/information_schema\.TABLES/' => [
+            ['TABLE_NAME' => 'accounts', 'ENGINE' => 'MyISAM'],
+            ['TABLE_NAME' => 'action_log', 'ENGINE' => 'InnoDB'],
+            ['TABLE_NAME' => 'mail', 'ENGINE' => 'InnoDB'],
+        ]]);
+
+        self::assertStringContainsString('records your deposit of', $run->html, $this->context($run));
+        self::assertSame(['debuglog'], $this->steps($run));
+        self::assertStringNotContainsString('action_id', $run->html);
+    }
+
     public function testWithTheSettingOffTheBankBooksAsBefore(): void
     {
         $run = $this->post('depositfinish', ['amount' => '30'], guarded: false);

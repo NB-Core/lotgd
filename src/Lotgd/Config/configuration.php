@@ -30,7 +30,7 @@ $setup = array(
     "partial_render" => "Allow partial rendering (page changes swap only the changed parts; Twig skins that declare regions)?,bool",
     "Each player still turns it on in their preferences. Off by default. While a player uses it, a second click or tab on the same page is turned away instead of running twice,note",
     "guarded_actions" => "Run bank actions as guarded transactions (a form sent twice books once)?,bool",
-    "Each deposit, withdrawal and transfer runs in one database transaction and is logged with the id its form carried. Off by default,note",
+    "Each deposit, withdrawal and transfer runs in one database transaction and is logged with the id its form carried. Needs the tables accounts and action_log and mail in InnoDB; otherwise the bank books as before. Off by default,note",
 
     "SMTP Mail Settings,title",
     "gameadminemail" => "Admin Email",

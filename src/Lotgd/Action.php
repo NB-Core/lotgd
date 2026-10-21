@@ -10,6 +10,7 @@ use Lotgd\Action\ActionAborted;
 use Lotgd\Action\ActionResult;
 use Lotgd\Doctrine\Bootstrap;
 use Lotgd\MySQL\Database;
+use Lotgd\MySQL\StorageEngine;
 
 /**
  * A guarded game action: one database transaction, run at most once per form.
@@ -45,7 +46,12 @@ final class Action
     public const FIELD = 'action_id';
     public const VERSION_FIELD = 'action_version';
 
+    /** Tables a guarded action writes; all must roll back with it. */
+    public const TRANSACTIONAL_TABLES = ['accounts', 'action_log', 'mail'];
+
     private static bool $running = false;
+
+    private static ?bool $transactional = null;
 
     /** @var list<callable():void> */
     private static array $afterCommit = [];
@@ -201,11 +207,19 @@ final class Action
     }
 
     /**
-     * Whether pages run their game actions guarded (setting guarded_actions).
+     * Whether pages run their game actions guarded: the setting
+     * guarded_actions is on, and every table an action writes is
+     * transactional. A MyISAM table left from an old release would keep its
+     * writes through a rollback; until it is converted the game runs its
+     * actions as before.
      */
     public static function enabled(): bool
     {
-        return Settings::hasInstance() && (int) Settings::getInstance()->getSetting('guarded_actions', 0) === 1;
+        if (!Settings::hasInstance() || (int) Settings::getInstance()->getSetting('guarded_actions', 0) !== 1) {
+            return false;
+        }
+
+        return self::$transactional ??= StorageEngine::nonTransactional(self::TRANSACTIONAL_TABLES) === [];
     }
 
     /**
@@ -313,6 +327,7 @@ final class Action
     public static function resetState(): void
     {
         self::$running = false;
+        self::$transactional = null;
         self::$afterCommit = [];
     }
 
