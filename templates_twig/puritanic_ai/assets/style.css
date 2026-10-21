@@ -174,7 +174,9 @@ a:hover {
 /* Header and other styles */
 
 .page-header {
-    height: 48px;
+    /* At least the bar's height; taller when the columns wrap on a narrow
+       screen, or the content below covers the menu buttons. */
+    min-height: 48px;
     padding-bottom: 3px;
 }
 

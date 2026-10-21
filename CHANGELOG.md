@@ -38,6 +38,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- On the puritanic and puritanic_ai skins the header bar had a fixed height of 48 px; on a phone its columns wrap and grow taller, and the content below covered the menu buttons, which could not be tapped. It now grows with its content. On the modern skin the mail and petition links were squeezed beside the full-width MoTD link and spilled into the content column, where a commentary [Del] button could cover them; they now start below it.
 - A biography (`bio.php?char=…`) put the `char` of its address into the account lookup unescaped; it is a bound parameter now.
 - The async comment calls (`commentaryText`, `commentaryRefresh`, `pollUpdates`) took the section from the request, so any logged-in player could read a clan hall, the Superuser Grotto or a petition's comments by naming the section. A section is now read only if a page showed it to the player in this session and the account still passes that page's check (`Commentary::mayRead()`).
 - The clan membership page let an officer change the rank of, or remove, a player of another clan by posting that player's account id. Rank changes and removals now apply to members of the officer's own clan only.
