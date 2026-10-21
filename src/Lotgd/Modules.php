@@ -173,6 +173,7 @@ class Modules
                 if ($row['filemoddate'] != $filemoddate || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
                     $connection = Database::getDoctrineConnection();
                     $needsUpgrade = false;
+                    Action::guardImplicitCommit('Refreshing module ' . $moduleName);
                     $connection->executeStatement('LOCK TABLES ' . Database::prefix('modules') . ' WRITE');
                     try {
                         $sql    = 'SELECT filemoddate, infokeys, version FROM ' . Database::prefix('modules') . ' WHERE modulename = :modulename';
@@ -1561,6 +1562,7 @@ class Modules
      */
     public static function semAcquire(): void
     {
+        Action::guardImplicitCommit('module_sem_acquire()');
         Database::getDoctrineConnection()->executeStatement('LOCK TABLES ' . Database::prefix('module_settings') . ' WRITE');
     }
 

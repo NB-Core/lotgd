@@ -127,7 +127,7 @@ class ServerFunctions
             // interpolation. SQL identifiers cannot be parameterized in DBAL.
             $resetactions = count($sets) > 0 ? ',' . implode(',', $sets) : '';
             $connection->executeStatement(
-                'UPDATE ' . Database::prefix('accounts') . " SET dragonpoints=''$resetactions WHERE acctid = :acctid",
+                'UPDATE ' . Database::prefix('accounts') . " SET dragonpoints=''$resetactions, version = version + 1 WHERE acctid = :acctid",
                 ['acctid' => (int) $row['acctid']],
                 ['acctid' => ParameterType::INTEGER]
             );

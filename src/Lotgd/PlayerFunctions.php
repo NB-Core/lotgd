@@ -81,7 +81,7 @@ class PlayerFunctions
                     if ($row['clanrank'] != CLAN_LEADER && $row['clanrank'] != CLAN_FOUNDER) {
                         $id1 = $row['acctid'];
                         $connection->executeStatement(
-                            'UPDATE ' . Database::prefix('accounts') . ' SET clanrank = :leader_rank WHERE acctid = :acctid',
+                            'UPDATE ' . Database::prefix('accounts') . ' SET clanrank = :leader_rank, version = version + 1 WHERE acctid = :acctid',
                             ['leader_rank' => CLAN_LEADER, 'acctid' => $id1],
                             ['leader_rank' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
                         );
@@ -105,7 +105,7 @@ class PlayerFunctions
                         $session['user']['acctid'] ?? 0
                     );
                     $connection->executeStatement(
-                        'UPDATE ' . Database::prefix('accounts') . ' SET clanid = :empty_clanid, clanrank = :empty_clanrank, clanjoindate = :clanjoindate WHERE clanid = :clanid',
+                        'UPDATE ' . Database::prefix('accounts') . ' SET clanid = :empty_clanid, clanrank = :empty_clanrank, clanjoindate = :clanjoindate, version = version + 1 WHERE clanid = :clanid',
                         ['empty_clanid' => 0, 'empty_clanrank' => 0, 'clanjoindate' => DATETIME_DATEMIN, 'clanid' => $cid],
                         ['empty_clanid' => ParameterType::INTEGER, 'empty_clanrank' => ParameterType::INTEGER, 'clanjoindate' => ParameterType::STRING, 'clanid' => ParameterType::INTEGER]
                     );

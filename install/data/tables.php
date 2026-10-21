@@ -121,6 +121,9 @@ function get_all_tables()
         'page_revision' => array(
             'name' => 'page_revision', 'type' => 'int(11) unsigned', 'default' => '0' // navigation revision partial rendering consumes atomically
             ),
+        'version' => array(
+            'name' => 'version', 'type' => 'int(11) unsigned', 'default' => '0' // moves on with every change to the game state; guarded actions check it
+            ),
         'loggedin' => array(
             'name' => 'loggedin', 'type' => 'tinyint(4) unsigned', 'default' => '0' //is he currently logged in? (note to check for a timeout too!)
             ),
@@ -1120,6 +1123,40 @@ function get_all_tables()
             'unique' => '1',
             'columns' => 'modid'
             )
+        ),
+    'action_log' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'action_id' => array(
+            'name' => 'action_id', 'type' => 'char(32)', 'default' => ''
+            ),
+        'action_name' => array(
+            'name' => 'action_name', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'params_hash' => array(
+            'name' => 'params_hash', 'type' => 'char(64)', 'default' => ''
+            ),
+        'request_uri' => array(
+            'name' => 'request_uri', 'type' => 'varchar(255)', 'default' => ''
+            ),
+        'result' => array(
+            'name' => 'result', 'type' => 'text'
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'acctid,action_id'
+            ),
+        'key-created' => array(
+            'name' => 'created', 'type' => 'key', 'columns' => 'created'
+            ),
         ),
     'twofactorauth_passkeys' => array(
         'charset' => 'utf8mb4',

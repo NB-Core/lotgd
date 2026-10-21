@@ -83,6 +83,7 @@ final class PageRunner
      * @param array<string,string> $server           Entries laid over $_SERVER.
      * @param array<string,int>    $statementResults Regex => the value executeStatement() returns
      *                                               for a matching statement.
+     * @param array<string,list<array<string,mixed>>> $queryResults Regex => the rows a matching query finds.
      */
     public static function withRequest(
         string $page,
@@ -93,9 +94,10 @@ final class PageRunner
         array $globals = [],
         array $settings = [],
         array $server = [],
-        array $statementResults = []
+        array $statementResults = [],
+        array $queryResults = []
     ): PageOutcome {
-        return self::run($page, $superuser, $get, $post, self::TOKEN, $globals, $settings, $method, $server, $statementResults, true);
+        return self::run($page, $superuser, $get, $post, self::TOKEN, $globals, $settings, $method, $server, $statementResults, true, $queryResults);
     }
 
     /**
@@ -106,6 +108,7 @@ final class PageRunner
      * @param array<string,string> $server
      * @param array<string,int>    $statementResults
      * @param bool                 $asyncToken Seed the async CSRF token, as one session would carry it.
+     * @param array<string,list<array<string,mixed>>> $queryResults
      */
     private static function run(
         string $page,
@@ -118,7 +121,8 @@ final class PageRunner
         string $method = 'POST',
         array $server = [],
         array $statementResults = [],
-        bool $asyncToken = false
+        bool $asyncToken = false,
+        array $queryResults = []
     ): PageOutcome {
         $root = dirname(__DIR__, 3);
 
@@ -136,6 +140,7 @@ final class PageRunner
             'method' => $method,
             'server' => $server,
             'statement_results' => $statementResults,
+            'query_results' => $queryResults,
             // withRequest() runs stand for pages of one session: the async
             // token, which an AJAX player's <head> carries, is the same.
             'async_token' => $asyncToken,

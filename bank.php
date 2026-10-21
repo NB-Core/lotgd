@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Action;
+use Lotgd\Action\ActionAborted;
+use Lotgd\Action\ActionResult;
 use Lotgd\Bank;
 use Lotgd\Bank\Balance;
 use Lotgd\Bank\TransferLimits;
@@ -41,6 +44,43 @@ $opRequest = Http::get('op');
 $op = is_string($opRequest) ? $opRequest : '';
 $point = $settings->getSetting('moneydecimalpoint', ".");
 $sep = $settings->getSetting('moneythousandssep', ",");
+
+// With guarded_actions on, every booking runs once per form, in one
+// transaction with the account's version checked (Lotgd\Action). The forms
+// carry an action id; the booking returns what the page shows, so a form sent
+// twice shows the first booking again instead of making a second one. With it
+// off, the booking simply runs, as it always has.
+$guarded = Action::enabled();
+$actionField = $guarded ? Action::idField() : '';
+/**
+ * @param array<string,mixed>            $params
+ * @param callable():array<string,mixed> $booking
+ * @return array<string,mixed>|null What the page shows, or null when nothing was booked.
+ */
+$book = static function (string $name, array $params, callable $booking) use ($guarded, $output): ?array {
+    if (!$guarded) {
+        return $booking();
+    }
+
+    $result = Action::run($name, Action::postedId(), $params, $booking);
+    switch ($result->status) {
+        case ActionResult::DONE:
+            return $result->data;
+        case ActionResult::REPLAYED:
+            $output->output("`@Elessa`6 taps her ledger, \"`@This one is already written down; I will not book it twice.`6\"`n`n");
+            return $result->data;
+        case ActionResult::CONFLICT:
+            $output->output("`@Elessa`6 frowns at her ledger, \"`@Your account has changed since you filled in that slip. Nothing has been booked; please look at your balance and try again.`6\"");
+            return null;
+        default:
+            if ($result->reason === 'missing-action-id' || $result->reason === 'action-id-reused') {
+                $output->output("`@Elessa`6 hands the slip back to you, \"`@I cannot take this slip; it is no longer valid. Nothing has been booked; please fill in a new one.`6\"");
+            } else {
+                $output->output("`@Elessa`6 looks up from her ledger with a bit of surprise on her face, \"`@I'm terribly sorry, but I seem to have run into an accounting error, would you please try telling me what you wish to transfer again?`6\"");
+            }
+            return null;
+    }
+};
 
 // Every operation that moves money, guarded once at the entry rather than per
 // branch -- the next branch somebody adds is the one a per-branch check gets
@@ -108,7 +148,7 @@ if ($op == "") {
     if ($matchCount === 1) {
         $row = $matches[0];
         $msg = Translator::translateInline("Complete Transfer");
-        $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>" . Forms::csrfField());
+        $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>" . Forms::csrfField() . $actionField);
         $output->output(
             "`6Transfer `^%s`6 gold to `&%s`6.",
             number_format($amt, 0, $point, $sep),
@@ -134,7 +174,7 @@ if ($op == "") {
         $output->rawOutput("<script language='javascript'>document.getElementById('amount').focus();</script>", true);
         Nav::add("", "bank.php?op=transfer2");
     } elseif ($matchCount > 1) {
-        $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>" . Forms::csrfField());
+        $output->rawOutput("<form action='bank.php?op=transfer3' method='POST'>" . Forms::csrfField() . $actionField);
         $output->rawOutput("<label for='bank_to'>");
         $output->output(
             "`6Transfer `^%s`6 gold to ",
@@ -163,70 +203,104 @@ if ($op == "") {
     // The lookup stays here because it is a query, not arithmetic; everything
     // that decides whether the money may move lives in Lotgd\Bank, including
     // the order the rules are applied in.
-    $row = null;
-    if ($session['user']['gold'] + $session['user']['goldinbank'] >= $amt) {
-        $result = $playerSearch->findExactLogin(
-            $to,
-            ['acctid', 'login', 'name', 'level', 'transferredtoday', 'locked']
-        );
-        $row = $result[0] ?? null;
-    }
+    $transferred = $book('bank.transfer', ['amount' => $amt, 'to' => $to], static function () use ($amt, $to, $playerSearch, $settings, $guarded): array {
+        global $session;
 
-    $transfer = Bank::transfer(
-        new Balance(
-            (int) $session['user']['gold'],
-            (int) $session['user']['goldinbank'],
-            (int) $session['user']['level'],
-            (int) $session['user']['amountouttoday']
-        ),
-        (int) $session['user']['acctid'],
-        $row,
-        $amt,
-        new TransferLimits(
+        $row = null;
+        if ($session['user']['gold'] + $session['user']['goldinbank'] >= $amt) {
+            $result = $playerSearch->findExactLogin(
+                $to,
+                ['acctid', 'login', 'name', 'level', 'transferredtoday', 'locked']
+            );
+            $row = $result[0] ?? null;
+        }
+        $limits = new TransferLimits(
             (int) $settings->getSetting("maxtransferout", 25),
             (int) $settings->getSetting("transferperlevel", 25),
             (int) $settings->getSetting("transferreceive", 3)
-        )
-    );
+        );
 
-    if ($transfer->accepted()) {
-        debuglog("transferred $amt gold to", $row['acctid']);
+        $transfer = Bank::transfer(
+            new Balance(
+                (int) $session['user']['gold'],
+                (int) $session['user']['goldinbank'],
+                (int) $session['user']['level'],
+                (int) $session['user']['amountouttoday']
+            ),
+            (int) $session['user']['acctid'],
+            $row,
+            $amt,
+            $limits
+        );
+
+        $shown = [
+            'accepted' => $transfer->accepted(),
+            'refusal' => $transfer->refusal?->name,
+            'have' => (int) $session['user']['gold'] + (int) $session['user']['goldinbank'],
+            'senderDailyLimit' => $transfer->senderDailyLimit,
+            'recipientPerTransferLimit' => $transfer->recipientPerTransferLimit,
+            'recipientName' => (string) ($row['name'] ?? ''),
+        ];
+        if (!$transfer->accepted()) {
+            return $shown;
+        }
+
+        $recipient = (int) $row['acctid'];
+        Action::afterCommit(static fn () => debuglog("transferred $amt gold to", $recipient));
         $session['user']['gold'] = $transfer->sender->gold;
         $session['user']['goldinbank'] = $transfer->sender->goldInBank;
         $session['user']['amountouttoday'] = $transfer->sender->amountOutToday;
-        Database::getDoctrineConnection()->executeStatement(
+        // The recipient's version moves on, so a guarded page of theirs that
+        // read the old balance cannot book over the credit. Guarded, the row
+        // is also changed only if it still allows what Bank::transfer()
+        // checked against the row read before the lock.
+        $credited = Database::getDoctrineConnection()->executeStatement(
             'UPDATE ' . Database::prefix('accounts')
-            . ' SET goldinbank = goldinbank + :amount, transferredtoday = transferredtoday + 1'
-            . ' WHERE acctid = :acctid',
-            ['amount' => $amt, 'acctid' => (int) $row['acctid']],
-            ['amount' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+            . ' SET goldinbank = goldinbank + :amount, transferredtoday = transferredtoday + 1, version = version + 1'
+            . ' WHERE acctid = :acctid'
+            . ($guarded ? ' AND locked = 0 AND transferredtoday < :received' : ''),
+            ['amount' => $amt, 'acctid' => $recipient] + ($guarded ? ['received' => $limits->transfersReceivedPerDay] : []),
+            ['amount' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER, 'received' => ParameterType::INTEGER]
         );
+        if ($guarded && (int) $credited !== 1) {
+            throw new ActionAborted('recipient-changed');
+        }
+        $senderName = $session['user']['name'];
+        Action::afterCommit(static function () use ($recipient, $senderName, $amt): void {
+            $subj = array("`^You have received a money transfer!`0");
+            $body = array("`&%s`6 has transferred `^%s`6 gold to your bank account!", $senderName, $amt);
+            Mail::systemMail($recipient, $subj, $body);
+        });
+
+        return $shown;
+    });
+
+    if ($transferred === null) {
+        // Nothing was booked; the reason is on the page already.
+    } elseif ($transferred['accepted']) {
         $output->output("`@Elessa`6 smiles, \"`@The transfer has been completed!`6\"");
-        $subj = array("`^You have received a money transfer!`0");
-        $body = array("`&%s`6 has transferred `^%s`6 gold to your bank account!",$session['user']['name'],$amt);
-        Mail::systemMail($row['acctid'], $subj, $body);
     } else {
-        switch ($transfer->refusal) {
-            case TransferRefusal::NotEnoughMoney:
-                $output->output("`@Elessa`6 stands up to her full, but still diminutive height and glares at you, \"`@How can you transfer `^%s`@ gold when you only possess `^%s`@?`6\"", number_format($amt, 0, $point, $sep), number_format($session['user']['gold'] + $session['user']['goldinbank'], 0, $point, $sep));
+        switch ($transferred['refusal']) {
+            case TransferRefusal::NotEnoughMoney->name:
+                $output->output("`@Elessa`6 stands up to her full, but still diminutive height and glares at you, \"`@How can you transfer `^%s`@ gold when you only possess `^%s`@?`6\"", number_format($amt, 0, $point, $sep), number_format($transferred['have'], 0, $point, $sep));
                 break;
-            case TransferRefusal::SenderDailyLimit:
-                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; you are not allowed to transfer more than `^%s`@ gold total per day.`6\"", $transfer->senderDailyLimit);
+            case TransferRefusal::SenderDailyLimit->name:
+                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; you are not allowed to transfer more than `^%s`@ gold total per day.`6\"", $transferred['senderDailyLimit']);
                 break;
-            case TransferRefusal::RecipientPerTransferLimit:
-                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; `&%s`@ may only receive up to `^%s`@ gold per day.`6\"", $row['name'], $transfer->recipientPerTransferLimit);
+            case TransferRefusal::RecipientPerTransferLimit->name:
+                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; `&%s`@ may only receive up to `^%s`@ gold per day.`6\"", $transferred['recipientName'], $transferred['recipientPerTransferLimit']);
                 break;
-            case TransferRefusal::RecipientDailyCount:
-                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; `&%s`@ has received too many transfers today, you will have to wait until tomorrow.`6\"", $row['name']);
+            case TransferRefusal::RecipientDailyCount->name:
+                $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; `&%s`@ has received too many transfers today, you will have to wait until tomorrow.`6\"", $transferred['recipientName']);
                 break;
-            case TransferRefusal::BelowMinimum:
+            case TransferRefusal::BelowMinimum->name:
                 $output->output("`@Elessa`6 shakes her head, \"`@I'm sorry, but I cannot complete that transfer; you might want to send a worthwhile transfer, at least as much as your level.`6\"");
                 break;
-            case TransferRefusal::SelfTransfer:
+            case TransferRefusal::SelfTransfer->name:
                 $output->output("`@Elessa`6 glares at you, her eyes flashing dangerously, \"`@You may not transfer money to yourself!  That makes no sense!`6\"");
                 break;
-            case TransferRefusal::RecipientLocked:
-                $output->output("`@Elessa`6 gently closes her ledger, \"`@I'm sorry, but `&%s`@'s account is currently locked. I cannot complete that transfer.`6\"", $row['name']);
+            case TransferRefusal::RecipientLocked->name:
+                $output->output("`@Elessa`6 gently closes her ledger, \"`@I'm sorry, but `&%s`@'s account is currently locked. I cannot complete that transfer.`6\"", $transferred['recipientName']);
                 break;
             default:
                 $output->output("`@Elessa`6 looks up from her ledger with a bit of surprise on her face, \"`@I'm terribly sorry, but I seem to have run into an accounting error, would you please try telling me what you wish to transfer again?`6\"");
@@ -235,7 +309,7 @@ if ($op == "") {
     }
 } elseif ($op == "deposit") {
     $output->output("`0");
-    $output->rawOutput("<form action='bank.php?op=depositfinish' method='POST'>" . Forms::csrfField());
+    $output->rawOutput("<form action='bank.php?op=depositfinish' method='POST'>" . Forms::csrfField() . $actionField);
     $balance = Translator::translateInline("`@Elessa`6 says, \"`@You have a balance of `^%s`@ gold in the bank.`6\"`n");
     $debt = Translator::translateInline("`@Elessa`6 says, \"`@You have a `\$debt`@ of `^%s`@ gold to the bank.`6\"`n");
     $output->outputNotl($session['user']['goldinbank'] >= 0 ? $balance : $debt, number_format(abs($session['user']['goldinbank']), 0, $point, $sep));
@@ -256,25 +330,41 @@ if ($op == "") {
     $depositdebt = Translator::translateInline("`@Elessa`6 records your deposit of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a debt of `\$%s`@ gold to the bank and `^%s`@ gold in hand.`6\"");
     $depositbalance = Translator::translateInline("`@Elessa`6 records your deposit of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a balance of `^%s`@ gold in the bank and `^%s`@ gold in hand.`6\"");
 
-    $deposit = Bank::deposit(
-        new Balance((int) $session['user']['gold'], (int) $session['user']['goldinbank']),
-        $amount
-    );
+    $deposited = $book('bank.deposit', ['amount' => $amount], static function () use ($amount): array {
+        global $session;
 
-    if (!$deposit->accepted) {
-        $output->outputNotl($notenough, number_format($session['user']['gold'], 0, $point, $sep), number_format($deposit->amount, 0, $point, $sep));
+        $deposit = Bank::deposit(
+            new Balance((int) $session['user']['gold'], (int) $session['user']['goldinbank']),
+            $amount
+        );
+        if ($deposit->accepted) {
+            Action::afterCommit(static fn () => debuglog("deposited " . $deposit->amount . " gold in the bank"));
+            $session['user']['goldinbank'] = $deposit->balance->goldInBank;
+            $session['user']['gold'] = $deposit->balance->gold;
+        }
+
+        return [
+            'accepted' => $deposit->accepted,
+            'amount' => $deposit->amount,
+            'gold' => (int) $session['user']['gold'],
+            'goldinbank' => (int) $session['user']['goldinbank'],
+            'name' => (string) $session['user']['name'],
+        ];
+    });
+
+    if ($deposited === null) {
+        // Nothing was booked; the reason is on the page already.
+    } elseif (!$deposited['accepted']) {
+        $output->outputNotl($notenough, number_format($deposited['gold'], 0, $point, $sep), number_format($deposited['amount'], 0, $point, $sep));
     } else {
-        debuglog("deposited " . $deposit->amount . " gold in the bank");
-        $session['user']['goldinbank'] = $deposit->balance->goldInBank;
-        $session['user']['gold'] = $deposit->balance->gold;
-        $output->outputNotl($session['user']['goldinbank'] >= 0 ? $depositbalance : $depositdebt, number_format($deposit->amount, 0, $point, $sep), $session['user']['name'], number_format(abs($session['user']['goldinbank']), 0, $point, $sep), number_format($session['user']['gold'], 0, $point, $sep));
+        $output->outputNotl($deposited['goldinbank'] >= 0 ? $depositbalance : $depositdebt, number_format($deposited['amount'], 0, $point, $sep), $deposited['name'], number_format(abs($deposited['goldinbank']), 0, $point, $sep), number_format($deposited['gold'], 0, $point, $sep));
     }
 } elseif ($op == "borrow") {
     $maxborrow = $session['user']['level'] * $settings->getSetting("borrowperlevel", 20);
     $borrow = Translator::translateInline("Borrow");
     $balance = Translator::translateInline("`@Elessa`6 scans through her ledger, \"`@You have a balance of `^%s`@ gold in the bank.`6\"`n");
     $debt = Translator::translateInline("`@Elessa`6 scans through her ledger, \"`@You have a `\$debt`@ of `^%s`@ gold to the bank.`6\"`n");
-    $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>" . Forms::csrfField());
+    $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>" . Forms::csrfField() . $actionField);
     $output->outputNotl($session['user']['goldinbank'] >= 0 ? $balance : $debt, number_format(abs($session['user']['goldinbank']), 0, $point, $sep));
     $output->output("`6\"`@How much would you like to borrow `&%s`@?  At your level, you may borrow up to a total of `^%s`@ from the bank.`6\"`n`n", $session['user']['name'], $maxborrow);
     $output->rawOutput(" <input id='input' name='amount' width=5 > <input type='hidden' name='borrow' value='x'><input type='submit' class='button' value='$borrow'>");
@@ -286,7 +376,7 @@ if ($op == "") {
     $withdraw = Translator::translateInline("Withdraw");
     $balance = Translator::translateInline("`@Elessa`6 scans through her ledger, \"`@You have a balance of `^%s`@ gold in the bank.`6\"`n");
     $debt = Translator::translateInline("`@Elessa`6 scans through her ledger, \"`@You have a `\$debt`@ of `^%s`@ gold in the bank.`6\"`n");
-    $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>" . Forms::csrfField());
+    $output->rawOutput("<form action='bank.php?op=withdrawfinish' method='POST'>" . Forms::csrfField() . $actionField);
     $output->outputNotl($session['user']['goldinbank'] >= 0 ? $balance : $debt, number_format(abs($session['user']['goldinbank']), 0, $point, $sep));
     $output->output("`6\"`@How much would you like to withdraw `&%s`@?`6\"`n`n", $session['user']['name']);
     $output->rawOutput("<input id='input' name='amount' width=5 > <input type='submit' class='button' value='$withdraw'>");
@@ -300,48 +390,79 @@ if ($op == "") {
     $borrowPost = Http::post('borrow');
     $borrow = is_string($borrowPost) ? $borrowPost : '';
 
-    $withdrawal = Bank::withdraw(
-        new Balance(
-            (int) $session['user']['gold'],
-            (int) $session['user']['goldinbank'],
-            (int) $session['user']['level']
-        ),
-        $amount,
-        $borrow !== "",
-        (int) $settings->getSetting("borrowperlevel", 20)
-    );
+    $withdrawn = $book('bank.withdraw', ['amount' => $amount, 'borrow' => $borrow !== ''], static function () use ($amount, $borrow, $settings): array {
+        global $session;
 
-    switch ($withdrawal->outcome) {
-        case WithdrawOutcome::NotEnoughInBank:
+        $before = (int) $session['user']['goldinbank'];
+        $withdrawal = Bank::withdraw(
+            new Balance(
+                (int) $session['user']['gold'],
+                (int) $session['user']['goldinbank'],
+                (int) $session['user']['level']
+            ),
+            $amount,
+            $borrow !== "",
+            (int) $settings->getSetting("borrowperlevel", 20)
+        );
+
+        switch ($withdrawal->outcome) {
+            case WithdrawOutcome::Withdrawn:
+                $session['user']['goldinbank'] = $withdrawal->balance->goldInBank;
+                $session['user']['gold'] = $withdrawal->balance->gold;
+                Action::afterCommit(static fn () => debuglog("withdrew " . $withdrawal->withdrawn . " gold from the bank"));
+                break;
+
+            case WithdrawOutcome::WithdrawnAndBorrowed:
+            case WithdrawOutcome::Borrowed:
+                if ($withdrawal->withdrawn > 0) {
+                    Action::afterCommit(static fn () => debuglog("withdrew " . $withdrawal->requested . " gold from the bank"));
+                }
+                $session['user']['goldinbank'] = $withdrawal->balance->goldInBank;
+                $session['user']['gold'] = $withdrawal->balance->gold;
+                Action::afterCommit(static fn () => debuglog("borrows " . $withdrawal->borrowed . " gold from the bank"));
+                break;
+
+            default:
+                break;
+        }
+
+        return [
+            'outcome' => $withdrawal->outcome->name,
+            'requested' => $withdrawal->requested,
+            'withdrawn' => $withdrawal->withdrawn,
+            'borrowed' => $withdrawal->borrowed,
+            'borrowingLimit' => $withdrawal->borrowingLimit,
+            'before' => $before,
+            'gold' => (int) $session['user']['gold'],
+            'goldinbank' => (int) $session['user']['goldinbank'],
+            'name' => (string) $session['user']['name'],
+        ];
+    });
+
+    switch ($withdrawn['outcome'] ?? null) {
+        case WithdrawOutcome::NotEnoughInBank->name:
             $output->output("`\$ERROR: Not enough gold in the bank to withdraw.`^`n`n");
-            $output->output("`6Having been informed that you have `^%s`6 gold in your account, you declare that you would like to withdraw all `^%s`6 of it.`n`n", number_format($session['user']['goldinbank'], 0, $point, $sep), number_format($withdrawal->requested, 0, $point, $sep));
+            $output->output("`6Having been informed that you have `^%s`6 gold in your account, you declare that you would like to withdraw all `^%s`6 of it.`n`n", number_format($withdrawn['before'], 0, $point, $sep), number_format($withdrawn['requested'], 0, $point, $sep));
             $output->output("`@Elessa`6 looks at you for a few moments without blinking, then advises you to take basic arithmetic.  You realize your folly and think you should try again.");
             break;
 
-        case WithdrawOutcome::OverBorrowingLimit:
-            $output->output("`6Considering the `^%s`6 gold in your account, you ask to borrow `^%s`6. `@Elessa`6 peers through her ledger, runs a few calculations and then informs you that, at your level, you may only borrow up to a total of `^%s`6 gold.", number_format($session['user']['goldinbank'], 0, $point, $sep), number_format($withdrawal->requested - $session['user']['goldinbank'], 0, $point, $sep), number_format($withdrawal->borrowingLimit, 0, $point, $sep));
+        case WithdrawOutcome::OverBorrowingLimit->name:
+            $output->output("`6Considering the `^%s`6 gold in your account, you ask to borrow `^%s`6. `@Elessa`6 peers through her ledger, runs a few calculations and then informs you that, at your level, you may only borrow up to a total of `^%s`6 gold.", number_format($withdrawn['before'], 0, $point, $sep), number_format($withdrawn['requested'] - $withdrawn['before'], 0, $point, $sep), number_format($withdrawn['borrowingLimit'], 0, $point, $sep));
             break;
 
-        case WithdrawOutcome::Withdrawn:
-            $session['user']['goldinbank'] = $withdrawal->balance->goldInBank;
-            $session['user']['gold'] = $withdrawal->balance->gold;
-            debuglog("withdrew " . $withdrawal->withdrawn . " gold from the bank");
-            $output->output("`@Elessa`6 records your withdrawal of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a balance of `^%s`@ gold in the bank and `^%s`@ gold in hand.`6\"", number_format($withdrawal->withdrawn, 0, $point, $sep), $session['user']['name'], number_format(abs($session['user']['goldinbank']), 0, $point, $sep), number_format($session['user']['gold'], 0, $point, $sep));
+        case WithdrawOutcome::Withdrawn->name:
+            $output->output("`@Elessa`6 records your withdrawal of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a balance of `^%s`@ gold in the bank and `^%s`@ gold in hand.`6\"", number_format($withdrawn['withdrawn'], 0, $point, $sep), $withdrawn['name'], number_format(abs($withdrawn['goldinbank']), 0, $point, $sep), number_format($withdrawn['gold'], 0, $point, $sep));
             break;
 
-        case WithdrawOutcome::WithdrawnAndBorrowed:
-        case WithdrawOutcome::Borrowed:
-            if ($withdrawal->withdrawn > 0) {
-                $output->output("`6You withdraw your remaining `^%s`6 gold.", number_format($withdrawal->withdrawn, 0, $point, $sep));
-                debuglog("withdrew " . $withdrawal->requested . " gold from the bank");
-                $output->output("`6Additionally, you borrow `^%s`6 gold.", number_format($withdrawal->borrowed, 0, $point, $sep));
+        case WithdrawOutcome::WithdrawnAndBorrowed->name:
+        case WithdrawOutcome::Borrowed->name:
+            if ($withdrawn['withdrawn'] > 0) {
+                $output->output("`6You withdraw your remaining `^%s`6 gold.", number_format($withdrawn['withdrawn'], 0, $point, $sep));
+                $output->output("`6Additionally, you borrow `^%s`6 gold.", number_format($withdrawn['borrowed'], 0, $point, $sep));
             } else {
-                $output->output("`6You borrow `^%s`6 gold.", number_format($withdrawal->borrowed, 0, $point, $sep));
+                $output->output("`6You borrow `^%s`6 gold.", number_format($withdrawn['borrowed'], 0, $point, $sep));
             }
-            $session['user']['goldinbank'] = $withdrawal->balance->goldInBank;
-            $session['user']['gold'] = $withdrawal->balance->gold;
-            debuglog("borrows " . $withdrawal->borrowed . " gold from the bank");
-            $output->output("`@Elessa`6 records your withdrawal of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a debt of `\$%s`@ gold to the bank and `^%s`@ gold in hand.`6\"", number_format($withdrawal->requested, 0, $point, $sep), $session['user']['name'], number_format(abs($session['user']['goldinbank']), 0, $point, $sep), number_format($session['user']['gold'], 0, $point, $sep));
+            $output->output("`@Elessa`6 records your withdrawal of `^%s `6gold in her ledger. \"`@Thank you, `&%s`@.  You now have a debt of `\$%s`@ gold to the bank and `^%s`@ gold in hand.`6\"", number_format($withdrawn['requested'], 0, $point, $sep), $withdrawn['name'], number_format(abs($withdrawn['goldinbank']), 0, $point, $sep), number_format($withdrawn['gold'], 0, $point, $sep));
             break;
     }
 }

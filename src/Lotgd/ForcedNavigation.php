@@ -73,6 +73,9 @@ class ForcedNavigation
             if (isset($session['allowednavs'][$requestUri]) && $session['allowednavs'][$requestUri] && $overrideforced !== true) {
                 $session['allowednavs'] = [];
                 self::consumePageRevision();
+            } elseif ($overrideforced !== true && Action::isReplayOf((int) $session['user']['acctid'], $requestUri)) {
+                $session['allowednavs'] = [];
+                self::consumePageRevision();
             } else {
                 if ($overrideforced !== true) {
                     Redirect::redirect('badnav.php', 'Navigation not allowed to ' . $requestUri);

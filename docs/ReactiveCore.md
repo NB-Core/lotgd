@@ -30,7 +30,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 | 0 | Inventory (`composer qa:reactive-inventory`, [inventory](ReactiveCore-Inventory.md)) | done |
 | 1 | `PageState`: the footer assembles one typed state object; renderers only turn it into HTML. Output unchanged. | done |
 | 2 | Partial rendering for display-only operations (HTMX), page revisions, HTTP contract | done (village, forest, inn; see below) |
-| 3 | Guarded game actions: `Action::run()`, split `saveUser()`, optimistic locking | planned |
+| 3 | Guarded game actions: `Action::run()`, split `saveUser()`, optimistic locking | done (pilot: the bank; see below) |
 | 4 | Transactional outbox, relay, polling transport | planned |
 | 5 | Grants: server-issued one-shot navigation for other players | planned |
 | 6 | SSE / Mercure transport | planned |
@@ -149,6 +149,148 @@ A page stored before a player turned partial rendering on, or before an
 update changed the head signature, has another head; the first change from
 it is one full page, every later one swaps.
 
+## Phase 3 – as built
+
+Switched on by the game setting `guarded_actions` (*Run bank actions as
+guarded transactions*, off by default), and only when `accounts`,
+`action_log` and `mail` are in a transactional engine
+(`Lotgd\MySQL\StorageEngine`, checked once per request): a MyISAM table
+left from an old release would keep its writes through a rollback, so the
+game runs its actions as before until it is converted. The schema parts are not switched:
+once migration `Version20261021000001` ran, `accounts.version` moves on with
+every change to the game state, whatever the setting.
+
+- **Schema** (migration `Version20261021000001`): `accounts.version`
+  (unsigned, default 0) and the table `action_log` (`acctid`, `action_id`,
+  `action_name`, `params_hash`, `request_uri`, `result`, `created`; primary
+  key `(acctid, action_id)`). `Newday::dbCleanup()` deletes log rows older
+  than a day.
+- **`saveUser()` split** (`Lotgd\Accounts`): `persist(bool $checkVersion)`
+  is the diff-and-write half, `finishRequest()` stores the page for
+  `badnav.php` and reduces the session; `saveUser()` calls both, as before.
+  `persist()` moves `version` on by one when it writes anything but
+  bookkeeping (`laston`, `lasthit`, `allowednavs`, `page_revision`,
+  `version`, `gensize`, `gentime`, `gentimecount`, `restorepage`, `lastip`,
+  `uniqueid`) and moves the base on to what it wrote, so a second call writes
+  nothing twice. `persist(true)` writes with DBAL,
+  `UPDATE … WHERE acctid = :acctid AND version = :expected_version`, only the
+  columns the `Account` entity maps, and throws `Lotgd\VersionConflict` when
+  no row matched.
+- **`Lotgd\Action::run(name, actionId, params, fn)`**, in this order:
+  1. a malformed action id (not 32 hex digits) is rejected before anything
+     happens; an open transaction or a running action is a `LogicException`;
+  2. begin;
+  3. `SELECT version FROM accounts … FOR UPDATE` – every action of one
+     account queues here, across tabs and devices;
+  4. `action_log` lookup, a plain read: the same name and parameter hash
+     returns the stored result (`replayed`), another hash is `rejected`
+     (`action-id-reused`). This comes before the version comparison, so a
+     form already booked gets its result although its page is stale by now;
+  5. the locked version against the one this request read the account with
+     and the one the form was shown with: either different → `conflict`,
+     nothing runs;
+  6. snapshot of `$session['user']`, buffs, allowed navs, `$companions` and
+     `$baseaccount`;
+  7. `fn()`, returning what the page shows (JSON-serialisable);
+  8. `Accounts::persist(true)` and the `action_log` row with that result;
+  9. commit, then the `Action::afterCommit()` callbacks (best effort; a
+     failing one is written to the security log).
+
+  Anything thrown rolls back, restores the snapshot, clears the entity
+  manager and the cached account entity, and is rethrown – except a
+  `VersionConflict`, a deadlock or a lock wait timeout (DBAL
+  `RetryableException`), which are a `conflict`, and
+  `Lotgd\Action\ActionAborted`, which is `rejected` with its message as the
+  reason. No log row is left behind, so the same form may be sent again.
+  `Lotgd\Action\ActionResult` carries `status` (`done`, `replayed`,
+  `conflict`, `rejected`), `data` and `reason`.
+- **What "conflict" covers**: two versions must still hold when the account
+  is locked – the one this request read the account with (a change while the
+  request runs) and the one the form was shown with (`Action::idField()`
+  also writes `action_version`). So a change between showing a form and
+  sending it – another tab booked, a transfer arrived, a PvP fight took
+  gold – is a conflict: nothing is booked, and an old "withdraw all" cannot
+  take gold that arrived after it was shown. A form without the field (an
+  older page) is checked against the request's version only. A form already
+  booked is still a replay: the log is read before the versions are
+  compared. Without the guard a page-end save of a stale page writes its old
+  balance over a credit; `GuardedActionMariaDbTest` shows both.
+- **Why the account row is locked first and the log read is plain**: a
+  locking read of the not-yet-existing log row takes a gap lock, and two
+  players' first actions (whose rows fall into the same gap) then deadlock
+  on each other's insert. The account lock already serialises everything of
+  one account, and the plain read's snapshot is taken after it.
+- **A form sent again after its page moved on**: the booking gave out new
+  links, so the form's address is no longer an allowed navigation and would
+  end on `badnav.php` – the player who lost the answer would never learn
+  whether the money moved. `ForcedNavigation` asks `Action::isReplayOf()`
+  first: a POST whose action id is already logged for this account *and
+  this very address* goes through to its page, where the page's CSRF check
+  runs and `Action::run()` answers from the log. Nothing can run again – the
+  log row that lets the request in is the row that makes it a replay.
+- **Guards**: `Modules::inject()` (module refresh), `Modules::semAcquire()`,
+  the game-day rollover in `newday.php` and `Newday::dbCleanup()` call
+  `Action::guardImplicitCommit()` and throw instead of committing a running
+  action through `LOCK TABLES`/`OPTIMIZE TABLE`.
+- **The bank** (`bank.php`) is the pilot. The deposit, withdraw, loan and
+  transfer-confirmation forms carry `Action::idField()`; `depositfinish`,
+  `withdrawfinish` and `transfer3` run as `bank.deposit`, `bank.withdraw` and
+  `bank.transfer`. Each booking returns what the page shows, so a replay
+  shows the first booking ("This one is already written down") instead of
+  booking twice. The transfer credits the recipient with
+  `… version = version + 1 WHERE acctid = :acctid`, guarded also
+  `AND locked = 0 AND transferredtoday < :received`; no matching row aborts
+  the action and the player sees the accounting-error message. Debug log
+  lines and the recipient's mail are after-commit callbacks. With the setting
+  off the bank renders and books exactly as before; the only difference is
+  `version = version + 1` on the credit, as for every write to an account.
+- **Metadata cache**: the Doctrine metadata cache namespace now includes a
+  fingerprint of the entity files (`Lotgd\Doctrine\EntityFingerprint`).
+  Without `DB_DATACACHEPATH` that cache lives in the system's temporary
+  directory and was never cleared, so an update mapping a new column was
+  served the old mapping – the page end would have silently left
+  `version` alone.
+
+Verified against MariaDB 11.4 (`tests/Integration/GuardedActionMariaDbTest.php`,
+opt-in, see below): two players crediting one recipient at the same time both
+arrive; two players crediting each other at the same time deadlock for real,
+one books and the other gets a conflict, no gold appears or vanishes; a
+recipient's page read before a credit cannot book over it (and without the
+guard it does); a process killed inside its transaction leaves no booking and
+no log row, its retry books once and a second retry is a replay; the same
+form from two connections at once books once (`done` + `replayed`). In a
+browser (Chromium via Playwright): a deposit sent again shows the first
+booking and books nothing; Back to a booked form ends on `badnav.php`; a
+form shown before the account changed elsewhere books nothing and the change
+survives; a
+transfer credits the recipient once, mails them once, and sent again books
+nothing; with the setting off the forms carry no action id and the bank
+behaves as before.
+
+The opt-in suite runs against an installed copy of this tree whose
+`dbconnect.php` names a disposable database:
+
+```bash
+LOTGD_INTEGRATION_ROOT=/path/to/installed/game composer test -- tests/Integration
+```
+
+It creates its own accounts and removes them; without the variable it is
+skipped.
+
+Every other gameplay write to `accounts` in the core moves the version on
+too: PvP (flag, loss, win), clan membership and leadership, the user editor
+and its "fix navigation", bio blocks, donation points, mount refunds, the
+referrer award and the dragon point reset. `tests/QA/AccountsVersionBumpTest.php`
+fails for a new `UPDATE accounts` without `version = version + 1` unless it
+is listed there as bookkeeping (login, `laston`, `lasthit`, the stored
+navigation, the page revision claim, expiry notices, logging banned players
+out).
+
+Not yet covered, and open for the next steps: module writes to `accounts`
+(see the [inventory](ReactiveCore-Inventory.md)); data cache keys are not
+invalidated on rollback (the bank touches none); outbox events (Phase 4) and
+grant consumption (Phase 5) do not exist yet.
+
 ## Binding acceptance criteria
 
 Each later phase is merged only when its criteria hold.
@@ -178,16 +320,20 @@ Each later phase is merged only when its criteria hold.
 
 ### Phase 3 – guarded actions
 
-`Action::run(name, actionId, fn)`:
+`Action::run(name, actionId, params, fn)`:
 
 1. Refuse when a transaction is already open (no nesting in v1); `LOCK TABLES`
    while an action runs throws.
 2. `beginTransaction`.
-3. Look up `action_log (acctid, action_id)` **inside** the transaction
-   (`FOR UPDATE`): same `action_name` and `params_hash` → return the stored
-   result; different hash → reject. No separate "running" reservation.
-4. Lock the account row (`SELECT version … FOR UPDATE`) – serialises actions
-   per account across sessions and devices.
+3. Lock the account row (`SELECT version … FOR UPDATE`) – serialises actions
+   per account across sessions and devices. *As built this comes before the
+   log lookup: a locking read of the missing log row would take a gap lock,
+   and two players' first actions deadlock on each other's insert (found
+   against MariaDB).*
+4. Look up `action_log (acctid, action_id)` **inside** the transaction
+   (a plain read after the account lock): same `action_name` and
+   `params_hash` → return the stored result; different hash → reject. No
+   separate "running" reservation.
 5. Snapshot session user, buffs, companions and both bases.
 6. Run the action.
 7. Persist account changes, outbox events, the `action_log` row with the
@@ -203,7 +349,10 @@ Further rules:
 
 - Order of checks for a request carrying an action id: authentication → CSRF
   → `action_log` lookup → only then `pageRevision`/`allowednavs`. A completed
-  duplicate gets its stored result even with a stale revision.
+  duplicate gets its stored result even with a stale revision. *As built,
+  `ForcedNavigation` lets a logged POST for the same address through before
+  the page's own CSRF check runs; the page then refuses a bad token as for
+  any request, and only a logged action id can get in this way.*
 - `persist()` diffs against the base last written *in this transaction*;
   the committed base moves only after commit.
 - `laston` and pure bookkeeping fields are written without bumping `version`.

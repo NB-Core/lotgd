@@ -239,6 +239,10 @@ if ($updates > 0 && $fieldUpdates !== []) {
     if ($sets === []) {
         $output->output("No fields were changed in the user's record.");
     } else {
+        // The player's own guarded actions must notice an editor's change.
+        if (!array_key_exists('version', $fieldUpdates)) {
+            $sets[] = 'version = version + 1';
+        }
         $sql = sprintf(
             'UPDATE %s SET %s WHERE %s = :acctid',
             Database::prefix('accounts'),
