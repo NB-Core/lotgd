@@ -45,7 +45,7 @@ Core usage should follow the two-factor auth module pattern.
 In core, this is wired in:
 
 - `modules/twofactorauth.php` setup operations.
-- `src/Lotgd/Async/Handler/TwoFactorAuthPasskey.php` async/Jaxon handler.
+- `src/Lotgd/Async/Handler/TwoFactorAuthPasskey.php` async handler (`Lotgd\Async\Handler`, registered as `TwoFactorAuthPasskey`).
 
 ### Challenge / login verification flow (pending 2FA only)
 
@@ -86,7 +86,7 @@ or async handler) before invoking service operations.
 
 ### Async boundary
 
-When used over Jaxon (`async/process.php`), callers must enforce:
+When used over the async endpoint (`async/process.php`; Jaxon until Phase 6a), callers must enforce:
 
 - authenticated session context,
 - pending challenge gating for login verification,

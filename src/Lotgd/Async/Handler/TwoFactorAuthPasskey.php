@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Async\Handler;
 
-use Jaxon\Response\Response;
+use Lotgd\Async\Response;
 use Lotgd\DebugLog;
 use Lotgd\GameLog;
 use Lotgd\SecurityLog;
@@ -13,10 +13,8 @@ use Lotgd\Security\Csrf;
 use Lotgd\Security\PasskeyCredentialRepository;
 use Lotgd\Security\PasskeyService;
 
-use function Jaxon\jaxon;
-
 /**
- * Handle passkey 2FA ceremonies via Jaxon under async/process.php.
+ * Handle passkey 2FA ceremonies under async/process.php.
  *
  * The handler keeps WebAuthn request/response payload exchange in the async pipeline,
  * preventing forced-navigation and allowed-nav edge-cases on runmodule fetch endpoints.
@@ -66,7 +64,7 @@ class TwoFactorAuthPasskey
     public function setService(PasskeyService $service): void
     {
         // Keep test wiring local to the object instance. Runtime requests are
-        // blocked earlier because async/common/jaxon.php excludes this helper.
+        // blocked earlier because Lotgd\Async\Dispatcher excludes this helper.
         $this->service = $service;
     }
 
@@ -80,7 +78,7 @@ class TwoFactorAuthPasskey
     public function setRepository(PasskeyCredentialRepository $repository): void
     {
         // Keep test wiring local to the object instance. Runtime requests are
-        // blocked earlier because async/common/jaxon.php excludes this helper.
+        // blocked earlier because Lotgd\Async\Dispatcher excludes this helper.
         $this->repository = $repository;
     }
 
@@ -293,7 +291,7 @@ class TwoFactorAuthPasskey
      */
     private function respond(string $requestId, array $payload): Response
     {
-        $response = jaxon()->newResponse();
+        $response = new Response();
 
         // Call the bridge callback by global identifier so Jaxon dispatch does
         // not rely on dotted path traversal (e.g. `window.fn`) that can differ

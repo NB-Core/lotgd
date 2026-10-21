@@ -20,6 +20,7 @@ namespace Lotgd\Tests\Async {
             global $session;
 
             $_GET = [];
+            $_SERVER['HTTP_X_LOTGD_ASYNC'] = '1';
             $_POST = [];
             $_COOKIE = [];
             $_SESSION = [];
@@ -50,13 +51,12 @@ namespace Lotgd\Tests\Async {
 
         public function testUnauthenticatedProtectedCallableIsDeniedBeforeDispatch(): void
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
-            $_POST['jxnmthd'] = 'mailStatus';
+            $_POST['call'] = json_encode(['class' => 'Mail', 'method' => 'mailStatus', 'args' => []], JSON_THROW_ON_ERROR);
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public int $processCount = 0;
 
                 public function canProcessRequest(): bool
@@ -64,9 +64,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->processCount++;
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -77,7 +78,7 @@ namespace Lotgd\Tests\Async {
             $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
 
             $this->assertSame(401, http_response_code());
-            $this->assertSame(0, $jaxon->processCount);
+            $this->assertSame(0, $asyncDispatcher->processCount);
             $this->assertSame('error', $payload['status'] ?? null);
             $this->assertSame('authentication_required', $payload['error'] ?? null);
             $this->assertSame('Unauthorized', $payload['message'] ?? null);
@@ -85,14 +86,13 @@ namespace Lotgd\Tests\Async {
 
         public function testAuthenticatedCallablePassesToHandlerDispatch(): void
         {
-            global $jaxon, $ajax_rate_limit_seconds, $session;
+            global $asyncDispatcher, $ajax_rate_limit_seconds, $session;
 
             $ajax_rate_limit_seconds = 1.0;
             $session['user']['loggedin'] = true;
-            $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
-            $_POST['jxnmthd'] = 'mailStatus';
+            $_POST['call'] = json_encode(['class' => 'Mail', 'method' => 'mailStatus', 'args' => []], JSON_THROW_ON_ERROR);
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public int $processCount = 0;
 
                 public function canProcessRequest(): bool
@@ -100,9 +100,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->processCount++;
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -110,18 +111,17 @@ namespace Lotgd\Tests\Async {
             lotgd_async_process_entrypoint();
             ob_end_clean();
 
-            $this->assertSame(1, $jaxon->processCount);
+            $this->assertSame(1, $asyncDispatcher->processCount);
         }
 
         public function testAllowlistedPublicCallableRemainsReachable(): void
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $_POST['jxncls'] = 'Lotgd.Async.Handler.TwoFactorAuthPasskey';
-            $_POST['jxnmthd'] = 'beginAuthentication';
+            $_POST['call'] = json_encode(['class' => 'TwoFactorAuthPasskey', 'method' => 'beginAuthentication', 'args' => []], JSON_THROW_ON_ERROR);
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public int $processCount = 0;
 
                 public function canProcessRequest(): bool
@@ -129,9 +129,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->processCount++;
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -139,20 +140,19 @@ namespace Lotgd\Tests\Async {
             lotgd_async_process_entrypoint();
             ob_end_clean();
 
-            $this->assertSame(1, $jaxon->processCount);
+            $this->assertSame(1, $asyncDispatcher->processCount);
         }
 
 
         #[DataProvider('deniedPasskeyHelperMethodProvider')]
-        public function testPasskeyHelperCallableIsDeniedBeforeJaxonDispatch(string $methodName): void
+        public function testPasskeyHelperCallableIsDeniedBeforeDispatch(string $methodName): void
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $_POST['jxncls'] = 'Lotgd.Async.Handler.TwoFactorAuthPasskey';
-            $_POST['jxnmthd'] = $methodName;
+            $_POST['call'] = json_encode(['class' => 'TwoFactorAuthPasskey', 'method' => $methodName, 'args' => []], JSON_THROW_ON_ERROR);
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public int $processCount = 0;
 
                 public function canProcessRequest(): bool
@@ -160,9 +160,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->processCount++;
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -173,20 +174,19 @@ namespace Lotgd\Tests\Async {
             $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
 
             $this->assertSame(403, http_response_code());
-            $this->assertSame(0, $jaxon->processCount);
+            $this->assertSame(0, $asyncDispatcher->processCount);
             $this->assertSame('callable_not_allowed', $payload['error'] ?? null);
             $this->assertSame('Forbidden', $payload['message'] ?? null);
         }
 
         public function testDeniedResponsesHaveConsistentJsonShape(): void
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $_POST['jxncls'] = 'Lotgd.Async.Handler.TwoFactorAuthPasskey';
-            $_POST['jxnmthd'] = 'deleteCredential';
+            $_POST['call'] = json_encode(['class' => 'TwoFactorAuthPasskey', 'method' => 'deleteCredential', 'args' => []], JSON_THROW_ON_ERROR);
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public int $processCount = 0;
 
                 public function canProcessRequest(): bool
@@ -194,9 +194,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->processCount++;
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -207,7 +208,7 @@ namespace Lotgd\Tests\Async {
             $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
 
             $this->assertSame(403, http_response_code());
-            $this->assertSame(0, $jaxon->processCount);
+            $this->assertSame(0, $asyncDispatcher->processCount);
             $this->assertArrayHasKey('status', $payload);
             $this->assertArrayHasKey('error', $payload);
             $this->assertArrayHasKey('message', $payload);
@@ -245,24 +246,19 @@ namespace Lotgd\Tests\Async {
 
         /**
          * Regression guard: the policy layer used to read only the legacy class/method
-         * fields, which a real Jaxon 5 client never sends. Every production request
+         * fields, which the client never sends. Every production request
          * therefore arrived with an empty context and slipped past the passkey
          * restrictions below.
          */
-        public function testPasskeyHelperCallableIsDeniedWithARealisticJxncallPayload(): void
+        public function testPasskeyHelperCallableIsDeniedWithARealisticCallPayload(): void
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
             $_SESSION['session']['user']['loggedin'] = true;
-            $_POST['jxncall'] = json_encode([
-                'type' => 'class',
-                'name' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
-                'method' => 'deleteCredential',
-                'args' => [],
-            ], JSON_THROW_ON_ERROR);
+            $_POST['call'] = json_encode(['class' => 'TwoFactorAuthPasskey', 'method' => 'deleteCredential', 'args' => []], JSON_THROW_ON_ERROR);
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public int $processCount = 0;
 
                 public function canProcessRequest(): bool
@@ -270,9 +266,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->processCount++;
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -283,23 +280,18 @@ namespace Lotgd\Tests\Async {
             $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
 
             $this->assertSame(403, http_response_code());
-            $this->assertSame(0, $jaxon->processCount);
+            $this->assertSame(0, $asyncDispatcher->processCount);
             $this->assertSame('callable_not_allowed', $payload['error'] ?? null);
         }
 
-        public function testUnauthenticatedPasskeyAuthIsAllowlistedWithARealisticJxncallPayload(): void
+        public function testUnauthenticatedPasskeyAuthIsAllowlistedWithARealisticCallPayload(): void
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $_POST['jxncall'] = json_encode([
-                'type' => 'class',
-                'name' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
-                'method' => 'beginAuthentication',
-                'args' => [],
-            ], JSON_THROW_ON_ERROR);
+            $_POST['call'] = json_encode(['class' => 'TwoFactorAuthPasskey', 'method' => 'beginAuthentication', 'args' => []], JSON_THROW_ON_ERROR);
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public int $processCount = 0;
 
                 public function canProcessRequest(): bool
@@ -307,9 +299,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->processCount++;
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -317,7 +310,7 @@ namespace Lotgd\Tests\Async {
             lotgd_async_process_entrypoint();
             ob_end_clean();
 
-            $this->assertSame(1, $jaxon->processCount);
+            $this->assertSame(1, $asyncDispatcher->processCount);
         }
 
         public function testAbuseKeyIgnoresSessionIdWhenNoCookieIsPresent(): void

@@ -6,13 +6,11 @@ namespace Lotgd\Async\Handler;
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
-use Jaxon\Response\Response;
+use Lotgd\Async\Response;
 use Lotgd\Commentary as CoreCommentary;
 use Lotgd\Util\ScriptName;
 use Lotgd\Output;
 use Lotgd\Async\Handler\Exception;
-
-use function Jaxon\jaxon;
 
 /**
  * Handle commentary AJAX interactions.
@@ -28,7 +26,7 @@ class Commentary
     {
         global $session;
         if ($args === false || !is_array($args)) {
-            return jaxon()->newResponse();
+            return new Response();
         }
         $section = $args['section'];
         $message = '';
@@ -37,7 +35,7 @@ class Commentary
         $schema = $args['schema'];
         $viewonly = $args['viewonly'];
         $new = CoreCommentary::viewCommentary($section, $message, $limit, $talkline, $schema, $viewonly, 1);
-        $objResponse = jaxon()->newResponse();
+        $objResponse = new Response();
         $objResponse->assign($section, 'innerHTML', $new);
         return $objResponse;
     }
@@ -94,10 +92,11 @@ class Commentary
             $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
         }
         $html = implode('', $comments);
-        $objResponse = jaxon()->newResponse();
+        $objResponse = new Response();
         if ($html !== '') {
             $objResponse->append("{$section}-comment", 'innerHTML', $html);
-            $objResponse->script->jo('window')->lotgd_lastCommentId = $newId;
+            // The client polls on from here (lotgd.async.js).
+            $objResponse->data('commentary', ['section' => $section, 'lastId' => (int) $newId]);
             if ($lastId > 0 && $lastId < $newId) {
                 $objResponse->call('lotgdCommentNotify', count($comments));
             }
@@ -106,21 +105,11 @@ class Commentary
     }
 
     /**
-     * Simple test method to check if Jaxon is working.
-     */
-    public function test(): Response
-    {
-        $response = jaxon()->newResponse();
-        $response->assign('notify', 'innerHTML', 'AJAX Test successful at ' . date('H:i:s'));
-        return $response;
-    }
-
-    /**
      * Combined polling for mail, timeout and commentary updates.
      *
      * @throws Exception When any sub-handler fails
      */
-    public function pollUpdates($section = null, $lastId = null): Response
+    public function pollUpdates($section = null, $lastId = null, $cursor = null): Response
     {
         // Handle parameter conversion issues
         if ($section === null || $section === '') {
@@ -134,50 +123,37 @@ class Commentary
         $section = (string) $section;
         $lastId = (int) $lastId;
 
-        $response = jaxon()->newResponse();
+        $response = new Response();
 
-        // The mail link belongs to the realtime poll for players it runs for
-        // (async/poll.php); Jaxon keeps it for everyone else.
+        // The mail link of a realtime player is the realtime region's
+        // (Realtime::region); this poll keeps it for everyone else.
         global $session;
         if (!\Lotgd\Realtime::enabledFor($session['user'] ?? [])) {
             try {
-                $this->appendResponse($response, (new Mail())->mailStatus(true));
+                $response->merge((new Mail())->mailStatus(true));
             } catch (\Throwable $e) {
                 throw new Exception('AJAX polling: Mail handler error', 0, $e);
             }
         }
 
         try {
-            $this->appendResponse($response, Timeout::getInstance()->timeoutStatus(true));
+            $response->merge(Timeout::getInstance()->timeoutStatus(true));
         } catch (\Throwable $e) {
             throw new Exception('AJAX polling: Timeout handler error', 0, $e);
         }
 
         try {
-            $this->appendResponse($response, $this->commentaryRefresh($section, $lastId));
+            $response->merge($this->commentaryRefresh($section, $lastId));
         } catch (\Throwable $e) {
             throw new Exception('AJAX polling: Commentary handler error', 0, $e);
         }
 
-        return $response;
-    }
-
-    private function appendResponse(Response $response, Response $append): void
-    {
-        foreach ($append->getCommands() as $command) {
-            $name = $command['name'] ?? null;
-            if ($name === null) {
-                continue;
-            }
-            $newCommand = $response->addCommand($name, $command['args'] ?? []);
-            if (isset($command['options']) && is_array($command['options'])) {
-                foreach ($command['options'] as $optionName => $optionValue) {
-                    $newCommand->setOption((string) $optionName, $optionValue);
-                }
-            }
-            if (isset($command['component']) && is_array($command['component'])) {
-                $newCommand->setComponent($command['component']);
-            }
+        // The realtime announcements ride on the same request (one poll per
+        // interval, docs/ReactiveCore.md Phase 6); data `realtime`.
+        if ($cursor !== null && is_numeric($cursor) && \Lotgd\Realtime::enabledFor($session['user'] ?? [])) {
+            $response->merge((new Realtime())->poll((int) $cursor));
         }
+
+        return $response;
     }
 }

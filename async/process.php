@@ -3,21 +3,32 @@
 declare(strict_types=1);
 
 /**
- * Entry point for processing Jaxon AJAX requests. Loads the
- * lightweight environment, common settings and server callbacks,
- * then passes control to the Jaxon engine.
+ * The one entry point for async requests (docs/ReactiveCore.md, Phase 6).
+ * Loads the lightweight environment and the async settings, decides
+ * authorization, CSRF, rate limiting and the session lock on the call the
+ * request names, then runs it through Lotgd\Async\Dispatcher and answers
+ * JSON: `{status, commands, data}` (Lotgd\Async\Response).
  */
 
-// File ajax_process.php
 define("OVERRIDE_FORCED_NAV", true);
 
 if (!defined('LOTGD_ASYNC_PROCESS_TEST_MODE')) {
     require_once __DIR__ . '/common/bootstrap.php';
-    require_once __DIR__ . '/common/jaxon.php';
+    require_once __DIR__ . '/common/settings.php';
 }
 
-// Access the global jaxon instance and settings
-global $jaxon, $ajax_rate_limit_seconds;
+global $asyncDispatcher, $ajax_rate_limit_seconds;
+if (!defined('LOTGD_ASYNC_PROCESS_TEST_MODE')) {
+    $asyncDispatcher = new \Lotgd\Async\Dispatcher($_POST);
+}
+
+/**
+ * The header every async request carries. A custom header makes a
+ * cross-site request preflighted, and the preflight is never answered, so
+ * another site can neither read an answer nor trigger a call -- whatever the
+ * CSRF mode is.
+ */
+const LOTGD_ASYNC_REQUEST_HEADER = 'HTTP_X_LOTGD_ASYNC';
 
 /**
  * Generate a correlation id for async diagnostics and log stitching.
@@ -34,7 +45,7 @@ function lotgd_async_correlation_id(): string
 }
 
 /**
- * Emit a valid JSON/Jaxon-compatible error payload for async failures.
+ * Emit a valid JSON error payload for async failures.
  *
  * Frontend callers expect parseable JSON and may surface hard SyntaxErrors when this endpoint
  * returns plain text or an empty body. Keep this contract stable across all failure branches.
@@ -93,83 +104,55 @@ function lotgd_async_sanitize_token(string $value): string
 }
 
 /**
- * Decode the canonical Jaxon dispatch target from the request payload.
+ * The call the request names, as the dispatcher will run it.
  *
- * Jaxon 5 encodes the target as a single JSON object in the `jxncall` field
- * ({@see \Jaxon\Request\Handler\ParameterReader::setRequestParameter()}) and
- * dispatches on its `name`/`method` keys
- * ({@see \Jaxon\Plugin\Request\CallableComponent\ComponentPlugin::makeCallableAction()}).
- * It does not understand any of the separate legacy fields, so this is the only
- * source that is guaranteed to describe the callable Jaxon will actually run.
+ * The `call` field is the only source: the policy decides on exactly the
+ * class and method the dispatcher dispatches on.
  *
- * @return array{class:string,method:string}|null Null when no usable descriptor is present.
+ * @return array{class:string,method:string}|null Null when no usable call is present.
  */
-function lotgd_async_jxncall_context(): ?array
+function lotgd_async_call_context(): ?array
 {
-    $raw = $_POST['jxncall'] ?? $_GET['jxncall'] ?? null;
-    if (!is_string($raw) || $raw === '') {
+    $context = (new \Lotgd\Async\Dispatcher($_POST))->describe();
+    if ($context['class'] === '' || $context['method'] === '') {
         return null;
     }
 
-    // Mirror ParameterReader::decodeStr(): the client only url-encodes parameters
-    // when the request carries file uploads.
-    $contentType = (string) ($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '');
-    $multipart = 'multipart/form-data';
-    if (strncmp($contentType, $multipart, strlen($multipart)) === 0) {
-        $raw = urldecode($raw);
-    }
-
-    $call = json_decode($raw, true);
-    if (!is_array($call) || ($call['type'] ?? '') !== 'class') {
-        return null;
-    }
-
-    $className = $call['name'] ?? null;
-    $methodName = $call['method'] ?? null;
-    if (!is_string($className) || !is_string($methodName)) {
-        return null;
-    }
-
-    // Jaxon applies trim() to both values. lotgd_async_sanitize_token() additionally
-    // strips control characters so they cannot reach error_log(); a name that differs
-    // between the two is rejected by Jaxon's own validator and never dispatched.
     return [
-        'class' => lotgd_async_sanitize_token($className),
-        'method' => lotgd_async_sanitize_token($methodName),
+        'class' => lotgd_async_sanitize_token($context['class']),
+        'method' => lotgd_async_sanitize_token($context['method']),
     ];
 }
 
 /**
  * Build best-effort async callable context from incoming request payload.
  *
- * Different Jaxon versions can use different keys for class/method metadata. We capture
+ * Requests without a `call` field may still carry class/method hints. We capture
  * whichever keys are present so diagnostic IDs can be correlated with handler targets.
  *
  * @return array{class:string,method:string}
  */
 function lotgd_async_request_context(): array
 {
-    // The `jxncall` descriptor is authoritative whenever the field is present at all.
-    // Honouring both sources would let a crafted payload describe one callable to this
-    // policy layer and a different one to Jaxon, so authorization and the session-lock
-    // decision could be taken for a handler that never runs.
-    $jxncall = lotgd_async_jxncall_context();
-    if ($jxncall !== null) {
-        return $jxncall;
+    // The `call` field is authoritative whenever it is present at all. Honouring
+    // another source would let a crafted payload describe one callable to this
+    // policy layer and a different one to the dispatcher, so authorization and the
+    // session-lock decision could be taken for a handler that never runs.
+    $call = lotgd_async_call_context();
+    if ($call !== null) {
+        return $call;
     }
 
-    // A `jxncall` field that is present but unusable (malformed JSON, a non-class
-    // descriptor, missing name/method) yields an unknown callable rather than falling
-    // through to the legacy fields, which the same request could have set to anything.
-    // An unknown callable is denied a lock release and logged as such.
-    if (isset($_POST['jxncall']) || isset($_GET['jxncall'])) {
+    // A `call` field that is present but unusable (malformed JSON, missing
+    // class/method) yields an unknown callable rather than falling through to the
+    // fields below, which the same request could have set to anything.
+    if (isset($_POST[\Lotgd\Async\Dispatcher::FIELD]) || isset($_GET[\Lotgd\Async\Dispatcher::FIELD])) {
         return ['class' => '', 'method' => ''];
     }
 
-    // Only reached when the payload carries no descriptor at all. Jaxon does not
-    // dispatch such a request (both ComponentPlugin::canProcessRequest() and
-    // FunctionPlugin::canProcessRequest() require the attribute), so these fields
-    // never decide anything and only feed diagnostics.
+    // Only reached when the payload carries no call at all. The dispatcher does not
+    // run such a request, so these fields never decide anything and only feed
+    // diagnostics.
     $class = '';
     $method = '';
 
@@ -204,9 +187,8 @@ function lotgd_async_request_context(): array
 /**
  * Validate async callable routing against a minimal hardening allowlist.
  *
- * Compatibility note: this must not change client-side Jaxon exports. We enforce
- * sensitive passkey method restrictions on the server so the historical
- * Lotgd.Async.Handler namespace remains stable for browser bridge code.
+ * The passkey class is narrowed to its four ceremonies here, so the
+ * historical Lotgd.Async.Handler names stay stable for browser bridge code.
  *
  * @param array{class:string,method:string} $requestContext
  */
@@ -215,9 +197,8 @@ function lotgd_async_is_allowed_callable(array $requestContext): bool
     $className = $requestContext['class'] ?? '';
     $methodName = $requestContext['method'] ?? '';
 
-    // Debug seams that are excluded from the Jaxon export in
-    // async/common/jaxon.php. Repeated here so the refusal does not depend on
-    // the registration options staying correct.
+    // Debug seams the dispatcher excludes too (Dispatcher::EXCLUDED). Repeated
+    // here so the refusal does not depend on that list staying correct.
     static $deniedMethods = [
         'Lotgd.Async.Handler.Commentary' => ['test'],
     ];
@@ -285,7 +266,7 @@ function lotgd_async_has_required_privileges(array $requestContext): bool
     }
 
     if (!defined($constantName)) {
-        error_log("Jaxon authorization: $constantName is not defined; denying $className.$methodName");
+        error_log("Async authorization: $constantName is not defined; denying $className.$methodName");
 
         return false;
     }
@@ -328,7 +309,7 @@ function lotgd_async_is_authenticated(): bool
  * Check if an unauthenticated request is explicitly allowed.
  *
  * Default-deny model: every unauthenticated async callable is denied unless
- * listed here. This central policy executes before Jaxon dispatch so handlers
+ * listed here. This central policy executes before dispatch so handlers
  * are protected even when they also enforce auth/CSRF checks internally.
  *
  * @param array{class:string,method:string} $requestContext
@@ -369,7 +350,7 @@ function lotgd_async_is_unauth_allowlisted(array $requestContext): bool
  *
  * Default-deny: anything not listed keeps the session open and behaves exactly as
  * before. This deliberately covers module-supplied handlers registered through the
- * Jaxon callable directory as well as the passkey ceremonies, which must persist
+ * `async-handlers` hook as well as the passkey ceremonies, which must persist
  * their challenge state across requests.
  *
  * @param array{class:string,method:string} $requestContext
@@ -383,6 +364,7 @@ function lotgd_async_is_session_readonly_callable(array $requestContext): bool
         // for the next request.
         'Lotgd.Async.Handler.Commentary' => ['commentaryRefresh', 'pollUpdates', 'test'],
         'Lotgd.Async.Handler.Mail' => ['mailStatus'],
+        'Lotgd.Async.Handler.Realtime' => ['poll', 'region'],
         'Lotgd.Async.Handler.Timeout' => ['timeoutStatus'],
     ];
 
@@ -468,7 +450,7 @@ function lotgd_async_csrf_state(array $requestContext): array
     // The gain is defence in depth on a path that already validates a token of
     // its own inside the handler; the loss, if any entry point turns out not
     // to bootstrap, is that nobody completes two-factor login. Evidence first:
-    // a release without "Jaxon csrf" lines naming these two is what should
+    // a release without "Async csrf" lines naming these two is what should
     // promote them, the same way the no-cors problem was found rather than
     // guessed.
     if (lotgd_async_is_unauth_allowlisted($requestContext)) {
@@ -518,7 +500,7 @@ function lotgd_async_authorization_policy(array $requestContext): array
     // never goes quiet and says nothing when it does.
     if (($authenticated && !$csrf['valid']) || $csrf['observed']) {
         $handler = ($requestContext['class'] ?? '') . '::' . ($requestContext['method'] ?? '');
-        error_log(sprintf('Jaxon csrf %s [handler=%s mode=%s]', $csrf['reason'], $handler, \Lotgd\Async\CsrfMode::mode()));
+        error_log(sprintf('Async csrf %s [handler=%s mode=%s]', $csrf['reason'], $handler, \Lotgd\Async\CsrfMode::mode()));
     }
 
     if ($authenticated) {
@@ -697,13 +679,14 @@ function lotgd_async_denied_request_is_throttled(float $now, float $threshold): 
  */
 function lotgd_async_process_entrypoint(): void
 {
-    global $jaxon, $ajax_rate_limit_seconds;
+    global $asyncDispatcher, $ajax_rate_limit_seconds;
 
-    // Simple rate limiting for Jaxon requests. If an Ajax request arrives less
-    // than the configured threshold after the previous one, we respond with HTTP 429 and skip
-    // executing the handler. The timestamp is only updated when the request is
-    // accepted to avoid locking out legitimate retries.
-    if ($jaxon->canProcessRequest()) {
+    // Rate limiting per call: a request for the same call less than the
+    // configured threshold after the previous one is answered with HTTP 429 and
+    // not run. Per call, because a region fetch follows the poll that announced
+    // it. The timestamp is only updated when the request is accepted, so a
+    // refused retry does not lock out the next one.
+    if (($_SERVER[LOTGD_ASYNC_REQUEST_HEADER] ?? '') === '1' && $asyncDispatcher->canProcessRequest()) {
         $requestContext = lotgd_async_request_context();
         $authorization = lotgd_async_authorization_policy($requestContext);
         if (!($authorization['allowed'] ?? false)) {
@@ -760,16 +743,24 @@ function lotgd_async_process_entrypoint(): void
         $now       = microtime(true);
         $threshold = $ajax_rate_limit_seconds ?? 1.0; // from async settings with fallback
 
-        if (isset($_SESSION['lastrequest']) && ($now - $_SESSION['lastrequest']) < $threshold) {
+        // Test doubles of the dispatcher may not have rateKey().
+        $rateKey = method_exists($asyncDispatcher, 'rateKey')
+            ? $asyncDispatcher->rateKey()
+            : $requestContext['class'] . '::' . $requestContext['method'];
+        if (!isset($_SESSION['lastrequest']) || !is_array($_SESSION['lastrequest'])) {
+            $_SESSION['lastrequest'] = [];
+        }
+        $last = $_SESSION['lastrequest'][$rateKey] ?? null;
+        if (is_numeric($last) && ($now - (float) $last) < $threshold) {
             $diagnosticId = \Lotgd\SecurityLog::correlationId();
             error_log(sprintf(
-                'Jaxon rate limit hit [diag=%s handler=%s::%s]: threshold=%s now=%s last=%s',
+                'Async rate limit hit [diag=%s handler=%s::%s]: threshold=%s now=%s last=%s',
                 $diagnosticId,
                 $requestContext['class'] !== '' ? $requestContext['class'] : 'unknown',
                 $requestContext['method'] !== '' ? $requestContext['method'] : 'unknown',
                 (string) $threshold,
                 (string) $now,
-                isset($_SESSION['lastrequest']) ? (string) $_SESSION['lastrequest'] : 'unset'
+                is_numeric($last) ? (string) $last : 'unset'
             ));
 
             $payload = [
@@ -791,14 +782,28 @@ function lotgd_async_process_entrypoint(): void
             return;
         }
 
-        $_SESSION['lastrequest'] = $now;
+        $_SESSION['lastrequest'][$rateKey] = $now;
 
         // Release the session lock before dispatch so read-only polling callables
         // stop serialising concurrent page loads of the same player.
         lotgd_async_release_session_lock($requestContext);
 
         try {
-            $jaxon->processRequest();
+            $answer = $asyncDispatcher->processRequest();
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=UTF-8');
+                header('Cache-Control: no-store');
+            }
+            echo json_encode($answer->toArray(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE)
+                ?: '{"status":"error","error":"json_encode_failed"}';
+        } catch (\InvalidArgumentException $e) {
+            // A call that does not resolve: an unknown method, arguments of the
+            // wrong number or type. The caller's mistake.
+            lotgd_async_emit_error_payload(400, [
+                'status' => 'error',
+                'error' => 'bad_request',
+                'message' => 'Bad Request',
+            ]);
         } catch (\Throwable $e) {
             $diagnosticId = \Lotgd\SecurityLog::event(
                 'Async handler raised an exception',
@@ -840,7 +845,7 @@ function lotgd_async_process_entrypoint(): void
         $requestContext = lotgd_async_request_context();
         $diagnosticId = \Lotgd\SecurityLog::correlationId();
         error_log(sprintf(
-            'Jaxon bad request [diag=%s handler=%s::%s]: canProcessRequest returned false',
+            'Async bad request [diag=%s handler=%s::%s]: no call, or the request header is missing',
             $diagnosticId,
             $requestContext['class'] !== '' ? $requestContext['class'] : 'unknown',
             $requestContext['method'] !== '' ? $requestContext['method'] : 'unknown'

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Realtime;
 
+use Lotgd\Async\Handler\Realtime;
+use Lotgd\Async\Response;
 use Lotgd\Realtime\Poll;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\Database;
@@ -15,16 +17,14 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\TestCase;
 
 /**
- * What async/poll.php answers (Lotgd\Realtime\Poll::handle()).
+ * What the realtime poll answers (Lotgd\Async\Handler\Realtime, over Lotgd\Realtime\Poll).
  *
  * What is pinned is who may read what: the channels come from the account
- * the request read, never from the request; a cross-site request without the
- * custom header gets nothing; a player for whom realtime is off gets nothing.
+ * the request read, never from the request; a player for whom realtime is off gets nothing.
  */
 #[PreserveGlobalState(false)]
 final class PollEndpointTest extends TestCase
 {
-    private const POLL = ['REQUEST_METHOD' => 'GET', 'HTTP_X_LOTGD_POLL' => '1'];
     private const LATEST = '/SELECT COALESCE\(MAX\(seq\), 0\) FROM event_deliveries/';
     private const OLDEST = '/SELECT COALESCE\(MIN\(seq\), 0\) FROM event_deliveries/';
     private const EVENTS = '/FROM event_deliveries WHERE channel IN/';
@@ -78,7 +78,7 @@ final class PollEndpointTest extends TestCase
 
         self::assertSame(
             ['cursor' => 41, 'events' => [['seq' => 2, 'id' => str_repeat('c', 32), 'type' => 'mail', 'region' => 'mail', 'version' => 3]]],
-            Poll::handle(['cursor' => '0'], self::POLL, 100.0)['body']
+            $this->poll(0)
         );
     }
 
@@ -86,27 +86,7 @@ final class PollEndpointTest extends TestCase
     {
         $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 41]]];
 
-        self::assertSame(['cursor' => 41, 'events' => [], 'resync' => true], Poll::handle(['cursor' => '99'], self::POLL, 100.0)['body']);
-    }
-
-    public function testEachRegionHasARateLimitOfItsOwn(): void
-    {
-        $this->connection->queryResultsByPattern = ['/SELECT name,alive,location/' => []];
-
-        self::assertSame(200, Poll::handle(['region' => 'stats'], self::POLL, 100.0, 2.0)['status']);
-        self::assertSame(429, Poll::handle(['region' => 'stats'], self::POLL, 101.0, 2.0)['status'], 'A client asking again and again is turned away.');
-        self::assertSame(200, Poll::handle(['region' => 'stats'], self::POLL, 102.5, 2.0)['status'], 'The configured limit, not a fixed second.');
-    }
-
-    public function testRegionFetchesRightAfterAPollAreNotRateLimited(): void
-    {
-        $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 1]], self::OLDEST => [['m' => 1]], '/SELECT name,alive,location/' => [], '/AS seencount/' => [['seencount' => 0, 'notseen' => 0]]];
-
-        Database::$queryCacheResults['mail-7'] = [['seencount' => 0, 'notseen' => 0]];
-
-        self::assertSame(200, Poll::handle(['cursor' => '1'], self::POLL, 100.0)['status']);
-        self::assertSame(200, Poll::handle(['region' => 'stats'], self::POLL, 100.1)['status']);
-        self::assertSame(200, Poll::handle(['region' => 'mail'], self::POLL, 100.2)['status']);
+        self::assertSame(['cursor' => 41, 'events' => [], 'resync' => true], $this->poll(99));
     }
 
     public function testAStoredPageShownAgainStopsPollingWhenRealtimeIsOffNow(): void
@@ -130,12 +110,12 @@ final class PollEndpointTest extends TestCase
             ],
         ];
 
-        $answer = Poll::handle(['cursor' => '40', 'channel' => 'user-1'], self::POLL, 100.0);
+        // The request cannot name a channel: poll() takes a cursor and nothing else.
+        $answer = $this->poll(40);
 
-        self::assertSame(200, $answer['status']);
         self::assertSame(
             ['cursor' => 43, 'events' => [['seq' => 42, 'id' => str_repeat('a', 32), 'type' => 'mail', 'region' => 'mail', 'version' => 9]]],
-            $answer['body']
+            $answer
         );
         $read = array_values(array_filter($this->connection->fetchAllLog, static fn (array $q): bool => preg_match(self::EVENTS, $q['sql']) === 1));
         self::assertSame(['user-7'], $read[0]['params']['channels'], 'The channel is the account read from the database, whatever the request asks for.');
@@ -146,19 +126,19 @@ final class PollEndpointTest extends TestCase
     {
         $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 90]], self::OLDEST => [['m' => 50]]];
 
-        self::assertSame(['cursor' => 90, 'events' => [], 'resync' => true], Poll::handle(['cursor' => '3'], self::POLL, 100.0)['body']);
+        self::assertSame(['cursor' => 90, 'events' => [], 'resync' => true], $this->poll(3));
     }
 
     public function testARegionIsAnsweredWithItsVersion(): void
     {
         $this->connection->queryResultsByPattern = ['/SELECT name,alive,location/' => []];
 
-        $answer = Poll::handle(['region' => 'stats'], self::POLL, 100.0);
+        $answer = $this->region('stats');
 
-        self::assertSame(200, $answer['status']);
-        self::assertSame('stats', $answer['body']['region']);
-        self::assertSame(5, $answer['body']['version'], 'The account version the region shows.');
-        self::assertIsString($answer['body']['html']);
+        self::assertIsArray($answer);
+        self::assertSame('stats', $answer['region']);
+        self::assertSame(5, $answer['version'], 'The account version the region shows.');
+        self::assertIsString($answer['html']);
     }
 
     public function testTheStatsOfAPlayerWithAnExpressionBuffAreRendered(): void
@@ -179,10 +159,10 @@ final class PollEndpointTest extends TestCase
             'allowinpvp' => 1, 'allowintrain' => 1, 'rounds' => -1, 'schema' => 'module-racetroll',
         ]];
 
-        $answer = Poll::handle(['region' => 'stats'], self::POLL, 100.0);
+        $answer = $this->region('stats');
 
-        self::assertSame(200, $answer['status']);
-        self::assertIsString($answer['body']['html']);
+        self::assertIsArray($answer);
+        self::assertIsString($answer['html']);
         self::assertSame(
             '(<attack>?(1+((1+floor(<level>/5))/<attack>)):0)',
             $GLOBALS['session']['bufflist']['racialbenefit']['atkmod'],
@@ -190,43 +170,65 @@ final class PollEndpointTest extends TestCase
         );
     }
 
-    public function testAnUnknownRegionIsRefused(): void
+    public function testAnUnknownRegionAnswersNull(): void
     {
-        self::assertSame(400, Poll::handle(['region' => 'nav'], self::POLL, 100.0)['status']);
-    }
-
-    public function testWithoutTheCustomHeaderNothingIsRead(): void
-    {
-        self::assertSame(400, Poll::handle(['cursor' => '0'], ['REQUEST_METHOD' => 'GET'], 100.0)['status']);
-        self::assertSame(405, Poll::handle(['cursor' => '0'], ['REQUEST_METHOD' => 'POST'] + self::POLL, 100.0)['status']);
-        self::assertSame([], $this->connection->queries);
+        self::assertNull($this->region('nav'));
+        self::assertNull($this->region('../etc/passwd'));
     }
 
     public function testWithRealtimeOffForThePlayerNothingIsRead(): void
     {
         $GLOBALS['session']['user']['prefs'] = ['partialrender' => 0];
-        self::assertSame(404, Poll::handle(['cursor' => '0'], self::POLL, 100.0)['status']);
+        self::assertSame(['disabled' => true], $this->poll(0));
+        self::assertNull($this->region('stats'));
 
         $GLOBALS['session']['user']['prefs'] = ['partialrender' => 1];
         Settings::setInstance(new DummySettings(['realtime_enabled' => 0, 'partial_render' => 1]));
-        self::assertSame(404, Poll::handle(['cursor' => '0'], self::POLL, 100.0)['status']);
+        self::assertSame(['disabled' => true], $this->poll(0));
+        self::assertNull($this->region('stats'));
         self::assertSame([], preg_grep('/event_deliveries/', $this->connection->queries), 'No announcements are read.');
     }
 
-    public function testALoggedOutPlayerIsToldToLogIn(): void
+    public function testALoggedOutPlayerGetsNothing(): void
     {
-        // ForcedNavigation leaves this behind for a poll whose login expired.
         $GLOBALS['session'] = ['loggedin' => false];
 
-        self::assertSame(401, Poll::handle(['cursor' => '0'], self::POLL, 100.0)['status']);
+        self::assertSame(['disabled' => true], $this->poll(0));
+        self::assertNull($this->region('stats'));
+        self::assertSame([], $this->connection->queries);
     }
 
-    public function testPollingFasterThanTheRateLimitIsRefused(): void
+    public function testTheHandlerAnswersWithResponsesCarryingData(): void
     {
         $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 1]], self::OLDEST => [['m' => 1]]];
 
-        self::assertSame(200, Poll::handle(['cursor' => '1'], self::POLL, 100.0)['status']);
-        self::assertSame(429, Poll::handle(['cursor' => '1'], self::POLL, 100.2)['status']);
-        self::assertSame(200, Poll::handle(['cursor' => '1'], self::POLL, 101.5)['status']);
+        $response = (new Realtime())->poll(1);
+
+        self::assertInstanceOf(Response::class, $response);
+        self::assertSame([], $response->getCommands());
+        self::assertSame(['realtime'], array_keys($response->getData()));
+    }
+
+    public function testANegativeCursorIsTreatedAsZero(): void
+    {
+        $this->connection->queryResultsByPattern = [self::LATEST => [['m' => 5]], self::OLDEST => [['m' => 1]], self::EVENTS => []];
+
+        self::assertSame(5, $this->poll(-9)['cursor']);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function poll(int $cursor): array
+    {
+        return (new Realtime())->poll($cursor)->getData()['realtime'];
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private function region(string $region): ?array
+    {
+        return (new Realtime())->region($region)->getData()['region'];
     }
 }

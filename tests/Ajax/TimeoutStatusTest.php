@@ -72,9 +72,9 @@ namespace Lotgd\Tests\Ajax {
             $commands = $response->getCommands();
 
             $this->assertNotEmpty($commands);
-            $this->assertSame('node.assign', $commands[0]['name'] ?? null);
-            $this->assertSame('notify', $commands[0]['args']['id'] ?? null);
-            $this->assertStringContainsString('TIMEOUT', $commands[0]['args']['value'] ?? '');
+            $this->assertSame('assign', $commands[0]['cmd'] ?? null);
+            $this->assertSame('notify', $commands[0]['id'] ?? null);
+            $this->assertStringContainsString('TIMEOUT', $commands[0]['value'] ?? '');
         }
 
         public function testNoWarningWhenSessionUserAbsentWithoutTimeoutIndicators(): void
@@ -99,9 +99,9 @@ namespace Lotgd\Tests\Ajax {
             $commands = $response->getCommands();
 
             $this->assertNotEmpty($commands);
-            $this->assertSame('node.assign', $commands[0]['name'] ?? null);
-            $this->assertSame('notify', $commands[0]['args']['id'] ?? null);
-            $this->assertStringContainsString('TIMEOUT', $commands[0]['args']['value'] ?? '');
+            $this->assertSame('assign', $commands[0]['cmd'] ?? null);
+            $this->assertSame('notify', $commands[0]['id'] ?? null);
+            $this->assertStringContainsString('TIMEOUT', $commands[0]['value'] ?? '');
         }
     }
 }

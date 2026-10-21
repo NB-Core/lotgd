@@ -115,8 +115,8 @@ Two things it deliberately does **not** show:
   the column, so a database restored from an older backup cannot expose it here.
 - **The PHP error log itself.** In the Docker image `error_log` points at `/dev/stderr`, which is
   write-only, so nothing in PHP can read it back. The page names the destination and tells you
-  where to look instead. This is why the async diagnostics (`Jaxon csrf`, rate-limit and
-  bad-request lines) and individual failed-login records do not appear there: use
+  where to look instead. This is why the async diagnostics (`Async csrf`, `Async rate limit hit`, `Async authorization:` and
+  `Async bad request` lines) and individual failed-login records do not appear there: use
   `docker compose logs web`. Failed logins are still visible on the page through the `faillog`
   table.
 

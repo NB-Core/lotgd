@@ -68,7 +68,7 @@ docs/AdminGuide.md
 README.md
 migrations/Version20250724000000.php
 pages/about/about_default.php
-async/common/jaxon.php
+async/common/settings.php
 '
 
 # Paths that must stay reachable. Any status but 403 or 404 passes.

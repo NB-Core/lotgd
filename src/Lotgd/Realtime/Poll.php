@@ -12,79 +12,20 @@ use Lotgd\PageParts;
 use Lotgd\Realtime;
 
 /**
- * What async/poll.php answers (docs/ReactiveCore.md, Phase 4).
+ * What the realtime poll answers (docs/ReactiveCore.md, Phases 4 and 6),
+ * through Lotgd\Async\Handler\Realtime and async/process.php.
  *
  * The channels a player may read are derived here, from the account row the
  * request has just read from the database -- never from the request. The
  * answer carries announcements only; a region's content is fetched with
- * ?region=, through the same checks.
+ * region(), through the same checks.
  */
 final class Poll
 {
-    public const REQUEST_HEADER = 'HTTP_X_LOTGD_POLL';
     public const REGIONS = ['mail', 'stats', 'grants'];
     private const PAGE_SIZE = 100;
 
     private static ?int $startCursor = null;
-
-    /**
-     * @param array<string,mixed> $query     The request's query parameters.
-     * @param array<string,mixed> $server    The request's server variables.
-     * @param float               $rateLimit Seconds between two polls, and between two fetches of one region
-     *                                       (ajax_rate_limit_seconds of the async settings).
-     * @return array{status:int,body:array<string,mixed>}
-     */
-    public static function handle(array $query, array $server, float $now, float $rateLimit = 1.0): array
-    {
-        global $session;
-
-        if (strtoupper((string) ($server['REQUEST_METHOD'] ?? 'GET')) !== 'GET') {
-            return self::answer(405, ['error' => 'method']);
-        }
-        // A custom header makes a cross-site request preflighted, and the
-        // preflight is never answered: another site cannot read this.
-        if (($server[self::REQUEST_HEADER] ?? '') !== '1') {
-            return self::answer(400, ['error' => 'header']);
-        }
-
-        $user = $session['user'] ?? [];
-        $acctid = (int) ($user['acctid'] ?? 0);
-        if (empty($session['loggedin']) || $acctid <= 0 || empty($user['loggedin'])) {
-            return self::answer(401, ['error' => 'login', 'reload' => 'index.php?op=timeout']);
-        }
-        if (!Realtime::enabledFor($user)) {
-            return self::answer(404, ['error' => 'disabled']);
-        }
-
-        $region = $query['region'] ?? null;
-        if ($region !== null) {
-            if (!is_string($region) || !in_array($region, self::REGIONS, true)) {
-                return self::answer(400, ['error' => 'region']);
-            }
-            // A fetch follows an announcement right after a poll, so each
-            // region has an allowance of its own; rendering it is the cost
-            // the limit protects.
-            $key = 'lastregion_' . $region;
-            if (isset($session[$key]) && ($now - (float) $session[$key]) < $rateLimit) {
-                return self::answer(429, ['error' => 'rate']);
-            }
-            $session[$key] = $now;
-
-            return self::answer(200, self::region($region, $acctid));
-        }
-
-        if (isset($session['lastpoll']) && ($now - (float) $session['lastpoll']) < $rateLimit) {
-            return self::answer(429, ['error' => 'rate']);
-        }
-        $session['lastpoll'] = $now;
-
-        $cursor = $query['cursor'] ?? '0';
-
-        return self::answer(200, self::events(
-            [Realtime::userChannel($acctid)],
-            is_string($cursor) && ctype_digit($cursor) ? (int) $cursor : 0
-        ));
-    }
 
     /**
      * The delivery number a page starts polling from. Read before the page
@@ -168,7 +109,7 @@ final class Poll
      * @param list<string> $channels
      * @return array<string,mixed>
      */
-    private static function events(array $channels, int $cursor): array
+    public static function events(array $channels, int $cursor): array
     {
         $conn = Database::getDoctrineConnection();
         $deliveries = Database::prefix('event_deliveries');
@@ -216,7 +157,7 @@ final class Poll
     /**
      * @return array<string,mixed>
      */
-    private static function region(string $region, int $acctid): array
+    public static function region(string $region, int $acctid): array
     {
         global $session;
 
@@ -237,14 +178,5 @@ final class Poll
         }
 
         return ['region' => $region, 'version' => $version, 'html' => $html];
-    }
-
-    /**
-     * @param array<string,mixed> $body
-     * @return array{status:int,body:array<string,mixed>}
-     */
-    private static function answer(int $status, array $body): array
-    {
-        return ['status' => $status, 'body' => $body];
     }
 }

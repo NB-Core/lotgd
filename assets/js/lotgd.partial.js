@@ -17,8 +17,8 @@
  *  - Back/Forward go to badnav.php instead of re-running an old URL;
  *  - quick keys follow the navigation region after every swap;
  *  - regions can register init/destroy callbacks instead of inline scripts;
- *  - with realtime on (Phase 4), the page polls async/poll.php for
- *    announcements and fetches a region again when one says it changed.
+ *  - the async client (lotgd.async.js, which polls and swaps the realtime
+ *    regions) gets the values of every page swapped in.
  */
 (function () {
     'use strict';
@@ -202,48 +202,43 @@
         regions.run('init', document);
     });
 
-    /*
-     * Realtime players: a partial answer swapped in the stats and header
-     * slots too. Their versions come with it; set by startRealtime().
-     */
-    let syncRegionVersions = function () {};
+    function asyncClient() {
+        return window.lotgd && window.lotgd.async ? window.lotgd.async : null;
+    }
 
-    function applyRegionVersions(xhr) {
-        const raw = xhr && xhr.getResponseHeader ? xhr.getResponseHeader('X-Lotgd-Region-Versions') : null;
+    function readHeaderJson(xhr, name) {
+        const raw = xhr && xhr.getResponseHeader ? xhr.getResponseHeader(name) : null;
         if (!raw) {
-            return;
+            return null;
         }
         try {
-            syncRegionVersions(JSON.parse(raw) || {});
+            return JSON.parse(raw);
         } catch (e) {
-            // Keep the versions there are.
+            return null;
         }
     }
 
     /*
-     * AJAX players: the polling script in <head> starts from the comment
-     * section and the last ids of the page it was loaded with. A partial
-     * answer brings the values for the new page.
+     * Realtime players: a partial answer swapped in the stats and header
+     * slots too, and brings their versions.
+     */
+    function applyRegionVersions(xhr) {
+        const shown = readHeaderJson(xhr, 'X-Lotgd-Region-Versions');
+        if (shown && asyncClient()) {
+            asyncClient().syncRegionVersions(shown);
+        }
+    }
+
+    /*
+     * AJAX players: the poll starts from the comment section and the last
+     * ids of the page it was loaded with. A partial answer brings the values
+     * for the new page.
      */
     function applyAsyncState(xhr) {
-        const raw = xhr && xhr.getResponseHeader ? xhr.getResponseHeader('X-Lotgd-Async-State') : null;
-        if (!raw) {
-            return;
+        const state = readHeaderJson(xhr, 'X-Lotgd-Async-State');
+        if (state && asyncClient()) {
+            asyncClient().setState(state);
         }
-        let state;
-        try {
-            state = JSON.parse(raw);
-        } catch (e) {
-            return;
-        }
-        if (typeof state.commentSection === 'string') {
-            window.lotgd_comment_section = state.commentSection;
-        }
-        ['lastCommentId', 'lastUnreadMailId', 'lastUnreadMailCount'].forEach(function (key) {
-            if (typeof state[key] === 'number') {
-                window['lotgd_' + key] = state[key];
-            }
-        });
     }
 
     document.addEventListener('htmx:sendError', recover);
@@ -376,21 +371,6 @@
         }
     });
 
-    /*
-     * Realtime (docs/ReactiveCore.md, Phase 4). The page says where to poll,
-     * from which delivery number, and which version of each region it shows.
-     * An announcement names a region and its new version; the region is
-     * fetched again only when that version is higher than the one shown, and
-     * the answer is applied only if it is still higher -- an old event that
-     * arrives late can never replace newer content. Events are told apart by
-     * id, so one delivered twice changes nothing.
-     */
-    const REGION_SELECTORS = {
-        mail: '[data-lotgd-region="header"][data-lotgd-slot="mail"]',
-        grants: '[data-lotgd-region="header"][data-lotgd-slot="grants"]',
-        stats: '[data-lotgd-region="stats"]'
-    };
-
     function runOn(phase, element) {
         (handlers[element.getAttribute('data-lotgd-region')] || []).forEach(function (callbacks) {
             if (typeof callbacks[phase] === 'function') {
@@ -399,147 +379,19 @@
         });
     }
 
-    function readMeta(name) {
-        const meta = document.querySelector('meta[name="' + name + '"]');
-        return meta ? (meta.getAttribute('content') || '') : null;
-    }
-
-    function startRealtime() {
-        const config = readMeta('lotgd-realtime');
-        if (config === null || typeof window.fetch !== 'function') {
-            return;
-        }
-        const parts = config.split('|');
-        const url = parts[0];
-        const interval = Math.max(5, parseInt(parts[1] || '10', 10) || 10) * 1000;
-        let cursor = parseInt(readMeta('lotgd-event-cursor') || '0', 10) || 0;
-        let versions = {};
-        try {
-            versions = JSON.parse(readMeta('lotgd-region-versions') || '{}') || {};
-        } catch (error) {
-            versions = {};
-        }
-        const seen = [];
-        const fetching = {};
-        const wanted = {};
-        // What the page shows now is what the partial answer rendered: a
-        // fetch still on its way is applied only if it is newer, and a newer
-        // state shown before the swap is fetched again.
-        syncRegionVersions = function (shown) {
-            Object.keys(shown).forEach(function (region) {
-                const version = Number(shown[region]) || 0;
-                const before = versions[region] || 0;
-                versions[region] = version;
-                if (before > version) {
-                    refresh(region, before);
-                }
-            });
-        };
-        let delay = interval;
-        let stopped = false;
-
-        function get(query) {
-            return window.fetch(url + '?' + query, {
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: { 'X-Lotgd-Poll': '1' }
-            }).then(function (response) {
-                if (response.status === 401 || response.status === 404) {
-                    stopped = true;
-                }
-                if (!response.ok) {
-                    throw new Error('poll ' + response.status);
-                }
-                return response.json();
-            });
-        }
-
-        function refresh(region, version) {
-            if (!REGION_SELECTORS[region] || version <= (versions[region] || 0)) {
-                return;
-            }
-            // Remembered until a fetch succeeds, so one that fails is tried
-            // again with the next poll.
-            wanted[region] = Math.max(wanted[region] || 0, version);
-            if (fetching[region]) {
-                return;
-            }
-            fetching[region] = true;
-            const asked = wanted[region];
-            get('region=' + encodeURIComponent(region)).then(function (answer) {
-                // The answer is the state when it was rendered, whatever
-                // version the announcement named. A newer announcement that
-                // came while it was on its way is kept and fetched next;
-                // a failed fetch is tried again with the next poll.
-                if ((wanted[region] || 0) <= asked) {
-                    delete wanted[region];
-                }
-                if (answer && typeof answer.html === 'string' && answer.version > (versions[region] || 0)) {
-                    versions[region] = answer.version;
-                    document.querySelectorAll(REGION_SELECTORS[region]).forEach(function (element) {
-                        runOn('destroy', element);
-                        element.innerHTML = answer.html;
-                        htmx.process(element);
-                        runOn('init', element);
-                    });
-                }
-            }).catch(function () {}).then(function () {
-                fetching[region] = false;
-                if ((wanted[region] || 0) > asked) {
-                    refresh(region, wanted[region]);
-                }
-            });
-        }
-
-        function poll() {
-            if (stopped) {
-                return;
-            }
-            if (document.hidden) {
-                window.setTimeout(poll, interval);
-                return;
-            }
-            get('cursor=' + cursor).then(function (answer) {
-                delay = interval;
-                if (answer.resync) {
-                    Object.keys(REGION_SELECTORS).forEach(function (region) {
-                        refresh(region, Number.MAX_SAFE_INTEGER);
-                    });
-                }
-                (answer.events || []).forEach(function (event) {
-                    if (seen.indexOf(event.id) !== -1) {
-                        return;
-                    }
-                    seen.push(event.id);
-                    if (seen.length > 200) {
-                        seen.shift();
-                    }
-                    refresh(event.region, event.version);
-                });
-                if (typeof answer.cursor === 'number' && answer.cursor > cursor) {
-                    cursor = answer.cursor;
-                }
-                Object.keys(wanted).forEach(function (region) {
-                    refresh(region, wanted[region]);
-                });
-            }).catch(function () {
-                // Back off on errors, up to five minutes.
-                delay = Math.min(delay * 2, 300000);
-            }).then(function () {
-                if (!stopped) {
-                    window.setTimeout(poll, delay);
-                }
-            });
-        }
-
-        window.setTimeout(poll, interval);
-    }
-
     function start() {
         boostRegions();
         htmx.process(document.body);
         regions.run('init', document);
-        startRealtime();
+        if (asyncClient()) {
+            // A realtime region fetched again is swapped like any region.
+            asyncClient().setRegionSwapper(function (element, html) {
+                runOn('destroy', element);
+                element.innerHTML = html;
+                htmx.process(element);
+                runOn('init', element);
+            });
+        }
     }
 
     if (document.readyState === 'loading') {

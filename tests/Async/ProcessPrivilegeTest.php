@@ -25,6 +25,7 @@ namespace Lotgd\Tests\Async {
             global $session;
 
             $_GET = [];
+            $_SERVER['HTTP_X_LOTGD_ASYNC'] = '1';
             $_POST = [];
             $_COOKIE = [];
             $_SESSION = [];
@@ -56,12 +57,12 @@ namespace Lotgd\Tests\Async {
         /**
          * Counting dispatch double, matching ProcessAuthorizationTest.
          */
-        private function installJaxonDouble(): object
+        private function installDispatcherDouble(): object
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public int $processCount = 0;
 
                 public function canProcessRequest(): bool
@@ -69,13 +70,14 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->processCount++;
+                    return new \Lotgd\Async\Response();
                 }
             };
 
-            return $jaxon;
+            return $asyncDispatcher;
         }
 
         /**
@@ -83,8 +85,11 @@ namespace Lotgd\Tests\Async {
          */
         private function dispatch(string $class, string $method): array
         {
-            $_POST['jxncls'] = $class;
-            $_POST['jxnmthd'] = $method;
+            $_POST['call'] = json_encode([
+                'class' => preg_replace('/^Lotgd\.Async\.Handler\./', '', $class),
+                'method' => $method,
+                'args' => [],
+            ], JSON_THROW_ON_ERROR);
 
             ob_start();
             lotgd_async_process_entrypoint();
@@ -104,13 +109,13 @@ namespace Lotgd\Tests\Async {
         {
             global $session;
 
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $session['user']['loggedin'] = true;
             $session['user']['superuser'] = 0;
 
             $result = $this->dispatch('Lotgd.Async.Handler.Bans', 'affectedUsers');
 
-            self::assertSame(0, $jaxon->processCount, 'the handler must not run');
+            self::assertSame(0, $asyncDispatcher->processCount, 'the handler must not run');
             self::assertSame(403, $result['status']);
             self::assertSame('insufficient_privileges', $result['payload']['error'] ?? null);
             self::assertSame('Forbidden', $result['payload']['message'] ?? null);
@@ -124,26 +129,26 @@ namespace Lotgd\Tests\Async {
         {
             global $session;
 
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $session['user']['loggedin'] = true;
             $session['user']['superuser'] = SU_IS_BANMASTER;
 
             $this->dispatch('Lotgd.Async.Handler.Bans', 'affectedUsers');
 
-            self::assertSame(1, $jaxon->processCount);
+            self::assertSame(1, $asyncDispatcher->processCount);
         }
 
         public function testMegauserReachesTheHandler(): void
         {
             global $session;
 
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $session['user']['loggedin'] = true;
             $session['user']['superuser'] = SU_MEGAUSER;
 
             $this->dispatch('Lotgd.Async.Handler.Bans', 'affectedUsers');
 
-            self::assertSame(1, $jaxon->processCount);
+            self::assertSame(1, $asyncDispatcher->processCount);
         }
 
         /**
@@ -153,11 +158,11 @@ namespace Lotgd\Tests\Async {
          */
         public function testUnauthenticatedCallerStillGets401NotAPrivilegeError(): void
         {
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
 
             $result = $this->dispatch('Lotgd.Async.Handler.Bans', 'affectedUsers');
 
-            self::assertSame(0, $jaxon->processCount);
+            self::assertSame(0, $asyncDispatcher->processCount);
             self::assertSame(401, $result['status']);
             self::assertSame('authentication_required', $result['payload']['error'] ?? null);
         }
@@ -169,30 +174,30 @@ namespace Lotgd\Tests\Async {
         {
             global $session;
 
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $session['user']['loggedin'] = true;
             $session['user']['superuser'] = 0;
 
             $this->dispatch('Lotgd.Async.Handler.Mail', 'mailStatus');
 
-            self::assertSame(1, $jaxon->processCount);
+            self::assertSame(1, $asyncDispatcher->processCount);
         }
 
         /**
          * The debug echo is refused before dispatch, independently of whether
-         * the Jaxon registration options still exclude it.
+         * the dispatcher's exclusion list also refuses it.
          */
         public function testCommentaryDebugEchoIsNotInvokable(): void
         {
             global $session;
 
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $session['user']['loggedin'] = true;
             $session['user']['superuser'] = SU_MEGAUSER;
 
             $result = $this->dispatch('Lotgd.Async.Handler.Commentary', 'test');
 
-            self::assertSame(0, $jaxon->processCount);
+            self::assertSame(0, $asyncDispatcher->processCount);
             self::assertSame(403, $result['status']);
             self::assertSame('callable_not_allowed', $result['payload']['error'] ?? null);
         }
@@ -204,12 +209,12 @@ namespace Lotgd\Tests\Async {
         {
             global $session;
 
-            $jaxon = $this->installJaxonDouble();
+            $asyncDispatcher = $this->installDispatcherDouble();
             $session['user']['loggedin'] = true;
 
             $this->dispatch('Lotgd.Async.Handler.Commentary', 'pollUpdates');
 
-            self::assertSame(1, $jaxon->processCount);
+            self::assertSame(1, $asyncDispatcher->processCount);
         }
 
         /**

@@ -122,10 +122,10 @@ be trusted. It does not apply to:
   set both branches of the check are no-ops: the allowlist is neither consulted
   nor consumed, and there is no `badnav.php` redirect. An async request is
   authenticated by the session cookie alone. What constrains it is
-  `async/process.php` itself — the callable allowlist, the default-deny check
+  `async/process.php` itself — the registered handler names (`Lotgd\Async\Dispatcher`; a request never names a PHP class), the required `X-Lotgd-Async: 1` header (without it the request is answered `400`, and a cross-site request is preflighted whatever the CSRF mode), the callable allowlist, the default-deny check
   for unauthenticated callers, and the per-callable superuser requirements in
   `lotgd_async_required_superuser_bits()`, and the CSRF token described below.
-  A Jaxon call also carries its arguments in the request body, so the note
+  An async call also carries its arguments in the request body (the `call` field), so the note
   about request bodies applies here too.
 
   A handler is not reached through the page that renders its trigger, so a
@@ -144,22 +144,22 @@ be trusted. It does not apply to:
 ### The async CSRF token
 
 `async/setup.php` issues a per-session token in `Csrf::SCOPE_ASYNC` when it
-renders the polling client, and `async/js/lotgd.jaxon.js` attaches it as an
+renders the polling client, and `assets/js/lotgd.async.js` attaches it as an
 `X-LotGD-Csrf` header to any request aimed at `/async/process.php`. The endpoint
 compares it in `lotgd_async_csrf_state()`.
 
 Three things about this are worth knowing before changing it.
 
-**The transport is the fragile part, and it has already failed once.** Jaxon
-defaults `httpRequestOptions.mode` to `no-cors`. Under that mode the browser
+**The transport is the fragile part, and it has already failed once.** The
+Jaxon client used before Phase 6a defaulted `httpRequestOptions.mode` to `no-cors`. Under that mode the browser
 applies the "request-no-cors" header guard and silently drops every header that
 is not CORS-safelisted — including this one, and including on same-origin
 requests. The first release of this check shipped in log-only mode for exactly
 that reason and would have recorded a failure on every poll.
-`async/js/lotgd.jaxon.js` now sets `same-origin`, the Jaxon runtime is served
-from `async/js/vendor/jaxon` rather than a CDN so it can be read and pinned,
-and the header was confirmed to arrive in a real browser against those files.
-`csrf_mode` nonetheless still defaults to `log`, for a second reason the
+`lotgd.jaxon.js` set `same-origin` and the runtime was served from
+`async/js/vendor/jaxon` rather than a CDN; since Phase 6a Jaxon is gone and
+`assets/js/lotgd.async.js` sends its own `fetch()` with `same-origin`, so the
+header arrives. `csrf_mode` nonetheless still defaults to `log`, for a second reason the
 transport check does not address: the client is inlined into each page, so a
 page rendered before an upgrade keeps the old one — no `same-origin`, and no
 recovery handler. Promotion to `enforce` belongs to the operator, once open
@@ -177,7 +177,7 @@ that can reach them calls `twofactorauth_force_async_bootstrap()`, which loads
 recorded. Refusing on it is held back deliberately: the gain would be defence
 in depth on a path that already validates a token of its own inside the
 handler, while the loss, if any entry point turns out not to bootstrap, is that
-nobody completes two-factor login. A release without `Jaxon csrf` lines naming
+nobody completes two-factor login. A release without `Async csrf` lines naming
 those two is what should promote them.
 
 **Only logged-in callers are recorded**, plus that observe-only pair. An
@@ -208,5 +208,5 @@ When changing security-sensitive code paths, align implementation and review not
 
 - Doctrine prepared statements baseline: [docs/Doctrine.md#prepared-statements](docs/Doctrine.md#prepared-statements)
 - SQL values belong in bound parameters. `SqlValueInterpolationCheck` blocks new value interpolation in CI over the lines a change adds; `composer qa:sql-interpolation` audits the whole tree. Identifier interpolation is allowed because identifiers cannot be bound, an `(int)` cast counts as a defence, and a `(string)` cast does not.
-- Async authentication and rate-limit guidance: [AGENTS.md#async--jaxon](AGENTS.md#async--jaxon) and [docs/PasskeyService.md#async-boundary](docs/PasskeyService.md#async-boundary)
+- Async authentication and rate-limit guidance: [AGENTS.md#async](AGENTS.md#async) and [docs/PasskeyService.md#async-boundary](docs/PasskeyService.md#async-boundary)
 - Session, header, and cookie expectations: [docs/PasskeyService.md#security-model-and-boundaries](docs/PasskeyService.md#security-model-and-boundaries), [UPGRADING.md#6-configuration-changes](UPGRADING.md#6-configuration-changes), and [UPGRADING.md#8-after-upgrade](UPGRADING.md#8-after-upgrade)

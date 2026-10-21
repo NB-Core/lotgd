@@ -2,7 +2,7 @@
 
 namespace Tests\Ajax;
 
-use Jaxon\Response\Response;
+use Lotgd\Async\Response;
 use Lotgd\Async\Handler\Commentary;
 use Lotgd\Async\Handler\Timeout;
 use Lotgd\Tests\Stubs\Database;
@@ -56,5 +56,13 @@ class PollUpdatesTest extends TestCase
         $response = $handler->pollUpdates('test', 0);
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame([], $response->getCommands());
+    }
+
+    public function testACursorIsIgnoredWhenRealtimeIsOffForThePlayer(): void
+    {
+        $response = (new Commentary())->pollUpdates('test', 0, 5);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertArrayNotHasKey('realtime', $response->getData());
     }
 }

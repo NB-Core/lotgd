@@ -37,7 +37,7 @@ $setup = array(
     "grants_enabled" => "Offer clan officers a one-time link to accept a new applicant (grants)?,bool",
     "grant_ttl_hours" => "Hours such a link stays valid,range,1,720,1",
     "Needs guarded actions. The first officer to use the link accepts the applicant; the others' links close. Off by default,note",
-    "Players with partial rendering on poll async/poll.php; events are relayed after the change commits and by cron.php (bit 16). Needs the realtime tables in InnoDB. Off by default,note",
+    "Players with partial rendering on see these through the async poll; events are relayed after the change commits and by cron.php (bit 16). Needs the realtime tables in InnoDB. Off by default,note",
 
     "SMTP Mail Settings,title",
     "gameadminemail" => "Admin Email",

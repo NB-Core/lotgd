@@ -128,7 +128,7 @@ Regular upkeep tasks:
 - Full PSR-4 / Composer refactor
 - Doctrine ORM + migrations
 - Twig template engine
-- Async/Ajax (Jaxon) UX improvements
+- Async/Ajax UX improvements (one async endpoint, `async/process.php`)
 - PHP 8.3 baseline
  
 Performance defaults:
