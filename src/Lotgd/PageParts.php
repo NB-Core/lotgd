@@ -34,6 +34,7 @@ use Lotgd\Http;
 use Lotgd\Mounts;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Security\Escape;
+use Lotgd\Page\PartialMode;
 
 class PageParts
 {
@@ -763,6 +764,13 @@ class PageParts
                 $asyncFile = __DIR__ . '/../../async/maillink.php';
                 if (file_exists($asyncFile)) {
                     require $asyncFile;
+                }
+                if (PartialMode::clientActive($session['user'])) {
+                    // The script only repeats the polling values <head> already
+                    // sets; the partial client gets them with every answer
+                    // (X-Lotgd-Async-State), and a script in a swapped region
+                    // would not run anyway.
+                    $maillink_add_after = (string) preg_replace('#<script>.*?</script>#s', '', $maillink_add_after);
                 }
                 $mailHtml = $maillink_add_pre . "<div id='maillink'>" . self::mailLink() . "</div>" . $maillink_add_after;
             } else {

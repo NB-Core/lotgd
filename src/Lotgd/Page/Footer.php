@@ -34,6 +34,19 @@ class Footer
         $state = self::buildPageState();
         $browser_output = PageRenderer::render($state);
 
+        // Decided before saveUser(), which reduces the session user. null:
+        // a full page; false: partial was asked for but this page cannot be
+        // swapped in, so the player is sent to the stored page instead.
+        $partial = null;
+        if (PartialMode::isActive()) {
+            $clientHead = $_SERVER[PartialRenderer::REQUEST_HEAD_SERVER_KEY] ?? null;
+            $partial = PartialRenderer::canRender($state, is_string($clientHead) ? $clientHead : null)
+                && PartialMode::skinSupportsRegions()
+                && PartialMode::isEnabledFor($session['user'] ?? [])
+                ? PartialRenderer::render($state, (int) ($session['user']['page_revision'] ?? 0))
+                : false;
+        }
+
         if (!isset($session['user']['gensize'])) {
             $session['user']['gensize'] = 0;
         }
@@ -44,6 +57,21 @@ class Footer
         }
         unset($session['output']);
         session_write_close();
+
+        if ($partial === false) {
+            // badnav.php shows the page just stored; the URL does not run twice.
+            PartialMode::sendHeader('HX-Redirect: badnav.php');
+            exit();
+        }
+        if ($partial !== null) {
+            PartialMode::sendHeader('Vary: HX-Request');
+            foreach ($partial['headers'] as $name => $value) {
+                PartialMode::sendHeader($name . ': ' . $value);
+            }
+            echo $partial['body'];
+            exit();
+        }
+
         echo $browser_output;
         exit();
     }
@@ -122,10 +150,29 @@ class Footer
             if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
                 if (file_exists('async/setup.php')) {
                     require_once 'async/setup.php';
+                    // The per-page values the polling script starts from. A
+                    // partial answer carries them, since it has no <head>.
+                    $asyncState = [
+                        'commentSection' => (string) ($session['last_comment_section'] ?? ''),
+                        'lastCommentId' => (int) ($session['lastcommentid'] ?? 0),
+                        'lastUnreadMailId' => (int) ($lastUnreadMailId ?? 0),
+                        'lastUnreadMailCount' => (int) ($lastUnreadMailCount ?? 0),
+                    ];
                 }
             }
         } else {
             $headscript     = '';
+        }
+
+        // The partial client binds the access keys itself, from the links in
+        // the navigation region, so its quick keys follow every swap.
+        $partialClient = PartialMode::clientActive($session['user'] ?? []);
+        if ($partialClient) {
+            Output::requireVendorAsset('htmx', 'js');
+            Output::requireVendorAsset('lotgd-partial', 'js');
+            Output::addHeadMarkup(
+                '<meta name="lotgd-page-revision" content="' . (int) ($session['user']['page_revision'] ?? 0) . '">'
+            );
         }
 
         $header = PageParts::insertHeadScript($header, $pre_headscript, $headscript);
@@ -163,6 +210,9 @@ class Footer
         $script .= "    }\n";
         $script .= "});\n";
         $script .= "</script>\n";
+        if ($partialClient) {
+            $script = '';
+        }
 
         // Resolve this once and keep it first-class in replacements.
         // If a template does not expose {paypal_below}, we append this finalized
@@ -245,6 +295,13 @@ class Footer
         }
         $navInstance->setHeader($header);
 
+        $headSignature = PartialRenderer::headSignature(PageParts::$twigVars);
+        if ($partialClient && $isTwig) {
+            // After the signature, which leaves lotgd-* meta tags out anyway.
+            PageParts::$twigVars['headscript_mid'] = (PageParts::$twigVars['headscript_mid'] ?? '')
+                . '<meta name="lotgd-head" content="' . $headSignature . '">';
+        }
+
         return new PageState(
             PageState::TEMPLATE_PAGE,
             $isTwig,
@@ -254,7 +311,9 @@ class Footer
             $builtnavs,
             $statsOutput,
             $quickKeys,
-            PageParts::$twigVars
+            PageParts::$twigVars,
+            $headSignature,
+            $asyncState ?? []
         );
     }
 

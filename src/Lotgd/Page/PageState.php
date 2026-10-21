@@ -47,6 +47,11 @@ final class PageState
      * @param string                $stats        Character stats markup ('' for popups).
      * @param array<string,string>  $quickKeys    Access key => JavaScript action.
      * @param array<string,mixed>   $templateVars Complete Twig context.
+     * @param string                $headSignature Hash of what the page puts in <head>; see
+     *                                            PartialRenderer::headSignature().
+     * @param array<string,int|string> $asyncState The values the AJAX polling script starts
+     *                                            from (comment section, last ids); empty
+     *                                            when the player has AJAX off.
      */
     public function __construct(
         public readonly string $template,
@@ -58,6 +63,8 @@ final class PageState
         public readonly string $stats = '',
         public readonly array $quickKeys = [],
         public readonly array $templateVars = [],
+        public readonly string $headSignature = '',
+        public readonly array $asyncState = [],
     ) {
     }
 

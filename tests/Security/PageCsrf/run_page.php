@@ -51,6 +51,9 @@ $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 $_SERVER['HTTP_ACCEPT_LANGUAGE'] = 'en';
 $_SERVER['HTTP_HOST'] = 'localhost';
 $_SERVER['SERVER_PORT'] = '80';
+foreach ((array) ($spec['server'] ?? []) as $serverKey => $serverValue) {
+    $_SERVER[(string) $serverKey] = (string) $serverValue;
+}
 $_GET = (array) ($spec['get'] ?? []);
 $_POST = (array) ($spec['post'] ?? []);
 
@@ -192,6 +195,9 @@ if (($spec['token'] ?? null) !== null) {
     $_SESSION['session']['csrf'][\Lotgd\Forms::csrfScope()] = $token;
     $_POST[\Lotgd\Security\Csrf::FORM_FIELD] = $token;
     $_POST[\Lotgd\Security\Csrf::FIELD] = $token;
+    if (!empty($spec['async_token'])) {
+        $_SESSION['session']['csrf'][\Lotgd\Security\Csrf::SCOPE_ASYNC] = $token;
+    }
 }
 
 // Everything seeded; hand the session back so common.php can open it itself.
@@ -222,12 +228,23 @@ register_shutdown_function(static function (): void {
     );
 
     fwrite(STDERR, RESULT_MARKER . json_encode([
+        'headers' => $GLOBALS['lotgd_harness_headers'] ?? [],
         'statements' => $statements,
         'queries' => array_map('strval', $connection->queries ?? []),
         'status' => http_response_code(),
         'fatal' => $fatal,
     ], JSON_THROW_ON_ERROR) . RESULT_MARKER);
 });
+
+// Headers the partial-rendering code sends go through one sink, which CLI PHP
+// has no other way to report: headers_list() is empty without a web SAPI.
+\Lotgd\Page\PartialMode::setHeaderSink(static function (string $header): void {
+    $GLOBALS['lotgd_harness_headers'][] = $header;
+});
+
+// Results scripted per statement, for a page whose branch depends on what a
+// conditional update reports -- a lost page-revision claim, for instance.
+\Lotgd\MySQL\Database::getDoctrineConnection()->statementResultsByPattern = (array) ($spec['statement_results'] ?? []);
 
 // From the farm, so that the page's own relative lookups resolve the way they
 // do in an installed game -- above all file_exists('installer.php'), which

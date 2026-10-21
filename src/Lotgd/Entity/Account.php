@@ -121,6 +121,9 @@ class Account
     #[ORM\Column(type: 'text')]
     private string $allowednavs = '';
 
+    #[ORM\Column(name: 'page_revision', type: 'integer', options: ['unsigned' => true, 'default' => 0])]
+    private int $page_revision = 0;
+
     #[ORM\Column(type: 'boolean')]
     private bool $loggedin = false;
 

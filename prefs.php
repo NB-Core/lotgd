@@ -76,6 +76,8 @@ function buildPreferenceForm(array $session, Settings $settings, int $nowWithOff
         "forestcreaturebar" => "Forest Creatures show health ...,enum,0,Only Text,1,Only Healthbar,2,Healthbar AND Text",
         "ajax" => "Turn AJAX on?,bool",
         "Note: AJAX refreshes i.e. mail notifications (You have X new mails...) without needing you to reload the page. Turn on and see if it gives your computer a headache or not,note",
+        "partialrender" => "Change pages in place (partial rendering)?,bool",
+        "Note: only where the server allows it and your skin supports it. Pages that cannot be changed in place still load normally.,note",
         "mailwidth" => "Width of your standard mail reply textbox,int",
         "mailheight" => "Height of your standard mail reply textbox,int",
         "popupsize" => "Size of the mailwindow when it opens,text",

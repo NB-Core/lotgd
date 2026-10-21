@@ -18,17 +18,25 @@ The scanner (`Lotgd\QA\ReactiveCoreInventory`) is a report, not a gate: it
 always exits 0. It is token based, so comments and docblocks do not count, and
 its matches are deliberately broad. Each category below says how to read it.
 
-## Summary (after Phase 1)
+## Summary (after Phase 2)
 
 | Category | Core | `NB-Core/modules`¹ | Why it matters |
 |---|---:|---:|---|
-| `finish_path` | 179 | 351 | Every place a request can end or persist the account; a unit of work needs one defined end. |
-| `accounts_write` | 38 | 35 | SQL writes to `accounts` outside `saveUser()`; an optimistic lock (`version`) must cover each one. |
+| `finish_path` | 185 | 351 | Every place a request can end or persist the account; a unit of work needs one defined end. |
+| `accounts_write` | 39 | 35 | SQL writes to `accounts` outside `saveUser()`; an optimistic lock (`version`) must cover each one. |
 | `transaction_breaker` | 8 | 32 | `LOCK TABLES`, DDL and `OPTIMIZE`/`ANALYZE`/`REPAIR TABLE` implicitly commit an open MySQL transaction; own transactions cannot nest. |
 | `side_effect` | 151 | 156 | Mail, HTTP and data-cache writes survive a rollback and must move behind the commit. |
-| `inline_script` | 42 | 55 | `<script>` emitted into page output does not run after a partial swap. |
+| `inline_script` | 44 | 55 | `<script>` emitted into page output does not run after a partial swap. |
 
 ¹ Without `_old_dragonprime_snapshot/`, which is not shipped.
+
+Phase 2 added six finish paths (the partial exits in `PartialMode::preCheck()`,
+the lost revision claim in `ForcedNavigation`, the two partial endings in
+`Footer::pageFooter()` and the `HX-Redirect` in `Redirect::redirect()`), one
+`accounts` write (the revision claim) and two `<script` matches (the check
+for it in `PartialRenderer::canRender()` and the pattern `PageParts` uses to
+drop the mail slot's script for partial players). The tables below describe the code as
+reviewed in Phase 0.
 
 ## Finish paths
 
@@ -64,7 +72,7 @@ Core call sites (38). They fall into four groups:
 | Group | Sites | Planned treatment |
 |---|---|---|
 | Changes to **another** player | `bank.php:198` (transfer), `src/Lotgd/Pvp.php:101,205,309`, `src/Lotgd/Repository/ClanRepository.php:80`, `pages/clan/clan_membership.php:95,135`, `pages/clan/clan_withdraw.php:28,38` | Conditional atomic deltas with `version = version + 1` (Phase 3). These are the writes the session diff of the target player would otherwise overwrite. |
-| Login and session bookkeeping | `login.php` (8 sites), `src/Lotgd/Async/Handler/Timeout.php:124`, `src/Lotgd/ServerFunctions.php:130`, `src/Lotgd/PlayerFunctions.php:84,108` | Bookkeeping fields (`loggedin`, `laston`, …) stay outside the version check. |
+| Login and session bookkeeping | `login.php` (8 sites), `src/Lotgd/Async/Handler/Timeout.php:124`, `src/Lotgd/ServerFunctions.php:130`, `src/Lotgd/PlayerFunctions.php:84,108`, `src/Lotgd/ForcedNavigation.php` (the Phase 2 page-revision claim) | Bookkeeping fields (`loggedin`, `laston`, …) stay outside the version check. |
 | Admin editors | `pages/user/user_save.php:243`, `pages/user/user_special.php` (3), `pages/user/user_saveban.php:64`, `pages/bans/case_saveban.php:64`, `superuser.php:41`, `donators.php:180`, `mounts.php:124`, `bios.php:37,44`, `train.php:234` | Must bump `version` so a playing character notices the admin change instead of overwriting it. |
 | Deletes | `pages/user/user_del.php:62`, `prefs.php:167`, `src/Lotgd/ExpireChars.php:127,326` | Already guarded (POST + CSRF); a later Phase must make sure a deleted account cannot be re-created by a stale `saveUser()`. |
 
