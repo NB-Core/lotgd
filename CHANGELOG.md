@@ -22,6 +22,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- A database error while a login read the account (a migration that did not run, a lost connection) was shown to the player as "your login was incorrect" and recorded nowhere, so it looked like a wrong password. It is still shown that way, and counts as a failed attempt as before, but is now written to PHP's error log and to the game log (category `maintenance`, severity `error`) with the login name and the database's message; no password or hash.
 - *Character Restorer*'s e-mail hash conversion listed each snapshot with an account id it never read, which raised "Undefined variable $acctid_acc" once per snapshot.
 - The game settings reported *Saved:* with nothing after it for a setting that was not saved. The red "No" was written as `"`$No`0"`, in double quotes, so PHP read `$No` as an undefined variable.
 - *reCAPTCHA v2* (`recaptcha_v2`) reported every failed check as `not-available`: it read the error codes from `$answer`, a variable that does not exist, instead of from Google's answer.
