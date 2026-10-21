@@ -58,6 +58,34 @@ final class SystemMailTest extends TestCase
         Database::resetDoctrineConnection();
     }
 
+    public function testWithRealtimeOnTheRecipientsPageLearnsOfTheMail(): void
+    {
+        $GLOBALS['accounts_table'][7] = ['prefs' => serialize([]), 'emailaddress' => '', 'name' => 'Target User'];
+        $settings = new DummySettings($GLOBALS['settings_array'] + ['realtime_enabled' => 1]);
+        Settings::setInstance($settings);
+        $GLOBALS['settings'] = $settings;
+
+        Mail::systemMail(7, 'Hello', 'Body', 0);
+
+        $sql = array_column($this->connection->executeStatements, 'sql');
+        $mail = array_keys(preg_grep('/^INSERT INTO mail/', $sql));
+        $event = array_keys(preg_grep('/^INSERT INTO events/', $sql));
+        self::assertCount(1, $event, 'One announcement for the one mail.');
+        self::assertGreaterThan($mail[0], $event[0], 'Announced after the mail row exists.');
+        $params = $this->connection->executeStatements[$event[0]]['params'];
+        self::assertSame('user-7', $params['channel']);
+        self::assertSame(['region' => 'mail', 'version' => 1], json_decode($params['payload'], true), 'The version is the new message id.');
+    }
+
+    public function testWithRealtimeOffNoEventIsWritten(): void
+    {
+        $GLOBALS['accounts_table'][7] = ['prefs' => serialize([]), 'emailaddress' => '', 'name' => 'Target User'];
+
+        Mail::systemMail(7, 'Hello', 'Body', 0);
+
+        self::assertSame([], preg_grep('/^INSERT INTO events/', array_column($this->connection->executeStatements, 'sql')));
+    }
+
     public function testSystemMailPersistsMultibyteAndQuoteCharacters(): void
     {
         $GLOBALS['accounts_table'][7] = [

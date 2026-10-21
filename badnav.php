@@ -84,7 +84,10 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
         }
         Footer::pageFooter();
     }
-    echo PartialRenderer::withRevision((string) $row['output'], (int) ($session['user']['page_revision'] ?? 0));
+    echo \Lotgd\Realtime\Poll::storedPage(
+        PartialRenderer::withRevision((string) $row['output'], (int) ($session['user']['page_revision'] ?? 0)),
+        $session['user']
+    );
     $session['debug'] = "";
     $session['user']['allowednavs'] = $session['allowednavs'];
     Accounts::saveUser();

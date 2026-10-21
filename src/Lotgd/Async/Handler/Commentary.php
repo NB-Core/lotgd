@@ -136,10 +136,15 @@ class Commentary
 
         $response = jaxon()->newResponse();
 
-        try {
-            $this->appendResponse($response, (new Mail())->mailStatus(true));
-        } catch (\Throwable $e) {
-            throw new Exception('AJAX polling: Mail handler error', 0, $e);
+        // The mail link belongs to the realtime poll for players it runs for
+        // (async/poll.php); Jaxon keeps it for everyone else.
+        global $session;
+        if (!\Lotgd\Realtime::enabledFor($session['user'] ?? [])) {
+            try {
+                $this->appendResponse($response, (new Mail())->mailStatus(true));
+            } catch (\Throwable $e) {
+                throw new Exception('AJAX polling: Mail handler error', 0, $e);
+            }
         }
 
         try {

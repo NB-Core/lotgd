@@ -21,6 +21,7 @@ final class PartialRenderer
     public const HEADER_PARTIAL = 'X-Lotgd-Partial';
     public const HEADER_REVISION = 'X-Lotgd-Page-Revision';
     public const HEADER_ASYNC_STATE = 'X-Lotgd-Async-State';
+    public const HEADER_REGION_VERSIONS = 'X-Lotgd-Region-Versions';
     public const REQUEST_HEAD_SERVER_KEY = 'HTTP_X_LOTGD_HEAD';
     public const REQUEST_REVISION_SERVER_KEY = 'HTTP_X_LOTGD_PAGE_REVISION';
 
@@ -55,6 +56,13 @@ final class PartialRenderer
                 $state->asyncState,
                 JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
             );
+        }
+
+        if ($state->regionVersions !== []) {
+            // The versions of the regions this answer swaps in, so the
+            // realtime client neither refetches them nor lets an older fetch
+            // that is still on its way replace them.
+            $headers[self::HEADER_REGION_VERSIONS] = (string) json_encode($state->regionVersions);
         }
 
         return [

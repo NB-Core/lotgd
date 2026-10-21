@@ -31,7 +31,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 | 1 | `PageState`: the footer assembles one typed state object; renderers only turn it into HTML. Output unchanged. | done |
 | 2 | Partial rendering for display-only operations (HTMX), page revisions, HTTP contract | done (village, forest, inn; see below) |
 | 3 | Guarded game actions: `Action::run()`, split `saveUser()`, optimistic locking | done (pilot: the bank; see below) |
-| 4 | Transactional outbox, relay, polling transport | planned |
+| 4 | Transactional outbox, relay, polling transport | done (pilot: new mail and incoming transfers; see below) |
 | 5 | Grants: server-issued one-shot navigation for other players | planned |
 | 6 | SSE / Mercure transport | planned |
 
@@ -290,6 +290,112 @@ Not yet covered, and open for the next steps: module writes to `accounts`
 (see the [inventory](ReactiveCore-Inventory.md)); data cache keys are not
 invalidated on rollback (the bank touches none); outbox events (Phase 4) and
 grant consumption (Phase 5) do not exist yet.
+
+## Phase 4 – as built
+
+Switched on by the game setting `realtime_enabled` (*Show new mail and
+incoming transfers without a page change*, off by default), and only when
+`events`, `event_deliveries`, `relay_sequence` and `mail` are transactional
+(the relay's numbering rests on a row lock held until commit). A player's pages
+poll when it is on **and** the partial client runs for them (Phase 2), since
+that client is what swaps the announced regions. Without it, nothing writes
+or reads the new tables.
+
+- **Schema** (migration `Version20261022000001`): `events` (`id`
+  auto-increment, `event_id` for de-duplication, `channel`, `type`,
+  `payload`, `created`, `relayed_at`), `event_deliveries` (`seq` primary key,
+  copied event, `KEY (channel, seq)`), `relay_sequence` (one row, `next_seq`).
+  `Newday::commentCleanup()` drops deliveries and relayed events older than
+  `realtime_retention_hours` (24).
+- **Writing events** (`Lotgd\Realtime`):
+  - `publish()` only inside `Action::run()` (otherwise `LogicException`): the
+    event is written in the action's transaction, and the relay is queued as
+    an after-commit callback, so a rollback leaves neither the event nor a
+    relay run.
+  - `notify()` for an independent notification: refused while somebody
+    else's transaction is open, otherwise written and relayed at once.
+  - `announce()` for a change that already has a transaction, whichever it
+    is: the running action's (then `publish()`), another open one's (the event
+    commits or rolls back with it, the next relay or `cron.php` hands it out),
+    or none (written and relayed). `Mail::systemMail()` uses it.
+  - Kept short by design: an event names a region and its new version
+    (`{"region": "mail", "version": <message id>}`), never content.
+- **Relay** (`Lotgd\Realtime\Relay::run()`), its own transaction and never
+  inside an action: `SELECT next_seq … FOR UPDATE` first, then a **plain**
+  read of the unrelayed events, one `event_deliveries` row per event under the
+  next number, `relayed_at`, the new `next_seq`, commit. The sequence lock
+  queues relays one after another until commit: no number twice, none
+  skipped. The plain read does not wait for an action still running; its
+  events go to a later run, so delivery order is relay order, not commit
+  order. A deadlock or lock timeout leaves the events for the next run.
+  It runs after each commit that wrote events, and `cron.php` bit 16
+  (`CRON_REALTIME`) drains whatever is left.
+- **Sources (pilot)**:
+  - new mail: `Mail::systemMail()` announces `mail` for the recipient (version =
+    the new message id). The e-mail, which cannot be taken back, now goes out
+    through `Action::afterCommit()` (at once outside an action, as before).
+  - incoming transfer: with `guarded_actions` on, the bank writes the
+    recipient's mail inside the transfer's transaction (Phase 3 sent it after
+    the commit) and announces `stats` with the recipient's new account version.
+- **Poll endpoint** `async/poll.php` (`Lotgd\Realtime\Poll`):
+  - GET only, header `X-Lotgd-Poll: 1` required (a custom header forces a CORS
+    preflight, which is never answered, so another site cannot read it). `401`
+    when logged out (`ForcedNavigation` re-reads the account on every poll, so
+    a ban or logout applies at once), `404` when realtime is off for the
+    player. The session is released before the answer is sent.
+  - The channels come from the account row just read: `user-<acctid>`; a
+    channel in the request is ignored.
+  - `?cursor=n`: the deliveries of those channels after `n`, at most 100, and
+    the next cursor. A cursor below the oldest kept delivery, or above the
+    latest number, answers `resync`: the page fetches its regions again.
+    Rate limited by `ajax_rate_limit_seconds` from the async settings
+    (`config/async.settings.php`, loaded like `async/process.php` does).
+  - `?region=mail|stats`: `{region, version, html}`, the current content as
+    the page renders it (`PageParts::mailLink()`, `PageParts::charStats()`)
+    and its version (highest message id, account version). Each region has an
+    allowance of its own under the same limit, so the fetches that follow a
+    poll pass and a client asking again and again does not.
+- **Snapshot and cursor**: `ForcedNavigation` notes the highest delivery number
+  **before** it reads the account, which the regions show; the footer computes
+  the region versions before it builds the regions. The page carries
+  `<meta name="lotgd-realtime">` (poll URL and interval),
+  `lotgd-event-cursor` and `lotgd-region-versions`. An event that lands in
+  between therefore arrives again, and never not at all. `badnav.php` keeps a
+  stored page's cursor and versions, which belong to the regions it shows, and
+  drops the three tags when realtime is off for the player now.
+- **Client** (`assets/js/lotgd.partial.js`): polls every
+  `realtime_poll_seconds` (10) while the tab is visible, with exponential
+  back-off on errors and a stop on `401`/`404`. It de-duplicates by event id
+  and only moves the cursor forward. For an announcement whose version is
+  higher than the one shown, it fetches the region and replaces every element
+  of it only when the answer's version is still higher. A failed fetch is
+  retried with the next poll; an announcement that arrives while a fetch of
+  the same region is on its way is fetched right after it.
+- **Jaxon**: `Commentary::pollUpdates()` leaves the mail link out for players
+  the realtime poll runs for, so the two never write the same region.
+
+Verified against MariaDB 11.4 (`tests/Integration/RealtimeMariaDbTest.php`,
+opt-in like Phase 3):
+- an event written first but committed last is still delivered, after the
+  event that committed first, with consecutive numbers; the relay run in
+  between did not wait for the open transaction;
+- three relays draining 60 events at once hand out 60 consecutive numbers,
+  each event once;
+- a relay killed with the sequence row locked delivers nothing; the next one
+  hands out the same number;
+- an event after a page read its cursor comes after the cursor.
+
+In a browser (two players, Chromium against MariaDB): A transfers to B, B's
+mail link and stats change on B's open page without a reload, with one poll
+and one fetch per region; with the setting off, a page shows no realtime tags
+and sends no polls. The Phase 2 and Phase 3 browser runs pass unchanged with
+realtime on.
+
+Deviation from the criteria: the poll endpoint is a page of its own
+(`async/poll.php`) rather than a Jaxon handler, so it does not join the
+read-only allow-list in `async/process.php`; it releases the session itself.
+Not yet covered: clan, section and global channels (commentary), and module
+sources.
 
 ## Binding acceptance criteria
 
