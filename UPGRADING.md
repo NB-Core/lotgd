@@ -295,7 +295,12 @@ the game setting *Allow partial rendering* (`partial_render`, *Game Setup*, off
 by default), the player's preference *Change pages in place* and a Twig skin
 that declares regions (Aurora does). For such a player only:
 
-- the village, the forest and the inn are swapped in; every other page still loads normally;
+- every place that only displays is swapped in -- since Phase 6c not just the
+  village, the forest and the inn, but also the gardens, hall of fame, lists,
+  bios, news, stables, shops, healer, trainer, the bank's forms, clan halls and
+  more (see `PartialMode::ALLOWLIST`); buying, fighting, training and bookings
+  still load normally. A module that prints a `<script>` on such a page makes
+  that page load normally for the moment (the same fallback as before);
 - a link followed from a page that was already left in another tab or on
   another device is turned away and shows the latest page (`badnav.php`)
   instead of running a second time (this applies with the setting and the

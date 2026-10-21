@@ -200,6 +200,12 @@
         applyAsyncState(event.detail && event.detail.xhr);
         applyRegionVersions(event.detail && event.detail.xhr);
         regions.run('init', document);
+        // A browser focuses [autofocus] on page load only; a swapped form
+        // (the bank's amount field) gets it here.
+        const focus = document.querySelector(CONTENT + ' [autofocus]');
+        if (focus && typeof focus.focus === 'function') {
+            focus.focus();
+        }
     });
 
     function asyncClient() {
