@@ -453,6 +453,14 @@
             return { section: state.section, lastCommentId: state.lastCommentId, lastMailId: state.lastMailId, mailCount: state.mailCount, cursor: realtime.cursor };
         },
         syncRegionVersions: syncRegionVersions,
+        // Show a region's current content now (after the mail dialog closed).
+        refresh: function (region) {
+            if (realtime.on) {
+                refresh(region, Number.MAX_SAFE_INTEGER);
+            } else if (region === 'mail' && settings().updates) {
+                call('Mail', 'mailStatus', [true]).catch(function () {});
+            }
+        },
         // The partial client swaps regions its own way (init/destroy, htmx).
         setRegionSwapper: function (fn) {
             if (typeof fn === 'function') {

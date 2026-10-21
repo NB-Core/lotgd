@@ -24,5 +24,10 @@
     "lotgd-async": {
         "version": "1.0.0",
         "js": "assets/js/lotgd.async.js"
+    },
+    "lotgd-overlay": {
+        "version": "1.0.0",
+        "css": "assets/css/lotgd.overlay.css",
+        "js": "assets/js/lotgd.overlay.js"
     }
 }

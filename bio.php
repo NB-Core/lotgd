@@ -24,6 +24,7 @@ use Lotgd\Nltoappon;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\PageParts;
+use Lotgd\Page\Overlay;
 use Lotgd\Censor;
 
 require_once __DIR__ . "/common.php";
@@ -77,7 +78,7 @@ if ($target = Database::fetchAssoc($result)) {
     $output->output("`^Biography for %s`^.", $target['name']);
     $write = Translator::translateInline("Write Mail");
     if ($session['user']['loggedin']) {
-        $output->rawOutput("<a href=\"mail.php?op=write&to={$target['login']}\" target=\"_blank\" onClick=\"" . PageParts::popup("mail.php?op=write&to={$target['login']}") . ";return false;\"><img src='images/newscroll.GIF' width='16' height='16' alt='$write' border='0'></a>");
+        $output->rawOutput("<a href=\"mail.php?op=write&to={$target['login']}\" target=\"_blank\"" . Overlay::attribute() . " onClick=\"" . PageParts::popup("mail.php?op=write&to={$target['login']}") . ";return false;\"><img src='images/newscroll.GIF' width='16' height='16' alt='$write' border='0'></a>");
     }
     $output->outputNotl("`n`n");
 

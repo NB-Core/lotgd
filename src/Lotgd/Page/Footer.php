@@ -171,7 +171,12 @@ class Footer
                 $session['user']['loggedin']
             ) {
                 if ($settings->getSetting('forcedmotdpopup', 0)) {
-                    $headscript .= PageParts::popup('motd.php');
+                    if (Overlay::skinSupports()) {
+                        // The overlay client opens it once the page is shown.
+                        Output::addHeadMarkup('<meta name="lotgd-overlay-open" content="motd.php">');
+                    } else {
+                        $headscript .= PageParts::popup('motd.php');
+                    }
                 }
                 $session['needtoviewmotd'] = true;
             } else {
@@ -197,6 +202,12 @@ class Footer
             }
         } else {
             $headscript     = '';
+        }
+
+        // Popup pages in a dialog (Phase 6b) where the skin declares it.
+        if (Overlay::skinSupports()) {
+            Output::requireVendorAsset('lotgd-overlay', 'css');
+            Output::requireVendorAsset('lotgd-overlay', 'js');
         }
 
         // The partial client binds the access keys itself, from the links in
@@ -363,6 +374,18 @@ class Footer
     public static function popupFooter(): void
     {
         $state = self::buildPopupState();
+        if (Overlay::isRequested()) {
+            // Shown inside the page: the content alone (Phase 6b).
+            $overlay = Overlay::render($state);
+            Accounts::saveUser();
+            session_write_close();
+            PartialMode::sendHeader('Vary: X-Lotgd-Overlay');
+            foreach ($overlay['headers'] as $name => $value) {
+                PartialMode::sendHeader($name . ': ' . $value);
+            }
+            echo $overlay['body'];
+            exit();
+        }
         $browser_output = PageRenderer::render($state);
 
         Accounts::saveUser();

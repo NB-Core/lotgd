@@ -1,0 +1,54 @@
+/* Popup pages inside the page (assets/js/lotgd.overlay.js). */
+.lotgd-overlay {
+    width: min(720px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    background: var(--bs-body-bg, #1b1b1b);
+    color: var(--bs-body-color, #e0e0e0);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.lotgd-overlay::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.lotgd-overlay[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.lotgd-overlay__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.lotgd-overlay__title {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.lotgd-overlay__close {
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.lotgd-overlay__close:not(.btn-close)::before,
+.lotgd-overlay__close:empty::before {
+    content: "\00d7";
+}
+
+.lotgd-overlay__body {
+    padding: 12px 14px;
+    overflow: auto;
+}
+
+.lotgd-overlay[aria-busy="true"] .lotgd-overlay__body {
+    opacity: 0.6;
+}
