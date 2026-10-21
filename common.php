@@ -431,7 +431,8 @@ if (!defined('IS_INSTALLER') || (defined('IS_INSTALLER') && !IS_INSTALLER)) {
 // page request does, and everything else is answered here and ends.
 if (isset($settings) && (!defined('IS_INSTALLER') || !IS_INSTALLER)) {
     $installedVersion = (string) $settings->getSetting('installer_version', '-1');
-    if (SchemaUpgrade::canUpgradeItself($logd_version, $installedVersion, [SchemaUpgrade::class, 'hasMigrationTable'])) {
+    $installedMigration = (string) $settings->getSetting(SchemaUpgrade::MIGRATION_SETTING, '');
+    if (SchemaUpgrade::canUpgradeItself($logd_version, $installedVersion, [SchemaUpgrade::class, 'hasMigrationTable'], $installedMigration)) {
         $schemaUpgrade = AJAX_MODE ? null : SchemaUpgrade::forGame($settings);
         $schemaUpgradeOutcome = $schemaUpgrade === null ? SchemaUpgrade::BUSY : $schemaUpgrade->run($logd_version);
         if ($schemaUpgradeOutcome !== SchemaUpgrade::UPGRADED) {

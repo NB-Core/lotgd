@@ -23,6 +23,12 @@ use Lotgd\Settings;
  * database. So such an installation now upgrades itself on the first page
  * request after the update, and the installer stays for those two cases.
  *
+ * A migration can also arrive without a new version -- on a development
+ * branch, in a hotfix -- so the game records the newest migration it applied
+ * as well (`schema_migration`) and upgrades when the code ships a newer one
+ * ({@see self::LATEST_MIGRATION}). Both are settings, which every request has
+ * loaded already: telling whether to upgrade costs no query.
+ *
  * `installer_version` is only advanced once every migration has succeeded. A
  * failed upgrade leaves the game locked and is retried, at most once per
  * {@see self::RETRY_AFTER_SECONDS}, so a broken migration does not hit the
@@ -44,6 +50,15 @@ final class SchemaUpgrade
     /** Unix time of the last failed attempt, 0 after a success. */
     public const FAILED_AT_SETTING = 'schema_upgrade_failed_at';
 
+    /** The newest migration the database has, recorded after an upgrade or an install. */
+    public const MIGRATION_SETTING = 'schema_migration';
+
+    /**
+     * The newest migration in migrations/. Raise it with every new migration;
+     * tests/Upgrade/SchemaUpgradeTest.php fails until it names the newest file.
+     */
+    public const LATEST_MIGRATION = 'Version20250724000025';
+
     private Closure $log;
     private Closure $clock;
     private Closure $missingFiles;
@@ -56,6 +71,8 @@ final class SchemaUpgrade
      * @param (callable(): int)|null                $clock        Current Unix time
      * @param (callable(string): list<string>)|null  $missingFiles Required files absent for the given code
      *                                                            version. Defaults to {@see ShippedFiles}
+     * @param string|null                           $migrationsDir Where {@see self::LATEST_MIGRATION} must be;
+     *                                                            defaults to migrations/
      */
     public function __construct(
         private Settings $settings,
@@ -63,7 +80,8 @@ final class SchemaUpgrade
         private SchemaUpgradeLock $lock,
         ?callable $log = null,
         ?callable $clock = null,
-        ?callable $missingFiles = null
+        ?callable $missingFiles = null,
+        private ?string $migrationsDir = null
     ) {
         $this->log = Closure::fromCallable($log ?? [self::class, 'logToGameAndErrorLog']);
         $this->clock = Closure::fromCallable($clock ?? 'time');
@@ -87,17 +105,24 @@ final class SchemaUpgrade
     /**
      * Whether an installation at $schemaVersion can upgrade itself to $codeVersion.
      *
-     * False when the versions match, when there is no installation yet ("-1"),
-     * and for a database without the migrations table: that is a 1.x schema,
-     * which only the installer knows how to convert.
+     * True when the versions differ, or when the code ships a migration newer
+     * than the one recorded ($schemaMigration, the setting
+     * {@see self::MIGRATION_SETTING}; '' before it was first recorded). False
+     * when there is no installation yet ("-1"), and for a database without the
+     * migrations table: that is a 1.x schema, which only the installer knows
+     * how to convert.
      *
-     * @param callable(): bool $hasMigrationTable Asked last, and only when the
-     *                                            versions differ: every page
+     * @param callable(): bool $hasMigrationTable Asked last, and only when
+     *                                            something differs: every page
      *                                            request passes through here
      */
-    public static function canUpgradeItself(string $codeVersion, string $schemaVersion, callable $hasMigrationTable): bool
-    {
-        return $schemaVersion !== $codeVersion
+    public static function canUpgradeItself(
+        string $codeVersion,
+        string $schemaVersion,
+        callable $hasMigrationTable,
+        string $schemaMigration = self::LATEST_MIGRATION
+    ): bool {
+        return ($schemaVersion !== $codeVersion || $schemaMigration !== self::LATEST_MIGRATION)
             && $schemaVersion !== '-1'
             && $schemaVersion !== ''
             && $hasMigrationTable();
@@ -129,6 +154,14 @@ final class SchemaUpgrade
         // on its way, and nothing would run it afterwards. Nothing is logged:
         // this is asked on every request until the upload is complete.
         $this->lastMissing = ($this->missingFiles)($codeVersion);
+        // The file list is per version, and a migration can arrive under the
+        // same version: the migration this code names must be here too, or
+        // it would be recorded without having run.
+        $latest = 'migrations/' . self::LATEST_MIGRATION . '.php';
+        $latestFile = ($this->migrationsDir ?? dirname(__DIR__, 3) . '/migrations') . '/' . self::LATEST_MIGRATION . '.php';
+        if (!is_file($latestFile) && !in_array($latest, $this->lastMissing, true)) {
+            $this->lastMissing[] = $latest;
+        }
         if ($this->lastMissing !== []) {
             return self::INCOMPLETE;
         }
@@ -141,7 +174,8 @@ final class SchemaUpgrade
             // A request that waited for the lock may find the work done.
             $this->settings->clearSettings();
             $fromVersion = (string) $this->settings->getSetting('installer_version', '-1');
-            if ($fromVersion === $codeVersion) {
+            $fromMigration = (string) $this->settings->getSetting(self::MIGRATION_SETTING, '');
+            if ($fromVersion === $codeVersion && $fromMigration === self::LATEST_MIGRATION) {
                 return self::UPGRADED;
             }
 
@@ -150,6 +184,7 @@ final class SchemaUpgrade
 
             $executed = $this->runner->migrate();
             $this->settings->saveSetting('installer_version', $codeVersion);
+            $this->settings->saveSetting(self::MIGRATION_SETTING, self::LATEST_MIGRATION);
             if ($failedAt > 0) {
                 $this->settings->saveSetting(self::FAILED_AT_SETTING, 0);
             }
