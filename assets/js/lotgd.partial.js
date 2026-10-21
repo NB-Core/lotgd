@@ -206,6 +206,20 @@
         if (focus && typeof focus.focus === 'function') {
             focus.focus();
         }
+        // A skin that shows the page title in its layout marks it; the
+        // <title> came with the answer.
+        document.querySelectorAll('[data-lotgd-title]').forEach(function (element) {
+            element.textContent = document.title;
+        });
+        // A mobile menu the link was followed from closes, as a page change
+        // would have left it (Bootstrap's offcanvas, where the skin uses it).
+        const Offcanvas = window.bootstrap && window.bootstrap.Offcanvas;
+        document.querySelectorAll('[data-lotgd-close-on-swap].show').forEach(function (element) {
+            const panel = Offcanvas && Offcanvas.getInstance(element);
+            if (panel) {
+                panel.hide();
+            }
+        });
     });
 
     function asyncClient() {

@@ -2,5 +2,7 @@
   "name": "Puritanic",
   "author": "Oliver Brendel",
   "license": "MIT",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "regions": true,
+  "overlay": true
 }

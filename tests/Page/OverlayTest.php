@@ -85,7 +85,7 @@ final class OverlayTest extends TestCase
         self::assertSame(' data-lotgd-overlay="1"', Overlay::attribute());
 
         TwigTemplate::deactivate();
-        TwigTemplate::init('modern', $this->cacheDir);
+        TwigTemplate::init('../tests/Fixtures/twig-skin-without-flags', $this->cacheDir);
         self::assertFalse(Overlay::skinSupports(), 'A Twig skin without the key.');
     }
 
