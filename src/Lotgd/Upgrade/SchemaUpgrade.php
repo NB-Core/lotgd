@@ -71,6 +71,8 @@ final class SchemaUpgrade
      * @param (callable(): int)|null                $clock        Current Unix time
      * @param (callable(string): list<string>)|null  $missingFiles Required files absent for the given code
      *                                                            version. Defaults to {@see ShippedFiles}
+     * @param string|null                           $migrationsDir Where {@see self::LATEST_MIGRATION} must be;
+     *                                                            defaults to migrations/
      */
     public function __construct(
         private Settings $settings,
@@ -78,7 +80,8 @@ final class SchemaUpgrade
         private SchemaUpgradeLock $lock,
         ?callable $log = null,
         ?callable $clock = null,
-        ?callable $missingFiles = null
+        ?callable $missingFiles = null,
+        private ?string $migrationsDir = null
     ) {
         $this->log = Closure::fromCallable($log ?? [self::class, 'logToGameAndErrorLog']);
         $this->clock = Closure::fromCallable($clock ?? 'time');
@@ -151,6 +154,14 @@ final class SchemaUpgrade
         // on its way, and nothing would run it afterwards. Nothing is logged:
         // this is asked on every request until the upload is complete.
         $this->lastMissing = ($this->missingFiles)($codeVersion);
+        // The file list is per version, and a migration can arrive under the
+        // same version: the migration this code names must be here too, or
+        // it would be recorded without having run.
+        $latest = 'migrations/' . self::LATEST_MIGRATION . '.php';
+        $latestFile = ($this->migrationsDir ?? dirname(__DIR__, 3) . '/migrations') . '/' . self::LATEST_MIGRATION . '.php';
+        if (!is_file($latestFile) && !in_array($latest, $this->lastMissing, true)) {
+            $this->lastMissing[] = $latest;
+        }
         if ($this->lastMissing !== []) {
             return self::INCOMPLETE;
         }

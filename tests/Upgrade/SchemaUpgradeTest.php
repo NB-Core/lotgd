@@ -75,6 +75,28 @@ final class SchemaUpgradeTest extends TestCase
         self::assertSame(SchemaUpgrade::LATEST_MIGRATION, $settings->getSetting(SchemaUpgrade::MIGRATION_SETTING));
     }
 
+    public function testTheNewestMigrationIsNotRecordedBeforeItsFileArrived(): void
+    {
+        // An upload in progress: the new SchemaUpgrade.php is there, the
+        // migration it names is not yet, and the file list is per version.
+        $settings = new DummySettings(['installer_version' => self::CODE, SchemaUpgrade::MIGRATION_SETTING => 'Version20250101000000']);
+        $runner = $this->createMock(MigrationRunner::class);
+        $runner->expects(self::never())->method('migrate');
+        $upgrade = new SchemaUpgrade(
+            $settings,
+            $runner,
+            $this->lock(true),
+            fn (string $message, string $severity) => null,
+            fn (): int => $this->now,
+            static fn (): array => [],
+            sys_get_temp_dir()
+        );
+
+        self::assertSame(SchemaUpgrade::INCOMPLETE, $upgrade->run(self::CODE));
+        self::assertSame(['migrations/' . SchemaUpgrade::LATEST_MIGRATION . '.php'], $upgrade->lastMissing());
+        self::assertSame('Version20250101000000', $settings->getSetting(SchemaUpgrade::MIGRATION_SETTING));
+    }
+
     public function testASuccessfulUpgradeRecordsTheNewestMigration(): void
     {
         $settings = new DummySettings(['installer_version' => self::INSTALLED]);
