@@ -42,6 +42,8 @@ require_once $root . '/install/data/tables.php';
 // without this the page body is unreachable by construction.
 \Lotgd\Tests\Stubs\Database::$settings_table = [
     'installer_version' => (string) $spec['version'],
+    // Likewise the newest migration: otherwise every page would upgrade first.
+    \Lotgd\Upgrade\SchemaUpgrade::MIGRATION_SETTING => \Lotgd\Upgrade\SchemaUpgrade::LATEST_MIGRATION,
     'charset' => 'UTF-8',
 ] + (array) ($spec['settings'] ?? []);
 

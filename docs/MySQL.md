@@ -166,6 +166,8 @@ php bin/doctrine \
 
 This will apply all new migrations to the configured database. During development you can generate additional migrations using `migrations:diff` or `migrations:generate`.
 
+A new migration also raises `Lotgd\Upgrade\SchemaUpgrade::LATEST_MIGRATION` to its class name (`tests/Upgrade/SchemaUpgradeTest.php` fails until it does). That is how a game whose version did not change still applies the migration by itself on the next page request.
+
 ## Session Persistence
 
 `Lotgd\Accounts::saveUser()` now persists account updates through Doctrine when the

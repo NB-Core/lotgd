@@ -20,6 +20,7 @@ use Lotgd\Redirect;
 use Lotgd\Settings;
 use Lotgd\PasswordHelper;
 use Lotgd\Modules\Installer as ModuleInstaller;
+use Lotgd\Upgrade\SchemaUpgrade;
 use Lotgd\Doctrine\MigrationRunner;
 use Doctrine\Migrations\Version\Version;
 use Doctrine\Migrations\Version\ExecutionResult;
@@ -352,6 +353,9 @@ if ($installerIsAncient) {
             Nav::add("Login Screen", "./");
         }
         $this->saveSetting("installer_version", $logd_version);
+        // The migrations ran in an earlier stage: the first page request need
+        // not look for new ones.
+        $this->saveSetting(SchemaUpgrade::MIGRATION_SETTING, SchemaUpgrade::LATEST_MIGRATION);
         $file = __DIR__ . '/../../installer.php';
 
         // Check if the button has been pressed to delete the installer file

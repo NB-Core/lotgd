@@ -185,6 +185,20 @@ if ($name != "") {
         } catch (DbalException | \mysqli_sql_exception $exception) {
             $authQueryFailed = true;
             $acctrow = null;
+            // The player is told their login was incorrect, as for a wrong
+            // password; the administrator needs the cause -- a migration that
+            // did not run, a lost connection. The message names no password:
+            // the driver's text, without the statement's parameters.
+            //
+            // Error log only: anyone can repeat a login at will, and while the
+            // database fails each attempt would otherwise write a row.
+            SecurityLog::event(
+                'Login failed in the database',
+                ['login' => $name, 'error' => $exception->getMessage()],
+                null,
+                GameLog::SEVERITY_ERROR,
+                persist: false
+            );
         }
 
         if ($acctrow) {

@@ -177,8 +177,13 @@ On a development machine or test server:
 
 An installation that already runs on Doctrine migrations brings its database up
 to date by itself. When the game's version (`$logd_version` in `common.php`)
-differs from the `installer_version` setting, the first page request applies
-the pending migrations, records the new version and serves the page. Requests
+differs from the `installer_version` setting, or when the code ships a
+migration newer than the one recorded in the `schema_migration` setting (a
+development branch or a hotfix that adds a migration without a new version),
+the first page request applies the pending migrations, records the new version
+and the newest migration, and serves the page. An installation that has no
+`schema_migration` yet records it on the first request after this update; that
+request finds nothing to migrate. Requests
 arriving meanwhile see the "upgrade in progress" page. A failed migration keeps
 the game on that page, is logged to the game log (category `maintenance`) and
 PHP's error log, and is retried at most once a minute.
