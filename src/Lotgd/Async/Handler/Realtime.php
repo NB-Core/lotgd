@@ -5,30 +5,41 @@ declare(strict_types=1);
 namespace Lotgd\Async\Handler;
 
 use Lotgd\Async\Response;
+use Lotgd\Commentary as CoreCommentary;
 use Lotgd\Realtime as Outbox;
 use Lotgd\Realtime\Poll;
 
 /**
  * The realtime outbox over the async endpoint (docs/ReactiveCore.md,
  * Phases 4 and 6): announcements after a cursor, and the current content of
- * a region. The channel is always the player's own, from the account the
- * request read -- never from the request.
+ * a region. The channels are the player's own, from the account the
+ * request read, and a commentary section the server showed them -- never
+ * one the request names on its own.
  */
 class Realtime
 {
     /**
      * Announcements for the player after $cursor, in data `realtime`
-     * (`{cursor, events, resync?}`, or `{disabled: true}`).
+     * (`{cursor, events, resync?}`, or `{disabled: true}`). With $section,
+     * the new comments of that section too -- if the player may read it
+     * (Commentary::mayRead()); otherwise the section is left out.
      */
-    public function poll(int $cursor = 0): Response
+    public function poll(int $cursor = 0, string $section = ''): Response
     {
+        global $session;
+
         $response = new Response();
         $acctid = $this->player();
         if ($acctid === null) {
             return $response->data('realtime', ['disabled' => true]);
         }
 
-        return $response->data('realtime', Poll::events([Outbox::userChannel($acctid)], max(0, $cursor)));
+        $channels = [Outbox::userChannel($acctid)];
+        if ($section !== '' && CoreCommentary::mayRead($section, $session['user'] ?? [])) {
+            $channels[] = Outbox::sectionChannel($section);
+        }
+
+        return $response->data('realtime', Poll::events($channels, max(0, $cursor)));
     }
 
     /**

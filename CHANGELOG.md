@@ -21,6 +21,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 - Mail and the message of the day open in a dialog inside the page instead of a browser window on skins that declare `"overlay": true` (Aurora); links and forms stay in the dialog, "Send and Close" closes it and the header's mail link updates. A new MOTD with *Force the MOTD popup* on opens there by itself. Other skins, legacy templates and browsers without JavaScript keep the window ([docs/ReactiveCore.md](docs/ReactiveCore.md), Phase 6b).
 
 - Partial rendering covers every place that only displays, not just the village, the forest and the inn: the gardens, hall of fame, list of warriors, bios, news, stables, shops, healer, trainer, bank forms, clan halls and more change in place ([docs/ReactiveCore.md](docs/ReactiveCore.md), Phase 6c). Buying, fighting, training and bank bookings remain page changes; a PvP attack link is never swapped.
+- Live commentary: with `realtime_enabled` on, a new comment reaches the players reading its section (village, inn, clan hall, …) without a reload or a poll of their own: `Commentary::injectRawComment()` announces it on the channel `section-<section>`, and the page fetches the new lines when announced ([docs/ReactiveCore.md](docs/ReactiveCore.md), *Live commentary*). Players with only the AJAX preference keep polling. A page without commentary no longer polls the last section it showed, and the fetched lines leave out locked accounts and pass the hook `viewcommentary`, as on the page.
 
 ### Changed
 
@@ -37,6 +38,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 ### Fixed
 
 - A biography (`bio.php?char=…`) put the `char` of its address into the account lookup unescaped; it is a bound parameter now.
+- The async comment calls (`commentaryText`, `commentaryRefresh`, `pollUpdates`) took the section from the request, so any logged-in player could read a clan hall, the Superuser Grotto or a petition's comments by naming the section. A section is now read only if a page showed it to the player in this session and the account still passes that page's check (`Commentary::mayRead()`).
 - The clan membership page let an officer change the rank of, or remove, a player of another clan by posting that player's account id. Rank changes and removals now apply to members of the officer's own clan only.
 - *Character Restorer*'s e-mail hash conversion listed each snapshot with an account id it never read, which raised "Undefined variable $acctid_acc" once per snapshot.
 - The game settings reported *Saved:* with nothing after it for a setting that was not saved. The red "No" was written as `"`$No`0"`, in double quotes, so PHP read `$No` as an undefined variable.

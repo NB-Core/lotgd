@@ -69,6 +69,15 @@ final class Realtime
     }
 
     /**
+     * The channel of a commentary section. Who may read it is decided by
+     * Commentary::mayRead(), never by the request.
+     */
+    public static function sectionChannel(string $section): string
+    {
+        return 'section-' . $section;
+    }
+
+    /**
      * Announce a change made by the running guarded action, in its transaction.
      *
      * @param array{region:string,version:int} $payload

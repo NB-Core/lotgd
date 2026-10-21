@@ -28,7 +28,10 @@ class Commentary
         if ($args === false || !is_array($args)) {
             return new Response();
         }
-        $section = $args['section'];
+        $section = (string) ($args['section'] ?? '');
+        if (!CoreCommentary::mayRead($section, $session['user'] ?? [])) {
+            return new Response();
+        }
         $message = '';
         $limit = 25;
         $talkline = 'says';
@@ -40,12 +43,19 @@ class Commentary
         return $objResponse;
     }
 
+    /** The most lines one refresh returns; the page shows no more either. */
+    private const REFRESH_LIMIT = 50;
+
     /**
-     * Return new commentary posts after a given comment ID.
+     * Return new commentary posts after a given comment ID, for a section
+     * the player may read (Commentary::mayRead()); for any other, nothing.
      */
     public function commentaryRefresh(string $section, int $lastId): Response
     {
         global $session;
+        if (!CoreCommentary::mayRead($section, $session['user'] ?? [])) {
+            return new Response();
+        }
         $comments = [];
         $nobios = ['motd' => true];
         $scriptname = $session['last_comment_scriptname'] ?? ScriptName::current();
@@ -68,7 +78,10 @@ class Commentary
             . $commentaryTable . '.author LEFT JOIN ' . $clansTable
             . ' ON ' . $clansTable . '.clanid=' . $accountsTable . '.clanid '
             . 'WHERE ' . $commentaryTable . '.section = :section AND '
-            . $commentaryTable . '.commentid > :lastId ORDER BY ' . $commentaryTable . '.commentid ASC';
+            . $commentaryTable . '.commentid > :lastId'
+            // As the page shows them (Commentary::buildCommentFetchSql()).
+            . ' AND (' . $accountsTable . '.locked = 0 OR ' . $accountsTable . '.locked IS NULL)'
+            . ' ORDER BY ' . $commentaryTable . '.commentid ASC LIMIT ' . self::REFRESH_LIMIT;
 
         $rows = $conn->fetchAllAssociative(
             $sql,
@@ -88,6 +101,7 @@ class Commentary
             $newId = $row['commentid'];
             $line = CoreCommentary::renderCommentLine($row, $linkbios);
             // Convert colour codes but preserve embedded HTML like profile links
+            $line = \Lotgd\Modules\HookHandler::hook('viewcommentary', ['commentline' => $line])['commentline'];
             $line = $output->appoencode($line, true);
             $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
         }
@@ -111,17 +125,9 @@ class Commentary
      */
     public function pollUpdates($section = null, $lastId = null, $cursor = null): Response
     {
-        // Handle parameter conversion issues
-        if ($section === null || $section === '') {
-            $section = 'superuser'; // fallback
-        }
-        if ($lastId === null) {
-            $lastId = 0; // fallback
-        }
-
-        // Ensure proper types
-        $section = (string) $section;
-        $lastId = (int) $lastId;
+        // '' (or nothing): the page shows no commentary.
+        $section = is_string($section) ? $section : '';
+        $lastId = is_numeric($lastId) ? (int) $lastId : 0;
 
         $response = new Response();
 
@@ -142,16 +148,22 @@ class Commentary
             throw new Exception('AJAX polling: Timeout handler error', 0, $e);
         }
 
-        try {
-            $response->merge($this->commentaryRefresh($section, $lastId));
-        } catch (\Throwable $e) {
-            throw new Exception('AJAX polling: Commentary handler error', 0, $e);
+        // The realtime announcements ride on the same request (one poll per
+        // interval, docs/ReactiveCore.md Phase 6); data `realtime`. A new
+        // comment is one of them, and the client fetches it when announced,
+        // so a realtime poll does not look for comments itself.
+        $live = $cursor !== null && is_numeric($cursor) && \Lotgd\Realtime::enabledFor($session['user'] ?? []);
+
+        if (!$live && $section !== '') {
+            try {
+                $response->merge($this->commentaryRefresh($section, $lastId));
+            } catch (\Throwable $e) {
+                throw new Exception('AJAX polling: Commentary handler error', 0, $e);
+            }
         }
 
-        // The realtime announcements ride on the same request (one poll per
-        // interval, docs/ReactiveCore.md Phase 6); data `realtime`.
-        if ($cursor !== null && is_numeric($cursor) && \Lotgd\Realtime::enabledFor($session['user'] ?? [])) {
-            $response->merge((new Realtime())->poll((int) $cursor));
+        if ($live) {
+            $response->merge((new Realtime())->poll((int) $cursor, $section));
         }
 
         return $response;

@@ -274,6 +274,41 @@
         });
     }
 
+    /*
+     * Live commentary: an announced comment newer than the last one shown
+     * fetches the lines after it, into the section the page shows.
+     */
+    const comments = { fetching: false, wanted: 0 };
+
+    function commentRefresh(version) {
+        if (!state.section || version <= (state.lastCommentId || 0)) {
+            return;
+        }
+        comments.wanted = Math.max(comments.wanted, version);
+        if (comments.fetching) {
+            return;
+        }
+        comments.fetching = true;
+        const asked = comments.wanted;
+        const section = state.section;
+        call('Commentary', 'commentaryRefresh', [section, state.lastCommentId || 0]).then(function (data) {
+            if (data.commentary && data.commentary.section === state.section) {
+                state.lastCommentId = Math.max(state.lastCommentId, Number(data.commentary.lastId) || 0);
+            }
+            // Fetched: what is left wanted is only what was announced while
+            // this was on its way (a line the page does not show, from a
+            // locked author, would otherwise be asked for again and again).
+            if (comments.wanted <= asked) {
+                comments.wanted = 0;
+            }
+        }).catch(function () {}).then(function () {
+            comments.fetching = false;
+            if (comments.wanted > asked) {
+                commentRefresh(comments.wanted);
+            }
+        });
+    }
+
     function announcements(answer) {
         if (!answer || answer.disabled) {
             realtime.on = false;
@@ -283,6 +318,7 @@
             Object.keys(REGION_SELECTORS).forEach(function (region) {
                 refresh(region, Number.MAX_SAFE_INTEGER);
             });
+            commentRefresh(Number.MAX_SAFE_INTEGER);
         }
         (answer.events || []).forEach(function (event) {
             if (realtime.seen.indexOf(event.id) !== -1) {
@@ -292,7 +328,11 @@
             if (realtime.seen.length > 200) {
                 realtime.seen.shift();
             }
-            refresh(event.region, event.version);
+            if (event.type === 'comment') {
+                commentRefresh(event.version);
+            } else {
+                refresh(event.region, event.version);
+            }
         });
         if (typeof answer.cursor === 'number' && answer.cursor > realtime.cursor) {
             realtime.cursor = answer.cursor;
@@ -335,12 +375,14 @@
 
     function pollOnce() {
         if (settings().updates) {
+            // No section: the page shows no commentary, none is asked for.
+            // With realtime on, new comments are announced, not looked for.
             return call('Commentary', 'pollUpdates', [
-                state.section || 'village',
+                state.section || '',
                 state.lastCommentId || 0,
                 realtime.on ? realtime.cursor : null
             ]).then(function (data) {
-                if (data.commentary && data.commentary.section === (state.section || 'village')) {
+                if (data.commentary && data.commentary.section === state.section) {
                     state.lastCommentId = Math.max(state.lastCommentId, Number(data.commentary.lastId) || 0);
                 }
                 if (data.realtime) {
@@ -348,7 +390,7 @@
                 }
             });
         }
-        return call('Realtime', 'poll', [realtime.cursor]).then(function (data) {
+        return call('Realtime', 'poll', [realtime.cursor, state.section || '']).then(function (data) {
             announcements(data.realtime);
         });
     }

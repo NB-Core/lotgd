@@ -193,7 +193,7 @@ class Footer
                     // The per-page values the poll starts from. A partial
                     // answer carries them, since it has no <head>.
                     $asyncState = [
-                        'commentSection' => (string) ($session['last_comment_section'] ?? ''),
+                        'commentSection' => \Lotgd\Commentary::shownSection(),
                         'lastCommentId' => (int) ($session['lastcommentid'] ?? 0),
                         'lastUnreadMailId' => (int) ($lastUnreadMailId ?? 0),
                         'lastUnreadMailCount' => (int) ($lastUnreadMailCount ?? 0),
