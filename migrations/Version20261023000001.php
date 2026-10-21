@@ -40,7 +40,7 @@ final class Version20261023000001 extends AbstractMigration
                 . "  target_key varchar(64) NOT NULL DEFAULT '',\n"
                 . "  text varchar(255) NOT NULL DEFAULT '',\n"
                 . "  link varchar(255) NOT NULL DEFAULT '',\n"
-                . "  method varchar(8) NOT NULL DEFAULT 'POST',\n"
+                . "  method varchar(8) NOT NULL DEFAULT '',\n"
                 . "  created datetime NOT NULL DEFAULT '1970-01-01 00:00:00',\n"
                 . "  expires_at datetime NOT NULL DEFAULT '1970-01-01 00:00:00',\n"
                 . "  used_at datetime DEFAULT NULL,\n"

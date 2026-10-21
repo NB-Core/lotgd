@@ -1273,7 +1273,7 @@ function get_all_tables()
             'name' => 'link', 'type' => 'varchar(255)', 'default' => ''
             ),
         'method' => array(
-            'name' => 'method', 'type' => 'varchar(8)', 'default' => 'POST'
+            'name' => 'method', 'type' => 'varchar(8)', 'default' => ''
             ),
         'created' => array(
             'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
