@@ -127,6 +127,10 @@ if (Encounter::enabled() && !$unverified) {
         Nav::add('Look again', $view);
         Nav::add('Who is around', 'encounter.php');
         $output->rawOutput("<div data-lotgd-region='encounter'>" . Encounter::regionHtml($me) . '</div>');
+        // The controls of the state shown: outside the region, so the client
+        // hides them when the region moves on (lotgd.duel.js).
+        $output->rawOutput("<div data-lotgd-encounter-controls='{$id}' data-lotgd-encounter-state='"
+            . htmlspecialchars($state, ENT_QUOTES, 'UTF-8') . "'>");
         if ($state === Encounter::PENDING && (string) $encounter['stakes'] === Encounter::SERIOUS) {
             $output->output("`n`\$This is a serious duel: the loser dies, and loses gold and experience as in any player fight.`0`n`n");
         }
@@ -158,6 +162,7 @@ if (Encounter::enabled() && !$unverified) {
                 $fields
             ));
         }
+        $output->rawOutput('</div>');
     } else {
         if ($op === 'view') {
             $output->output("`7There is no such encounter for you.`n`n");
