@@ -443,8 +443,9 @@ With live encounters on, `pvp.php` also lists the warriors who are awake (*Warri
 live duel. A serious one follows PvP's rules. The classic attack on sleeping players is unchanged.
 
 Migration `Version20261027000001` adds `encounters.winner` and `encounters.loser` (with keys on `kind`). A duel
-fills them when it is settled; bios and the hall of fame (*Duels*) count from them. Duels fought before the
-migration are not counted. New setting `duel_announce_inn` (on): a system comment in the inn when a duel begins.
+fills them when it is settled; bios and the hall of fame (*Duels*) count from them. The daily cleanup now keeps
+the row of a decided duel (without its data and rounds), so `encounters` grows by one small row per duel. Duels
+fought before the migration are not counted. New setting `duel_announce_inn` (on): a system comment in the inn when a duel begins.
 
 For module authors:
 

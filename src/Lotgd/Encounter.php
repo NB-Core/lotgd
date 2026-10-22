@@ -867,7 +867,7 @@ final class Encounter
 
     /**
      * Encounters are only kept for a while; open ones past their time free
-     * their players.
+     * their players. Decided duels keep their record row.
      */
     public static function cleanup(string $before): int
     {
@@ -878,12 +878,24 @@ final class Encounter
             ['now' => date('Y-m-d H:i:s'), 'pending' => self::PENDING, 'accepted' => self::ACCEPTED]
         );
 
+        // A duel that was decided stays as the record bios and the hall of
+        // fame count (winner, loser, stakes); only its play goes -- the data
+        // and its rounds. Everything else old goes whole.
         $removed += $conn->executeStatement(
-            'DELETE FROM ' . Database::prefix('encounters') . ' WHERE created < :before',
+            'DELETE FROM ' . Database::prefix('encounters') . ' WHERE created < :before AND winner IS NULL',
+            ['before' => $before]
+        );
+        $removed += $conn->executeStatement(
+            'UPDATE ' . Database::prefix('encounters') . ' SET data = NULL WHERE created < :before AND data IS NOT NULL',
+            ['before' => $before]
+        );
+        $removed += $conn->executeStatement(
+            'DELETE r FROM ' . Database::prefix('encounter_rounds') . ' r INNER JOIN ' . Database::prefix('encounters')
+            . ' e ON e.id = r.encounter_id WHERE e.created < :before',
             ['before' => $before]
         );
 
-        // The rounds of the duels just removed.
+        // The rounds of the encounters just removed.
         return $removed + $conn->executeStatement(
             'DELETE r FROM ' . Database::prefix('encounter_rounds') . ' r LEFT JOIN ' . Database::prefix('encounters')
             . ' e ON e.id = r.encounter_id WHERE e.id IS NULL'

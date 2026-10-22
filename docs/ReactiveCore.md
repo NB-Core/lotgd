@@ -946,6 +946,8 @@ Verified:
 - **Record.** `Encounter::settle()` writes `encounters.winner` and `encounters.loser` (none in a draw).
   `Encounter::record()` counts them for the bio line; hof.php's `duels` ranks them. Both are shown only with live
   encounters on.
+  - The daily cleanup keeps a decided duel's row as that record. It drops only the duel's data and rounds; undecided
+    encounters still go whole after a day.
 
 ## Binding acceptance criteria
 

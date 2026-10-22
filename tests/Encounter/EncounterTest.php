@@ -317,6 +317,17 @@ final class EncounterTest extends TestCase
         self::assertSame(1, $GLOBALS['session']['watching']);
     }
 
+    public function testTheDailyCleanupKeepsTheRecordOfDecidedDuels(): void
+    {
+        Encounter::cleanup('2026-01-01 00:00:00');
+
+        $sql = array_map(static fn (array $s): string => (string) $s['sql'], $this->connection->executeStatements);
+        self::assertNotSame([], preg_grep('/^DELETE FROM encounters WHERE created < :before AND winner IS NULL$/', $sql), 'Only undecided encounters go whole.');
+        self::assertNotSame([], preg_grep('/^UPDATE encounters SET data = NULL WHERE created < :before/', $sql), 'A kept record drops its play.');
+        self::assertNotSame([], preg_grep('/^DELETE r FROM encounter_rounds r INNER JOIN encounters e ON e.id = r.encounter_id WHERE e.created < :before$/', $sql));
+        self::assertSame([], preg_grep('/^DELETE FROM encounters WHERE created < :before$/', $sql));
+    }
+
     public function testARecordCountsWinsSeriousWinsAndLosses(): void
     {
         $this->connection->queryResultsByPattern['/AS won, COALESCE\(SUM\(winner = :acctid AND stakes = :serious\), 0\) AS serious/'] = [['won' => '3', 'serious' => '1', 'lost' => '2']];
