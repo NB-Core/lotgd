@@ -122,16 +122,18 @@ final class Status
             'grants_enabled' => ['guarded_actions'],
             'live_encounters' => ['realtime_enabled', 'grants_enabled'],
         ];
-        $on = [];
+        // A switch counts as running for what needs it only when its own
+        // tables are ready and its needs run -- whether it is on already or
+        // set in this step.
+        $runs = [];
         $set = [];
         foreach (self::RECOMMENDED as $key) {
-            $enabled = (int) $this->setting($key, '0') === 1;
             $possible = $ready[$key];
             foreach ($needs[$key] ?? [] as $need) {
-                $possible = $possible && ($on[$need] ?? false);
+                $possible = $possible && ($runs[$need] ?? false);
             }
-            $on[$key] = $enabled || $possible;
-            if (!$enabled && $possible) {
+            $runs[$key] = $possible;
+            if ($possible && (int) $this->setting($key, '0') !== 1) {
                 $set[] = $key;
             }
         }

@@ -67,6 +67,13 @@ final class StatusTest extends TestCase
         self::assertSame(['realtime_enabled', 'grants_enabled', 'live_encounters'], $status->recommended());
     }
 
+    public function testAnEnabledSwitchThatCannotRunIsNoBaseForWhatNeedsIt(): void
+    {
+        $status = $this->make(['guarded_actions' => 1, 'defaultskin' => 'twig:aurora'], nonTransactional: ['action_log']);
+
+        self::assertSame(['partial_render', 'realtime_enabled'], $status->recommended(), 'Grants and duels need guarded actions that cannot run.');
+    }
+
     public function testASettingOnWithoutWhatItNeedsSaysSo(): void
     {
         $rows = $this->byFeature($this->make(['live_encounters' => 1, 'defaultskin' => 'twig:aurora'])->rows());

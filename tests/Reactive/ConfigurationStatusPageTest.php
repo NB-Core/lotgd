@@ -24,6 +24,11 @@ final class ConfigurationStatusPageTest extends TestCase
         self::assertMatchesRegularExpression("~<form action='configuration.php\\?op=enablereactive' method='POST'[^>]*>\\s*<input type='hidden' name='form_csrf_token'~", $run->html);
         self::assertStringContainsString('Turn on the recommended live features', $run->html);
         self::assertLessThan(strpos($run->html, "action='configuration.php?op=save'"), strpos($run->html, 'lotgd-reactive-status'), 'Above the form.');
+        self::assertMatchesRegularExpression(
+            "~<select [^>]*name='partial_render_default'[^>]*>(?:(?!</select>).)*<option value='1' selected>~s",
+            $run->html,
+            'The default for players shows as on before it was ever saved.'
+        );
     }
 
     public function testTheButtonTurnsOnTheRecommendedSettingsAndLogsThem(): void

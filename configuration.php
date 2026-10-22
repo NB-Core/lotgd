@@ -575,6 +575,9 @@ switch ($type_setting) {
                 // the form shows it; the range field would otherwise start at 4.
                 \Lotgd\PasswordHelper::minLength($settings);
                 $settings->getSetting(\Lotgd\Update\UpstreamVersion::SETTING_ENABLED, 1);
+                // Default on: stored before the form shows it, so saving
+                // unrelated settings does not turn it off.
+                $settings->getSetting('partial_render_default', 1);
 
                 //
 
