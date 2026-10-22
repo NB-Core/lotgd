@@ -164,6 +164,16 @@ final class EncounterPageTest extends TestCase
         self::assertStringContainsString('your skin cannot do that yet', $run->html);
     }
 
+    public function testWithPagesInPlaceOffForTheGameThePlayerLearnsItIsTheAdministrators(): void
+    {
+        $run = $this->page('GET', [], [], ['partial_render' => 0] + self::SETTINGS);
+
+        self::assertStringContainsString("<p class='lotgd-live-hint'>", $run->html);
+        self::assertStringContainsString('An administrator can turn it on', $run->html);
+        self::assertStringNotContainsString('Change pages in place', $run->html, 'The preferences cannot help.');
+        self::assertStringNotContainsString("<a href='prefs.php' class='nav'>", $run->html);
+    }
+
     public function testWithTheSettingOffTheGroundIsClosed(): void
     {
         $run = $this->page('GET', [], [], ['live_encounters' => 0] + self::SETTINGS);
