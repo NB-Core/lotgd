@@ -1319,6 +1319,12 @@ function get_all_tables()
         'changed_us' => array(
             'name' => 'changed_us', 'type' => 'bigint(20) unsigned', 'default' => '0'
             ),
+        'stakes' => array(
+            'name' => 'stakes', 'type' => 'varchar(16)', 'default' => 'friendly'
+            ),
+        'data' => array(
+            'name' => 'data', 'type' => 'text', 'null' => '1'
+            ),
         'key-PRIMARY' => array(
             'name' => 'PRIMARY',
             'type' => 'primary key',
@@ -1333,6 +1339,37 @@ function get_all_tables()
             ),
         'key-created' => array(
             'name' => 'created', 'type' => 'key', 'columns' => 'created'
+            ),
+        ),
+    'encounter_rounds' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'encounter_id' => array(
+            'name' => 'encounter_id', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'round' => array(
+            'name' => 'round', 'type' => 'smallint(5) unsigned', 'default' => '0'
+            ),
+        'challenger_choice' => array(
+            'name' => 'challenger_choice', 'type' => 'varchar(16)', 'null' => '1'
+            ),
+        'opponent_choice' => array(
+            'name' => 'opponent_choice', 'type' => 'varchar(16)', 'null' => '1'
+            ),
+        'deadline' => array(
+            'name' => 'deadline', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'resolved_at' => array(
+            'name' => 'resolved_at', 'type' => 'datetime', 'null' => '1'
+            ),
+        'result' => array(
+            'name' => 'result', 'type' => 'text', 'null' => '1'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'encounter_id,round'
             ),
         ),
     'encounter_slots' => array(

@@ -196,6 +196,10 @@ final class EncounterTest extends TestCase
         self::assertArrayHasKey('expires', $update['params'], 'An accepted encounter has a time of its own.');
         self::assertSame([], $this->statements('DELETE FROM encounter_slots'));
         self::assertContains('encounter-1', $this->channels());
+        $duel = json_decode((string) $this->statement('UPDATE encounters SET data')['params']['data'], true);
+        self::assertSame(['2', '5'], array_map('strval', array_keys($duel['players'])), 'Both players, with the values they start with.');
+        self::assertSame(40, $duel['players']['5']['hp']);
+        self::assertSame(1, $this->statement('INSERT INTO encounter_rounds')['params']['round']);
     }
 
     public function testDecliningFreesBothSlots(): void
@@ -315,6 +319,12 @@ final class EncounterTest extends TestCase
             '/SELECT next_seq FROM relay_sequence/' => [['next_seq' => 1]],
             self::OPPONENT_NAME => [['name' => 'Two']],
             self::PLACE => [['place' => 'village']],
+            // An accepted challenge starts its duel with both players' values.
+            '/SELECT name, level, hitpoints FROM accounts WHERE acctid = :acctid/' => [['name' => 'Two', 'level' => 5, 'hitpoints' => 40]],
+            // PlayerFunctions' reads of the stats an attack and a defense come from.
+            '/^SELECT [a-z,]+ FROM accounts WHERE acctid = :acctid$/' => [[
+                'strength' => 10, 'dexterity' => 10, 'constitution' => 10, 'wisdom' => 10, 'intelligence' => 10, 'attack' => 12, 'defense' => 12,
+            ]],
         ];
     }
 
@@ -357,6 +367,8 @@ final class EncounterTest extends TestCase
             'challenger' => 2,
             'opponent' => 5,
             'state' => 'pending',
+            'stakes' => 'friendly',
+            'data' => null,
             'grant_id' => 9,
             'created' => date('Y-m-d H:i:s'),
             'expires_at' => date('Y-m-d H:i:s', time() + 60),

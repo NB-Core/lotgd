@@ -409,6 +409,26 @@ Pages fall back to polling by themselves when the stream cannot run.
 `async/stream.php` must be reachable like `async/process.php`. It always
 checks the async CSRF token, whatever `csrf_mode` is.
 
+### Live duels (part of live encounters)
+
+Migration `Version20261026000001` adds `encounters.stakes`,
+`encounters.data` and the table `encounter_rounds`. An accepted challenge is
+now a duel in rounds. The settings are `duel_round_seconds` (default 20) and
+`duel_max_rounds` (default 30).
+
+A *serious* duel uses the PvP settings (`pvp`, `pvprange`, `pvpimmunity`,
+`pvpminexp`, `pvpattgain`, `pvpattlose`, `pvpdefgain`, `pvpdeflose`,
+`pvphardlimit*`) and spends one of the challenger's `playerfights`.
+
+For module authors:
+
+- `duel-finished` (`['encounter' => row, 'outcome' => …, 'payout' => …|null]`)
+  runs after the duel's end commits.
+- The hooks `pvpwin` and `pvploss` do **not** run for a duel: their arguments
+  describe pvp.php's offline target. Modules that react to PvP results and
+  should see duels too need `duel-finished`.
+- Buffs (including `allowinpvp` ones) and companions do not count in a duel.
+
 ### Presence and live encounters (opt-in, off by default)
 
 Migration `Version20261025000001` adds the tables `presence`, `encounters`

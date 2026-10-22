@@ -166,7 +166,7 @@ namespace Lotgd\Tests\Async {
         public function testTheCoreHandlersAreRegistered(): void
         {
             self::assertSame(
-                ['Bans', 'Commentary', 'Mail', 'Realtime', 'Timeout', 'TwoFactorAuthPasskey'],
+                ['Bans', 'Commentary', 'Duel', 'Mail', 'Realtime', 'Timeout', 'TwoFactorAuthPasskey'],
                 array_keys((new Dispatcher([]))->classes())
             );
         }

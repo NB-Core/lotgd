@@ -8,10 +8,13 @@
  * Run from an installed copy of the game. The argument is a JSON spec:
  *   root    the installed game
  *   acctid  the player
- *   op      challenge, answer or cancel
+ *   op      challenge, answer, cancel, choose or resolve
  *   target  the opponent (challenge)
  *   id      the encounter (answer, cancel)
  *   accept  true to accept (answer)
+ *   round   the duel round (choose, resolve)
+ *   choice  attack, guard or surrender (choose)
+ *   stakes  friendly or serious (challenge)
  *   loaded  a file to create once the account is read
  *   go      a file to wait for before acting
  *   hold    seconds to stay inside the transaction after acting
@@ -63,8 +66,10 @@ try {
         global $session;
 
         $done = match ($spec['op']) {
-            'challenge' => Encounter::challenge($session['user'], (int) $spec['target']),
+            'challenge' => Encounter::challenge($session['user'], (int) $spec['target'], (string) ($spec['stakes'] ?? Encounter::FRIENDLY)),
             'answer' => Encounter::answer($session['user'], (int) $spec['id'], !empty($spec['accept'])),
+            'choose' => \Lotgd\Encounter\Duel::choose($session['user'], (int) $spec['id'], (int) $spec['round'], (string) $spec['choice']),
+            'resolve' => \Lotgd\Encounter\Duel::resolve($session['user'], (int) $spec['id'], (int) $spec['round']),
             default => Encounter::cancel($session['user'], (int) $spec['id']),
         };
         if (($spec['hold'] ?? 0) > 0) {

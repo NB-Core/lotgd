@@ -31,6 +31,7 @@ final class Dispatcher
     private const CORE = [
         'Bans' => Handler\Bans::class,
         'Commentary' => Handler\Commentary::class,
+        'Duel' => Handler\Duel::class,
         'Mail' => Handler\Mail::class,
         'Realtime' => Handler\Realtime::class,
         'Timeout' => Handler\Timeout::class,

@@ -18,6 +18,7 @@ use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Page as PageSingleton;
+use Lotgd\Encounter;
 use Lotgd\Grant;
 use Lotgd\Presence;
 use Lotgd\Realtime;
@@ -234,6 +235,11 @@ class Footer
             );
             if ($realtime) {
                 Output::addHeadMarkup($realtimeMeta);
+                // On every page, not only the duelling ground: a page swapped
+                // in place keeps the head it was loaded with.
+                if (Encounter::enabled()) {
+                    Output::requireVendorAsset('lotgd-duel', 'js');
+                }
             }
         }
 
