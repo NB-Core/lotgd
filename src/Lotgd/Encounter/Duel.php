@@ -214,6 +214,73 @@ final class Duel
     }
 
     /**
+     * The duel as a spectator sees it: both bars, the round and who has
+     * chosen (not what), the log in the third person, and how it ended. No
+     * buttons and no data-lotgd-duel: a spectator never posts a choice nor
+     * asks for a round.
+     *
+     * @param array<string,mixed> $row
+     */
+    public static function watchHtml(array $row): string
+    {
+        $data = self::data($row);
+        if ($data === null) {
+            return '';
+        }
+        $output = Output::getInstance();
+        $a = (int) $row['challenger'];
+        $b = (int) $row['opponent'];
+        $first = $data['players'][(string) $a] ?? null;
+        $second = $data['players'][(string) $b] ?? null;
+        if ($first === null || $second === null) {
+            return '';
+        }
+        $names = [$a => (string) $first['name'], $b => (string) $second['name']];
+        $html = "<div class='lotgd-duel lotgd-duel-watch'>" . self::bar($first) . self::bar($second)
+            . '<p>' . $output->appoencode(
+                Translator::translateInline((string) $row['stakes'] === Encounter::SERIOUS ? '`$A serious duel`0' : '`@A friendly duel`0', 'encounter')
+            ) . '</p>';
+        $result = $data['result'] ?? null;
+        if (is_array($result)) {
+            $winner = $result['winner'] ?? null;
+            $html .= '<p>' . $output->appoencode($winner === null
+                ? Translator::translateInline('`7The duel ends without a winner.', 'encounter')
+                : sprintf(
+                    Translator::translateInline('`&%s`@ wins the duel against `&%s`@.', 'encounter'),
+                    $names[(int) $winner] ?? '',
+                    $names[(int) ($result['loser'] ?? 0)] ?? ''
+                )) . '</p>';
+        } else {
+            $round = (int) $data['round'];
+            $current = self::round((int) $row['id'], $round);
+            $html .= '<p>' . $output->appoencode(sprintf(Translator::translateInline('`7Round `^%s`7 is being fought.', 'encounter'), $round)) . '</p>';
+            foreach (['challenger_choice' => $a, 'opponent_choice' => $b] as $column => $player) {
+                if (($current[$column] ?? null) !== null) {
+                    $html .= '<p>' . $output->appoencode(sprintf(Translator::translateInline('`&%s`7 has chosen.', 'encounter'), $names[$player])) . '</p>';
+                }
+            }
+        }
+        foreach ((array) ($data['log'] ?? []) as $entry) {
+            $choices = (array) ($entry['choices'] ?? []);
+            $damage = (array) ($entry['damage'] ?? []);
+            $html .= '<p>' . $output->appoencode(sprintf(
+                Translator::translateInline('`7Round %s: `&%s`7 %s, `&%s`7 %s. `&%s`7 takes `$%s`7, `&%s`7 takes `$%s`7.', 'encounter'),
+                (int) ($entry['round'] ?? 0),
+                $names[$a],
+                Translator::translateInline(self::thirdPerson((string) ($choices[$a] ?? RoundDuel::ATTACK)), 'encounter'),
+                $names[$b],
+                Translator::translateInline(self::thirdPerson((string) ($choices[$b] ?? RoundDuel::ATTACK)), 'encounter'),
+                $names[$a],
+                (int) ($damage[$a] ?? 0),
+                $names[$b],
+                (int) ($damage[$b] ?? 0)
+            )) . '</p>';
+        }
+
+        return $html . '</div>';
+    }
+
+    /**
      * The duel's state, or null for an encounter without one.
      *
      * @param array<string,mixed> $row
@@ -372,6 +439,15 @@ final class Duel
         };
 
         return sprintf(Translator::translateInline($text, 'encounter'), $me, $them);
+    }
+
+    private static function thirdPerson(string $choice): string
+    {
+        return match ($choice) {
+            RoundDuel::GUARD => 'guards',
+            RoundDuel::SURRENDER => 'gives up',
+            default => 'attacks',
+        };
     }
 
     /**

@@ -44,6 +44,7 @@ $setup = array(
     "encounter_challenge_seconds" => "Seconds a challenge waits for its answer,range,60,600,30",
     "duel_round_seconds" => "Seconds a duel round waits for both choices,range,10,60,5",
     "duel_max_rounds" => "Rounds after which a duel is decided on the hitpoints left,range,5,50,5",
+    "duel_announce_inn" => "Announce in the inn when a duel begins (others can watch it at the duelling ground)?,bool",
     "Needs realtime, grants and guarded actions. A challenge is offered only to a player in the village, the inn, the gardens or at the duelling ground. Off by default,note",
     "Players with partial rendering on see these through the async poll; events are relayed after the change commits and by cron.php (bit 16). Needs the realtime tables in InnoDB. Off by default,note",
 

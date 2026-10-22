@@ -11,6 +11,7 @@ use Lotgd\Nav\VillageNav;
 use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Encounter;
 // translator ready
 // addnews ready
 // mail ready
@@ -42,6 +43,10 @@ $playersperpage = 50;
  */
 $opRequest = Http::get('op');
 $allowedOps = ['kills', 'money', 'gems', 'charm', 'tough', 'resurrects', 'days'];
+$duels = Encounter::enabled();
+if ($duels) {
+    $allowedOps[] = 'duels';
+}
 $op = is_string($opRequest) && in_array($opRequest, $allowedOps, true) ? $opRequest : 'kills';
 $subopRequest = Http::get('subop');
 $subop = is_string($subopRequest) && in_array($subopRequest, ['most', 'least'], true) ? $subopRequest : 'most';
@@ -52,6 +57,11 @@ if ($op == "kills") {
     $extra = " AND dragonkills > 0";
 } elseif ($op == "days") {
     $extra = " AND dragonkills > 0 AND bestdragonage > 0";
+} elseif ($op == "duels") {
+    // Everyone who has won or lost a live duel (Encounter::settle() records both).
+    $encountersTable = Database::prefix("encounters");
+    $extra = " AND acctid IN (SELECT winner FROM $encountersTable WHERE kind = '" . Encounter::KIND_DUEL . "' AND winner IS NOT NULL"
+        . " UNION SELECT loser FROM $encountersTable WHERE kind = '" . Encounter::KIND_DUEL . "' AND loser IS NOT NULL)";
 }
 $result = Database::query($sql . $extra);
 $row = Database::fetchAssoc($result);
@@ -79,6 +89,9 @@ Nav::add("Charm", "hof.php?op=charm&subop=$subop&page=1");
 Nav::add("Toughness", "hof.php?op=tough&subop=$subop&page=1");
 Nav::add("Resurrections", "hof.php?op=resurrects&subop=$subop&page=1");
 Nav::add("Dragon Kill Speed", "hof.php?op=days&subop=$subop&page=1");
+if ($duels) {
+    Nav::add("Duels", "hof.php?op=duels&subop=$subop&page=1");
+}
 Nav::add("Sorting");
 Nav::add("Best", "hof.php?op=$op&subop=most&page=$page");
 Nav::add("Worst", "hof.php?op=$op&subop=least&page=$page");
@@ -272,6 +285,29 @@ if ($op == "money") {
     $title = "The $adverb warriors in the land";
     $headers = array("Level");
     $table = array($title, $sql, false, false, $headers, false);
+} elseif ($op == "duels") {
+    $accountsTable = Database::prefix("accounts");
+    $records = "SELECT acctid, SUM(won) AS won, SUM(serious) AS serious, SUM(lost) AS lost FROM ("
+        . "SELECT winner AS acctid, 1 AS won, IF(stakes = '" . Encounter::SERIOUS . "', 1, 0) AS serious, 0 AS lost FROM $encountersTable"
+        . " WHERE kind = '" . Encounter::KIND_DUEL . "' AND winner IS NOT NULL"
+        . " UNION ALL SELECT loser, 0, 0, 1 FROM $encountersTable WHERE kind = '" . Encounter::KIND_DUEL . "' AND loser IS NOT NULL"
+        . ") duels GROUP BY acctid";
+    $sql = "SELECT a.name, d.won AS data1, d.serious AS data2, d.lost AS data3 FROM $accountsTable a"
+        . " INNER JOIN ($records) d ON d.acctid = a.acctid WHERE (a.locked=0 AND (a.superuser & $superusermask) = 0)"
+        . " ORDER BY d.won $order, d.lost " . ($order === 'DESC' ? 'ASC' : 'DESC') . ", a.level $order, a.acctid $order LIMIT $limit";
+    $mine = Encounter::record((int) $session['user']['acctid']);
+    if ($mine['won'] + $mine['lost'] > 0) {
+        $me = "SELECT count(*) AS count FROM ($records) d INNER JOIN $accountsTable a ON a.acctid = d.acctid"
+            . " WHERE (a.locked=0 AND (a.superuser & $superusermask) = 0) AND d.won $meop {$mine['won']}";
+    }
+    $adverb = "most";
+    if ($subop == "least") {
+        $adverb = "least";
+    }
+    $title = "The warriors with the $adverb duels won";
+    $headers = array("Won", "Of those serious", "Lost");
+    $none = "No duel has been fought yet.";
+    $table = array($title, $sql, $none, false, $headers, false);
 } elseif ($op == "days") {
     $unk = Translator::translate("Unknown");
     $sql = "SELECT name, IF(bestdragonage,bestdragonage,'$unk') AS data1 FROM " . Database::prefix("accounts") . " WHERE $standardwhere $extra ORDER BY bestdragonage $order, level $order, experience $order, acctid $order LIMIT $limit";

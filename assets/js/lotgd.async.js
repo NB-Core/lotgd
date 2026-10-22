@@ -42,7 +42,8 @@
         stats: '[data-lotgd-region="stats"]',
         // In the content of the pages that show them (encounter.php).
         presence: '[data-lotgd-region="presence"]',
-        encounter: '[data-lotgd-region="encounter"]'
+        encounter: '[data-lotgd-region="encounter"]',
+        duelwatch: '[data-lotgd-region="duelwatch"]'
     };
     const allowed = {};
     // Functions a page defines after this file loads and that answers may

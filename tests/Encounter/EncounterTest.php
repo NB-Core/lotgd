@@ -102,7 +102,7 @@ final class EncounterTest extends TestCase
         self::assertSame('encounter-1', $grant['params']['target_key']);
         self::assertSame('encounter.php?op=view&id=1&grant=1', $this->statement('UPDATE granted_navs SET link')['params']['link']);
         self::assertSame(1, $this->statement('UPDATE encounters SET grant_id')['params']['grant']);
-        self::assertSame(['user-2', 'user-2', 'user-5', 'encounter-1'], $this->channels(), 'The grant, then both players and the encounter.');
+        self::assertSame(['user-2', 'user-2', 'user-5', 'encounter-1', 'encounter-1'], $this->channels(), 'The grant, then both players, the encounter and its spectators.');
         self::assertContains('COMMIT', $this->connection->queries);
     }
 
@@ -273,6 +273,55 @@ final class EncounterTest extends TestCase
         $this->encounter(['challenger' => 2, 'opponent' => 5]);
 
         self::assertSame('encounter-pending', $this->guarded(static fn (): array => Encounter::leave($GLOBALS['session']['user'], 1))->reason);
+    }
+
+    public function testAPlayerOfADuelThatIsOverChallengesTheOtherAgainAtTheSameStakes(): void
+    {
+        $this->connection->queryResultsByPattern['/FROM encounters WHERE id = :id$/'] = [$this->row(['state' => 'ended', 'stakes' => 'friendly'])];
+
+        $result = $this->guarded(static fn (): array => Encounter::rematch($GLOBALS['session']['user'], 1));
+
+        self::assertSame(ActionResult::DONE, $result->status, (string) $result->reason);
+        $encounter = $this->statement('INSERT INTO encounters');
+        self::assertSame(5, $encounter['params']['challenger']);
+        self::assertSame(2, $encounter['params']['opponent']);
+        self::assertSame('friendly', $encounter['params']['stakes']);
+    }
+
+    public function testARematchIsOnlyAskedForOnceTheDuelIsOverAndOnlyByItsPlayers(): void
+    {
+        $this->connection->queryResultsByPattern['/FROM encounters WHERE id = :id$/'] = [$this->row(['state' => 'accepted'])];
+        self::assertSame('duel-not-over', $this->guarded(static fn (): array => Encounter::rematch($GLOBALS['session']['user'], 1))->reason);
+
+        $this->connection->queryResultsByPattern['/FROM encounters WHERE id = :id$/'] = [$this->row(['state' => 'ended', 'challenger' => 2, 'opponent' => 3])];
+        self::assertSame('no-encounter', $this->guarded(static fn (): array => Encounter::rematch($GLOBALS['session']['user'], 1))->reason);
+        self::assertSame([], $this->statements('INSERT INTO encounters'));
+    }
+
+    public function testAWatchedDuelIsHeardWhileItIsFoughtOrJustOverAndOnlyOnItsPage(): void
+    {
+        $GLOBALS['session']['watching'] = 1;
+        $this->connection->queryResultsByPattern['/FROM encounters WHERE id = :id$/'] = [$this->row(['state' => 'accepted', 'challenger' => 2, 'opponent' => 3])];
+        self::assertSame(1, Encounter::watching());
+
+        $this->connection->queryResultsByPattern['/FROM encounters WHERE id = :id$/'] = [$this->row(['state' => 'ended', 'challenger' => 2, 'opponent' => 3])];
+        self::assertSame(1, Encounter::watching(), 'Just over: its end is still announced.');
+
+        $this->connection->queryResultsByPattern['/FROM encounters WHERE id = :id$/'] = [$this->row(['state' => 'pending', 'challenger' => 2, 'opponent' => 3])];
+        self::assertSame(0, Encounter::watching(), 'A challenge is no duel to watch.');
+
+        Encounter::endWatchUnlessShown();
+        self::assertArrayNotHasKey('watching', $GLOBALS['session'], 'A page that does not show the duel ends the watching.');
+        Encounter::watch(1);
+        Encounter::endWatchUnlessShown();
+        self::assertSame(1, $GLOBALS['session']['watching']);
+    }
+
+    public function testARecordCountsWinsSeriousWinsAndLosses(): void
+    {
+        $this->connection->queryResultsByPattern['/AS won, COALESCE\(SUM\(winner = :acctid AND stakes = :serious\), 0\) AS serious/'] = [['won' => '3', 'serious' => '1', 'lost' => '2']];
+
+        self::assertSame(['won' => 3, 'serious' => 1, 'lost' => 2], Encounter::record(5));
     }
 
     public function testOnlyItsPlayersSeeAnEncounterAndAnOpenOnePastItsTimeShowsAsExpired(): void

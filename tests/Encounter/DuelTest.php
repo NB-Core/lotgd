@@ -163,6 +163,39 @@ final class DuelTest extends TestCase
         self::assertSame(100, $GLOBALS['session']['user']['gold']);
         $data = json_decode((string) $this->statement('UPDATE encounters SET data')['params']['data'], true);
         self::assertSame(['winner' => 2, 'loser' => 5, 'reason' => 'surrender', 'rounds' => 1], $data['result']);
+        $record = $this->statement('UPDATE encounters SET winner');
+        self::assertSame(['winner' => 2, 'loser' => 5, 'id' => 1], $record['params'], 'The record, for bios and the hall of fame.');
+    }
+
+    public function testASpectatorSeesBothSidesWithoutButtons(): void
+    {
+        $this->connection->queryResultsByPattern['/FROM encounter_rounds WHERE encounter_id = :id AND round = :round$/'] = [
+            ['round' => 2, 'challenger_choice' => 'attack', 'opponent_choice' => null, 'deadline' => date('Y-m-d H:i:s', time() + 15), 'resolved_at' => null],
+        ];
+        $row = $this->row([]);
+        $data = json_decode((string) $row['data'], true);
+        $data['round'] = 2;
+        $data['log'] = [['round' => 1, 'choices' => [2 => 'attack', 5 => 'guard'], 'damage' => [2 => 1, 5 => 3]]];
+        $row['data'] = (string) json_encode($data);
+
+        $html = Duel::watchHtml($row);
+
+        self::assertStringNotContainsString('data-lotgd-duel', $html, 'A spectator neither chooses nor asks for a round.');
+        self::assertStringNotContainsString('<button', $html);
+        self::assertStringContainsString('is being fought', $html);
+        self::assertStringContainsString('has chosen', $html);
+        self::assertStringContainsString('attacks', $html);
+        self::assertStringContainsString('guards', $html);
+    }
+
+    public function testASpectatorSeesWhoWon(): void
+    {
+        $row = $this->row(['state' => 'ended']);
+        $data = json_decode((string) $row['data'], true);
+        $data['result'] = ['winner' => 5, 'loser' => 2, 'reason' => 'knockout', 'rounds' => 3];
+        $row['data'] = (string) json_encode($data);
+
+        self::assertStringContainsString('wins the duel against', Duel::watchHtml($row));
     }
 
     public function testASeriousDuelPaysTheWinnerAndTheLoserDies(): void

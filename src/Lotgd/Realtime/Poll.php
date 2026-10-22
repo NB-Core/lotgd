@@ -25,7 +25,7 @@ use Lotgd\Realtime;
  */
 final class Poll
 {
-    public const REGIONS = ['mail', 'stats', 'grants', 'presence', 'encounter'];
+    public const REGIONS = ['mail', 'stats', 'grants', 'presence', 'encounter', 'duelwatch'];
     public const PAGE_SIZE = 100;
 
     private static ?int $startCursor = null;
@@ -35,8 +35,8 @@ final class Poll
     /**
      * The channels a player reads, from the account read now (the poll's and
      * the stream's): their own; a commentary section a page showed them, if
-     * they may read it (Commentary::mayRead()); who is where (presence); and
-     * their open encounters.
+     * they may read it (Commentary::mayRead()); who is where (presence);
+     * their open encounters; and a duel they watch.
      *
      * @param array<string,mixed> $account
      * @return list<string>
@@ -51,7 +51,14 @@ final class Poll
             $channels[] = Presence::CHANNEL;
         }
 
-        return [...$channels, ...Encounter::channels($acctid)];
+        $channels = [...$channels, ...Encounter::channels($acctid)];
+        // A duel watched (encounter.php?op=watch), while it is fought.
+        $watching = Encounter::enabled() ? Encounter::watching() : 0;
+        if ($watching > 0 && !in_array(Encounter::channel($watching), $channels, true)) {
+            $channels[] = Encounter::channel($watching);
+        }
+
+        return $channels;
     }
 
     /**
@@ -154,6 +161,9 @@ final class Poll
         if ($region === 'encounter') {
             return Encounter::enabled() ? Encounter::regionVersion($acctid) : 0;
         }
+        if ($region === 'duelwatch') {
+            return Encounter::enabled() ? Encounter::watchVersion() : 0;
+        }
 
         return (int) ($session['user']['version'] ?? 0);
     }
@@ -225,6 +235,8 @@ final class Poll
             $html = Encounter::enabled() ? Encounter::presenceHtml($acctid) : '';
         } elseif ($region === 'encounter') {
             $html = Encounter::enabled() ? Encounter::regionHtml($acctid) : '';
+        } elseif ($region === 'duelwatch') {
+            $html = Encounter::enabled() ? Encounter::watchHtml() : '';
         } else {
             // As the footer does: buffs whose values are expressions are
             // evaluated for the stats and put back afterwards.
