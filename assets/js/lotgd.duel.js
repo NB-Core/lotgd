@@ -47,18 +47,33 @@
         }
         const id = Number(block.getAttribute('data-lotgd-duel'));
         const round = Number(block.getAttribute('data-lotgd-duel-round'));
-        client.call('Duel', 'resolve', [id, round]).then(function (data) {
-            const answer = data && data.duel ? data.duel : {};
-            if (answer.reason === 'duel-not-yet' && tries > 0) {
-                // The server's clock is a little behind this one.
+        const marker = key(block);
+        // Asked again later: the round is still open, this page may be the
+        // only one left to ask for it.
+        function again() {
+            if (tries > 0) {
                 window.setTimeout(function () {
                     resolve(block, tries - 1);
-                }, 1500);
+                }, 1500 * (4 - Math.min(3, tries)));
+            } else {
+                window.setTimeout(function () {
+                    delete asked[marker];
+                }, 5000);
+            }
+        }
+        client.call('Duel', 'resolve', [id, round]).then(function (data) {
+            const answer = data && data.duel ? data.duel : {};
+            refresh();
+            // Done, or nothing to do any more (the round or duel is over).
+            if (answer.status === 'done' || /^(duel-over|duel-round-over|encounter-expired|no-encounter|disabled|csrf_invalid)$/.test(answer.reason || '')) {
                 return;
             }
-            refresh();
+            // Not yet (the server's clock is a little behind), a conflict.
+            again();
         }).catch(function () {
+            // Refused for now (rate limit), or the network: try again.
             refresh();
+            again();
         });
     }
 
@@ -91,6 +106,10 @@
             return;
         }
         event.preventDefault();
+        const ask = button.getAttribute('data-lotgd-duel-confirm');
+        if (ask && !window.confirm(ask)) {
+            return;
+        }
         block.querySelectorAll('[data-lotgd-duel-choice]').forEach(function (other) {
             other.disabled = true;
         });

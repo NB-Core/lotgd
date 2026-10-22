@@ -139,7 +139,24 @@ if (Encounter::enabled() && !$unverified) {
             );
         } elseif ($state === Encounter::ACCEPTED) {
             $output->output("`n`7You face each other on the duelling ground. Each round you both choose at once: attack, guard -- half your attack, half again your defense -- or give up. Whoever does not choose in time attacks.`n`n");
-            $output->rawOutput($button("encounter.php?op=leave&id={$id}", 'Give up and leave'));
+            // Giving up is final -- in a serious duel it kills: the core's
+            // destructive-action button, with its confirmation.
+            $leave = "encounter.php?op=leave&id={$id}";
+            Nav::add('', $leave);
+            $fields = [Action::FIELD => Action::newId()];
+            if (isset($session['user']['version'])) {
+                $fields[Action::VERSION_FIELD] = (string) (int) $session['user']['version'];
+            }
+            $output->rawOutput(Forms::postButton(
+                $leave,
+                Sanitize::stripAllColorCodes(Translator::translateInline('Give up and leave')),
+                Translator::translateInline((string) $encounter['stakes'] === Encounter::SERIOUS
+                    ? 'Give up this serious duel? You will die and lose gold and experience.'
+                    : 'Give up the duel?'),
+                'button',
+                null,
+                $fields
+            ));
         }
     } else {
         if ($op === 'view') {

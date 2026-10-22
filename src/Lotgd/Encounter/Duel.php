@@ -183,8 +183,15 @@ final class Duel
             $html .= '<p>' . $output->appoencode(sprintf(Translator::translateInline('`7Round `^%s`7 -- seconds left: ', 'encounter'), $round))
                 . "<span data-lotgd-duel-left>{$left}</span></p>";
             if ($mine === null) {
+                $confirm = Translator::translateInline((string) $row['stakes'] === Encounter::SERIOUS
+                    ? 'Give up this serious duel? You will die and lose gold and experience.'
+                    : 'Give up the duel?', 'encounter');
                 foreach ([RoundDuel::ATTACK => 'Attack', RoundDuel::GUARD => 'Guard', RoundDuel::SURRENDER => 'Give up'] as $choice => $label) {
-                    $html .= "<button type='button' class='button' data-lotgd-duel-choice='{$choice}'>"
+                    // Giving up is final: the client asks first.
+                    $ask = $choice === RoundDuel::SURRENDER
+                        ? " data-lotgd-duel-confirm='" . htmlspecialchars($confirm, ENT_QUOTES, 'UTF-8') . "'"
+                        : '';
+                    $html .= "<button type='button' class='button' data-lotgd-duel-choice='{$choice}'{$ask}>"
                         . htmlspecialchars(Translator::translateInline($label, 'encounter'), ENT_QUOTES, 'UTF-8') . '</button> ';
                 }
                 if ($theirs !== null) {
@@ -251,6 +258,11 @@ final class Duel
         $data = self::data($row);
         if ($data === null || (string) $row['state'] !== Encounter::ACCEPTED || is_array($data['result'] ?? null)) {
             throw new ActionAborted('duel-over');
+        }
+        if ((string) $row['expires_at'] <= date('Y-m-d H:i:s')) {
+            // Past its time the encounter frees its players (Encounter::find()
+            // shows it expired); nothing is fought or paid in it any more.
+            throw new ActionAborted('encounter-expired');
         }
         if ((int) $data['round'] !== $round) {
             throw new ActionAborted('duel-round-over');

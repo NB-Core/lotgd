@@ -189,6 +189,14 @@ final class DuelTest extends TestCase
         self::assertCount(2, $this->statements('INSERT INTO mail'));
     }
 
+    public function testADuelPastItsTimeIsNoLongerFoughtOrPaid(): void
+    {
+        $this->encounter(['stakes' => 'serious', 'expires_at' => date('Y-m-d H:i:s', time() - 1)]);
+
+        self::assertSame('encounter-expired', $this->guarded(static fn (): array => Duel::choose($GLOBALS['session']['user'], 1, 1, 'surrender'))->reason);
+        self::assertSame([], $this->statements('UPDATE accounts'));
+    }
+
     public function testADuelOverIsNoLongerFought(): void
     {
         $this->encounter(['state' => 'ended']);
@@ -207,6 +215,7 @@ final class DuelTest extends TestCase
 
         self::assertStringContainsString("data-lotgd-duel='1' data-lotgd-duel-round='1'", $html);
         self::assertStringContainsString("data-lotgd-duel-choice='guard'", $html);
+        self::assertMatchesRegularExpression("/data-lotgd-duel-choice='surrender' data-lotgd-duel-confirm='Give up the duel\\?'/", $html, 'Giving up asks first.');
         self::assertStringContainsString('has chosen', $html);
         self::assertStringNotContainsString('attack.', $html, 'Not what they chose.');
         self::assertStringNotContainsString('<script', $html);
