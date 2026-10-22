@@ -77,7 +77,24 @@
         });
     }
 
+    // The page's controls of an encounter (withdraw, answer, give up) sit
+    // outside the region; once the region shows another encounter or state,
+    // they no longer apply and are hidden.
+    function controls() {
+        const region = document.querySelector('[data-lotgd-region="encounter"]');
+        if (!region) {
+            return;
+        }
+        const marker = region.querySelector('[data-lotgd-encounter]');
+        document.querySelectorAll('[data-lotgd-encounter-controls]').forEach(function (block) {
+            block.hidden = !marker
+                || marker.getAttribute('data-lotgd-encounter') !== block.getAttribute('data-lotgd-encounter-controls')
+                || marker.getAttribute('data-lotgd-encounter-state') !== block.getAttribute('data-lotgd-encounter-state');
+        });
+    }
+
     function tick() {
+        controls();
         document.querySelectorAll('[data-lotgd-duel]').forEach(function (block) {
             const id = key(block);
             if (!(id in ends)) {

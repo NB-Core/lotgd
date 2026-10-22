@@ -596,7 +596,11 @@ final class Encounter
             return '';
         }
         $output = Output::getInstance();
-        $html = $output->appoencode(self::describe($row, $acctid)) . Duel::html($row, $acctid);
+        // Which encounter, in which state: the page's own controls for it
+        // (withdraw, answer, give up) are hidden once this no longer matches.
+        $html = "<span hidden data-lotgd-encounter='" . (int) $row['id'] . "' data-lotgd-encounter-state='"
+            . htmlspecialchars((string) $row['state'], ENT_QUOTES, 'UTF-8') . "'></span>"
+            . $output->appoencode(self::describe($row, $acctid)) . Duel::html($row, $acctid);
         // Only a link the player may follow now: the page registered it, with
         // its session counter.
         $prefix = self::viewLink((int) $row['id']) . '&';

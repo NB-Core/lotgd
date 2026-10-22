@@ -295,6 +295,7 @@ final class EncounterTest extends TestCase
         $html = Encounter::regionHtml(5);
         self::assertStringContainsString("href='encounter.php?op=view&amp;id=1&amp;c=4-101010'", $html);
         self::assertStringContainsString('accepted your challenge', $html);
+        self::assertStringStartsWith("<span hidden data-lotgd-encounter='1' data-lotgd-encounter-state='accepted'></span>", $html);
     }
 
     /**

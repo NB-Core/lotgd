@@ -46,6 +46,27 @@ final class EncounterPageTest extends TestCase
         self::assertDoesNotMatchRegularExpression('~<script(?![^>]*\bsrc=)~', (string) preg_replace('~^.*<body~s', '', $run->html), 'No inline script: the page swaps in place.');
     }
 
+    public function testTheControlsOfAPendingChallengeNameItsStateForTheClient(): void
+    {
+        $row = [
+            'id' => 7, 'kind' => 'duel', 'challenger' => 1, 'opponent' => 2, 'state' => 'pending', 'stakes' => 'friendly',
+            'data' => null, 'grant_id' => 0, 'created' => date('Y-m-d H:i:s'), 'expires_at' => date('Y-m-d H:i:s', time() + 60),
+            'changed_us' => 1,
+        ];
+        $run = $this->page('GET', ['op' => 'view', 'id' => '7'], [], self::SETTINGS, [
+            '/FROM encounters WHERE id = :id$/' => [$row],
+            '/WHERE challenger = :acctid OR opponent = :acctid ORDER BY id DESC LIMIT 1/' => [$row],
+        ]);
+
+        // The region says which encounter and state it shows; the controls
+        // outside it say which they belong to, and hold the withdraw form.
+        self::assertStringContainsString("<span hidden data-lotgd-encounter='7' data-lotgd-encounter-state='pending'></span>", $run->html);
+        self::assertMatchesRegularExpression(
+            "~<div data-lotgd-encounter-controls='7' data-lotgd-encounter-state='pending'>\\s*<form action='encounter.php\\?op=cancel&(amp;)?id=7'.*?</form>\\s*</div>~s",
+            $run->html
+        );
+    }
+
     public function testWithTheSettingOffTheGroundIsClosed(): void
     {
         $run = $this->page('GET', [], [], ['live_encounters' => 0] + self::SETTINGS);
