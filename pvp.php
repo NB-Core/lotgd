@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Lotgd\AddNews;
 use Lotgd\Battle;
 use Lotgd\DateTime;
+use Lotgd\Encounter;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
 use Lotgd\Nav;
@@ -48,6 +49,19 @@ if ($op == "" && $act != "attack") {
     Nav::add("Actions");
     Nav::add("L?Refresh List of Warriors", "pvp.php");
         Pvp::listTargets();
+    // The sleeping can be attacked; those awake are challenged to a live duel
+    // (docs/ReactiveCore.md, Live duels), answered on the spot.
+    if (Encounter::enabled()) {
+        $output->output("`n`n`b`@Warriors about now`0`b`n");
+        $live = Encounter::liveTargetsHtml((int) $session['user']['acctid']);
+        if ($live === '') {
+            $output->output("`7Nobody you could challenge is about in the village, the inn, the gardens or at the duelling ground.`0`n");
+        } else {
+            $output->output("`7They are awake: challenge them to a duel on the spot. A serious duel follows the rules of player fights -- the loser dies.`0`n");
+            Nav::add('', 'encounter.php?op=challenge');
+            $output->rawOutput($live);
+        }
+    }
 } elseif ($act == "attack") {
     $name = Http::get('name');
         $badguy = Pvp::setupTarget($name);

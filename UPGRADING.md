@@ -439,6 +439,9 @@ online challenge each other to a duel* (`live_encounters`), which also needs
 `realtime_enabled`, `grants_enabled` and `guarded_actions`, and the tables
 in InnoDB. Rows older than a day are removed with the daily cleanup.
 
+With live encounters on, `pvp.php` also lists the warriors who are awake (*Warriors about now*) and offers them a
+live duel. A serious one follows PvP's rules. The classic attack on sleeping players is unchanged.
+
 For module authors:
 
 - `presence-place` (`['script' => …, 'place' => …]`): name the place of a

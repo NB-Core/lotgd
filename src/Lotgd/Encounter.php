@@ -642,6 +642,48 @@ final class Encounter
     }
 
     /**
+     * The warriors about now whom $acctid may challenge from another page
+     * (the PvP list): each with a button per stake the rules allow -- serious
+     * where PvP would allow the fight, friendly always. Every button is its
+     * own form, posting to encounter.php?op=challenge with that page's token;
+     * the caller registers the link with Nav::add('', ...).
+     */
+    public static function liveTargetsHtml(int $acctid): string
+    {
+        $output = Output::getInstance();
+        $link = 'encounter.php?op=challenge';
+        $form = static function (int $target, string $stakes, string $label) use ($link): string {
+            return "<form action='{$link}' method='POST' style='display:inline'>" . Forms::csrfField($link) . Action::idField()
+                . "<input type='hidden' name='target' value='{$target}'><input type='hidden' name='stakes' value='{$stakes}'>"
+                . "<button type='submit' class='button'>" . htmlspecialchars(Translator::translateInline($label, 'encounter'), ENT_QUOTES, 'UTF-8')
+                . '</button></form> ';
+        };
+        $rows = '';
+        $j = 0;
+        foreach (Presence::online() as $player) {
+            $id = (int) $player['acctid'];
+            if ($id === $acctid || !in_array((string) $player['place'], Presence::PEACEFUL, true)) {
+                continue;
+            }
+            $buttons = (self::seriousRefusal($acctid, $id) === null ? $form($id, self::SERIOUS, 'Challenge to a serious duel') : '')
+                . $form($id, self::FRIENDLY, 'Challenge to a friendly duel');
+            // Laid out like the PvP list above it.
+            $rows .= "<tr class='" . (++$j % 2 ? 'trlight' : 'trdark') . "'><td>" . $output->appoencode((string) $player['name'])
+                . '</td><td>' . (int) $player['level'] . '</td><td>'
+                . htmlspecialchars(Presence::placeName((string) $player['place']), ENT_QUOTES, 'UTF-8') . "</td><td>{$buttons}</td></tr>";
+        }
+        if ($rows === '') {
+            return '';
+        }
+        $head = '';
+        foreach (['Name', 'Level', 'Location', 'Ops'] as $label) {
+            $head .= '<td>' . htmlspecialchars(Translator::translateInline($label, 'pvp'), ENT_QUOTES, 'UTF-8') . '</td>';
+        }
+
+        return "<table class='lotgd-presence' border='0' cellpadding='3' cellspacing='0'><tr class='trhead'>{$head}</tr>{$rows}</table>";
+    }
+
+    /**
      * Encounters are only kept for a while; open ones past their time free
      * their players.
      */
