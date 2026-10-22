@@ -1325,11 +1325,23 @@ function get_all_tables()
         'data' => array(
             'name' => 'data', 'type' => 'text', 'null' => '1'
             ),
+        'winner' => array(
+            'name' => 'winner', 'type' => 'int(11) unsigned', 'null' => '1'
+            ),
+        'loser' => array(
+            'name' => 'loser', 'type' => 'int(11) unsigned', 'null' => '1'
+            ),
         'key-PRIMARY' => array(
             'name' => 'PRIMARY',
             'type' => 'primary key',
             'unique' => '1',
             'columns' => 'id'
+            ),
+        'key-kind_winner' => array(
+            'name' => 'kind_winner', 'type' => 'key', 'columns' => 'kind,winner'
+            ),
+        'key-kind_loser' => array(
+            'name' => 'kind_loser', 'type' => 'key', 'columns' => 'kind,loser'
             ),
         'key-challenger' => array(
             'name' => 'challenger', 'type' => 'key', 'columns' => 'challenger'

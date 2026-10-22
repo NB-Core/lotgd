@@ -67,6 +67,61 @@ final class EncounterPageTest extends TestCase
         );
     }
 
+    public function testASpectatorWatchesADuelBeingFoughtInItsOwnRegion(): void
+    {
+        $row = $this->duelRow('accepted', 2, 3);
+        $run = $this->page('GET', ['op' => 'watch', 'id' => '7'], [], self::SETTINGS, ['/FROM encounters WHERE id = :id$/' => [$row]]);
+
+        self::assertStringContainsString("<div data-lotgd-region='duelwatch'><div class='lotgd-duel lotgd-duel-watch'>", $run->html);
+        self::assertStringNotContainsString('data-lotgd-duel-choice', $run->html, 'No buttons for a spectator.');
+        self::assertMatchesRegularExpression('/<meta name="lotgd-region-versions" content="[^"]*&quot;duelwatch&quot;:5/', $run->html);
+    }
+
+    public function testAChallengeIsNoDuelToWatch(): void
+    {
+        $run = $this->page('GET', ['op' => 'watch', 'id' => '7'], [], self::SETTINGS, ['/FROM encounters WHERE id = :id$/' => [$this->duelRow('pending', 2, 3)]]);
+
+        self::assertStringContainsString('There is no such duel to watch.', $run->html);
+        self::assertStringNotContainsString("data-lotgd-region='duelwatch'", $run->html);
+    }
+
+    public function testADuelThatIsOverOffersItsPlayersARematch(): void
+    {
+        $row = $this->duelRow('ended', 1, 2);
+        $run = $this->page('GET', ['op' => 'view', 'id' => '7'], [], self::SETTINGS, [
+            '/FROM encounters WHERE id = :id$/' => [$row],
+            '/WHERE challenger = :acctid OR opponent = :acctid ORDER BY id DESC LIMIT 1/' => [$row],
+        ]);
+
+        self::assertMatchesRegularExpression(
+            "~<div data-lotgd-encounter-controls='7' data-lotgd-encounter-state='ended'>\\s*<form action='encounter.php\\?op=rematch&(amp;)?id=7'~",
+            $run->html
+        );
+    }
+
+    public function testWhileTheDuelIsFoughtTheRematchWaitsHidden(): void
+    {
+        $row = $this->duelRow('accepted', 1, 2);
+        $run = $this->page('GET', ['op' => 'view', 'id' => '7'], [], self::SETTINGS, [
+            '/FROM encounters WHERE id = :id$/' => [$row],
+            '/WHERE challenger = :acctid OR opponent = :acctid ORDER BY id DESC LIMIT 1/' => [$row],
+        ]);
+
+        self::assertStringContainsString("<div data-lotgd-encounter-controls='7' data-lotgd-encounter-state='ended' hidden>", $run->html);
+    }
+
+    public function testTheGroundListsTheDuelsBeingFought(): void
+    {
+        $run = $this->page('GET', [], [], self::SETTINGS, [
+            '/FROM encounters e INNER JOIN accounts c/' => [
+                ['id' => 7, 'challenger' => 2, 'opponent' => 3, 'stakes' => 'serious', 'challenger_name' => 'Two', 'opponent_name' => 'Three'],
+            ],
+        ]);
+
+        self::assertStringContainsString('Duels being fought', $run->html);
+        self::assertStringContainsString("href='encounter.php?op=watch&amp;id=7", $run->html);
+    }
+
     public function testWithTheSettingOffTheGroundIsClosed(): void
     {
         $run = $this->page('GET', [], [], ['live_encounters' => 0] + self::SETTINGS);
@@ -92,6 +147,30 @@ final class EncounterPageTest extends TestCase
     private function page(string $method, array $get, array $post, array $settings, array $queries = []): PageOutcome
     {
         return PageRunner::withRequest('encounter.php', 0, $method, $get, $post, $this->globals(), $settings, [], [], $queries);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function duelRow(string $state, int $challenger, int $opponent): array
+    {
+        $data = [
+            'players' => [
+                (string) $challenger => ['name' => 'One', 'hp' => 20, 'maxhp' => 30, 'attack' => 10, 'defense' => 10, 'level' => 3],
+                (string) $opponent => ['name' => 'Two', 'hp' => 25, 'maxhp' => 30, 'attack' => 10, 'defense' => 10, 'level' => 3],
+            ],
+            'round' => 2,
+            'log' => [],
+        ];
+        if ($state === 'ended') {
+            $data['result'] = ['winner' => $challenger, 'loser' => $opponent, 'reason' => 'knockout', 'rounds' => 2];
+        }
+
+        return [
+            'id' => 7, 'kind' => 'duel', 'challenger' => $challenger, 'opponent' => $opponent, 'state' => $state, 'stakes' => 'friendly',
+            'data' => (string) json_encode($data), 'grant_id' => 0, 'created' => date('Y-m-d H:i:s'),
+            'expires_at' => date('Y-m-d H:i:s', time() + 600), 'changed_us' => 5,
+        ];
     }
 
     /**

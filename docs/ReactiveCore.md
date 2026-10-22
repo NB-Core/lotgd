@@ -927,6 +927,28 @@ Verified:
 - the challenge then runs exactly as one made on the duelling ground. Only the opponent's place counts, so
   challenging from the fields is fine.
 
+### Rematch, spectators, record
+
+- **Rematch.** `Encounter::rematch()` runs inside `Action::run()`:
+  - only a player of a duel that is over may ask;
+  - it challenges the other at the same stakes through `challenge()`, so every check applies again.
+  - `encounter.php` renders the button in a controls block for state `ended`. That block is hidden while the duel is
+    pending or fought; `lotgd.duel.js` shows it once the region reaches `ended`, without a reload.
+- **Spectators.** `encounter.php?op=watch&id=N` shows a duel, fought or just over, in the region `duelwatch`:
+  - `Duel::watchHtml()`: both bars, who has chosen (not what), the log in the third person;
+  - no buttons and no `data-lotgd-duel`, so a spectator never chooses or resolves.
+  - The page keeps the id in `$session['watching']`. `Poll::channels()` adds `encounter-<id>` after checking the row
+    (`Encounter::watching()`). `Encounter::announce()` also publishes `duelwatch` on that channel.
+  - The footer ends the watching on any page that does not show it (`Encounter::endWatchUnlessShown()`).
+  - The watch page is a whole page, not partially swapped, so the stream it opens reads that session.
+  - The duelling ground lists the duels being fought (`Encounter::running()`).
+  - With `duel_announce_inn` the inn gets a system comment when a duel begins.
+- **Record.** `Encounter::settle()` writes `encounters.winner` and `encounters.loser` (none in a draw).
+  `Encounter::record()` counts them for the bio line; hof.php's `duels` ranks them. Both are shown only with live
+  encounters on.
+  - The daily cleanup keeps a decided duel's row as that record. It drops only the duel's data and rounds; undecided
+    encounters still go whole after a day.
+
 ## Turning it on – as built
 
 `Lotgd\Reactive\Status` reads, for each feature, the checks the feature makes itself, and reports why it is off:

@@ -115,6 +115,8 @@ class Footer
 
         // Where the player is, for who is online (Phase 7).
         Presence::note($session['user'] ?? [], $script);
+        // A duel is watched only while its page is the one shown.
+        Encounter::endWatchUnlessShown();
 
         // Open grants (docs/ReactiveCore.md, Phase 5): a navigation section on
         // every skin, and the header slot grants that realtime updates. Their

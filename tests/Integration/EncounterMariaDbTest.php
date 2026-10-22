@@ -200,6 +200,7 @@ final class EncounterMariaDbTest extends TestCase
             self::assertSame(1, (int) $after[$ann]['alive']);
             self::assertGreaterThan((int) $before[$ann]['gold'], (int) $after[$ann]['gold']);
             self::assertSame(2, $this->scalar("SELECT COUNT(*) FROM mail WHERE msgto IN ($ann, $bob)"), 'One mail each.');
+            self::assertSame([$ann, $bob], array_map('intval', $this->db->query("SELECT winner, loser FROM encounters WHERE id = $id")->fetch(\PDO::FETCH_NUM)), 'The record.');
         } else {
             // The round was resolved first; Bob's surrender came for a round over.
             self::assertSame('accepted', $state);

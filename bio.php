@@ -27,6 +27,7 @@ use Lotgd\Settings;
 use Lotgd\PageParts;
 use Lotgd\Page\Overlay;
 use Lotgd\Censor;
+use Lotgd\Encounter;
 
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
@@ -142,6 +143,14 @@ if (is_array($target)) {
           $mount['mountname'] = $none;
     }
     $output->output("`^Creature: `@%s`0`n", $mount['mountname']);
+
+    // Live duels, once fought on this server: won (of those serious), lost.
+    if (Encounter::enabled()) {
+        $record = Encounter::record((int) $target['acctid']);
+        if ($record['won'] + $record['lost'] > 0) {
+            $output->output("`^Duels: `@%s won`0 (`@%s serious`0), `@%s lost`0`n", $record['won'], $record['serious'], $record['lost']);
+        }
+    }
 
     HookHandler::hook("biostat", $target);
 

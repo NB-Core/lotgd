@@ -72,6 +72,7 @@ $refused = static function (ActionResult $result) use ($output): void {
         'pvp-immune' => "`7One of you is still new here and protected from serious fights.`n`n",
         'no-fights' => "`7No serious fight is left for the challenger today.`n`n",
         'not-alive' => "`7Only the living fight serious duels.`n`n",
+        'duel-not-over' => "`7A rematch is only asked for once the duel is over.`n`n",
         default => "`7That cannot be done now.`n`n",
     });
 };
@@ -90,6 +91,7 @@ if (!Encounter::enabled()) {
         'answer' => ['encounter.answer', ['encounter' => $id, 'accept' => Http::post('answer') === 'accept']],
         'cancel' => ['encounter.cancel', ['encounter' => $id]],
         'leave' => ['encounter.leave', ['encounter' => $id]],
+        'rematch' => ['encounter.rematch', ['encounter' => $id]],
         default => null,
     };
     if ($action === null) {
@@ -101,6 +103,7 @@ if (!Encounter::enabled()) {
             'encounter.challenge' => Encounter::challenge($user, $params['target'], $params['stakes']),
             'encounter.answer' => Encounter::answer($user, $params['encounter'], $params['accept']),
             'encounter.cancel' => Encounter::cancel($user, $params['encounter']),
+            'encounter.rematch' => Encounter::rematch($user, $params['encounter']),
             default => Encounter::leave($user, $params['encounter']),
         });
         if ($result->status === ActionResult::DONE || $result->status === ActionResult::REPLAYED) {
@@ -118,7 +121,24 @@ if (Encounter::enabled() && !$unverified) {
     Poll::noteRegionVersion('encounter', Poll::regionVersion('encounter', $me));
     Poll::noteRegionVersion('presence', Poll::regionVersion('presence', $me));
     $encounter = $op === 'view' && $id > 0 ? Encounter::find($id, $me) : null;
-    if ($encounter !== null) {
+    $watched = $op === 'watch' && $id > 0 ? Encounter::watchable($id) : null;
+    if ($watched !== null) {
+        // A spectator: the duel as anyone sees it, kept current by realtime
+        // on the encounter's channel while this page is shown. Loaded as a
+        // whole page (not on PartialMode's list): the stream it opens then
+        // reads the session that names the duel.
+        Encounter::watch($id);
+        Poll::noteRegionVersion('duelwatch', Encounter::watchVersion());
+        Nav::add('Encounter');
+        Nav::add('Look again', "encounter.php?op=watch&id={$id}");
+        Nav::add('Who is around', 'encounter.php');
+        $output->output("`7You find a place among the onlookers.`n`n");
+        $output->rawOutput("<div data-lotgd-region='duelwatch'>" . Encounter::watchHtml() . '</div>');
+    } elseif ($op === 'watch') {
+        $output->output("`7There is no such duel to watch.`n`n");
+        Nav::add('Encounter');
+        Nav::add('Who is around', 'encounter.php');
+    } elseif ($encounter !== null) {
         $view = Encounter::viewLink($id);
         $state = (string) $encounter['state'];
         $challenging = (int) $encounter['challenger'] === $me;
@@ -163,6 +183,15 @@ if (Encounter::enabled() && !$unverified) {
             ));
         }
         $output->rawOutput('</div>');
+        if ((string) $encounter['kind'] === Encounter::KIND_DUEL && in_array($state, [Encounter::PENDING, Encounter::ACCEPTED, Encounter::ENDED], true)) {
+            // Shown once the duel is over -- also when it is accepted and ends
+            // while this page is open: lotgd.duel.js shows controls whose state
+            // the region reaches.
+            $output->rawOutput("<div data-lotgd-encounter-controls='{$id}' data-lotgd-encounter-state='" . Encounter::ENDED . "'"
+                . ($state === Encounter::ENDED ? '' : ' hidden') . '>');
+            $output->rawOutput($button("encounter.php?op=rematch&id={$id}", 'Challenge again (rematch)'));
+            $output->rawOutput('</div>');
+        }
     } else {
         if ($op === 'view') {
             $output->output("`7There is no such encounter for you.`n`n");
@@ -189,6 +218,23 @@ if (Encounter::enabled() && !$unverified) {
             . $stakes . '</p>'
             . "<div data-lotgd-region='presence'>" . Encounter::presenceHtml($me) . '</div></form>'
         );
+        $running = Encounter::running();
+        if ($running !== []) {
+            $output->output("`n`7Duels being fought:`n");
+            foreach ($running as $duel) {
+                $watch = 'encounter.php?op=watch&id=' . (int) $duel['id'];
+                Nav::add('', $watch);
+                $output->rawOutput('<p>');
+                $output->outputNotl(
+                    '%s `7vs.`0 %s`0 %s ',
+                    (string) $duel['challenger_name'],
+                    (string) $duel['opponent_name'],
+                    (string) $duel['stakes'] === Encounter::SERIOUS ? Translator::translateInline('`$(serious)`0') : Translator::translateInline('`@(friendly)`0')
+                );
+                $output->rawOutput("<a href='" . htmlspecialchars($watch, ENT_QUOTES, 'UTF-8') . "' class='nav'>"
+                    . htmlspecialchars(Translator::translateInline('Watch'), ENT_QUOTES, 'UTF-8') . '</a></p>');
+            }
+        }
         Nav::add('Encounter');
         Nav::add('Look again', 'encounter.php');
     }

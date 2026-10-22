@@ -51,7 +51,7 @@ final class PartialMode
         'graveyard.php' => ['GET' => ['']],
         'lodge.php' => ['GET' => ['', 'points']],
         'gypsy.php' => ['GET' => ['', 'talk']],
-        'hof.php' => ['GET' => ['', 'kills', 'money', 'gems', 'charm', 'tough', 'resurrects', 'days']],
+        'hof.php' => ['GET' => ['', 'kills', 'money', 'gems', 'charm', 'tough', 'resurrects', 'days', 'duels']],
         'list.php' => ['GET' => ['', 'clan']],
         'bio.php' => ['GET' => ['']],
         'news.php' => ['GET' => ['']],

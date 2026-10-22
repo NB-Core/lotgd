@@ -51,6 +51,9 @@ final class Encounter
 
     private static ?bool $transactional = null;
 
+    /** This request's page shows a watched duel (encounter.php?op=watch). */
+    private static bool $watchShown = false;
+
     /**
      * Encounters run with the setting live_encounters, realtime, grants (and
      * so guarded actions) and transactional tables.
@@ -75,6 +78,7 @@ final class Encounter
     public static function resetState(): void
     {
         self::$transactional = null;
+        self::$watchShown = false;
     }
 
     public static function channel(int $id): string
@@ -221,7 +225,16 @@ final class Encounter
             $data = Duel::start($row);
             // The row as it now stands, for the modules that build on it.
             $encounter = array_merge($row, ['data' => (string) json_encode($data)], self::change($row, self::ACCEPTED, $expires));
-            Action::afterCommit(static function () use ($encounter): void {
+            $announce = (int) Settings::getInstance()->getSetting('duel_announce_inn', 1) === 1;
+            $names = [self::name((int) $row['challenger']), self::name($me)];
+            Action::afterCommit(static function () use ($encounter, $announce, $names): void {
+                if ($announce) {
+                    // Word reaches the inn: who fights, and where to watch.
+                    Commentary::injectSystemComment('inn', sprintf(
+                        Translator::translateInline('%s and %s are fighting a duel on the duelling ground.', 'encounter'),
+                        ...$names
+                    ));
+                }
                 HookHandler::hook('encounter-accepted', ['encounter' => $encounter]);
             });
         } else {
@@ -301,6 +314,12 @@ final class Encounter
         $id = (int) $row['id'];
         $data['result'] = $outcome->toArray();
         Duel::write($id, $data);
+        // The record: who won, who lost (none in a draw), for bios and the hall of fame.
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('encounters') . ' SET winner = :winner, loser = :loser WHERE id = :id',
+            ['winner' => $outcome->isDraw() ? null : $outcome->winner, 'loser' => $outcome->isDraw() ? null : $outcome->loser, 'id' => $id],
+            ['winner' => ParameterType::INTEGER, 'loser' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER]
+        );
 
         $payout = null;
         if ((string) $row['stakes'] === self::SERIOUS && !$outcome->isDraw()) {
@@ -325,6 +344,44 @@ final class Encounter
             }
             HookHandler::hook('duel-finished', ['encounter' => $encounter, 'outcome' => $outcome->toArray(), 'payout' => $payout]);
         });
+    }
+
+    /**
+     * A player's duel record: duels won, of those serious, and lost.
+     *
+     * @return array{won:int, serious:int, lost:int}
+     */
+    public static function record(int $acctid): array
+    {
+        $row = Database::getDoctrineConnection()->fetchAssociative(
+            'SELECT COALESCE(SUM(winner = :acctid), 0) AS won, COALESCE(SUM(winner = :acctid AND stakes = :serious), 0) AS serious,'
+            . ' COALESCE(SUM(loser = :acctid), 0) AS lost FROM ' . Database::prefix('encounters')
+            . ' WHERE kind = :kind AND (winner = :acctid OR loser = :acctid)',
+            ['acctid' => $acctid, 'serious' => self::SERIOUS, 'kind' => self::KIND_DUEL],
+            ['acctid' => ParameterType::INTEGER]
+        );
+
+        return [
+            'won' => (int) ($row['won'] ?? 0),
+            'serious' => (int) ($row['serious'] ?? 0),
+            'lost' => (int) ($row['lost'] ?? 0),
+        ];
+    }
+
+    /**
+     * Every player's duel record as a derived table (acctid, won, serious,
+     * lost), for rankings: built from table names and this class's
+     * constants only.
+     */
+    public static function recordsSql(): string
+    {
+        $encounters = Database::prefix('encounters');
+
+        return 'SELECT acctid, SUM(won) AS won, SUM(serious) AS serious, SUM(lost) AS lost FROM ('
+            . "SELECT winner AS acctid, 1 AS won, IF(stakes = '" . self::SERIOUS . "', 1, 0) AS serious, 0 AS lost FROM {$encounters}"
+            . " WHERE kind = '" . self::KIND_DUEL . "' AND winner IS NOT NULL"
+            . " UNION ALL SELECT loser, 0, 0, 1 FROM {$encounters} WHERE kind = '" . self::KIND_DUEL . "' AND loser IS NOT NULL"
+            . ') duels GROUP BY acctid';
     }
 
     /**
@@ -584,6 +641,133 @@ final class Encounter
     }
 
     /**
+     * The duels being fought now, newest first, for the duelling ground's
+     * list of what can be watched.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function running(int $limit = 10): array
+    {
+        $rows = Database::getDoctrineConnection()->fetchAllAssociative(
+            'SELECT e.id, e.challenger, e.opponent, e.stakes, c.name AS challenger_name, o.name AS opponent_name FROM '
+            . Database::prefix('encounters') . ' e'
+            . ' INNER JOIN ' . Database::prefix('accounts') . ' c ON c.acctid = e.challenger'
+            . ' INNER JOIN ' . Database::prefix('accounts') . ' o ON o.acctid = e.opponent'
+            . ' WHERE e.kind = :kind AND e.state = :accepted AND e.expires_at > :now ORDER BY e.id DESC LIMIT ' . max(1, $limit),
+            ['kind' => self::KIND_DUEL, 'accepted' => self::ACCEPTED, 'now' => date('Y-m-d H:i:s')]
+        );
+
+        return array_values($rows);
+    }
+
+    /**
+     * An encounter anyone may watch: a duel, while it is fought or just
+     * after (so a spectator sees how it ended). Null for anything else.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function watchable(int $id): ?array
+    {
+        $row = Database::getDoctrineConnection()->fetchAssociative(
+            'SELECT id, kind, challenger, opponent, state, stakes, data, grant_id, created, expires_at, changed_us FROM '
+            . Database::prefix('encounters') . ' WHERE id = :id',
+            ['id' => $id],
+            ['id' => ParameterType::INTEGER]
+        );
+        if (!is_array($row) || (string) $row['kind'] !== self::KIND_DUEL) {
+            return null;
+        }
+        // An accepted duel past its time reads as expired: no longer watched.
+        $row = self::withExpiry($row);
+
+        return in_array((string) $row['state'], [self::ACCEPTED, self::ENDED], true) ? $row : null;
+    }
+
+    /**
+     * encounter.php?op=watch: this page shows duel $id; its realtime follows
+     * that duel until a page that does not show it.
+     */
+    public static function watch(int $id): void
+    {
+        global $session;
+
+        $session['watching'] = $id;
+        self::$watchShown = true;
+    }
+
+    /**
+     * The footer, on every page: a page that did not show a duel ends the
+     * watching, so no other page keeps listening to it.
+     */
+    public static function endWatchUnlessShown(): void
+    {
+        global $session;
+
+        if (!self::$watchShown) {
+            unset($session['watching']);
+        }
+    }
+
+    /**
+     * The duel this player watches (encounter.php?op=watch keeps it in the
+     * session), while it is fought or just over -- the announcement of its
+     * end comes after it ended; 0 for none.
+     */
+    public static function watching(): int
+    {
+        global $session;
+
+        $id = (int) ($session['watching'] ?? 0);
+
+        return $id > 0 && self::watchable($id) !== null ? $id : 0;
+    }
+
+    /**
+     * The spectators' region: the watched duel as anyone sees it, or nothing.
+     */
+    public static function watchHtml(): string
+    {
+        global $session;
+
+        $row = self::watchable((int) ($session['watching'] ?? 0));
+
+        return $row === null ? '' : Duel::watchHtml($row);
+    }
+
+    public static function watchVersion(): int
+    {
+        global $session;
+
+        $row = self::watchable((int) ($session['watching'] ?? 0));
+
+        return $row === null ? 0 : (int) $row['changed_us'];
+    }
+
+    /**
+     * A player of a duel that is over challenges the other again, at the same
+     * stakes. Runs inside Action::run(); the challenge itself is checked as
+     * any other (the opponent about, serious rules on the rows now).
+     *
+     * @param array<string,mixed> $user The session user.
+     * @return array{id:int,opponent:int,name:string}
+     */
+    public static function rematch(array $user, int $id): array
+    {
+        self::requireAction();
+        $me = (int) $user['acctid'];
+        $row = self::find($id, $me);
+        if ($row === null) {
+            throw new ActionAborted('no-encounter');
+        }
+        if ((string) $row['state'] !== self::ENDED || (string) $row['kind'] !== self::KIND_DUEL) {
+            throw new ActionAborted('duel-not-over');
+        }
+        $other = (int) $row['challenger'] === $me ? (int) $row['opponent'] : (int) $row['challenger'];
+
+        return self::challenge($user, $other, (string) $row['stakes'] === self::SERIOUS ? self::SERIOUS : self::FRIENDLY);
+    }
+
+    /**
      * A sentence on where an encounter stands, for the player $acctid.
      *
      * @param array<string,mixed> $row
@@ -722,7 +906,7 @@ final class Encounter
 
     /**
      * Encounters are only kept for a while; open ones past their time free
-     * their players.
+     * their players. Decided duels keep their record row.
      */
     public static function cleanup(string $before): int
     {
@@ -733,12 +917,24 @@ final class Encounter
             ['now' => date('Y-m-d H:i:s'), 'pending' => self::PENDING, 'accepted' => self::ACCEPTED]
         );
 
+        // A duel that was decided stays as the record bios and the hall of
+        // fame count (winner, loser, stakes); only its play goes -- the data
+        // and its rounds. Everything else old goes whole.
         $removed += $conn->executeStatement(
-            'DELETE FROM ' . Database::prefix('encounters') . ' WHERE created < :before',
+            'DELETE FROM ' . Database::prefix('encounters') . ' WHERE created < :before AND winner IS NULL',
+            ['before' => $before]
+        );
+        $removed += $conn->executeStatement(
+            'UPDATE ' . Database::prefix('encounters') . ' SET data = NULL WHERE created < :before AND data IS NOT NULL',
+            ['before' => $before]
+        );
+        $removed += $conn->executeStatement(
+            'DELETE r FROM ' . Database::prefix('encounter_rounds') . ' r INNER JOIN ' . Database::prefix('encounters')
+            . ' e ON e.id = r.encounter_id WHERE e.created < :before',
             ['before' => $before]
         );
 
-        // The rounds of the duels just removed.
+        // The rounds of the encounters just removed.
         return $removed + $conn->executeStatement(
             'DELETE r FROM ' . Database::prefix('encounter_rounds') . ' r LEFT JOIN ' . Database::prefix('encounters')
             . ' e ON e.id = r.encounter_id WHERE e.id IS NULL'
@@ -838,8 +1034,10 @@ final class Encounter
         foreach ($players as $player) {
             Realtime::publish(Realtime::userChannel($player), 'encounter', $payload);
         }
-        // The encounter's own channel: what its players do in it comes here.
+        // The encounter's own channel: what its players do in it comes here,
+        // and its spectators' view of it (encounter.php?op=watch).
         Realtime::publish(self::channel($id), 'encounter', $payload);
+        Realtime::publish(self::channel($id), 'encounter', ['region' => 'duelwatch', 'version' => $changed]);
     }
 
     /**
