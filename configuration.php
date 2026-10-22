@@ -21,6 +21,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Reactive\Status;
 
 // translator ready
 // addnews ready
@@ -54,7 +55,7 @@ $op = is_string($opRequest) ? $opRequest : '';
 // `testsmtp` is not listed: it is reached only by a nav link, so it has
 // never been a token-carrying POST, and it writes nothing -- it sends one
 // test mail to the address the admin just configured.
-if (Forms::isUnverifiedCoreOp($op, ['save'])) {
+if (Forms::isUnverifiedCoreOp($op, ['save', 'enablereactive'])) {
     http_response_code(400);
     $op = '';
     $_POST = [];
@@ -66,6 +67,51 @@ $typeSettingRequest = Http::get('settings');
 $type_setting = is_string($typeSettingRequest) ? $typeSettingRequest : '';
 // Set by the SMTP test; the link goes under "Navigation" once that exists.
 $backToSettingsList = false;
+
+// The function_exists guard: this page is pulled in with require by its tests.
+if (!function_exists('lotgd_configuration_reactive_status')) {
+    /**
+     * The live features at a glance, above the form: each with its state and
+     * what keeps it off, and a button that turns on what can run here.
+     */
+    function lotgd_configuration_reactive_status(Settings $settings): void
+    {
+        $output = Output::getInstance();
+        $status = new Status($settings);
+        $colours = [Status::ON => '`@', Status::OFF => '`7', Status::BLOCKED => '`$'];
+        $labels = [
+            Status::ON => Translator::translateInline('on'),
+            Status::OFF => Translator::translateInline('off'),
+            Status::BLOCKED => Translator::translateInline('on, but cannot run'),
+        ];
+        $output->output("`b`^Live features`0`b`n");
+        $output->rawOutput("<table class='lotgd-reactive-status' cellpadding='2'>");
+        foreach ($status->rows() as $row) {
+            $missing = [];
+            foreach ($row['missing'] as [$text, $args]) {
+                $missing[] = Translator::getInstance()->sprintfTranslate($text, ...$args);
+            }
+            $output->rawOutput("<tr><td>");
+            $output->outputNotl("%s", Translator::translateInline($row['feature']));
+            $output->rawOutput("</td><td>");
+            $output->outputNotl("%s%s`0", $colours[$row['state']], $labels[$row['state']]);
+            $output->rawOutput("</td><td>");
+            $output->rawOutput(htmlspecialchars(implode('; ', $missing), ENT_QUOTES, 'UTF-8'));
+            $output->rawOutput("</td></tr>");
+        }
+        $output->rawOutput("</table>");
+        if ($status->recommended() !== []) {
+            $url = 'configuration.php?op=enablereactive';
+            Nav::add('', $url);
+            $output->rawOutput(Forms::postButton(
+                $url,
+                Translator::translateInline('Turn on the recommended live features'),
+                Translator::translateInline('Turn on guarded actions, partial rendering, realtime, grants and live duels where this server can run them?')
+            ));
+        }
+        $output->output("`n`7Server-sent events depend on the host and stay a choice of their own (Realtime transport below).`0`n`n");
+    }
+}
 
 //standardsettings
 switch ($type_setting) {
@@ -114,6 +160,28 @@ switch ($type_setting) {
         break;
     default:
         switch ($op) {
+            case "enablereactive":
+                // The live features whose tables are ready, in the order they
+                // need each other; logged and announced like a saved form.
+                include_once("lib/gamelog.php");
+                $enabled = (new Status($settings))->recommended();
+                foreach ($enabled as $key) {
+                    $old = (string) $settings->getSetting($key, '0');
+                    $hasSaved = $settings->saveSetting($key, '1');
+                    $output->output("Setting %s to %s (Saved: %s)`n", $key, '1', $hasSaved ? "`2Yes`0" : '`$No`0');
+                    gamelog("`@Changed core setting `^$key`@ from `#{$old}`@ to `&1`0", "settings");
+                    HookHandler::hook(
+                        "changesetting",
+                        array("module" => "core", "setting" => $key, "old" => $old, "new" => '1'),
+                        true
+                    );
+                }
+                if ($enabled === []) {
+                    $output->output("`7Nothing more can be turned on here; see what is missing below.`0`n");
+                }
+                $op = "";
+                break;
+
             case "save":
                 include_once("lib/gamelog.php");
                 $blockDupEmail = Http::post('blockdupemail');
@@ -513,6 +581,7 @@ switch ($type_setting) {
 
                 $vals = $settings->getArray() + $useful_vals;
 
+                lotgd_configuration_reactive_status($settings);
                 $output->rawOutput("<form action='configuration.php?op=save' method='POST'>");
                 Nav::add("", "configuration.php?op=save");
                 Forms::showForm($setup, $vals);
