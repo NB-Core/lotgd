@@ -917,6 +917,12 @@ Verified:
   - a serious one kills the loser, moves the gold and experience as PvP
     does, and mails both.
 
+### Who can fight live
+
+Live duels run in the page: they need realtime for the player (`Realtime::enabledFor()`), so partial rendering
+and a skin that declares regions. `Encounter::liveHint()` names what is missing for this player, and
+`encounter.php` and the PvP list show it with a link to the preferences.
+
 ### From the PvP list
 
 `pvp.php` lists, below the sleeping targets, the players online in a peaceful place

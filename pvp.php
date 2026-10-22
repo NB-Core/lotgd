@@ -53,6 +53,7 @@ if ($op == "" && $act != "attack") {
     // (docs/ReactiveCore.md, Live duels), answered on the spot.
     if (Encounter::enabled()) {
         $output->output("`n`n`b`@Warriors about now`0`b`n");
+        $output->rawOutput(Encounter::liveHintHtml($session['user']));
         $live = Encounter::liveTargetsHtml((int) $session['user']['acctid']);
         if ($live === '') {
             $output->output("`7Nobody you could challenge is about in the village, the inn, the gardens or at the duelling ground.`0`n");
