@@ -45,6 +45,7 @@ final class PartialMode
         'forest.php' => ['GET' => ['']],
         'inn.php' => ['GET' => ['']],
         'gardens.php' => ['GET' => ['']],
+        'encounter.php' => ['GET' => ['', 'view']],
         'rock.php' => ['GET' => ['']],
         'shades.php' => ['GET' => ['']],
         'graveyard.php' => ['GET' => ['']],

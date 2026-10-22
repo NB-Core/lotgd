@@ -258,6 +258,24 @@ class Newday
             );
         }
 
+        // Encounters answer for themselves for a day; an open one past its
+        // time frees its players. Presence rows of players gone for a day go.
+        if (Database::tableExists(Database::prefix('encounters'))) {
+            $timestamp = self::calculateExpirationTimestamp('1 day');
+            $affectedRows = \Lotgd\Encounter::cleanup($timestamp);
+            $affectedRows += $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('presence') . ' WHERE seen < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            GameLog::log(
+                'Deleted ' . $affectedRows . " encounter and presence records older than $timestamp.",
+                GameLog::CATEGORY_MAINTENANCE,
+                false,
+                $session['user']['acctid'] ?? 0
+            );
+        }
+
         // DEBUG mode writes two rows per page view plus one per module hook. It
         // was the only log table with no retention at all, so a forgotten debug
         // session grew it without bound.

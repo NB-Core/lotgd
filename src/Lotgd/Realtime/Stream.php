@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Lotgd\Realtime;
 
 use Doctrine\DBAL\ParameterType;
-use Lotgd\Commentary;
 use Lotgd\MySQL\Database;
 use Lotgd\Realtime;
 use Lotgd\Settings;
@@ -206,20 +205,16 @@ final class Stream
     }
 
     /**
-     * The channels the player may read now, from the account read now: as
-     * the poll derives them (Lotgd\Async\Handler\Realtime::poll()).
+     * The channels the player may read now, from the account read now
+     * (Poll::channels(), as the poll derives them).
      *
      * @return list<string>
      */
     private function channels(): array
     {
-        $channels = [Realtime::userChannel($this->acctid)];
         $account = $this->account();
-        if ($this->section !== '' && $account !== null && Commentary::mayRead($this->section, $account)) {
-            $channels[] = Realtime::sectionChannel($this->section);
-        }
 
-        return $channels;
+        return $account === null ? [Realtime::userChannel($this->acctid)] : Poll::channels($this->acctid, $account, $this->section);
     }
 
     /**

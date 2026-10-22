@@ -409,6 +409,26 @@ Pages fall back to polling by themselves when the stream cannot run.
 `async/stream.php` must be reachable like `async/process.php`. It always
 checks the async CSRF token, whatever `csrf_mode` is.
 
+### Presence and live encounters (opt-in, off by default)
+
+Migration `Version20261025000001` adds the tables `presence`, `encounters`
+and `encounter_slots`. With `realtime_enabled` on, every page notes where
+its player is in `presence` (at most one write a minute while the place
+stays the same). Encounters run only with the game setting *Let players
+online challenge each other to a duel* (`live_encounters`), which also needs
+`realtime_enabled`, `grants_enabled` and `guarded_actions`, and the tables
+in InnoDB. Rows older than a day are removed with the daily cleanup.
+
+For module authors:
+
+- `presence-place` (`['script' => …, 'place' => …]`): name the place of a
+  module page; places in `Presence::PEACEFUL` (village, inn, gardens,
+  arena) may be challenged.
+- `encounter-accepted` (`['encounter' => row]`), after the acceptance
+  commits: build on the encounter; announce what happens in it on
+  `Encounter::channel($id)` with `Realtime::publish()` inside
+  `Action::run()`.
+
 ### Grants: accepting clan applicants (opt-in, off by default)
 
 Migration `Version20261023000001` adds the table `granted_navs`. Nothing

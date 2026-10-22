@@ -118,7 +118,7 @@ final class PollEndpointTest extends TestCase
             $answer
         );
         $read = array_values(array_filter($this->connection->fetchAllLog, static fn (array $q): bool => preg_match(self::EVENTS, $q['sql']) === 1));
-        self::assertSame(['user-7'], $read[0]['params']['channels'], 'The channel is the account read from the database, whatever the request asks for.');
+        self::assertSame(['user-7', 'presence'], $read[0]['params']['channels'], 'The channel is the account read from the database, whatever the request asks for.');
         self::assertSame(40, $read[0]['params']['cursor']);
     }
 

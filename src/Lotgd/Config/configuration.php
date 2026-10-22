@@ -40,6 +40,9 @@ $setup = array(
     "grants_enabled" => "Offer clan officers a one-time link to accept a new applicant (grants)?,bool",
     "grant_ttl_hours" => "Hours such a link stays valid,range,1,720,1",
     "Needs guarded actions. The first officer to use the link accepts the applicant; the others' links close. Off by default,note",
+    "live_encounters" => "Let players online challenge each other to a duel, answered on the spot (live encounters)?,bool",
+    "encounter_challenge_seconds" => "Seconds a challenge waits for its answer,range,60,600,30",
+    "Needs realtime, grants and guarded actions. A challenge is offered only to a player in the village, the inn, the gardens or at the duelling ground. Off by default,note",
     "Players with partial rendering on see these through the async poll; events are relayed after the change commits and by cron.php (bit 16). Needs the realtime tables in InnoDB. Off by default,note",
 
     "SMTP Mail Settings,title",

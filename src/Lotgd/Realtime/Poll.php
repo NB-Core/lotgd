@@ -6,9 +6,12 @@ namespace Lotgd\Realtime;
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Buffs;
+use Lotgd\Commentary;
+use Lotgd\Encounter;
 use Lotgd\Grant;
 use Lotgd\MySQL\Database;
 use Lotgd\PageParts;
+use Lotgd\Presence;
 use Lotgd\Realtime;
 
 /**
@@ -22,10 +25,34 @@ use Lotgd\Realtime;
  */
 final class Poll
 {
-    public const REGIONS = ['mail', 'stats', 'grants'];
+    public const REGIONS = ['mail', 'stats', 'grants', 'presence', 'encounter'];
     public const PAGE_SIZE = 100;
 
     private static ?int $startCursor = null;
+    /** @var array<string,int> */
+    private static array $notedVersions = [];
+
+    /**
+     * The channels a player reads, from the account read now (the poll's and
+     * the stream's): their own; a commentary section a page showed them, if
+     * they may read it (Commentary::mayRead()); who is where (presence); and
+     * their open encounters.
+     *
+     * @param array<string,mixed> $account
+     * @return list<string>
+     */
+    public static function channels(int $acctid, array $account, string $section): array
+    {
+        $channels = [Realtime::userChannel($acctid)];
+        if ($section !== '' && Commentary::mayRead($section, $account)) {
+            $channels[] = Realtime::sectionChannel($section);
+        }
+        if (Presence::enabled()) {
+            $channels[] = Presence::CHANNEL;
+        }
+
+        return [...$channels, ...Encounter::channels($acctid)];
+    }
 
     /**
      * The delivery number a page starts polling from. Read before the page
@@ -59,11 +86,30 @@ final class Poll
     }
 
     /**
+     * A page that shows a region in its content notes its version before it
+     * renders it; the footer sends it with the others. Noted after the
+     * render, a change in between would claim content the page lacks.
+     */
+    public static function noteRegionVersion(string $region, int $version): void
+    {
+        self::$notedVersions[$region] = $version;
+    }
+
+    /**
+     * @return array<string,int>
+     */
+    public static function notedRegionVersions(): array
+    {
+        return self::$notedVersions;
+    }
+
+    /**
      * For tests.
      */
     public static function resetState(): void
     {
         self::$startCursor = null;
+        self::$notedVersions = [];
     }
 
     /**
@@ -101,6 +147,12 @@ final class Poll
 
         if ($region === 'grants') {
             return Grant::enabled() ? Grant::regionVersion($acctid) : 0;
+        }
+        if ($region === 'presence') {
+            return Encounter::enabled() ? Presence::regionVersion() : 0;
+        }
+        if ($region === 'encounter') {
+            return Encounter::enabled() ? Encounter::regionVersion($acctid) : 0;
         }
 
         return (int) ($session['user']['version'] ?? 0);
@@ -169,6 +221,10 @@ final class Poll
             $html = !empty($session['user']['prefs']['ajax']) ? "<div id='maillink'>" . PageParts::mailLink() . '</div>' : PageParts::mailLink();
         } elseif ($region === 'grants') {
             $html = Grant::enabled() ? Grant::regionHtml($acctid) : '';
+        } elseif ($region === 'presence') {
+            $html = Encounter::enabled() ? Encounter::presenceHtml($acctid) : '';
+        } elseif ($region === 'encounter') {
+            $html = Encounter::enabled() ? Encounter::regionHtml($acctid) : '';
         } else {
             // As the footer does: buffs whose values are expressions are
             // evaluated for the stats and put back afterwards.

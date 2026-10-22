@@ -533,6 +533,7 @@ if ($name != "") {
     if ($session['user']['loggedin']) {
         $sql = "UPDATE " . Database::prefix("accounts") . " SET loggedin=0 WHERE acctid = " . (int) $session['user']['acctid'];
         Database::query($sql);
+        \Lotgd\Presence::leave((int) $session['user']['acctid']);
         DataCache::getInstance()->massinvalidate('charlisthomepage');
         DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
 

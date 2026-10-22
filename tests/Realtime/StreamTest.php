@@ -135,15 +135,15 @@ final class StreamTest extends TestCase
         $this->stream(0, 'clan-5', 20)->run();
 
         $reads = $this->queries(self::EVENTS);
-        self::assertSame(['user-7', 'section-clan-5'], $reads[0]['params']['channels']);
-        self::assertSame(['user-7'], end($reads)['params']['channels'], 'Left the clan: its hall drops out at the next check.');
+        self::assertSame(['user-7', 'section-clan-5', 'presence'], $reads[0]['params']['channels']);
+        self::assertSame(['user-7', 'presence'], end($reads)['params']['channels'], 'Left the clan: its hall drops out at the next check.');
     }
 
     public function testASectionNoPageShowedIsNeverRead(): void
     {
         $this->stream(0, 'superuser', 3)->run();
 
-        self::assertSame(['user-7'], $this->queries(self::EVENTS)[0]['params']['channels']);
+        self::assertSame(['user-7', 'presence'], $this->queries(self::EVENTS)[0]['params']['channels']);
     }
 
     public function testACursorThePollCannotServeAsksForAResync(): void

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Lotgd\Async\Handler;
 
 use Lotgd\Async\Response;
-use Lotgd\Commentary as CoreCommentary;
 use Lotgd\Realtime as Outbox;
 use Lotgd\Realtime\Poll;
 
@@ -34,12 +33,7 @@ class Realtime
             return $response->data('realtime', ['disabled' => true]);
         }
 
-        $channels = [Outbox::userChannel($acctid)];
-        if ($section !== '' && CoreCommentary::mayRead($section, $session['user'] ?? [])) {
-            $channels[] = Outbox::sectionChannel($section);
-        }
-
-        return $response->data('realtime', Poll::events($channels, max(0, $cursor)));
+        return $response->data('realtime', Poll::events(Poll::channels($acctid, $session['user'] ?? [], $section), max(0, $cursor)));
     }
 
     /**
