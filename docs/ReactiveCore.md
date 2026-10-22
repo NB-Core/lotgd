@@ -34,7 +34,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 | 4 | Transactional outbox, relay, polling transport | done (pilot: new mail and incoming transfers; see below) |
 | 5 | Grants: server-issued one-shot navigation for other players | done (pilot: accepting a clan applicant; see below) |
 | 6 | One async transport and popups as in-page overlay | 6a done: one async transport (Jaxon removed); 6b done: popups as in-page overlay (mail, MOTD); 6c done: partial rendering for every display page; live commentary done; see below |
-| 7 | SSE / Mercure transport | planned |
+| 7 | SSE transport (Mercure not planned) | SSE done, opt-in; see below |
 
 ## Phase 1 – PageState
 
@@ -670,6 +670,81 @@ fetch, and B's polls look for no comments; C (AJAX only) sees it by polling;
 retried with the next poll; A writes in the clan hall; B, not a member, gets nothing by naming `clan-14`
 to `commentaryRefresh` or `pollUpdates`; in the forest, B's poll names no
 section. The earlier browser suites pass.
+
+## Phase 7 – server-sent events, as built
+
+With the game setting *How pages receive realtime events*
+(`realtime_transport`) at `sse`, a realtime page reads its announcements from
+an EventSource on `async/stream.php` instead of polling for them: within about
+a second of the relay rather than within `realtime_poll_seconds`. The default
+stays `poll`, which runs on any host; the stream holds one PHP worker per
+open page, which shared webspace does not offer. The page still carries the
+poll's settings, and polls whenever the stream cannot run.
+
+**What the stream sends.** The poll's own answer (`Poll::events()`):
+`{cursor, events, resync?}`, one message per batch, with the cursor as the
+message id. A browser that reconnects sends it back as `Last-Event-ID`, so
+nothing between two streams is missed; announcements the page already has
+come again and are dropped by their event id, as with the poll.
+`Lotgd\Realtime\Stream` looks at `relay_sequence.next_seq` (one primary-key
+row) every second and reads the deliveries only when it moved. It ends after
+`realtime_stream_seconds` (default 50, below the 90-second execution limit)
+with `retry: 2000`; the browser reconnects by itself.
+
+**Who may open it.** `async/stream.php` is a GET, and an EventSource sends no
+custom header: the async CSRF token travels in the query and is always
+checked, whatever `csrf_mode` is, and a browser that sends
+`Sec-Fetch-Site` other than `same-origin` is refused. Logged out → 401, the
+setting at `poll` or realtime off for the player → 404, a second stream
+within `ajax_rate_limit_seconds` → 429. The session is released before the
+stream starts; the rate-limit stamp is the last thing written to it.
+
+**What it checks while it runs.** Every second: that it is still the
+player's one stream (table `realtime_streams`, one row per account holding
+the token of the latest stream). A new stream (another tab, a reload, the
+next page) takes the row over, and the one before ends with `event: replaced`
+within a second, so no player holds more than one worker for longer. Every 15
+seconds, with a `: ping` comment: the account, read again -- `loggedin`
+cleared (logout, ban), `laston` older than `LOGINTIMEOUT`, or the setting
+turned off ends the stream with `event: end` -- and the channels, derived
+again from that account: a clan hall the player left drops out, as with the
+poll. The stream does not move `laston`; the timeout warning is polled as
+before.
+
+**The client** (`assets/js/lotgd.async.js`) opens the stream when the page
+names it (`<meta name="lotgd-realtime-stream">`) and the browser has
+EventSource, and hands each message to the same `announcements()` as a poll
+answer. While it streams, the poll leaves the realtime part out (players with
+the AJAX preference still poll their mail, timeout and commentary updates)
+and only retries a region or comment fetch that failed. It polls instead
+after `replaced` or `end`, or after three failed connects in a row without a
+message in between; a refused connect (a stream opened right after the last
+page's, within the rate limit) is tried again after two seconds first. A
+swap to a page with another commentary section reopens the stream for it.
+
+**Stored pages.** badnav.php shows the page stored for the account, which
+another session of the player may have stored, with that session's async
+token. It now sets this session's token in `<meta name="lotgd-async">`
+(`Lotgd\Page\StoredPage`): the stream refuses any other, and so does every
+async call with `csrf_mode` enforced. The stream meta is left out of a stored
+page while the setting is `poll`.
+
+**Hosting.** Each streaming page holds a PHP worker: size Apache's
+`MaxRequestWorkers` or PHP-FPM's `pm.max_children` for the players online at
+once, plus page requests. A proxy must pass the stream unbuffered: the
+endpoint sends `X-Accel-Buffering: no` (nginx), Caddy flushes event streams
+by itself, and `async/stream.php` turns PHP's output compression off for
+itself. With the PHP built-in server, set `PHP_CLI_SERVER_WORKERS`, or the
+stream blocks every other request.
+
+Verified in a browser (Chromium against MariaDB, setting `sse`): a transfer
+from A reaches B's mail link 0.1--1.4 s after A sent it, and B makes no
+realtime poll; a second tab of B takes the stream and the first falls back to
+polling; a page whose stream cannot connect polls; after its lifetime the
+stream reconnects; a swap to the forest reopens it without a section; with
+`poll` no page names the stream. The earlier browser suites pass with
+`poll`, and the commentary suite with `sse` too, apart from its checks of
+the poll's arguments.
 
 ## Binding acceptance criteria
 

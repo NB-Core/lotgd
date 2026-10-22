@@ -21,6 +21,7 @@ use Lotgd\Page as PageSingleton;
 use Lotgd\Grant;
 use Lotgd\Realtime;
 use Lotgd\Realtime\Poll;
+use Lotgd\Realtime\Stream;
 
 class Footer
 {
@@ -140,6 +141,11 @@ class Footer
                 . '<meta name="lotgd-event-cursor" content="' . Poll::startCursor() . '">'
                 . '<meta name="lotgd-region-versions" content="'
                 . htmlspecialchars((string) json_encode($regionVersions), ENT_QUOTES, 'UTF-8') . '">';
+            if (Stream::enabled()) {
+                // The page reads its events from a stream; polling stays the
+                // fallback (async/stream.php).
+                $realtimeMeta .= '<meta name="lotgd-realtime-stream" content="/async/stream.php">';
+            }
         }
 
         Buffs::restoreBuffFields();

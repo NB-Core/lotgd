@@ -17,6 +17,13 @@
  * than the one shown -- an old event that arrives late never replaces newer
  * content.
  *
+ * With lotgd-realtime-stream (setting realtime_transport = sse, Phase 7) the
+ * announcements come from an EventSource on async/stream.php instead, in the
+ * same shape. The poll then leaves them out, and takes them back whenever
+ * the stream cannot run: no EventSource, an answer that is not a stream,
+ * three failed connects in a row, or a newer stream of the same player
+ * (another tab) taking over.
+ *
  * For code written against the Jaxon client this file keeps
  * window.getJaxonHandlers() and window.Lotgd.Async.Handler.<Class>.<method>()
  * (both deprecated): each call goes through call() and applies its commands.
@@ -217,11 +224,16 @@
             return;
         }
         if (typeof values.commentSection === 'string') {
-            if (values.commentSection !== state.section) {
+            const moved = values.commentSection !== state.section;
+            if (moved) {
                 // What was wanted belongs to the section the page left.
                 comments.wanted = 0;
             }
             state.section = values.commentSection;
+            if (moved && stream.source) {
+                // The stream reads the section it was opened for.
+                openStream();
+            }
         }
         if (typeof values.lastCommentId === 'number') {
             state.lastCommentId = values.lastCommentId;
@@ -361,6 +373,11 @@
         if (typeof answer.cursor === 'number' && answer.cursor > realtime.cursor) {
             realtime.cursor = answer.cursor;
         }
+        retryWanted();
+    }
+
+    // Fetches that failed: again with the next answer, or the next tick.
+    function retryWanted() {
         Object.keys(realtime.wanted).forEach(function (region) {
             refresh(region, realtime.wanted[region]);
         });
@@ -386,6 +403,88 @@
     }
 
     /*
+     * The stream (Phase 7).
+     */
+    const stream = {
+        url: '',
+        source: null,
+        failures: 0,
+        // Set for good once the stream gave up; the poll carries on.
+        off: false
+    };
+
+    function closeStream(giveUp) {
+        if (stream.source) {
+            stream.source.close();
+            stream.source = null;
+        }
+        if (giveUp) {
+            stream.off = true;
+            debug('stream off, polling');
+        }
+    }
+
+    function openStream() {
+        closeStream(false);
+        if (stream.off || !realtime.on || !stream.url || typeof window.EventSource !== 'function') {
+            return;
+        }
+        const url = stream.url
+            + '?csrf=' + encodeURIComponent(String(settings().csrf || ''))
+            + '&cursor=' + encodeURIComponent(String(realtime.cursor))
+            + '&section=' + encodeURIComponent(state.section || '');
+        const source = new window.EventSource(url);
+        stream.source = source;
+        source.onopen = function () {
+            stream.failures = 0;
+        };
+        source.onmessage = function (event) {
+            stream.failures = 0;
+            let answer = null;
+            try {
+                answer = JSON.parse(event.data);
+            } catch (error) {
+                return;
+            }
+            announcements(answer);
+        };
+        // A newer stream of the player, or the account ended it.
+        ['replaced', 'end'].forEach(function (name) {
+            source.addEventListener(name, function () {
+                if (stream.source === source) {
+                    closeStream(true);
+                }
+            });
+        });
+        source.onerror = function () {
+            if (stream.source !== source) {
+                return;
+            }
+            // CLOSED: the answer was no stream (refused, turned off) and the
+            // browser will not try again by itself. Otherwise it reconnects,
+            // as after every stream's lifetime. Three failures in a row
+            // without a message in between: poll.
+            stream.failures += 1;
+            if (stream.failures >= 3) {
+                closeStream(true);
+            } else if (source.readyState === 2) {
+                // Refused, perhaps only for now (a stream opened right after
+                // the last page's): try once more before polling for good.
+                closeStream(false);
+                window.setTimeout(function () {
+                    if (!stream.source && !stream.off) {
+                        openStream();
+                    }
+                }, 2000);
+            }
+        };
+    }
+
+    function streaming() {
+        return stream.source !== null;
+    }
+
+    /*
      * The one poll.
      */
     let stopped = false;
@@ -403,11 +502,17 @@
     function pollOnce() {
         if (settings().updates) {
             // No section: the page shows no commentary, none is asked for.
-            // With realtime on, new comments are announced, not looked for.
+            // With realtime on, new comments are announced, not looked for;
+            // while the stream announces them, the poll names no section, or
+            // it would fetch the same lines as the announcement's fetch.
+            const live = streaming();
+            if (live) {
+                retryWanted();
+            }
             return call('Commentary', 'pollUpdates', [
-                state.section || '',
+                live ? '' : (state.section || ''),
                 state.lastCommentId || 0,
-                realtime.on ? realtime.cursor : null
+                realtime.on && !live ? realtime.cursor : null
             ]).then(function (data) {
                 if (data.commentary && data.commentary.section === state.section) {
                     state.lastCommentId = Math.max(state.lastCommentId, Number(data.commentary.lastId) || 0);
@@ -416,6 +521,12 @@
                     announcements(data.realtime);
                 }
             });
+        }
+        if (streaming()) {
+            // Announcements come from the stream; only a failed fetch is
+            // left to the tick.
+            retryWanted();
+            return Promise.resolve();
         }
         return call('Realtime', 'poll', [realtime.cursor, state.section || '']).then(function (data) {
             announcements(data.realtime);
@@ -480,8 +591,10 @@
             } catch (error) {
                 realtime.versions = {};
             }
+            stream.url = readMeta('lotgd-realtime-stream') || '';
         }
         if (own.polling !== false && typeof window.fetch === 'function') {
+            openStream();
             startPolling();
         }
     }
@@ -522,7 +635,7 @@
         setState: setState,
         // A copy, for diagnostics and tests.
         state: function () {
-            return { section: state.section, lastCommentId: state.lastCommentId, lastMailId: state.lastMailId, mailCount: state.mailCount, cursor: realtime.cursor };
+            return { section: state.section, lastCommentId: state.lastCommentId, lastMailId: state.lastMailId, mailCount: state.mailCount, cursor: realtime.cursor, streaming: streaming() };
         },
         syncRegionVersions: syncRegionVersions,
         // Show a region's current content now (after the mail dialog closed).
