@@ -19,6 +19,8 @@ final class PvpLiveTargetsPageTest extends TestCase
         'partial_render' => 1, 'defaultskin' => 'twig:aurora', 'pvp' => 1,
     ];
 
+    private const ROWS = '/SELECT acctid, level, age, dragonkills, pk, experience, playerfights, alive FROM accounts WHERE acctid IN/';
+
     private const ONLINE = [
         '/SELECT p\.acctid, a\.name, a\.level, p\.place FROM presence p/' => [
             ['acctid' => 1, 'name' => 'Me', 'level' => 3, 'place' => 'forest'],
@@ -30,8 +32,9 @@ final class PvpLiveTargetsPageTest extends TestCase
     public function testAWarriorInThePeacefulPlacesCanBeChallengedBothWays(): void
     {
         $run = $this->page(self::SETTINGS, self::ONLINE + [
-            '/SELECT level, age, dragonkills, pk, experience, playerfights, alive FROM accounts/' => [
-                ['level' => 3, 'age' => 30, 'dragonkills' => 1, 'pk' => 0, 'experience' => 2000, 'playerfights' => 3, 'alive' => 1],
+            self::ROWS => [
+                ['acctid' => 1, 'level' => 3, 'age' => 30, 'dragonkills' => 1, 'pk' => 0, 'experience' => 2000, 'playerfights' => 3, 'alive' => 1],
+                ['acctid' => 2, 'level' => 4, 'age' => 30, 'dragonkills' => 1, 'pk' => 0, 'experience' => 2000, 'playerfights' => 3, 'alive' => 1],
             ],
         ]);
 
@@ -46,13 +49,16 @@ final class PvpLiveTargetsPageTest extends TestCase
         }
         self::assertSame([], $this->forms($run, 3), 'Not someone in the forest.');
         self::assertSame([], $this->forms($run, 1), 'Not oneself.');
+        self::assertCount(1, preg_grep('/FROM accounts WHERE acctid IN/', $run->queries), 'Every row read at once, not twice per warrior.');
+        self::assertSame([], preg_grep('/^SELECT level, age, dragonkills/', $run->queries), 'No read per warrior.');
     }
 
     public function testAProtectedWarriorIsOnlyOfferedAFriendlyDuel(): void
     {
         $run = $this->page(self::SETTINGS, self::ONLINE + [
-            '/SELECT level, age, dragonkills, pk, experience, playerfights, alive FROM accounts/' => [
-                ['level' => 3, 'age' => 1, 'dragonkills' => 0, 'pk' => 0, 'experience' => 0, 'playerfights' => 3, 'alive' => 1],
+            self::ROWS => [
+                ['acctid' => 1, 'level' => 3, 'age' => 30, 'dragonkills' => 1, 'pk' => 0, 'experience' => 2000, 'playerfights' => 3, 'alive' => 1],
+                ['acctid' => 2, 'level' => 4, 'age' => 1, 'dragonkills' => 0, 'pk' => 0, 'experience' => 0, 'playerfights' => 3, 'alive' => 1],
             ],
         ]);
 

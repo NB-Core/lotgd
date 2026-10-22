@@ -334,8 +334,7 @@ final class Encounter
      */
     public static function seriousRefusal(int $challenger, int $opponent): ?string
     {
-        $settings = Settings::getInstance();
-        if (!(int) $settings->getSetting('pvp', 1)) {
+        if (!self::pvpOn()) {
             return 'pvp-off';
         }
         $rows = [];
@@ -345,20 +344,37 @@ final class Encounter
                 ['acctid' => $acctid],
                 ['acctid' => ParameterType::INTEGER]
             );
-            if (!is_array($row) || empty($row['alive'])) {
+            if (!is_array($row)) {
                 return 'not-alive';
             }
             $rows[] = $row;
         }
-        [$attacker, $defender] = $rows;
-        // pvp.php's own target list (Pvp::listTargets()).
+
+        return self::seriousRuleRefusal($rows[0], $rows[1]);
+    }
+
+    /**
+     * The rules of a serious duel on two account rows already read (level,
+     * age, dragonkills, pk, experience, playerfights, alive): who may fight
+     * whom, as pvp.php's own target list (Pvp::listTargets()). PvP being on
+     * is checked by the caller.
+     *
+     * @param array<string,mixed> $attacker
+     * @param array<string,mixed> $defender
+     */
+    public static function seriousRuleRefusal(array $attacker, array $defender): ?string
+    {
+        if (empty($attacker['alive']) || empty($defender['alive'])) {
+            return 'not-alive';
+        }
+        $settings = Settings::getInstance();
         $range = (int) $settings->getSetting('pvprange', 2);
         if ((int) $defender['level'] < (int) $attacker['level'] - $range + 1 || (int) $defender['level'] > (int) $attacker['level'] + $range) {
             return 'pvp-range';
         }
         $days = (int) $settings->getSetting('pvpimmunity', 5);
         $exp = (int) $settings->getSetting('pvpminexp', 1500);
-        foreach ($rows as $player) {
+        foreach ([$attacker, $defender] as $player) {
             if ((int) $player['age'] <= $days && (int) $player['dragonkills'] === 0 && (int) $player['pk'] === 0 && (int) $player['experience'] <= $exp) {
                 return 'pvp-immune';
             }
@@ -368,6 +384,11 @@ final class Encounter
         }
 
         return null;
+    }
+
+    private static function pvpOn(): bool
+    {
+        return (bool) (int) Settings::getInstance()->getSetting('pvp', 1);
     }
 
     /**
@@ -655,17 +676,33 @@ final class Encounter
         $form = static function (int $target, string $stakes, string $label) use ($link): string {
             return "<form action='{$link}' method='POST' style='display:inline'>" . Forms::csrfField($link) . Action::idField()
                 . "<input type='hidden' name='target' value='{$target}'><input type='hidden' name='stakes' value='{$stakes}'>"
-                . "<button type='submit' class='button'>" . htmlspecialchars(Translator::translateInline($label, 'encounter'), ENT_QUOTES, 'UTF-8')
+                . "<button type='submit' class='button'>"
+                . htmlspecialchars(Sanitize::stripAllColorCodes(Translator::translateInline($label, 'encounter')), ENT_QUOTES, 'UTF-8')
                 . '</button></form> ';
         };
+        $targets = array_values(array_filter(
+            Presence::online(),
+            static fn (array $player): bool => (int) $player['acctid'] !== $acctid && in_array((string) $player['place'], Presence::PEACEFUL, true)
+        ));
+        // Who may be fought seriously: every row read once, the rules applied here.
+        $accounts = [];
+        if ($targets !== [] && self::pvpOn()) {
+            $rows = Database::getDoctrineConnection()->fetchAllAssociative(
+                'SELECT acctid, level, age, dragonkills, pk, experience, playerfights, alive FROM ' . Database::prefix('accounts')
+                . ' WHERE acctid IN (:ids)',
+                ['ids' => [$acctid, ...array_map(static fn (array $player): int => (int) $player['acctid'], $targets)]],
+                ['ids' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
+            );
+            foreach ($rows as $row) {
+                $accounts[(int) $row['acctid']] = $row;
+            }
+        }
         $rows = '';
         $j = 0;
-        foreach (Presence::online() as $player) {
+        foreach ($targets as $player) {
             $id = (int) $player['acctid'];
-            if ($id === $acctid || !in_array((string) $player['place'], Presence::PEACEFUL, true)) {
-                continue;
-            }
-            $buttons = (self::seriousRefusal($acctid, $id) === null ? $form($id, self::SERIOUS, 'Challenge to a serious duel') : '')
+            $serious = isset($accounts[$acctid], $accounts[$id]) && self::seriousRuleRefusal($accounts[$acctid], $accounts[$id]) === null;
+            $buttons = ($serious ? $form($id, self::SERIOUS, 'Challenge to a serious duel') : '')
                 . $form($id, self::FRIENDLY, 'Challenge to a friendly duel');
             // Laid out like the PvP list above it.
             $rows .= "<tr class='" . (++$j % 2 ? 'trlight' : 'trdark') . "'><td>" . $output->appoencode((string) $player['name'])
