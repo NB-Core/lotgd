@@ -229,4 +229,33 @@ final class PartialModeTest extends TestCase
         self::assertFalse(PartialMode::isEnabledFor(['prefs' => ['partialrender' => 1]]));
         self::assertFalse(PartialMode::isEnabledFor([]));
     }
+
+    public function testAPlayerWhoNeverChoseGetsTheGamesDefault(): void
+    {
+        $previous = \Lotgd\Settings::hasInstance() ? \Lotgd\Settings::getInstance() : null;
+        try {
+            \Lotgd\Settings::setInstance(new \Lotgd\Tests\Stubs\DummySettings(['partial_render' => 1]));
+            self::assertTrue(PartialMode::isEnabledFor(['prefs' => []]), 'The default for players is on.');
+            self::assertFalse(PartialMode::isEnabledFor(['prefs' => ['partialrender' => 0]]), 'Their own choice stays.');
+            self::assertTrue(PartialMode::isEnabledFor(['prefs' => ['partialrender' => 1]]));
+
+            \Lotgd\Settings::setInstance(new \Lotgd\Tests\Stubs\DummySettings(['partial_render' => 1, 'partial_render_default' => 0]));
+            self::assertFalse(PartialMode::isEnabledFor(['prefs' => []]));
+            self::assertTrue(PartialMode::isEnabledFor(['prefs' => ['partialrender' => 1]]));
+
+            \Lotgd\Settings::setInstance(new \Lotgd\Tests\Stubs\DummySettings(['partial_render' => 0]));
+            self::assertFalse(PartialMode::isEnabledFor(['prefs' => []]), 'Off for the game is off for everyone.');
+        } finally {
+            \Lotgd\Settings::setInstance($previous);
+        }
+    }
+
+    public function testASkinIsLookedUpByTheNameOfTheSetting(): void
+    {
+        self::assertTrue(PartialMode::skinDeclaresFor('twig:aurora', 'regions'));
+        self::assertTrue(PartialMode::skinDeclaresFor('twig:aurora', 'overlay'));
+        self::assertFalse(PartialMode::skinDeclaresFor('jade', 'regions'), 'A legacy skin never declares regions.');
+        self::assertFalse(PartialMode::skinDeclaresFor('twig:../aurora', 'regions'));
+        self::assertFalse(PartialMode::skinDeclaresFor('twig:nosuchskin', 'regions'));
+    }
 }
