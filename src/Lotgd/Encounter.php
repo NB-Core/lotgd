@@ -674,11 +674,13 @@ final class Encounter
             ['id' => $id],
             ['id' => ParameterType::INTEGER]
         );
-        if (!is_array($row) || (string) $row['kind'] !== self::KIND_DUEL || !in_array((string) $row['state'], [self::ACCEPTED, self::ENDED], true)) {
+        if (!is_array($row) || (string) $row['kind'] !== self::KIND_DUEL) {
             return null;
         }
+        // An accepted duel past its time reads as expired: no longer watched.
+        $row = self::withExpiry($row);
 
-        return self::withExpiry($row);
+        return in_array((string) $row['state'], [self::ACCEPTED, self::ENDED], true) ? $row : null;
     }
 
     /**

@@ -310,6 +310,10 @@ final class EncounterTest extends TestCase
         $this->connection->queryResultsByPattern['/FROM encounters WHERE id = :id$/'] = [$this->row(['state' => 'pending', 'challenger' => 2, 'opponent' => 3])];
         self::assertSame(0, Encounter::watching(), 'A challenge is no duel to watch.');
 
+        $this->connection->queryResultsByPattern['/FROM encounters WHERE id = :id$/'] = [$this->row(['state' => 'accepted', 'challenger' => 2, 'opponent' => 3, 'expires_at' => '2000-01-01 00:00:00'])];
+        self::assertSame(0, Encounter::watching(), 'A duel past its time is no longer watched.');
+        self::assertNull(Encounter::watchable(1));
+
         Encounter::endWatchUnlessShown();
         self::assertArrayNotHasKey('watching', $GLOBALS['session'], 'A page that does not show the duel ends the watching.');
         Encounter::watch(1);
