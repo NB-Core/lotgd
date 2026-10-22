@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Integration;
 
+use Lotgd\Encounter;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -19,7 +20,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class EncounterMariaDbTest extends TestCase
 {
-    private const SETTINGS = ['guarded_actions', 'grants_enabled', 'realtime_enabled', 'live_encounters'];
+    private const SETTINGS = ['guarded_actions', 'grants_enabled', 'realtime_enabled', 'live_encounters', 'pvp'];
 
     private string $root = '';
     private \PDO $db;
@@ -62,7 +63,9 @@ final class EncounterMariaDbTest extends TestCase
         if ($this->accounts !== []) {
             $ids = implode(',', $this->accounts);
             $this->db->exec("DELETE FROM encounter_slots WHERE acctid IN ($ids)");
+            $this->db->exec("DELETE r FROM encounter_rounds r INNER JOIN encounters e ON e.id = r.encounter_id WHERE e.challenger IN ($ids) OR e.opponent IN ($ids)");
             $this->db->exec("DELETE FROM encounters WHERE challenger IN ($ids) OR opponent IN ($ids)");
+            $this->db->exec("DELETE FROM mail WHERE msgto IN ($ids)");
             $this->db->exec("DELETE FROM presence WHERE acctid IN ($ids)");
             $this->db->exec("DELETE FROM action_log WHERE acctid IN ($ids)");
             $this->db->exec("DELETE FROM granted_navs WHERE acctid IN ($ids)");
@@ -142,6 +145,96 @@ final class EncounterMariaDbTest extends TestCase
         $answer = $this->finish($this->start(['acctid' => $ann, 'op' => 'challenge', 'target' => $bob]));
 
         self::assertSame(['status' => 'rejected', 'reason' => 'opponent-away', 'id' => 0], $answer);
+    }
+
+    public function testTwoChoicesAtOnceResolveTheRoundOnce(): void
+    {
+        [$ann, $bob, $id] = $this->duel();
+
+        $answers = $this->together(
+            ['acctid' => $ann, 'op' => 'choose', 'id' => $id, 'round' => 1, 'choice' => 'attack', 'hold' => 0.3],
+            ['acctid' => $bob, 'op' => 'choose', 'id' => $id, 'round' => 1, 'choice' => 'guard', 'hold' => 0.3]
+        );
+
+        self::assertSame(['done', 'done'], array_column($answers, 'status'), (string) json_encode($answers));
+        self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM encounter_rounds WHERE encounter_id = $id AND round = 1 AND resolved_at IS NOT NULL"));
+        self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM encounter_rounds WHERE encounter_id = $id AND round = 2"), 'One next round.');
+        $round = json_decode((string) $this->db->query("SELECT result FROM encounter_rounds WHERE encounter_id = $id AND round = 1")->fetchColumn(), true);
+        self::assertSame([], $round['auto'], 'Both choices counted.');
+    }
+
+    public function testAChoiceRacingTheDeadlineIsResolvedOnce(): void
+    {
+        [$ann, $bob, $id] = $this->duel();
+        $this->db->exec("UPDATE encounter_rounds SET deadline = NOW() - INTERVAL 1 SECOND WHERE encounter_id = $id");
+
+        $answers = $this->together(
+            ['acctid' => $ann, 'op' => 'resolve', 'id' => $id, 'round' => 1, 'hold' => 0.3],
+            ['acctid' => $bob, 'op' => 'choose', 'id' => $id, 'round' => 1, 'choice' => 'attack', 'hold' => 0.3]
+        );
+
+        $statuses = array_column($answers, 'status');
+        self::assertContains('done', $statuses, (string) json_encode($answers));
+        self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM encounter_rounds WHERE encounter_id = $id AND round = 1 AND resolved_at IS NOT NULL"));
+        self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM encounter_rounds WHERE encounter_id = $id AND round = 2"));
+    }
+
+    public function testASeriousDuelIsPaidOnceWhenGivingUpRacesTheDeadline(): void
+    {
+        [$ann, $bob, $id] = $this->duel(Encounter::SERIOUS);
+        $this->db->exec("UPDATE encounter_rounds SET deadline = NOW() - INTERVAL 1 SECOND WHERE encounter_id = $id");
+        $before = $this->db->query("SELECT acctid, gold, experience, alive FROM accounts WHERE acctid IN ($ann, $bob)")->fetchAll(\PDO::FETCH_UNIQUE);
+
+        // Bob gives up while Ann's page resolves the round.
+        $answers = $this->together(
+            ['acctid' => $bob, 'op' => 'choose', 'id' => $id, 'round' => 1, 'choice' => 'surrender', 'hold' => 0.3],
+            ['acctid' => $ann, 'op' => 'resolve', 'id' => $id, 'round' => 1, 'hold' => 0.3]
+        );
+
+        self::assertContains('done', array_column($answers, 'status'), (string) json_encode($answers));
+        $state = (string) $this->db->query("SELECT state FROM encounters WHERE id = $id")->fetchColumn();
+        $after = $this->db->query("SELECT acctid, gold, experience, alive FROM accounts WHERE acctid IN ($ann, $bob)")->fetchAll(\PDO::FETCH_UNIQUE);
+        if ($state === 'ended') {
+            // Bob gave up first: Ann won as the attacker, once.
+            self::assertSame(0, (int) $after[$bob]['alive']);
+            self::assertSame(1, (int) $after[$ann]['alive']);
+            self::assertGreaterThan((int) $before[$ann]['gold'], (int) $after[$ann]['gold']);
+            self::assertSame(2, $this->scalar("SELECT COUNT(*) FROM mail WHERE msgto IN ($ann, $bob)"), 'One mail each.');
+        } else {
+            // The round was resolved first; Bob's surrender came for a round over.
+            self::assertSame('accepted', $state);
+            self::assertSame($before, $after, 'Nothing paid yet.');
+        }
+    }
+
+    public function testASeriousChallengeOutsideTheLevelRangeIsRefused(): void
+    {
+        [$ann, $bob] = [$this->player('ann'), $this->player('bob')];
+        $this->db->exec("UPDATE accounts SET level = 3 WHERE acctid = $ann");
+        $this->db->exec("UPDATE accounts SET level = 9, age = 30, dragonkills = 1 WHERE acctid = $bob");
+
+        $answer = $this->finish($this->start(['acctid' => $ann, 'op' => 'challenge', 'target' => $bob, 'stakes' => 'serious']));
+
+        self::assertSame(['status' => 'rejected', 'reason' => 'pvp-range', 'id' => 0], $answer);
+    }
+
+    /**
+     * Two players in an accepted duel, its first round open.
+     *
+     * @return array{0:int,1:int,2:int}
+     */
+    private function duel(string $stakes = Encounter::FRIENDLY): array
+    {
+        [$ann, $bob] = [$this->player('ann'), $this->player('bob')];
+        foreach ([$ann, $bob] as $acctid) {
+            $this->db->exec("UPDATE accounts SET level = 5, age = 30, dragonkills = 1, alive = 1, hitpoints = 50, gold = 100, experience = 1000, playerfights = 3 WHERE acctid = $acctid");
+        }
+        $challenge = $this->finish($this->start(['acctid' => $ann, 'op' => 'challenge', 'target' => $bob, 'stakes' => $stakes]));
+        self::assertSame('done', $challenge['status'], (string) json_encode($challenge));
+        $answer = $this->finish($this->start(['acctid' => $bob, 'op' => 'answer', 'id' => $challenge['id'], 'accept' => true]));
+        self::assertSame('done', $answer['status'], (string) json_encode($answer));
+
+        return [$ann, $bob, $challenge['id']];
     }
 
     private function player(string $name, string $place = 'village'): int

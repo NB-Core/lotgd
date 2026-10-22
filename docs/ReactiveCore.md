@@ -34,7 +34,7 @@ Chat refresh, stats poll and event poll bump neither of the first two.
 | 4 | Transactional outbox, relay, polling transport | done (pilot: new mail and incoming transfers; see below) |
 | 5 | Grants: server-issued one-shot navigation for other players | done (pilot: accepting a clan applicant; see below) |
 | 6 | One async transport and popups as in-page overlay | 6a done: one async transport (Jaxon removed); 6b done: popups as in-page overlay (mail, MOTD); 6c done: partial rendering for every display page; live commentary done; see below |
-| 7 | SSE transport, presence, live encounters | SSE done, opt-in; presence and live challenges done (the duel itself next); see below |
+| 7 | SSE transport, presence, live encounters, live duels | done, opt-in; see below |
 
 ## Phase 1 – PageState
 
@@ -785,7 +785,7 @@ shades, or on a page of their own. Every step is a POST inside
   freed by its own row, never by a range: a range delete would lock the gaps
   the inserts write into.
 - *answer* (the opponent): uses the grant up, then accepts (the encounter is
-  open for 30 minutes and runs the hook `encounter-accepted` after the
+  open for an hour and runs the hook `encounter-accepted` after the
   commit) or declines (both slots free).
 - *withdraw* (the challenger, while unanswered): the grant closes.
 - *leave* (either player, once accepted): the encounter ends.
@@ -811,6 +811,111 @@ without a reload; leaving ends it on both pages; a withdrawn challenge
 disappears from Dora's header by itself; a declined one shows on Admin's
 page; a button used after its player left for the forest is refused; Dora
 leaves the list when she logs out. The earlier browser suites pass.
+
+## Live duels – as built
+
+An accepted challenge is a duel in rounds, fought on the duelling ground with
+both pages updating without a reload. It runs on any host -- the rounds are
+seconds long, so SSE and polling both carry it.
+
+**Stakes.** The challenger picks them, and the opponent sees them in the
+offer before accepting (`encounters.stakes`):
+
+- *friendly*: nothing changes on either account. The result is in the
+  encounter and the news.
+- *serious*: what PvP pays and costs (`Lotgd\Pvp\Payout`, the formulas of
+  `Pvp::victory()` / `Pvp::defeat()` without their output), with the
+  challenger as the attacker. The loser dies; gold on hand and a share of
+  the experience go as in a player fight; both get a mail.
+  - Allowed only when `pvp` is on, both are within `pvprange` levels of each
+    other, neither is protected as a new player (`pvpimmunity`,
+    `pvpminexp`), and the challenger has a player fight left today
+    (`Encounter::seriousRefusal()`).
+  - This is checked when challenging and again when accepting, and the
+    acceptance spends the fight.
+
+**Rounds** (`Lotgd\Encounter\RoundDuel`, `Lotgd\Encounter\Duel`):
+
+- **Choices.** Both players choose at once and in secret: *attack*, *guard*
+  (half the attack, half again the defense), or *give up*. They choose with
+  buttons in the encounter region, which `assets/js/lotgd.duel.js` posts to
+  the async handler `Duel.choose`.
+- **The exchange.** A round is one exchange of the core's PvP damage roll
+  (`Battle::computePlayerDamage()` with `isPvp`). It uses only the values the
+  duel began with: `PlayerFunctions::getPlayerAttack/Defense()` and the
+  hitpoints when the challenge was accepted, with no buffs and no
+  companions.
+- **When a round is resolved.** The second choice resolves the round at
+  once. Otherwise, once `duel_round_seconds` (default 20) have passed, each
+  page asks `Duel.resolve` and the server resolves it once. A player who did
+  not choose attacks.
+- **How the duel ends:**
+  - *knockout*: when both are down, whoever is less far below wins;
+  - *give up*: leaving the duel page with its button gives up too;
+  - *rounds*: after `duel_max_rounds` (default 30), the larger share of
+    hitpoints left wins;
+  - *abandoned*: two rounds in a row without any choice from either player
+    end it as a draw, with no stakes.
+
+**Storage and locking.** The state lives in `encounters.data`, and there is
+one `encounter_rounds` row per round with the two hidden choices. Every move
+runs inside `Action::run()`:
+
+1. the player's account is locked;
+2. then the encounter row;
+3. then the round's row.
+
+A choice racing the deadline, or both pages resolving at once, therefore
+resolve the round once. The action id is derived from the move, so a call
+repeated after a lost answer gets the first answer. A deadlock between two
+resolving pages comes back as a conflict, and the page fetches the region
+again. Announcements say *that* a player chose, never *what*.
+
+**Settlement** (`Encounter::settle()`) does not care who fought. It takes an
+`Lotgd\Encounter\Outcome` (winner, loser or draw, reason, rounds) and writes
+the stakes:
+
+- the acting player's own account through the session, under the action's
+  version check;
+- the other player's row read `FOR UPDATE` and written whole, with
+  `version = version + 1`;
+- the mails inside the transaction;
+- the news and the hook `duel-finished` after the commit.
+
+The hooks `pvpwin`/`pvploss` do not run: their arguments describe the
+offline defender of pvp.php.
+
+**Later: an arena server.** A real-time game, Bomberman-like, needs a process
+of its own that ticks many times a second and keeps its state in memory, on a
+host that can run one. It would sit behind the same two seams:
+
+- `Lotgd\Encounter\Engine::start()` gives it the players' values. Handed
+  out as a ticket the core signs (HMAC over encounter, players, values and
+  expiry), these let the arena trust where they came from.
+- Its result comes back as an `Outcome`, signed the same way, to an endpoint
+  that calls `Encounter::settle()` inside a guarded action.
+
+Neither the ticket nor the endpoint is built yet.
+
+Verified:
+
+- **Unit tests:** `tests/Encounter/RoundDuelTest.php` (scripted dice),
+  `DuelTest.php` (stub connection), `DuelHandlerTest.php`,
+  `tests/Pvp/PayoutTest.php`.
+- **Against MariaDB** (`tests/Integration/EncounterMariaDbTest.php`): two
+  choices at once resolve the round once and open one next round; a choice
+  racing the deadline is resolved once; giving up while the other page
+  resolves pays a serious duel at most once; a serious challenge outside the
+  level range is refused.
+- **In a browser** (two players, Chromium against MariaDB, with `sse` and
+  with `poll`):
+  - Dora sees that Admin chose, but not what;
+  - both see the round resolved without a reload;
+  - a round nobody plays resolves when its time is up, both attacking;
+  - giving up ends the duel on both pages;
+  - a friendly duel leaves both accounts as they were;
+  - a serious one kills the loser, moves the gold and experience as PvP
+    does, and mails both.
 
 ## Binding acceptance criteria
 

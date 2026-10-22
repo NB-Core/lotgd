@@ -36,6 +36,7 @@ final class AccountsVersionBumpTest extends TestCase
         ['src/Lotgd/ForcedNavigation.php', 'page_revision', 'the page revision claim'],
         ['src/Lotgd/Accounts.php', '', "saveUser()'s own write, which sets the version itself"],
         ['src/Lotgd/Action.php', 'FOR UPDATE', 'the account lock, not a write'],
+        ['src/Lotgd/Encounter.php', 'FOR UPDATE', "the duel opponent's lock, not a write"],
     ];
 
     public function testEveryGameplayWriteToAnAccountMovesItsVersionOn(): void

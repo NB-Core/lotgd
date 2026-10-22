@@ -7,6 +7,9 @@ namespace Lotgd;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Action\ActionAborted;
+use Lotgd\Encounter\Duel;
+use Lotgd\Encounter\Outcome;
+use Lotgd\Pvp\Payout;
 use Lotgd\Modules\HookHandler;
 use Lotgd\MySQL\Database;
 use Lotgd\MySQL\StorageEngine;
@@ -36,8 +39,12 @@ final class Encounter
     public const ENDED = 'ended';
     public const EXPIRED = 'expired';
 
-    /** Seconds an accepted encounter stays open without its players ending it. */
-    public const ACCEPTED_SECONDS = 1800;
+    /** What a duel is fought for: nothing but the honour, or the PvP stakes. */
+    public const FRIENDLY = 'friendly';
+    public const SERIOUS = 'serious';
+
+    /** Seconds an accepted encounter stays open: longer than the longest duel (50 rounds of 60 s). */
+    public const ACCEPTED_SECONDS = 3600;
 
     /** Tables an encounter step writes in its transaction. */
     public const TABLES = ['encounters', 'encounter_slots'];
@@ -89,10 +96,12 @@ final class Encounter
      * Challenge $opponent. Runs inside Action::run().
      *
      * @param array<string,mixed> $challenger The session user.
+     * @param string              $stakes     FRIENDLY, or SERIOUS for the PvP stakes.
      * @return array{id:int,opponent:int,name:string}
      */
-    public static function challenge(array $challenger, int $opponent): array
+    public static function challenge(array $challenger, int $opponent, string $stakes = self::FRIENDLY): array
     {
+        $stakes = $stakes === self::SERIOUS ? self::SERIOUS : self::FRIENDLY;
         self::requireAction();
         $me = (int) $challenger['acctid'];
         if ($opponent <= 0 || $opponent === $me) {
@@ -112,6 +121,12 @@ final class Encounter
             // Offline, or busy: in a fight, among the shades, on a page of their own.
             throw new ActionAborted('opponent-away');
         }
+        if ($stakes === self::SERIOUS) {
+            $refusal = self::seriousRefusal($me, $opponent);
+            if ($refusal !== null) {
+                throw new ActionAborted($refusal);
+            }
+        }
 
         $players = [$me, $opponent];
         sort($players);
@@ -122,10 +137,11 @@ final class Encounter
         $changed = Presence::now();
         $conn->executeStatement(
             'INSERT INTO ' . Database::prefix('encounters')
-            . ' (kind, challenger, opponent, state, grant_id, created, expires_at, changed_us)'
-            . ' VALUES (:kind, :challenger, :opponent, :state, 0, :created, :expires, :changed)',
+            . ' (kind, challenger, opponent, state, stakes, grant_id, created, expires_at, changed_us)'
+            . ' VALUES (:kind, :challenger, :opponent, :state, :stakes, 0, :created, :expires, :changed)',
             [
                 'kind' => self::KIND_DUEL,
+                'stakes' => $stakes,
                 'challenger' => $me,
                 'opponent' => $opponent,
                 'state' => self::PENDING,
@@ -156,7 +172,10 @@ final class Encounter
             'encounter.answer',
             ['encounter' => $id, 'challenger' => $me],
             self::grantKey($id),
-            sprintf(Translator::translateInline('`$%s`$ challenges you to a duel`0', 'encounter'), (string) $challenger['name']),
+            sprintf(
+                Translator::translateInline($stakes === self::SERIOUS ? '`$%s`$ challenges you to a serious duel`0' : '`$%s`$ challenges you to a friendly duel`0', 'encounter'),
+                (string) $challenger['name']
+            ),
             self::viewLink($id),
             $ttl
         );
@@ -189,9 +208,19 @@ final class Encounter
         self::requireOpen($row, self::PENDING);
 
         if ($accept) {
+            if ((string) $row['stakes'] === self::SERIOUS) {
+                // Checked again on the rows now: a day may have passed, a
+                // fight been spent meanwhile.
+                $refusal = self::seriousRefusal((int) $row['challenger'], $me);
+                if ($refusal !== null) {
+                    throw new ActionAborted($refusal);
+                }
+                self::spendFight((int) $row['challenger']);
+            }
             $expires = time() + self::ACCEPTED_SECONDS;
+            $data = Duel::start($row);
             // The row as it now stands, for the modules that build on it.
-            $encounter = array_merge($row, self::change($row, self::ACCEPTED, $expires));
+            $encounter = array_merge($row, ['data' => (string) json_encode($data)], self::change($row, self::ACCEPTED, $expires));
             Action::afterCommit(static function () use ($encounter): void {
                 HookHandler::hook('encounter-accepted', ['encounter' => $encounter]);
             });
@@ -237,9 +266,229 @@ final class Encounter
             throw new ActionAborted('no-encounter');
         }
         self::requireOpen($row, self::ACCEPTED);
+        $data = Duel::data($row);
+        if ($data !== null && !is_array($data['result'] ?? null)) {
+            // Leaving a duel under way is giving it up.
+            $me = (int) $player['acctid'];
+            $other = (int) $row['challenger'] === $me ? (int) $row['opponent'] : (int) $row['challenger'];
+            $outcome = Outcome::won($other, $me, Outcome::SURRENDER, (int) $data['round']);
+            $data['result'] = $outcome->toArray();
+            self::settle($row, $data, $outcome);
+
+            return ['id' => $id, 'state' => self::ENDED];
+        }
         self::change($row, self::ENDED);
 
         return ['id' => $id, 'state' => self::ENDED];
+    }
+
+    /**
+     * End an accepted encounter with its outcome, whoever decided it (the
+     * round duel, later an arena). Runs inside Action::run(), in the request
+     * of one of the two players: their own account changes through the
+     * session, the other's row is locked and written here.
+     *
+     * A friendly duel changes nothing but the encounter; a serious one pays
+     * and costs what PvP does (Lotgd\Pvp\Payout), with the challenger as the
+     * attacker: the loser dies.
+     *
+     * @param array<string,mixed> $row  The encounter, locked.
+     * @param array<string,mixed> $data Its state, with the result in it.
+     */
+    public static function settle(array $row, array $data, Outcome $outcome): void
+    {
+        self::requireAction();
+        $id = (int) $row['id'];
+        $data['result'] = $outcome->toArray();
+        Duel::write($id, $data);
+
+        $payout = null;
+        if ((string) $row['stakes'] === self::SERIOUS && !$outcome->isDraw()) {
+            $payout = self::pay($row, $outcome);
+        }
+        self::change($row, self::ENDED);
+
+        $names = [];
+        foreach ((array) ($data['players'] ?? []) as $acctid => $player) {
+            $names[(int) $acctid] = (string) ($player['name'] ?? '');
+        }
+        $encounter = array_merge($row, ['state' => self::ENDED, 'data' => (string) json_encode($data)]);
+        Action::afterCommit(static function () use ($encounter, $outcome, $names, $payout): void {
+            if ($outcome->isDraw()) {
+                AddNews::add('`7The duel between `&%s`7 and `&%s`7 ended without a winner.', ...array_values($names));
+            } else {
+                AddNews::add(
+                    $payout !== null ? '`&%s`4 defeated `&%s`4 in a serious duel!' : '`&%s`7 won a friendly duel against `&%s`7.',
+                    $names[(int) $outcome->winner] ?? '',
+                    $names[(int) $outcome->loser] ?? ''
+                );
+            }
+            HookHandler::hook('duel-finished', ['encounter' => $encounter, 'outcome' => $outcome->toArray(), 'payout' => $payout]);
+        });
+    }
+
+    /**
+     * Why two players may not fight a serious duel, or null: PvP is off,
+     * their levels are too far apart, one is still protected as a new
+     * player, or the challenger has no fight left today.
+     */
+    public static function seriousRefusal(int $challenger, int $opponent): ?string
+    {
+        $settings = Settings::getInstance();
+        if (!(int) $settings->getSetting('pvp', 1)) {
+            return 'pvp-off';
+        }
+        $rows = [];
+        foreach ([$challenger, $opponent] as $acctid) {
+            $row = Database::getDoctrineConnection()->fetchAssociative(
+                'SELECT level, age, dragonkills, pk, experience, playerfights, alive FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid',
+                ['acctid' => $acctid],
+                ['acctid' => ParameterType::INTEGER]
+            );
+            if (!is_array($row) || empty($row['alive'])) {
+                return 'not-alive';
+            }
+            $rows[] = $row;
+        }
+        [$attacker, $defender] = $rows;
+        // pvp.php's own target list (Pvp::listTargets()).
+        $range = (int) $settings->getSetting('pvprange', 2);
+        if ((int) $defender['level'] < (int) $attacker['level'] - $range + 1 || (int) $defender['level'] > (int) $attacker['level'] + $range) {
+            return 'pvp-range';
+        }
+        $days = (int) $settings->getSetting('pvpimmunity', 5);
+        $exp = (int) $settings->getSetting('pvpminexp', 1500);
+        foreach ($rows as $player) {
+            if ((int) $player['age'] <= $days && (int) $player['dragonkills'] === 0 && (int) $player['pk'] === 0 && (int) $player['experience'] <= $exp) {
+                return 'pvp-immune';
+            }
+        }
+        if ((int) $attacker['playerfights'] <= 0) {
+            return 'no-fights';
+        }
+
+        return null;
+    }
+
+    /**
+     * Mark the encounter changed, so both pages fetch it again -- a choice
+     * made, a round resolved -- without changing its state.
+     *
+     * @param array<string,mixed> $row
+     */
+    public static function touch(array $row): int
+    {
+        $changed = Presence::now();
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('encounters') . ' SET changed_us = :changed WHERE id = :id',
+            ['changed' => $changed, 'id' => (int) $row['id']],
+            ['changed' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER]
+        );
+        self::announce((int) $row['id'], [(int) $row['challenger'], (int) $row['opponent']], $changed);
+
+        return $changed;
+    }
+
+    /**
+     * A serious duel's stakes, paid inside the settling action.
+     *
+     * @param array<string,mixed> $row
+     * @return array<string,int>
+     */
+    private static function pay(array $row, Outcome $outcome): array
+    {
+        global $session;
+
+        $me = (int) $session['user']['acctid'];
+        $challenger = (int) $row['challenger'];
+        $accounts = [];
+        foreach ([(int) $row['challenger'], (int) $row['opponent']] as $acctid) {
+            if ($acctid === $me) {
+                // Locked by the action already, and changed through the session.
+                $accounts[$acctid] = [
+                    'level' => (int) $session['user']['level'],
+                    'gold' => (int) $session['user']['gold'],
+                    'experience' => (int) $session['user']['experience'],
+                ];
+                continue;
+            }
+            $other = Database::getDoctrineConnection()->fetchAssociative(
+                'SELECT level, gold, experience FROM ' . Database::prefix('accounts') . ' WHERE acctid = :acctid FOR UPDATE',
+                ['acctid' => $acctid],
+                ['acctid' => ParameterType::INTEGER]
+            );
+            if (!is_array($other)) {
+                throw new ActionAborted('no-opponent');
+            }
+            $accounts[$acctid] = ['level' => (int) $other['level'], 'gold' => (int) $other['gold'], 'experience' => (int) $other['experience']];
+        }
+        $opponent = (int) $row['opponent'];
+        $payout = $outcome->winner === $challenger
+            ? Payout::attackerWins($accounts[$challenger], $accounts[$opponent])
+            : Payout::defenderWins($accounts[$challenger], $accounts[$opponent]);
+
+        $winner = (int) $outcome->winner;
+        $loser = (int) $outcome->loser;
+        $after = [
+            $winner => [
+                'gold' => $accounts[$winner]['gold'] + $payout['winnerGold'],
+                'experience' => $accounts[$winner]['experience'] + $payout['winnerExp'],
+            ],
+            $loser => [
+                'gold' => max(0, $accounts[$loser]['gold'] - $payout['loserGold']),
+                'experience' => max(0, $accounts[$loser]['experience'] - $payout['loserExp']),
+            ],
+        ];
+        foreach ($after as $acctid => $values) {
+            $dies = $acctid === $loser;
+            if ($acctid === $me) {
+                $session['user']['gold'] = $values['gold'];
+                $session['user']['experience'] = $values['experience'];
+                if ($dies) {
+                    $session['user']['alive'] = 0;
+                    $session['user']['hitpoints'] = 0;
+                }
+                continue;
+            }
+            // The values read under the lock above, written whole: no
+            // arithmetic on the unsigned columns.
+            Database::getDoctrineConnection()->executeStatement(
+                'UPDATE ' . Database::prefix('accounts') . ' SET gold = :gold, experience = :experience'
+                . ($dies ? ', alive = 0, hitpoints = 0' : '') . ', version = version + 1 WHERE acctid = :acctid',
+                ['gold' => $values['gold'], 'experience' => $values['experience'], 'acctid' => $acctid],
+                ['gold' => ParameterType::INTEGER, 'experience' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+            );
+        }
+
+        // In the transaction: the mail is there exactly when the stakes are paid.
+        Mail::systemMail(
+            $winner,
+            ['`@You won a serious duel`0'],
+            ['`@You defeated your opponent and gain `^%s`@ gold and `^%s`@ experience.', $payout['winnerGold'], $payout['winnerExp']]
+        );
+        Mail::systemMail(
+            $loser,
+            ['`$You lost a serious duel`0'],
+            ['`$You were slain in a duel. You lost `^%s`$ gold and `^%s`$ experience.', $payout['loserGold'], $payout['loserExp']]
+        );
+
+        return $payout;
+    }
+
+    /**
+     * A serious duel costs the challenger one of today's player fights.
+     */
+    private static function spendFight(int $challenger): void
+    {
+        $spent = Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('accounts') . ' SET playerfights = playerfights - 1, version = version + 1'
+            . ' WHERE acctid = :acctid AND playerfights > 0',
+            ['acctid' => $challenger],
+            ['acctid' => ParameterType::INTEGER]
+        );
+        if ($spent !== 1) {
+            throw new ActionAborted('no-fights');
+        }
     }
 
     /**
@@ -251,7 +500,7 @@ final class Encounter
     public static function find(int $id, int $acctid): ?array
     {
         $row = Database::getDoctrineConnection()->fetchAssociative(
-            'SELECT id, kind, challenger, opponent, state, grant_id, created, expires_at, changed_us FROM '
+            'SELECT id, kind, challenger, opponent, state, stakes, data, grant_id, created, expires_at, changed_us FROM '
             . Database::prefix('encounters') . ' WHERE id = :id',
             ['id' => $id],
             ['id' => ParameterType::INTEGER]
@@ -271,7 +520,7 @@ final class Encounter
     public static function latest(int $acctid): ?array
     {
         $row = Database::getDoctrineConnection()->fetchAssociative(
-            'SELECT id, kind, challenger, opponent, state, grant_id, created, expires_at, changed_us FROM '
+            'SELECT id, kind, challenger, opponent, state, stakes, data, grant_id, created, expires_at, changed_us FROM '
             . Database::prefix('encounters') . ' WHERE challenger = :acctid OR opponent = :acctid ORDER BY id DESC LIMIT 1',
             ['acctid' => $acctid],
             ['acctid' => ParameterType::INTEGER]
@@ -347,7 +596,7 @@ final class Encounter
             return '';
         }
         $output = Output::getInstance();
-        $html = $output->appoencode(self::describe($row, $acctid));
+        $html = $output->appoencode(self::describe($row, $acctid)) . Duel::html($row, $acctid);
         // Only a link the player may follow now: the page registered it, with
         // its session counter.
         $prefix = self::viewLink((int) $row['id']) . '&';
@@ -401,9 +650,15 @@ final class Encounter
             ['now' => date('Y-m-d H:i:s'), 'pending' => self::PENDING, 'accepted' => self::ACCEPTED]
         );
 
-        return $removed + $conn->executeStatement(
+        $removed += $conn->executeStatement(
             'DELETE FROM ' . Database::prefix('encounters') . ' WHERE created < :before',
             ['before' => $before]
+        );
+
+        // The rounds of the duels just removed.
+        return $removed + $conn->executeStatement(
+            'DELETE r FROM ' . Database::prefix('encounter_rounds') . ' r LEFT JOIN ' . Database::prefix('encounters')
+            . ' e ON e.id = r.encounter_id WHERE e.id IS NULL'
         );
     }
 
@@ -437,10 +692,10 @@ final class Encounter
      *
      * @return array<string,mixed>|null
      */
-    private static function locked(int $id): ?array
+    public static function locked(int $id): ?array
     {
         $row = Database::getDoctrineConnection()->fetchAssociative(
-            'SELECT id, kind, challenger, opponent, state, grant_id, created, expires_at, changed_us FROM '
+            'SELECT id, kind, challenger, opponent, state, stakes, data, grant_id, created, expires_at, changed_us FROM '
             . Database::prefix('encounters') . ' WHERE id = :id FOR UPDATE',
             ['id' => $id],
             ['id' => ParameterType::INTEGER]

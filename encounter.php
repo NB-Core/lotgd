@@ -14,6 +14,7 @@ use Lotgd\Page\Footer;
 use Lotgd\Page\Header;
 use Lotgd\Realtime\Poll;
 use Lotgd\Sanitize;
+use Lotgd\Settings;
 use Lotgd\Translator;
 
 /**
@@ -28,6 +29,7 @@ require_once __DIR__ . '/common.php';
 Translator::getInstance()->setSchema('encounter');
 
 $output = Output::getInstance();
+$settings = Settings::getInstance();
 $op = (string) Http::get('op');
 $id = (int) Http::get('id');
 $me = (int) $session['user']['acctid'];
@@ -65,6 +67,11 @@ $refused = static function (ActionResult $result) use ($output): void {
         'grant-used', 'encounter-cancelled' => "`7That challenge was withdrawn or already answered.`n`n",
         'grant-expired', 'encounter-expired' => "`7That challenge has passed.`n`n",
         'action-id-reused', 'missing-action-id' => "`7This form was already used. Please look again.`n`n",
+        'pvp-off' => "`7Serious duels are not fought here: player fights are off.`n`n",
+        'pvp-range' => "`7A serious duel is only fought between warriors close in level.`n`n",
+        'pvp-immune' => "`7One of you is still new here and protected from serious fights.`n`n",
+        'no-fights' => "`7No serious fight is left for the challenger today.`n`n",
+        'not-alive' => "`7Only the living fight serious duels.`n`n",
         default => "`7That cannot be done now.`n`n",
     });
 };
@@ -76,7 +83,10 @@ if (!Encounter::enabled()) {
     $output->output("`7The herald cannot take this form; nothing was done. Please look again.`n`n");
 } elseif ($isPost) {
     $action = match ($op) {
-        'challenge' => ['encounter.challenge', ['target' => (int) Http::post('target')]],
+        'challenge' => ['encounter.challenge', [
+            'target' => (int) Http::post('target'),
+            'stakes' => Http::post('stakes') === Encounter::SERIOUS ? Encounter::SERIOUS : Encounter::FRIENDLY,
+        ]],
         'answer' => ['encounter.answer', ['encounter' => $id, 'accept' => Http::post('answer') === 'accept']],
         'cancel' => ['encounter.cancel', ['encounter' => $id]],
         'leave' => ['encounter.leave', ['encounter' => $id]],
@@ -88,7 +98,7 @@ if (!Encounter::enabled()) {
         [$name, $params] = $action;
         $user = $session['user'];
         $result = Action::run($name, Action::postedId(), $params, static fn (): array => match ($name) {
-            'encounter.challenge' => Encounter::challenge($user, $params['target']),
+            'encounter.challenge' => Encounter::challenge($user, $params['target'], $params['stakes']),
             'encounter.answer' => Encounter::answer($user, $params['encounter'], $params['accept']),
             'encounter.cancel' => Encounter::cancel($user, $params['encounter']),
             default => Encounter::leave($user, $params['encounter']),
@@ -116,7 +126,10 @@ if (Encounter::enabled() && !$unverified) {
         Nav::add('Encounter');
         Nav::add('Look again', $view);
         Nav::add('Who is around', 'encounter.php');
-        $output->rawOutput("<p data-lotgd-region='encounter'>" . Encounter::regionHtml($me) . '</p>');
+        $output->rawOutput("<div data-lotgd-region='encounter'>" . Encounter::regionHtml($me) . '</div>');
+        if ($state === Encounter::PENDING && (string) $encounter['stakes'] === Encounter::SERIOUS) {
+            $output->output("`n`\$This is a serious duel: the loser dies, and loses gold and experience as in any player fight.`0`n`n");
+        }
         if ($state === Encounter::PENDING && $challenging) {
             $output->rawOutput($button("encounter.php?op=cancel&id={$id}", 'Withdraw the challenge'));
         } elseif ($state === Encounter::PENDING) {
@@ -125,8 +138,8 @@ if (Encounter::enabled() && !$unverified) {
                 . $button("encounter.php?op=answer&id={$id}", 'Decline', 'answer', 'decline')
             );
         } elseif ($state === Encounter::ACCEPTED) {
-            $output->output("`n`7You face each other on the duelling ground. What happens next is up to the two of you.`n`n");
-            $output->rawOutput($button("encounter.php?op=leave&id={$id}", 'Leave the duelling ground'));
+            $output->output("`n`7You face each other on the duelling ground. Each round you both choose at once: attack, guard -- half your attack, half again your defense -- or give up. Whoever does not choose in time attacks.`n`n");
+            $output->rawOutput($button("encounter.php?op=leave&id={$id}", 'Give up and leave'));
         }
     } else {
         if ($op === 'view') {
@@ -136,15 +149,22 @@ if (Encounter::enabled() && !$unverified) {
         if ($latest !== null && in_array((string) $latest['state'], [Encounter::PENDING, Encounter::ACCEPTED], true)) {
             Nav::add('Encounter');
             Nav::add('Your encounter', Encounter::viewLink((int) $latest['id']));
-            $output->rawOutput("<p data-lotgd-region='encounter'>" . Encounter::regionHtml($me) . '</p>');
+            $output->rawOutput("<div data-lotgd-region='encounter'>" . Encounter::regionHtml($me) . '</div>');
         } else {
-            $output->rawOutput("<p data-lotgd-region='encounter'></p>");
+            $output->rawOutput("<div data-lotgd-region='encounter'></div>");
         }
         $output->output("`7Warriors who are about now:`n");
         // One form around the live list: its buttons name the opponent.
         Nav::add('', 'encounter.php?op=challenge');
+        $stakes = "<p><label><input type='radio' name='stakes' value='" . Encounter::FRIENDLY . "' checked> "
+            . htmlspecialchars(Translator::translateInline('A friendly duel: nothing but the honour'), ENT_QUOTES, 'UTF-8') . '</label>';
+        if ((int) $settings->getSetting('pvp', 1)) {
+            $stakes .= " <label><input type='radio' name='stakes' value='" . Encounter::SERIOUS . "'> "
+                . htmlspecialchars(Translator::translateInline('A serious duel: the loser dies'), ENT_QUOTES, 'UTF-8') . '</label>';
+        }
         $output->rawOutput(
             "<form action='encounter.php?op=challenge' method='POST'>" . Forms::csrfField() . Action::idField()
+            . $stakes . '</p>'
             . "<div data-lotgd-region='presence'>" . Encounter::presenceHtml($me) . '</div></form>'
         );
         Nav::add('Encounter');
