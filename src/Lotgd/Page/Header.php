@@ -89,10 +89,11 @@ class Header
         $lang     = defined('LANGUAGE') ? LANGUAGE : $settings->getSetting('defaultlanguage', 'en');
         $metaDesc = $settings->getSetting('meta_description', 'A browser game using the Legend of the Green Dragon Engine');
 
+        // Legacy templates too: the overlay takes its title from here.
+        PageParts::$twigVars['title'] = $title;
+        PageParts::$twigVars['lang']  = $lang;
+        PageParts::$twigVars['meta_description'] = $metaDesc;
         if (TwigTemplate::isActive()) {
-            PageParts::$twigVars['title'] = $title;
-            PageParts::$twigVars['lang']  = $lang;
-            PageParts::$twigVars['meta_description'] = $metaDesc;
             return;
         }
 
