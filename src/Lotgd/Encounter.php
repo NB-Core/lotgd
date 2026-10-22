@@ -369,6 +369,22 @@ final class Encounter
     }
 
     /**
+     * Every player's duel record as a derived table (acctid, won, serious,
+     * lost), for rankings: built from table names and this class's
+     * constants only.
+     */
+    public static function recordsSql(): string
+    {
+        $encounters = Database::prefix('encounters');
+
+        return 'SELECT acctid, SUM(won) AS won, SUM(serious) AS serious, SUM(lost) AS lost FROM ('
+            . "SELECT winner AS acctid, 1 AS won, IF(stakes = '" . self::SERIOUS . "', 1, 0) AS serious, 0 AS lost FROM {$encounters}"
+            . " WHERE kind = '" . self::KIND_DUEL . "' AND winner IS NOT NULL"
+            . " UNION ALL SELECT loser, 0, 0, 1 FROM {$encounters} WHERE kind = '" . self::KIND_DUEL . "' AND loser IS NOT NULL"
+            . ') duels GROUP BY acctid';
+    }
+
+    /**
      * Why two players may not fight a serious duel, or null: PvP is off,
      * their levels are too far apart, one is still protected as a new
      * player, or the challenger has no fight left today.

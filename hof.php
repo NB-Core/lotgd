@@ -287,17 +287,13 @@ if ($op == "money") {
     $table = array($title, $sql, false, false, $headers, false);
 } elseif ($op == "duels") {
     $accountsTable = Database::prefix("accounts");
-    $records = "SELECT acctid, SUM(won) AS won, SUM(serious) AS serious, SUM(lost) AS lost FROM ("
-        . "SELECT winner AS acctid, 1 AS won, IF(stakes = '" . Encounter::SERIOUS . "', 1, 0) AS serious, 0 AS lost FROM $encountersTable"
-        . " WHERE kind = '" . Encounter::KIND_DUEL . "' AND winner IS NOT NULL"
-        . " UNION ALL SELECT loser, 0, 0, 1 FROM $encountersTable WHERE kind = '" . Encounter::KIND_DUEL . "' AND loser IS NOT NULL"
-        . ") duels GROUP BY acctid";
     $sql = "SELECT a.name, d.won AS data1, d.serious AS data2, d.lost AS data3 FROM $accountsTable a"
-        . " INNER JOIN ($records) d ON d.acctid = a.acctid WHERE (a.locked=0 AND (a.superuser & $superusermask) = 0)"
-        . " ORDER BY d.won $order, d.lost " . ($order === 'DESC' ? 'ASC' : 'DESC') . ", a.level $order, a.acctid $order LIMIT $limit";
+        . " INNER JOIN (" . Encounter::recordsSql() . ") d ON d.acctid = a.acctid WHERE (a.locked=0 AND (a.superuser & $superusermask) = 0)"
+        . " ORDER BY d.won $order, d.lost " . ($order === 'DESC' ? 'ASC' : 'DESC') . ", a.level $order, a.acctid $order"
+        . " LIMIT " . (int) $pageoffset . ", " . (int) $playersperpage;
     $mine = Encounter::record((int) $session['user']['acctid']);
     if ($mine['won'] + $mine['lost'] > 0) {
-        $me = "SELECT count(*) AS count FROM ($records) d INNER JOIN $accountsTable a ON a.acctid = d.acctid"
+        $me = "SELECT count(*) AS count FROM (" . Encounter::recordsSql() . ") d INNER JOIN $accountsTable a ON a.acctid = d.acctid"
             . " WHERE (a.locked=0 AND (a.superuser & $superusermask) = 0) AND d.won $meop {$mine['won']}";
     }
     $adverb = "most";
