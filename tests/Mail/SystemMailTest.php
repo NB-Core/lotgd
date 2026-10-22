@@ -49,12 +49,16 @@ final class SystemMailTest extends TestCase
         Database::setDoctrineConnection($this->connection);
 
         Mail::resetSettings();
+        // Whether realtime may run is cached per process; an earlier test's
+        // answer (another connection, other tables) must not decide this one.
+        \Lotgd\Realtime::resetState();
 
         unset($GLOBALS['mail_force_error'], $GLOBALS['mail_force_error_message']);
     }
 
     protected function tearDown(): void
     {
+        \Lotgd\Realtime::resetState();
         Database::resetDoctrineConnection();
     }
 
