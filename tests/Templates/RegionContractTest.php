@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Every bundled Twig skin keeps the region contract (docs/ReactiveCore.md,
- * "Region contract for Twig skins").
+ * "Region contract for skins").
  *
  * A partial answer replaces the inner HTML of each marked element with the
  * page's new value. An element that holds anything besides its variable --

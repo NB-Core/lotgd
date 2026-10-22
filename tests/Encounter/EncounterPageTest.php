@@ -140,9 +140,25 @@ final class EncounterPageTest extends TestCase
         self::assertStringContainsString("<a href='prefs.php' class='nav'>", $run->html);
     }
 
-    public function testAPlayerOnALegacySkinLearnsToChooseAnother(): void
+    public function testABundledLegacySkinPlaysLive(): void
     {
         $run = $this->page('GET', [], [], ['defaultskin' => 'jade.htm'] + self::SETTINGS);
+
+        self::assertStringNotContainsString('lotgd-live-hint', $run->html);
+        self::assertStringContainsString('<meta name="lotgd-head"', $run->html, 'The partial client runs on jade.');
+    }
+
+    public function testAPlayerOnASkinWithoutRegionsLearnsToChooseAnother(): void
+    {
+        // A legacy template of one's own, from before regions: jade without its config section.
+        $file = dirname(__DIR__, 2) . '/templates/zz_noregions_test.htm';
+        $jade = (string) file_get_contents(dirname(__DIR__, 2) . '/templates/jade.htm');
+        file_put_contents($file, explode('<!--!config-->', $jade, 2)[0]);
+        try {
+            $run = $this->page('GET', [], [], ['defaultskin' => 'zz_noregions_test.htm'] + self::SETTINGS);
+        } finally {
+            unlink($file);
+        }
 
         self::assertStringContainsString("<p class='lotgd-live-hint'>", $run->html);
         self::assertStringContainsString('your skin cannot do that yet', $run->html);

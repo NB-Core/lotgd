@@ -47,7 +47,7 @@ the MOTD check) happening during that build. `Lotgd\Page\PageRenderer`
 renders a state to HTML and runs no hooks. Phase 2 adds a second renderer for
 fragments on top of the same state.
 
-### Region contract for Twig skins (used from Phase 2)
+### Region contract for skins (Twig and legacy; used from Phase 2)
 
 A skin that wants partial rendering marks its regions with
 `data-lotgd-region="<name>"` on the element that wraps the corresponding
@@ -70,11 +70,21 @@ Two optional markers:
 - `data-lotgd-close-on-swap` on a mobile menu (a Bootstrap offcanvas): an open
   one is closed after a swap, as a page change would have left it.
 
-A skin without the declaration, and every legacy `.htm` template, always gets
-the full page. Every bundled Twig skin declares regions and the overlay
-(aurora, aurora_minimal, aurora_test, modern, puritanic, puritanic_ai);
-`tests/Templates/RegionContractTest.php` renders each one and checks every
-region holds its variable alone, so a skin of your own can be added there.
+A skin without the declaration always gets the full page. Every bundled Twig skin declares regions and the
+overlay (aurora, aurora_minimal, aurora_test, modern, puritanic, puritanic_ai);
+`tests/Templates/RegionContractTest.php` renders each one and checks every region holds its variable alone, so a
+skin of your own can be added there.
+
+**Legacy `.htm` templates** follow the same contract:
+- The flags sit in a `<!--!config-->` section holding the same JSON (`{"regions": true, "overlay": true}`), read
+  by `PartialMode::skinDeclares()` / `skinDeclaresFor()`.
+- The content element opens at the end of the `header` section and closes at the start of the `footer` section.
+- A legacy page fills the same page variables as a Twig page, so the partial answer, the title and the head
+  signature are built the same way. The `lotgd-head` meta goes in before `</head>`.
+- All four bundled templates (jade, modern, yarbrough, puritanic_ai) carry the markers.
+- `tests/Templates/LegacyRegionContractTest.php` checks them.
+
+Step-by-step guides for template authors: `templates_twig/README.md` and `templates/README.md`.
 
 ## Phase 2 – as built
 

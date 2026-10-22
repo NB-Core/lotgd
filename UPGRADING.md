@@ -308,6 +308,16 @@ New setting `partial_render_default` (*For players who never chose in their pref
 - a player who turned the preference off keeps it off;
 - turn the setting off to keep the former opt-in.
 
+### Legacy templates change pages in place too
+
+The bundled legacy templates (jade, modern, yarbrough, puritanic_ai) now declare regions and the overlay:
+- with partial rendering on, their players get pages that change in place, realtime and live duels;
+- mail and the MoTD open in a dialog instead of a window.
+
+A legacy template of your own keeps its whole pages and popup windows until you add a `<!--!config-->` section
+and the region markers. `templates/README.md` walks through it, and `tests/Templates/LegacyRegionContractTest.php`
+checks the result. For a Twig skin of your own, see `templates_twig/README.md`.
+
 ### Partial rendering (opt-in, off by default)
 
 Migration `Version20261020000001` adds `accounts.page_revision` (an unsigned
