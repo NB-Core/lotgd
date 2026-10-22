@@ -147,15 +147,27 @@ final class PartialMode
 
     /**
      * Partial rendering is on for this player: the game allows it and the
-     * player chose it.
+     * player chose it -- or never chose, and the game's default for players
+     * (`partial_render_default`) is on.
      *
      * @param array<string,mixed> $user The session user, with prefs unserialized.
      */
     public static function isEnabledFor(array $user): bool
     {
         $prefs = $user['prefs'] ?? [];
+        if (!self::settingEnabled() || !is_array($prefs)) {
+            return false;
+        }
 
-        return self::settingEnabled() && is_array($prefs) && !empty($prefs['partialrender']);
+        return array_key_exists('partialrender', $prefs) ? !empty($prefs['partialrender']) : self::playerDefault();
+    }
+
+    /**
+     * The game's choice for players who have not made their own.
+     */
+    public static function playerDefault(): bool
+    {
+        return Settings::hasInstance() && (int) Settings::getInstance()->getSetting('partial_render_default', 1) === 1;
     }
 
     /**
@@ -188,7 +200,28 @@ final class PartialMode
             return false;
         }
 
-        $config = dirname(__DIR__, 3) . '/' . TwigTemplate::getPath() . '/config.json';
+        return self::configDeclares(dirname(__DIR__, 3) . '/' . TwigTemplate::getPath() . '/config.json', $key);
+    }
+
+    /**
+     * Whether the skin named as in the `defaultskin` setting (`twig:aurora`)
+     * is a Twig skin whose config.json sets $key to true. Legacy skins never do.
+     */
+    public static function skinDeclaresFor(string $skin, string $key): bool
+    {
+        if (!str_starts_with($skin, 'twig:')) {
+            return false;
+        }
+        $name = substr($skin, strlen('twig:'));
+        if ($name === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $name)) {
+            return false;
+        }
+
+        return self::configDeclares(dirname(__DIR__, 3) . '/templates_twig/' . $name . '/config.json', $key);
+    }
+
+    private static function configDeclares(string $config, string $key): bool
+    {
         if (!is_file($config)) {
             return false;
         }
