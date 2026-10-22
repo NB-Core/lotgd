@@ -917,6 +917,16 @@ Verified:
   - a serious one kills the loser, moves the gold and experience as PvP
     does, and mails both.
 
+### From the PvP list
+
+`pvp.php` lists, below the sleeping targets, the players online in a peaceful place
+(`Encounter::liveTargetsHtml()`):
+- a serious duel is offered where `Encounter::seriousRefusal()` allows it, a friendly one always;
+- every button is its own form posting to `encounter.php?op=challenge`, with that page's token
+  (`Forms::csrfField('encounter.php?op=challenge')`) and an action id;
+- the challenge then runs exactly as one made on the duelling ground. Only the opponent's place counts, so
+  challenging from the fields is fine.
+
 ## Turning it on – as built
 
 `Lotgd\Reactive\Status` reads, for each feature, the checks the feature makes itself, and reports why it is off:
