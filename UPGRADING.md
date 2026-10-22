@@ -290,6 +290,24 @@ turns this off; see the Administrator Guide. The unused setting `corenewspath`,
 a leftover of the old custom news URL, is no longer offered; a stored value is
 ignored.
 
+### Turning the live features on
+
+*Game Settings* now opens with a table **Live features**:
+- it shows each reactive feature (guarded actions, partial rendering, the overlay, realtime, server-sent events,
+  grants, live duels and presence), whether it is on, and what keeps it off: a setting it needs, a table that is
+  missing or not InnoDB, a migration not yet applied, a default skin without regions;
+- the button *Turn on the recommended live features* switches on, in one go, those of `guarded_actions`,
+  `partial_render`, `realtime_enabled`, `grants_enabled` and `live_encounters` that this server can run;
+- each change is logged and announced through `changesetting` like a saved form;
+- server-sent events stay a choice of their own, because they depend on the host.
+
+New setting `partial_render_default` (*For players who never chose in their preferences: change pages in place?*,
+**on** by default):
+- once `partial_render` is on, players who never set the preference *Change pages in place* get partial rendering,
+  and with it realtime and live duels;
+- a player who turned the preference off keeps it off;
+- turn the setting off to keep the former opt-in.
+
 ### Partial rendering (opt-in, off by default)
 
 Migration `Version20261020000001` adds `accounts.page_revision` (an unsigned

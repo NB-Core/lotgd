@@ -25,7 +25,7 @@ use Lotgd\MySQL\StorageEngine;
  */
 final class Grant
 {
-    private const TABLE = 'granted_navs';
+    public const TABLE = 'granted_navs';
 
     private static ?bool $transactional = null;
 

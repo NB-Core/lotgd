@@ -606,6 +606,10 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     if (!isset($prefs['tabconfig'])) {
         $prefs['tabconfig'] = 1;
     }
+    // Never chosen: the game's default, so saving the form keeps what applies.
+    if (!array_key_exists('partialrender', $prefs)) {
+        $prefs['partialrender'] = \Lotgd\Page\PartialMode::playerDefault() ? 1 : 0;
+    }
 
     if ($foundmodules != array()) {
         $sql = "SELECT * FROM " . Database::prefix("module_userprefs") . " WHERE modulename IN ('" . implode("','", $foundmodules) . "') AND (setting LIKE 'user_%' OR setting LIKE 'check_%') AND userid='" . $session['user']['acctid'] . "'";

@@ -949,6 +949,24 @@ Verified:
   - The daily cleanup keeps a decided duel's row as that record. It drops only the duel's data and rounds; undecided
     encounters still go whole after a day.
 
+## Turning it on – as built
+
+`Lotgd\Reactive\Status` reads, for each feature, the checks the feature makes itself, and reports why it is off:
+- the settings it needs;
+- `StorageEngine::nonTransactional()` over `Action::TRANSACTIONAL_TABLES`, `Realtime::TABLES`, `Grant::TABLE` and
+  `Encounter::TABLES`;
+- the recorded migration (`schema_migration` against `SchemaUpgrade::LATEST_MIGRATION`);
+- whether the default skin declares `regions` and `overlay` (`PartialMode::skinDeclaresFor()`).
+
+*Game Settings* shows the result above its form. `configuration.php?op=enablereactive` is a POST with the page's
+token and a confirmation; it sets the switches from `Status::recommended()`. Those are the switches that are off,
+whose tables are ready and whose dependencies are on or set in the same step. Server-sent events are never among
+them.
+
+`partial_render_default` (on) is the choice for players without a preference of their own:
+- `PartialMode::isEnabledFor()` uses it when `prefs['partialrender']` is missing;
+- `prefs.php` shows that value, so saving the form keeps it.
+
 ## Binding acceptance criteria
 
 Each later phase is merged only when its criteria hold.
