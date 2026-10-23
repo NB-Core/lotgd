@@ -102,7 +102,8 @@ class Commentary
         $output = Output::getInstance();
         foreach ($rows as $row) {
             $newId = $row['commentid'];
-            $line = CoreCommentary::renderCommentLine($row, $linkbios);
+            // [Del] as the page draws it, for whom it draws it.
+            $line = CoreCommentary::asyncRemoveButton($row, $section) . CoreCommentary::renderCommentLine($row, $linkbios);
             // Convert colour codes but preserve embedded HTML like profile links
             $line = \Lotgd\Modules\HookHandler::hook('viewcommentary', ['commentline' => $line])['commentline'];
             $line = $output->appoencode($line, true);

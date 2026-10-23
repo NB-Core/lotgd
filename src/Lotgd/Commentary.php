@@ -207,7 +207,7 @@ class Commentary
         global $session;
 
         $talk = $session['commentary_talk'][$section] ?? null;
-        if (!is_array($talk) || !self::mayRead($section, $session['user'] ?? [])) {
+        if (!is_array($talk) || mb_substr($section, 0, 4) === 'pet-' || !self::mayRead($section, $session['user'] ?? [])) {
             return ['status' => 'refused', 'message' => '', 'postsLeft' => null];
         }
         $limit = (int) ($talk['limit'] ?? 10);
@@ -242,6 +242,34 @@ class Commentary
         return self::isDoublePost()
             ? ['status' => 'double', 'message' => trim(Translator::translateInline('`$`bDouble post?`b`0', 'commentary') . ' ' . $notice), 'postsLeft' => $left]
             : ['status' => 'posted', 'message' => $notice, 'postsLeft' => $left];
+    }
+
+    /**
+     * The [Del] control for a line fetched over the async endpoint, for the
+     * players the page draws it for (viewCommentary()): comment moderators,
+     * and game masters on their own lines; '' for anyone else. It returns to
+     * the page the line is shown on.
+     *
+     * @param array<string,mixed> $row A commentary row with its author.
+     */
+    public static function asyncRemoveButton(array $row, string $section): string
+    {
+        global $session;
+
+        $superuser = (int) ($session['user']['superuser'] ?? 0);
+        $own = (int) ($row['author'] ?? 0) === (int) ($session['user']['acctid'] ?? 0);
+        if (!($superuser & SU_EDIT_COMMENTS) && !(($superuser & SU_IS_GAMEMASTER) && $own)) {
+            return '';
+        }
+        $uri = (string) ($session['last_comment_request_uri'] ?? '');
+        $script = (string) ($session['last_comment_scriptname'] ?? '');
+        if ($script === '') {
+            return '';
+        }
+        $pos = strpos($uri, '?');
+        $return = $script . '.php' . ($pos === false ? '' : mb_substr($uri, $pos));
+
+        return self::removeButton($return, (int) $row['commentid'], $section, true);
     }
 
     /**
@@ -1448,8 +1476,15 @@ SQL;
         }
         Navigation::add("", $req);
         // The async client posts the line without leaving the page; the
-        // form posts as ever where it does not run (lotgd.async.js).
-        $asyncForm = $section !== 'X' && self::asyncClient($session['user'] ?? [])
+        // form posts as ever where it does not run (lotgd.async.js). Only a
+        // form viewCommentary() drew for this section, whose talkline it
+        // remembered (rememberTalk()): moderate.php's own forms post. And not
+        // a petition's: viewpetition.php records who answered when a line is
+        // posted to it, which only the page does.
+        $asyncForm = $section !== 'X'
+            && mb_substr($section, 0, 4) !== 'pet-'
+            && isset($session['commentary_talk'][$section])
+            && self::asyncClient($session['user'] ?? [])
             ? " data-lotgd-commentary-form='" . htmlspecialchars($section, ENT_QUOTES, 'UTF-8') . "'"
             : '';
         $output->outputNotl("<form action=\"$req\" method='POST' autocomplete='false'$asyncForm>", true);

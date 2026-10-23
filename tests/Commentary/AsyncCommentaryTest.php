@@ -88,6 +88,46 @@ final class AsyncCommentaryTest extends TestCase
         self::assertStringContainsString("data-cid='12'", $commands[0]['value']);
     }
 
+    /**
+     * @return list<array<string,mixed>>
+     */
+    private static function fetchedLine(int $author): array
+    {
+        return [['commentid' => 12, 'section' => 'village', 'author' => $author, 'comment' => 'Hello', 'postdate' => date('Y-m-d H:i:s'),
+            'name' => 'Someone', 'acctid' => $author, 'superuser' => 0, 'clanrank' => 0, 'clanshort' => '']];
+    }
+
+    private function fetchedHtml(int $superuser, int $author): string
+    {
+        $GLOBALS['session']['user']['superuser'] = $superuser;
+        $GLOBALS['session']['last_comment_request_uri'] = '/village.php';
+        $GLOBALS['session']['last_comment_scriptname'] = 'village';
+        $this->connection->queryResultsByPattern['/commentid > :lastId/'] = self::fetchedLine($author);
+
+        return (string) ((new CommentaryHandler())->commentaryRefresh('village', 11)->getCommands()[0]['value'] ?? '');
+    }
+
+    public function testAFetchedLineCarriesDelForWhomThePageDrawsIt(): void
+    {
+        self::assertStringContainsString("data-lotgd-comment-remove='12'", $this->fetchedHtml(SU_EDIT_COMMENTS, 3), 'A moderator, any line.');
+        self::assertStringNotContainsString('data-lotgd-comment-remove', $this->fetchedHtml(0, 7), 'A player, even their own line.');
+        self::assertStringContainsString("data-lotgd-comment-remove='12'", $this->fetchedHtml(SU_IS_GAMEMASTER, 7), 'A game master, their own line.');
+        self::assertStringNotContainsString('data-lotgd-comment-remove', $this->fetchedHtml(SU_IS_GAMEMASTER, 3), 'A game master, another\'s line.');
+    }
+
+    public function testAPetitionTakesNoLineOverTheEndpoint(): void
+    {
+        // viewpetition.php records who answered when a line is posted to it.
+        $GLOBALS['session']['user']['superuser'] = SU_EDIT_PETITIONS;
+        $GLOBALS['session']['commentary_sections'] = ['pet-4'];
+        $GLOBALS['session']['commentary_talk'] = ['pet-4' => ['talkline' => 'says', 'schema' => 'petition', 'limit' => 200]];
+
+        $response = (new CommentaryHandler())->post('pet-4', 'Looked into it');
+
+        self::assertSame([], $this->inserts());
+        self::assertSame('refused', $response->getData()['commentPost']['status']);
+    }
+
     public function testWithoutTheAsyncTokenNothingIsPosted(): void
     {
         $_SERVER['HTTP_X_LOTGD_CSRF'] = 'not-the-token';

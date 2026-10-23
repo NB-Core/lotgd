@@ -44,6 +44,27 @@ final class AsyncCommentaryMarkupTest extends TestCase
         self::assertStringContainsString("<form data-lotgd-comment-remove='41' ", $run->html);
     }
 
+    public function testTheModerationPagesOwnTalkFormPostsAsAForm(): void
+    {
+        // Its talk form is drawn without viewCommentary(), which is what
+        // tells the endpoint the page's talkline for the section.
+        $run = PageRunner::withRequest(
+            'moderate.php',
+            SU_EDIT_COMMENTS,
+            'GET',
+            ['area' => 'inn'],
+            [],
+            ['accounts_table' => [1 => ['prefs' => serialize(['ajax' => 1]), 'alive' => 1, 'location' => 'Degolburg', 'lasthit' => date('Y-m-d H:i:s')]]],
+            ['ajax' => 1, 'show_error_details' => 1],
+            [],
+            [],
+            ['/FROM commentary/' => []]
+        );
+
+        self::assertStringContainsString("name='insertcommentary'", $run->html, substr($run->html, 0, 2000));
+        self::assertStringNotContainsString('data-lotgd-commentary-form', $run->html);
+    }
+
     public function testAClassicPlayersChatIsAsItWas(): void
     {
         $run = self::inn([], SU_EDIT_COMMENTS);

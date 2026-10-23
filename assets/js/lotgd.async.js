@@ -404,6 +404,13 @@
         const own = section === state.section;
         call('Commentary', 'post', [section, input.value, own ? (state.lastCommentId || 0) : 0]).then(function (data) {
             const answer = data.commentPost || {};
+            if (answer.status === 'refused' && !answer.message) {
+                // The server knows no talk form of this page for the
+                // section: the page itself takes the line.
+                form.setAttribute('data-lotgd-classic', '1');
+                form.submit();
+                return;
+            }
             if (data.commentary && data.commentary.section === state.section) {
                 state.lastCommentId = Math.max(state.lastCommentId, Number(data.commentary.lastId) || 0);
             }
