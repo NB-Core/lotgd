@@ -106,15 +106,6 @@ final class PartialRenderingPageTest extends TestCase
         self::assertStringContainsString('<title>The Forest</title>', $run->html);
     }
 
-    public function testAnAttackIsNeverAnsweredPartially(): void
-    {
-        $run = $this->request('pvp.php', self::PARTIAL_REQUEST, [], ['partialrender' => 1], ['partial_render' => 1], [], ['act' => 'attack', 'name' => 'bob']);
-
-        self::assertNull($run->header('X-Lotgd-Partial'));
-        self::assertStringStartsWith('pvp.php?', (string) $run->header('HX-Redirect'), $this->context($run));
-        self::assertSame([], $run->statementsContaining('accounts'), 'The fight must not have started.');
-    }
-
     public function testAnAjaxPlayerKeepsOneHeadAcrossPagesAndGetsThePollingState(): void
     {
         $prefs = ['partialrender' => 1, 'ajax' => 1];

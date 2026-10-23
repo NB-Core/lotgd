@@ -40,7 +40,10 @@ final class PartialModeTest extends TestCase
         yield 'inn' => ['inn.php', 'GET', '', true];
         yield 'the bartender' => ['inn.php', 'GET', 'bartender', false];
         yield 'lower-case method' => ['forest.php', 'get', '', true];
-        yield 'a forest fight' => ['forest.php', 'GET', 'search', false];
+        yield 'a forest search' => ['forest.php', 'GET', 'search', true];
+        yield 'a forest round' => ['forest.php', 'GET', 'fight', true];
+        yield 'fleeing in the forest' => ['forest.php', 'GET', 'run', true];
+        yield 'the green dragon\'s cave' => ['forest.php', 'GET', 'dragon', true];
         yield 'a post' => ['forest.php', 'POST', '', false];
         yield 'a page off the list' => ['prefs.php', 'GET', '', false];
         yield 'a module page' => ['runmodule.php', 'GET', '', false];
@@ -52,23 +55,24 @@ final class PartialModeTest extends TestCase
         yield 'the bank\'s deposit form' => ['bank.php', 'GET', 'deposit', true];
         yield 'a bank booking' => ['bank.php', 'POST', 'depositfinish', false];
         yield 'a weapon purchase' => ['weapons.php', 'GET', 'buy', false];
-        yield 'training' => ['train.php', 'GET', 'challenge', false];
+        yield 'challenging the master' => ['train.php', 'GET', 'challenge', true];
+        yield 'a round with the master' => ['train.php', 'GET', 'fight', true];
+        yield 'an unknown training op' => ['train.php', 'GET', 'xyz', false];
         yield 'a clan list' => ['clan.php', 'GET', 'list', true];
         yield 'leaving a clan' => ['clan.php', 'GET', 'withdraw', false];
-        yield 'a graveyard fight' => ['graveyard.php', 'GET', 'fight', false];
+        yield 'a graveyard fight' => ['graveyard.php', 'GET', 'fight', true];
+        yield 'a resurrection' => ['graveyard.php', 'GET', 'resurrection', false];
+        yield 'a haunting' => ['graveyard.php', 'GET', 'haunt2', false];
+        yield 'the dragon fight' => ['dragon.php', 'GET', 'fight', true];
+        yield 'the dragon\'s kill' => ['dragon.php', 'GET', 'prologue1', false];
+        yield 'a pvp attack or list' => ['pvp.php', 'GET', '', true];
+        yield 'a pvp round' => ['pvp.php', 'GET', 'fight', true];
     }
 
     #[DataProvider('allowList')]
     public function testTheAllowListMatchesScriptMethodAndOp(string $script, string $method, string $op, bool $allowed): void
     {
         self::assertSame($allowed, PartialMode::isAllowed($script, $method, $op));
-    }
-
-    public function testAParameterThatMakesAPageActIsNeverPartial(): void
-    {
-        self::assertTrue(PartialMode::isAllowed('pvp.php', 'GET', '', []), 'The list of players.');
-        self::assertFalse(PartialMode::isAllowed('pvp.php', 'GET', '', ['act' => 'attack', 'name' => 'x']), 'An attack.');
-        self::assertTrue(PartialMode::isAllowed('pvp.php', 'GET', '', ['act' => '']), 'An empty value is no act.');
     }
 
     public function testOnlyAnHtmxRequestThatIsNotAHistoryRestoreIsPartial(): void

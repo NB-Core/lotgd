@@ -308,6 +308,14 @@ New setting `partial_render_default` (*For players who never chose in their pref
 - a player who turned the preference off keeps it off;
 - turn the setting off to keep the former opt-in.
 
+### Fights change in place
+
+With partial rendering on, forest, graveyard, training, dragon and PvP fights swap their rounds in place.
+For modules:
+- links a specialty adds through `fightnav-specialties` work unchanged;
+- a module that prints a `<script>` or adds to `<head>` during a fight makes that round fall back to a whole page;
+  the round is not played twice.
+
 ### Legacy templates change pages in place too
 
 The bundled legacy templates (jade, modern, yarbrough, puritanic_ai) now declare regions and the overlay:

@@ -31,9 +31,14 @@ final class PartialMode
 {
     /**
      * Pages that may answer partially: script => method => allowed `op`
-     * values, '' meaning "no op". Only operations that display a place belong
-     * here; anything that changes state stays a full page until guarded game
-     * actions exist (Phase 3).
+     * values, '' meaning "no op".
+     *
+     * The fights are here too (forest, graveyard, masters, dragon, PvP):
+     * every round is a GET link the page granted, consumed with the page
+     * revision like any other, and the fight lives in the account
+     * (badguy, bufflist), so a swapped round is no less safe than a full
+     * page. What a fight does not swap: the dragon's kill (prologue*) and
+     * the graveyard's resurrection and haunting.
      *
      * The village and the inn carry a commentary block; for a partial
      * player its preview field is declarative markup the client handles
@@ -43,13 +48,13 @@ final class PartialMode
      */
     public const ALLOWLIST = [
         'village.php' => ['GET' => ['']],
-        'forest.php' => ['GET' => ['']],
+        'forest.php' => ['GET' => ['', 'search', 'fight', 'run', 'dragon']],
         'inn.php' => ['GET' => ['']],
         'gardens.php' => ['GET' => ['']],
         'encounter.php' => ['GET' => ['', 'view']],
         'rock.php' => ['GET' => ['']],
         'shades.php' => ['GET' => ['']],
-        'graveyard.php' => ['GET' => ['']],
+        'graveyard.php' => ['GET' => ['', 'search', 'fight', 'run']],
         'lodge.php' => ['GET' => ['', 'points']],
         'gypsy.php' => ['GET' => ['', 'talk']],
         'hof.php' => ['GET' => ['', 'kills', 'money', 'gems', 'charm', 'tough', 'resurrects', 'days', 'duels']],
@@ -63,21 +68,12 @@ final class PartialMode
         'armor.php' => ['GET' => ['']],
         'mercenarycamp.php' => ['GET' => ['']],
         'healer.php' => ['GET' => ['']],
-        'train.php' => ['GET' => ['', 'question']],
+        'train.php' => ['GET' => ['', 'question', 'challenge', 'autochallenge', 'fight', 'run']],
         // The forms only: every booking is a POST.
         'bank.php' => ['GET' => ['', 'transfer', 'deposit', 'withdraw', 'borrow']],
         'clan.php' => ['GET' => ['', 'list']],
-        'pvp.php' => ['GET' => ['']],
-    ];
-
-    /**
-     * Parameters that make an allowed (script, op) do something: pvp.php
-     * without an op lists the players, with act=attack it starts a fight.
-     *
-     * @var array<string,list<string>>
-     */
-    public const FORBIDDEN_PARAMETERS = [
-        'pvp.php' => ['act'],
+        'pvp.php' => ['GET' => ['', 'fight', 'run']],
+        'dragon.php' => ['GET' => ['', 'fight', 'run']],
     ];
 
     public const REQUEST_HEADER = 'HTTP_HX_REQUEST';
@@ -101,7 +97,7 @@ final class PartialMode
             return;
         }
 
-        if (self::settingEnabled() && self::isAllowed(self::script(), self::method(), self::op(), $_GET)) {
+        if (self::settingEnabled() && self::isAllowed(self::script(), self::method(), self::op())) {
             self::$active = true;
 
             return;
@@ -129,21 +125,9 @@ final class PartialMode
             && ($_SERVER[self::HISTORY_RESTORE_HEADER] ?? '') !== 'true';
     }
 
-    /**
-     * @param array<string,mixed> $query The request's query parameters, for FORBIDDEN_PARAMETERS.
-     */
-    public static function isAllowed(string $script, string $method, string $op, array $query = []): bool
+    public static function isAllowed(string $script, string $method, string $op): bool
     {
-        if (!in_array($op, self::ALLOWLIST[$script][strtoupper($method)] ?? [], true)) {
-            return false;
-        }
-        foreach (self::FORBIDDEN_PARAMETERS[$script] ?? [] as $parameter) {
-            if (isset($query[$parameter]) && $query[$parameter] !== '') {
-                return false;
-            }
-        }
-
-        return true;
+        return in_array($op, self::ALLOWLIST[$script][strtoupper($method)] ?? [], true);
     }
 
     /**
