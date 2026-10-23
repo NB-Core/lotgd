@@ -552,6 +552,12 @@ if ($name != "") {
         if (Database::numRows($result) == 1) {
             $row = Database::fetchAssoc($result);
             $allowednavs = \Lotgd\Serialization::safeUnserialize($row['allowednavs']);
+            // Empty when the page revision claim cleared the stored links
+            // (ForcedNavigation::consumePageRevision()) and nothing saved
+            // new ones since: an empty string, not a list.
+            if (!is_array($allowednavs)) {
+                $allowednavs = [];
+            }
             $allowednavs[$row['restorepage']] = true;
             // Write back to database
             $serialized = Database::escape(serialize($allowednavs));
