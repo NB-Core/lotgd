@@ -308,6 +308,15 @@ New setting `partial_render_default` (*For players who never chose in their pref
 - a player who turned the preference off keeps it off;
 - turn the setting off to keep the former opt-in.
 
+### The chat posts without reloading
+
+For players with realtime or the AJAX preference, the talk form posts its line over the async endpoint, and
+[Del] removes a line in place. For modules:
+- the hook `insertcomment` (`mute`, `mutemsg`) now applies when a line is posted too, not only when the form is
+  drawn; the daily posting limit is checked the same way;
+- a module with a talk form of its own keeps posting as a form;
+- a module that writes comments with its own SQL instead of `injectrawcomment()` is still not announced.
+
 ### Fights change in place
 
 With partial rendering on, forest, graveyard, training, dragon and PvP fights swap their rounds in place.

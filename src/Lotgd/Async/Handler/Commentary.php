@@ -11,6 +11,9 @@ use Lotgd\Commentary as CoreCommentary;
 use Lotgd\Util\ScriptName;
 use Lotgd\Output;
 use Lotgd\Async\Handler\Exception;
+use Lotgd\GameLog;
+use Lotgd\Security\Csrf;
+use Lotgd\SecurityLog;
 
 /**
  * Handle commentary AJAX interactions.
@@ -121,6 +124,60 @@ class Commentary
             }
         }
         return $objResponse;
+    }
+
+    /**
+     * Post a line to a section a page showed this player, without leaving
+     * the page (docs/ReactiveCore.md, Live commentary). It writes, so the
+     * async token is checked here whatever csrf_mode says. Answers
+     * `commentPost: {status, message, postsLeft}` -- status posted, double,
+     * empty or refused -- and the lines after $lastId, the new one among
+     * them, so the poster sees it at once with or without realtime.
+     */
+    public function post(string $section, string $comment, int $lastId = 0): Response
+    {
+        $response = new Response();
+        if (!$this->mayWrite('post')) {
+            return $response->data('commentPost', ['status' => 'refused', 'message' => '', 'postsLeft' => null]);
+        }
+        $result = CoreCommentary::postAsync($section, $comment);
+        $result['message'] = Output::getInstance()->appoencode($result['message']);
+        $response->data('commentPost', $result);
+        if ($result['status'] === 'posted' || $result['status'] === 'double') {
+            $response->merge($this->commentaryRefresh($section, $lastId));
+        }
+
+        return $response;
+    }
+
+    /**
+     * [Del] without leaving the page: the rules of the page's [Del]
+     * (moderators, game masters for their own lines). Answers
+     * `commentRemove: {id, removed}`; the section's readers are told too.
+     */
+    public function remove(int $commentId): Response
+    {
+        $response = new Response();
+        $removed = $this->mayWrite('remove') && $commentId > 0 && CoreCommentary::removeAsync($commentId);
+
+        return $response->data('commentRemove', ['id' => $commentId, 'removed' => $removed]);
+    }
+
+    private function mayWrite(string $what): bool
+    {
+        global $session;
+
+        $acctid = (int) ($session['user']['acctid'] ?? 0);
+        if ($acctid <= 0 || empty($session['user']['loggedin'])) {
+            return false;
+        }
+        if (!Csrf::matches(Csrf::SCOPE_ASYNC, Csrf::requestToken())) {
+            SecurityLog::event('Commentary ' . $what . ' refused: async token does not match', [], $acctid, GameLog::SEVERITY_WARNING, false);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**

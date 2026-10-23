@@ -678,9 +678,40 @@ comments of locked accounts are left out, and every line passes the hook
 `viewcommentary`. At most 50 lines per fetch (`more` when cut short). The [Del] buttons are drawn by
 the page only (they need its navigation and token).
 
-Not live: deletions and moderation (they show on the next page change, as
-before), comments a module writes with its own SQL instead of
-`injectrawcomment()`, and a moderator's undelete in `moderate.php`.
+**Writing without leaving the page.** For a player whose pages run the async
+client (`Commentary::asyncClient()`: realtime, or the AJAX preference) the
+talk form carries `data-lotgd-commentary-form="<section>"`, every line the
+page draws `data-cid`, and every [Del] `data-lotgd-comment-remove`. The
+client sends the form's line to `Commentary.post(section, comment, lastId)`
+and stays on the page; the answer says `commentPost: {status, message,
+postsLeft}` (posted, double, empty, refused) and appends the lines after the
+last one shown, the new one among them, so the poster sees it at once with or
+without realtime. A line the page shows already is not appended twice
+(`data-cid`), whether it comes from that answer or from the announcement. The
+post asks what a posted form asks and more:
+- the async token, always (it writes), and a section `mayRead()` allows;
+- the talkline, schema and limit the page used for that section
+  (`$session['commentary_talk']`, kept beside `commentary_sections`), never
+  the request's -- a section shown without its talk form takes no line;
+- mute (hook `insertcomment`) and the daily limit (`Commentary::postRefusal()`),
+  which the form only asked when it was drawn; the length (`maxchars`);
+- then `injectCommentary()` as the page would: censor, colours, hooks
+  `commentary` and `gmcommentarea`, double posts.
+
+The form posts as ever where the call cannot be made (no answer, logged
+out), so a line is not lost; a classic player gets the form and lines of
+before, byte for byte.
+
+**[Del] without leaving the page.** `Commentary.remove(commentId)` takes the
+line's own section, which must pass `mayRead()`, then the rules of the page's
+[Del] (`removeIfAllowed()`, shared with it: moderators, game masters for their
+own lines; the refusal is logged, the line kept in `moderatedcomments`). A
+removal is announced as `comment-removed` with the comment id on the
+section's channel, and every reader's client drops `[data-cid=<id>]`. A
+player with only the AJAX preference sees a removal on the next page.
+
+Not live: a moderator's undelete in `moderate.php` and its own views,
+comments a module writes with its own SQL instead of `injectrawcomment()`.
 
 Verified in a browser (three players, Chromium against MariaDB): A writes in
 the village; B (realtime) sees it without a reload after one poll and one

@@ -90,7 +90,7 @@
                 if (command.cmd === 'assign') {
                     element.innerHTML = String(command.value);
                 } else {
-                    element.insertAdjacentHTML('beforeend', String(command.value));
+                    appendLines(element, String(command.value));
                 }
             } else if (command.cmd === 'title') {
                 document.title = String(command.value);
@@ -104,6 +104,22 @@
                 }
             }
         });
+    }
+
+    /*
+     * Appended commentary lines carry their comment id (data-cid). A line
+     * the element shows already is left out: the answer to one's own post
+     * and the announcement of it may both bring it.
+     */
+    function appendLines(element, html) {
+        const template = document.createElement('template');
+        template.innerHTML = html;
+        Array.prototype.slice.call(template.content.querySelectorAll('[data-cid]')).forEach(function (line) {
+            if (element.querySelector('[data-cid="' + line.getAttribute('data-cid') + '"]')) {
+                line.remove();
+            }
+        });
+        element.appendChild(template.content);
     }
 
     /**
@@ -355,6 +371,97 @@
         });
     }
 
+    function removeLine(commentId) {
+        document.querySelectorAll('[data-cid="' + Number(commentId) + '"]').forEach(function (line) {
+            line.remove();
+        });
+    }
+
+    /*
+     * The talk form (data-lotgd-commentary-form) posts its line over the
+     * endpoint and stays on the page; [Del] (data-lotgd-comment-remove)
+     * removes its line. Either submits as a form after all when the call
+     * cannot be made (no answer, logged out), so nothing is lost.
+     */
+    function talkStatus(form, html) {
+        const box = form.querySelector('[data-lotgd-commentary-status]');
+        if (box) {
+            box.innerHTML = html || '';
+        }
+    }
+
+    function postLine(form) {
+        const section = form.getAttribute('data-lotgd-commentary-form') || '';
+        const input = form.querySelector('[name="insertcommentary"]');
+        const button = form.querySelector('[type="submit"]');
+        if (!input || form.getAttribute('data-lotgd-posting') === '1') {
+            return;
+        }
+        form.setAttribute('data-lotgd-posting', '1');
+        if (button) {
+            button.disabled = true;
+        }
+        const own = section === state.section;
+        call('Commentary', 'post', [section, input.value, own ? (state.lastCommentId || 0) : 0]).then(function (data) {
+            const answer = data.commentPost || {};
+            if (data.commentary && data.commentary.section === state.section) {
+                state.lastCommentId = Math.max(state.lastCommentId, Number(data.commentary.lastId) || 0);
+            }
+            talkStatus(form, answer.message || '');
+            if (answer.status === 'posted' || answer.status === 'double' || answer.status === 'empty') {
+                input.value = '';
+                // The preview and the characters left follow the field.
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+            }
+            input.focus();
+        }).catch(function (error) {
+            if (error && error.status === 429) {
+                talkStatus(form, '…');
+                return;
+            }
+            form.setAttribute('data-lotgd-classic', '1');
+            form.submit();
+        }).then(function () {
+            form.removeAttribute('data-lotgd-posting');
+            if (button) {
+                button.disabled = false;
+            }
+        });
+    }
+
+    function removeByButton(form) {
+        const commentId = Number(form.getAttribute('data-lotgd-comment-remove')) || 0;
+        if (!commentId || form.getAttribute('data-lotgd-posting') === '1') {
+            return;
+        }
+        form.setAttribute('data-lotgd-posting', '1');
+        call('Commentary', 'remove', [commentId]).then(function (data) {
+            if (data.commentRemove && data.commentRemove.removed) {
+                removeLine(commentId);
+            }
+        }).catch(function () {
+            form.setAttribute('data-lotgd-classic', '1');
+            form.submit();
+        }).then(function () {
+            form.removeAttribute('data-lotgd-posting');
+        });
+    }
+
+    document.addEventListener('submit', function (event) {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || form.getAttribute('data-lotgd-classic') === '1' || typeof window.fetch !== 'function') {
+            return;
+        }
+        if (form.hasAttribute('data-lotgd-commentary-form')) {
+            event.preventDefault();
+            postLine(form);
+        } else if (form.hasAttribute('data-lotgd-comment-remove')) {
+            event.preventDefault();
+            removeByButton(form);
+        }
+    }, true);
+
     function announcements(answer) {
         if (!answer || answer.disabled) {
             realtime.on = false;
@@ -376,6 +483,8 @@
             }
             if (event.type === 'comment') {
                 commentRefresh(event.version);
+            } else if (event.type === 'comment-removed') {
+                removeLine(event.version);
             } else {
                 refresh(event.region, event.version);
             }
