@@ -40,6 +40,10 @@ final class PartialMode
      * page. What a fight does not swap: the dragon's kill (prologue*) and
      * the graveyard's resurrection and haunting.
      *
+     * The shops and the inn followed for the same reason: buying, selling,
+     * healing, the bartender and the room are granted GET links too. Their
+     * forms (the bartender's colour test, the bank's bookings) post as ever.
+     *
      * The village and the inn carry a commentary block; for a partial
      * player its preview field is declarative markup the client handles
      * (Forms::previewField()), so it swaps in like any other region content.
@@ -49,25 +53,25 @@ final class PartialMode
     public const ALLOWLIST = [
         'village.php' => ['GET' => ['']],
         'forest.php' => ['GET' => ['', 'search', 'fight', 'run', 'dragon']],
-        'inn.php' => ['GET' => ['']],
+        'inn.php' => ['GET' => ['', 'strolldown', 'fleedragon', 'converse', 'bartender', 'room']],
         'gardens.php' => ['GET' => ['']],
         'encounter.php' => ['GET' => ['', 'view']],
         'rock.php' => ['GET' => ['']],
         'shades.php' => ['GET' => ['']],
         'graveyard.php' => ['GET' => ['', 'search', 'fight', 'run']],
         'lodge.php' => ['GET' => ['', 'points']],
-        'gypsy.php' => ['GET' => ['', 'talk']],
+        'gypsy.php' => ['GET' => ['', 'talk', 'pay']],
         'hof.php' => ['GET' => ['', 'kills', 'money', 'gems', 'charm', 'tough', 'resurrects', 'days', 'duels']],
         'list.php' => ['GET' => ['', 'clan']],
         'bio.php' => ['GET' => ['']],
         'news.php' => ['GET' => ['']],
         'about.php' => ['GET' => ['', 'setup', 'listmodules', 'license']],
         'referral.php' => ['GET' => ['']],
-        'stables.php' => ['GET' => ['', 'examine']],
-        'weapons.php' => ['GET' => ['']],
-        'armor.php' => ['GET' => ['']],
-        'mercenarycamp.php' => ['GET' => ['']],
-        'healer.php' => ['GET' => ['']],
+        'stables.php' => ['GET' => ['', 'examine', 'buymount', 'confirmbuy', 'sellmount', 'confirmsell', 'feed']],
+        'weapons.php' => ['GET' => ['', 'buy']],
+        'armor.php' => ['GET' => ['', 'buy']],
+        'mercenarycamp.php' => ['GET' => ['', 'buy', 'heal']],
+        'healer.php' => ['GET' => ['', 'buy', 'companion']],
         'train.php' => ['GET' => ['', 'question', 'challenge', 'autochallenge', 'fight', 'run']],
         // The forms only: every booking is a POST.
         'bank.php' => ['GET' => ['', 'transfer', 'deposit', 'withdraw', 'borrow']],

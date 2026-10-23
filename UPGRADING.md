@@ -308,6 +308,12 @@ New setting `partial_render_default` (*For players who never chose in their pref
 - a player who turned the preference off keeps it off;
 - turn the setting off to keep the former opt-in.
 
+### Shops and the inn change in place
+
+With partial rendering on, the weapon and armour shops, the stables, the healer, the mercenary camp, the gypsy and
+the inn swap their pages in place. A module that prints a `<script>` or adds to `<head>` on these pages makes that
+page fall back to a whole page; the click is not run twice.
+
 ### The chat posts without reloading
 
 For players with realtime or the AJAX preference, the talk form posts its line over the async endpoint, and

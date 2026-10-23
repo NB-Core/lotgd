@@ -111,11 +111,18 @@ player on a skin with regions; everyone else gets exactly the game of before.
   companions and the stats change with every round. Not swapped: the
   dragon's kill (`dragon.php?op=prologue*`) and the graveyard's resurrection
   and haunting. A module event or specialty that prints a `<script>` during
-  a fight falls back to the stored page as described below. The bank's focus scripts
-  are `autofocus` now, which the partial client applies after a swap; the
-  clan detail editor folds with `<details>`.
-  Commentary paging and refresh links carry no `op` and swap in too; posting
-  a comment is a form and loads the page normally.
+  a fight falls back to the stored page as described below. The shops and
+  the inn followed for the same reason: buying a weapon or armour, the
+  stables (examine, buy, sell, feed), the healer (and healing a companion),
+  the mercenary camp (hire, heal), the gypsy (talk, pay) and the inn
+  (strolling, the chat, the bartender, the room). Paying the gypsy and
+  taking a room (which logs out) redirect, which a partial request follows
+  as a page change. Their forms post as ever (the bartender's colour test).
+  The bank's focus scripts and the bartender's are `autofocus` now, which
+  the partial client applies after a swap; the clan detail editor folds with
+  `<details>`.
+  Commentary paging and refresh links carry no `op` and swap in too; a
+  comment is posted over the async endpoint (*Live commentary*).
 - **Early fallback**: `PartialMode::preCheck()` runs in `common.php` before
   forced navigation. A partial request for any other page gets
   `HX-Redirect` to the same URL and an empty body; the page has not run.
