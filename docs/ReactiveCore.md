@@ -100,9 +100,18 @@ player on a skin with regions; everyone else gets exactly the game of before.
   stables (and examining a mount), the weapon and armour shops, the
   mercenary camp, the healer, the trainer (and his question), the clan halls
   and clan list, the player list for PvP and the bank with its forms (every
-  booking is a POST). `PartialMode::FORBIDDEN_PARAMETERS` names a parameter
-  that turns an allowed page into an action -- `pvp.php?act=attack` -- and
-  such a request is a page change before it runs. The bank's focus scripts
+  booking is a POST). The fights followed: searching the forest and every
+  round there (`op=fight` with `auto`, `skill`, `newtarget`), fleeing, the
+  dragon's cave, tormenting in the graveyard, the master's challenge and
+  fight, the dragon fight and PvP (the attack on a sleeping warrior and its
+  rounds). A round is a GET link the page granted and claims the page
+  revision like any other, and the fight lives in the account (`badguy`,
+  `bufflist`), so a swapped round is as safe as a full page: a double click
+  plays one round, a lost answer is shown again from `badnav.php`. Buffs,
+  companions and the stats change with every round. Not swapped: the
+  dragon's kill (`dragon.php?op=prologue*`) and the graveyard's resurrection
+  and haunting. A module event or specialty that prints a `<script>` during
+  a fight falls back to the stored page as described below. The bank's focus scripts
   are `autofocus` now, which the partial client applies after a swap; the
   clan detail editor folds with `<details>`.
   Commentary paging and refresh links carry no `op` and swap in too; posting
