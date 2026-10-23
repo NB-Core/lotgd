@@ -616,7 +616,7 @@ final class FormCsrfRegressionTest extends TestCase
         $code = $this->code('src/Lotgd/Commentary.php');
 
         // Immediately inside the form tag, not merely somewhere in the file.
-        $formTag = '$output->outputNotl("<form action=\\"$req\\" method=\'POST\' autocomplete=\'false\'>", true);';
+        $formTag = '$output->outputNotl("<form action=\\"$req\\" method=\'POST\' autocomplete=\'false\'$asyncForm>", true);';
         $position = strpos($code, $formTag);
         self::assertIsInt($position, 'the commentary form tag must still exist');
         self::assertStringStartsWith(

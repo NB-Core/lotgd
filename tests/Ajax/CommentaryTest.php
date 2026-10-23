@@ -53,6 +53,9 @@ namespace Lotgd {
         public static function renderCommentLine(array $row, bool $linkBios): string {
             return '<span>' . $row['comment'] . '</span>';
         }
+        public static function asyncRemoveButton(array $row, string $section): string {
+            return '';
+        }
     }
 }
 STUBS

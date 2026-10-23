@@ -12,6 +12,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Added
 
+- The chat no longer reloads the page: for players with realtime or the AJAX preference, a line is posted over the async endpoint, appears at once for the poster and live for everyone reading the section, and the field clears. A moderator's [Del] removes a line in place, and it disappears live for every realtime reader. Without the async client the talk form posts as before.
 - Fights change in place, without loading the page: searching the forest and every round there (one, five, ten or all rounds, a specialty's skill, another target), fleeing, tormenting in the graveyard, the master's challenge, the dragon fight and PvP attacks. Buffs, companions and the stats change with every round, and the fight's access keys keep working after each swap. The dragon's kill and the graveyard's resurrection and haunting stay whole pages.
 - The legacy `.htm` templates (jade, modern, yarbrough, puritanic_ai) take part in partial rendering, realtime, live duels and the in-page dialog for mail and the MoTD, as the Twig skins do. A template declares this in a `<!--!config-->` section (`{"regions": true, "overlay": true}`) and marks its regions; a legacy page now fills the same page variables as a Twig page. Guides for template authors: `templates/README.md` and `templates_twig/README.md`.
 - The duelling ground and the PvP list's *Warriors about now* tell a player who cannot fight live why: the game does not change pages in place (an administrator can turn it on), partial rendering is off in their preferences, or their skin does not change pages in place (a legacy `.htm` template). A link leads to the preferences when they can help.
@@ -49,6 +50,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- A muted player (hook `insertcomment`) and a player out of posts for today could still post a line: the limits were asked only when the talk form was drawn. A post asks them again.
 - On *The Duelling Ground* the buttons of a waiting challenge (*Withdraw the challenge*, *Accept*, *Decline*) and *Give up and leave* stayed on the page after the live region had moved on (the duel had begun, or was over), until the next reload. The encounter region now names the encounter and state it shows, and `lotgd.duel.js` hides the page's controls that belong to another one.
 - On the puritanic and puritanic_ai skins the header bar had a fixed height of 48 px; on a phone its columns wrap and grow taller, and the content below covered the menu buttons, which could not be tapped. It now grows with its content. On the modern skin the mail and petition links were squeezed beside the full-width MoTD link and spilled into the content column, where a commentary [Del] button could cover them; they now start below it.
 - A biography (`bio.php?char=…`) put the `char` of its address into the account lookup unescaped; it is a bound parameter now.

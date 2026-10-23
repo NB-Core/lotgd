@@ -73,6 +73,10 @@ namespace Lotgd\Tests\Async {
                 // viewCommentary() persists the section/scriptname/last-id triple that the
                 // next page load and the next poll both read back.
                 'commentary text' => ['Lotgd.Async.Handler.Commentary', 'commentaryText'],
+                // A post sets the double-post flag and the laston of the account
+                // it writes for; a removal writes the moderation record.
+                'commentary post' => ['Lotgd.Async.Handler.Commentary', 'post'],
+                'commentary remove' => ['Lotgd.Async.Handler.Commentary', 'remove'],
                 'passkey begin registration' => ['Lotgd.Async.Handler.TwoFactorAuthPasskey', 'beginRegistration'],
                 'passkey finish registration' => ['Lotgd.Async.Handler.TwoFactorAuthPasskey', 'finishRegistration'],
                 'passkey begin authentication' => ['Lotgd.Async.Handler.TwoFactorAuthPasskey', 'beginAuthentication'],
