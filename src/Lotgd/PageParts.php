@@ -1027,9 +1027,9 @@ class PageParts
     public static function applyTemplateStringReplacements(string $content, string $name, array $replacements): string
     {
         foreach ($replacements as $key => $val) {
-            if (TwigTemplate::isActive()) {
-                self::$twigVars[$key] = $val;
-            }
+            // Kept for legacy templates too: the page state (and a partial
+            // answer built from it) reads the values, not the template.
+            self::$twigVars[$key] = $val;
 
             if (strpos($content, '{' . $key . '}') === false) {
                 // If we don't find the key in the content, we can skip it - if you want to notify, use the line below

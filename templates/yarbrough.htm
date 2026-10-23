@@ -51,7 +51,7 @@
 <table border='0' cellpadding=4 cellspacing=0 width='100%'>
   <tr>
 	<td colspan=2 class='pageheader' valign='top'> <img src='templates/yarbrough/title.gif' width='395' height='55' align='right' alt=""><span class='pagetitle'><br>
-	  {title}</span></td>
+	  <span data-lotgd-title>{title}</span></span></td>
 
   </tr>
   <tr>
@@ -60,17 +60,17 @@
 	<img src='templates/yarbrough/uscroll.GIF' width='182' height='11' alt=''>
 	  <table cellspacing='0' cellpadding='0' class='nav'>
 		<tr>
-		  <td>{nav}</td>
+		  <td data-lotgd-region="nav">{nav}</td>
 		</tr>
 	  </table>
 
 	  <img src='templates/yarbrough/lscroll.GIF' width='182' height='11' alt=""> <br>
-	  {motd} <br>
-	  {mail} <br>
-	  {petition} </td>
-	<td width='100%' rowspan=2 valign='top' bgcolor='#352D20'><table align='right' border='0'><tr><td>{paypal}{verticalad}</td></tr></table>{headerad}{bodyad}
+	  <span data-lotgd-region="header" data-lotgd-slot="motd">{motd}</span> <br>
+	  <span data-lotgd-region="header" data-lotgd-slot="mail">{mail}</span> <br>
+	  <span data-lotgd-region="header" data-lotgd-slot="petition">{petition}</span> <span data-lotgd-region="header" data-lotgd-slot="grants">{grants}</span> </td>
+	<td width='100%' rowspan=2 valign='top' bgcolor='#352D20'><table align='right' border='0'><tr><td>{paypal}{verticalad}</td></tr></table>{headerad}{bodyad}<div data-lotgd-region="content">
 	  <!--!footer-->
-		{petitiondisplay}
+		</div><div data-lotgd-region="header" data-lotgd-slot="petitiondisplay">{petitiondisplay}</div>
 	</td>
 
   </tr>
@@ -78,7 +78,7 @@
 	<td width='190' valign='top' bgcolor='#433828'><img src='templates/yarbrough/uscroll.GIF' width='182' height='11' alt=''>
 	  <table border='0' cellpadding='0' cellspacing='0' class='vitalinfo'>
 		<tr>
-		  <td class="sidebar-content"> {stats} </td>
+		  <td class="sidebar-content" data-lotgd-region="stats">{stats}</td>
 		</tr>
 
 	  </table>
@@ -152,3 +152,5 @@
 	</td>
   </tr>
 </table>
+<!--!config-->
+{"regions": true, "overlay": true}

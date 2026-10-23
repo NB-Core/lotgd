@@ -306,12 +306,10 @@ class Footer
         }
 
         list($header, $footer) = PageParts::generateNavigationOutput($header, $footer, $builtnavs);
-        if (TwigTemplate::isActive()) {
-            PageParts::$twigVars['nav']      = $builtnavs;
-            PageParts::$twigVars['navad']    = '';
-            PageParts::$twigVars['verticalad'] = '';
-            PageParts::$twigVars['bodyad']   = '';
-        }
+        PageParts::$twigVars['nav']      = $builtnavs;
+        PageParts::$twigVars['navad']    = '';
+        PageParts::$twigVars['verticalad'] = '';
+        PageParts::$twigVars['bodyad']   = '';
 
         if (defined('DB_CHOSEN') && DB_CHOSEN) {
             $motd_link = PageParts::motdLink();
@@ -343,9 +341,7 @@ class Footer
             // {paypal} so one-pass token replacement and Twig rendering stay aligned.
             'paypal_below' => $paypalBelow,
         ];
-        if (TwigTemplate::isActive()) {
-            PageParts::$twigVars = array_merge(PageParts::$twigVars, $replacements);
-        }
+        PageParts::$twigVars = array_merge(PageParts::$twigVars, $replacements);
 
         list($header, $footer) = PageParts::replaceHeaderFooterTokens($header, $footer, $replacements);
 
@@ -367,10 +363,16 @@ class Footer
         $navInstance->setHeader($header);
 
         $headSignature = PartialRenderer::headSignature(PageParts::$twigVars);
-        if ($partialClient && $isTwig) {
+        if ($partialClient) {
             // After the signature, which leaves lotgd-* meta tags out anyway.
-            PageParts::$twigVars['headscript_mid'] = (PageParts::$twigVars['headscript_mid'] ?? '')
-                . '<meta name="lotgd-head" content="' . $headSignature . '">';
+            $headMeta = '<meta name="lotgd-head" content="' . $headSignature . '">';
+            if ($isTwig) {
+                PageParts::$twigVars['headscript_mid'] = (PageParts::$twigVars['headscript_mid'] ?? '') . $headMeta;
+            } else {
+                // A legacy header has its head filled in already.
+                $header = (string) preg_replace('~</head>~i', $headMeta . '</head>', $header, 1);
+                $navInstance->setHeader($header);
+            }
         }
 
         return new PageState(

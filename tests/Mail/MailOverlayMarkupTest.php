@@ -39,8 +39,9 @@ final class MailOverlayMarkupTest extends TestCase
     /**
      * @param array<string,string> $get
      * @param array<string,string> $post
+     * @param array<string,mixed>  $settings
      */
-    private static function page(array $get, bool $overlay, array $post = [], string $method = 'GET'): PageOutcome
+    private static function page(array $get, bool $overlay, array $post = [], string $method = 'GET', array $settings = []): PageOutcome
     {
         return PageRunner::withRequest(
             'mail.php',
@@ -49,7 +50,7 @@ final class MailOverlayMarkupTest extends TestCase
             $get,
             $post,
             self::mailbox(),
-            [],
+            $settings,
             $overlay ? self::OVERLAY : [],
             [],
             [
@@ -62,6 +63,14 @@ final class MailOverlayMarkupTest extends TestCase
                 ],
             ]
         );
+    }
+
+    public function testTheOverlayOnALegacyTemplateCarriesThePopupTitle(): void
+    {
+        // A legacy popup header is filled into the template, which the overlay discards.
+        $run = self::page([], true, [], 'GET', ['defaultskin' => 'jade.htm']);
+
+        self::assertNotSame('', (string) $run->header('X-Lotgd-Overlay-Title'));
     }
 
     public function testInboxOverlayHasNoScriptAndCarriesTheAttributes(): void

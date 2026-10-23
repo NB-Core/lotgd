@@ -333,3 +333,11 @@ body.template-jade table.dataTable > tbody > tr.trdark { background-color:#00300
     font-weight: bolder;
     margin-left: 10px;
 }
+
+/* The in-page dialog for mail and the MoTD (assets/css/lotgd.overlay.css). */
+:root {
+    --lotgd-overlay-bg: #003800;
+    --lotgd-overlay-fg: #cccccc;
+    --lotgd-overlay-border: #015d01;
+    --lotgd-overlay-scheme: dark;
+}

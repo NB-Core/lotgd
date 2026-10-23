@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Page;
 
 use Lotgd\Settings;
+use Lotgd\Template;
 use Lotgd\TwigTemplate;
 
 /**
@@ -183,41 +184,55 @@ final class PartialMode
     }
 
     /**
-     * The active skin is a Twig skin whose config.json declares regions.
+     * The active skin declares regions: a Twig skin in its config.json, a
+     * legacy template in its `config` section.
      */
     public static function skinSupportsRegions(): bool
     {
-        return TwigTemplate::isActive() && self::skinDeclares('regions');
+        return self::skinDeclares('regions');
     }
 
     /**
-     * Whether the active Twig skin's config.json sets $key to true
-     * (`regions`, `overlay`).
+     * Whether the active skin sets $key to true (`regions`, `overlay`): a
+     * Twig skin in its config.json, a legacy `.htm` template in the JSON of
+     * its `<!--!config-->` section (templates/README.md).
      */
     public static function skinDeclares(string $key): bool
     {
-        if (!TwigTemplate::isActive()) {
-            return false;
+        if (TwigTemplate::isActive()) {
+            return self::configDeclares(dirname(__DIR__, 3) . '/' . TwigTemplate::getPath() . '/config.json', $key);
         }
 
-        return self::configDeclares(dirname(__DIR__, 3) . '/' . TwigTemplate::getPath() . '/config.json', $key);
+        return self::sectionDeclares((string) (Template::getInstance()->getTemplate()['config'] ?? ''), $key);
     }
 
     /**
-     * Whether the skin named as in the `defaultskin` setting (`twig:aurora`)
-     * is a Twig skin whose config.json sets $key to true. Legacy skins never do.
+     * Whether the skin named as in the `defaultskin` setting (`twig:aurora`,
+     * `jade.htm`, `legacy:jade.htm`) sets $key to true.
      */
     public static function skinDeclaresFor(string $skin, string $key): bool
     {
-        if (!str_starts_with($skin, 'twig:')) {
-            return false;
-        }
-        $name = substr($skin, strlen('twig:'));
-        if ($name === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $name)) {
-            return false;
-        }
+        if (str_starts_with($skin, 'twig:')) {
+            $name = substr($skin, strlen('twig:'));
+            if ($name === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $name)) {
+                return false;
+            }
 
-        return self::configDeclares(dirname(__DIR__, 3) . '/templates_twig/' . $name . '/config.json', $key);
+            return self::configDeclares(dirname(__DIR__, 3) . '/templates_twig/' . $name . '/config.json', $key);
+        }
+        $name = str_starts_with($skin, 'legacy:') ? substr($skin, strlen('legacy:')) : $skin;
+        if (!preg_match('/^[A-Za-z0-9_-]+\.htm$/', $name)) {
+            return false;
+        }
+        $file = dirname(__DIR__, 3) . '/templates/' . $name;
+        if (!is_file($file)) {
+            return false;
+        }
+        // The section as Template::loadTemplate() cuts it.
+        $parts = explode('<!--!config-->', (string) file_get_contents($file), 2);
+        $section = isset($parts[1]) ? explode('<!--!', $parts[1], 2)[0] : '';
+
+        return self::sectionDeclares($section, $key);
     }
 
     private static function configDeclares(string $config, string $key): bool
@@ -226,7 +241,12 @@ final class PartialMode
             return false;
         }
 
-        $data = json_decode((string) file_get_contents($config), true);
+        return self::sectionDeclares((string) file_get_contents($config), $key);
+    }
+
+    private static function sectionDeclares(string $json, string $key): bool
+    {
+        $data = json_decode(trim($json), true);
 
         return is_array($data) && ($data[$key] ?? false) === true;
     }

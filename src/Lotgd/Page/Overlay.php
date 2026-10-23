@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Lotgd\Page;
 
-use Lotgd\TwigTemplate;
-
 /**
  * Popup pages shown inside the page (docs/ReactiveCore.md, Phase 6b).
  *
@@ -44,7 +42,7 @@ final class Overlay
      */
     public static function skinSupports(): bool
     {
-        return TwigTemplate::isActive() && PartialMode::skinDeclares('overlay');
+        return PartialMode::skinDeclares('overlay');
     }
 
     /**

@@ -116,7 +116,7 @@
 	   </tr>
 	   <tr>
 		<td background='templates/jade/tlt.gif'><img name='tlt' src='templates/jade/spacer.gif' width='1' height='1' border='0' alt=''></td>
-		<td valign='top' bgcolor='#003800' nowrap><span class='pagetitle'>&#149; {title}</span></td>
+		<td valign='top' bgcolor='#003800' nowrap><span class='pagetitle'>&#149; <span data-lotgd-title>{title}</span></span></td>
 		<td background='templates/jade/trt.gif'><img name='trt' src='templates/jade/spacer.gif' width='1' height='1' border='0' alt=''></td>
 	   </tr>
 	   <tr>
@@ -131,7 +131,7 @@
 	<tr>
 		<td valign='top' colspan='2'>
 			<div style="float: left;">{headerad}</div>
-			<div align="right">{motd} | {mail} | {petition}<br>{petitiondisplay}<br></div>
+			<div align="right"><span data-lotgd-region="header" data-lotgd-slot="motd">{motd}</span> | <span data-lotgd-region="header" data-lotgd-slot="mail">{mail}</span> | <span data-lotgd-region="header" data-lotgd-slot="petition">{petition}</span> <span data-lotgd-region="header" data-lotgd-slot="grants">{grants}</span><br><div data-lotgd-region="header" data-lotgd-slot="petitiondisplay">{petitiondisplay}</div></div>
 		</td>
 	</tr>
    </table>
@@ -150,7 +150,7 @@
 	   </tr>
 	   <tr>
 		<td background='templates/jade/tlt.gif'><img name='tlt' src='templates/jade/spacer.gif' width='1' height='1' border='0' alt=''></td>
-		<td valign='top' bgcolor='#003800' class='nav'><div style='position: relative; top: -15;' align='center'>{navad}</div><div align="center">{nav}</div></td>
+		<td valign='top' bgcolor='#003800' class='nav'><div style='position: relative; top: -15;' align='center'>{navad}</div><div align="center" data-lotgd-region="nav">{nav}</div></td>
 		<td background='templates/jade/trt.gif'><img name='trt' src='templates/jade/spacer.gif' width='1' height='1' border='0' alt=''></td>
 	   </tr>
 	   <tr>
@@ -172,9 +172,9 @@
 		<td valign='top' bgcolor='#003800' class='headrow'>
 		 <table width='100%' border='0' cellspacing='0' cellpadding='0'>
 		  <tr>
-		   <td valign=top align=left width='100%'><div style="float: right">{verticalad}</div>{bodyad}
+		   <td valign=top align=left width='100%'><div style="float: right">{verticalad}</div>{bodyad}<div data-lotgd-region="content">
 <!--!footer-->
-		   </td>
+</div>		   </td>
 		   <td valign=top width='120'>
 			<table width="120" border='0' cellpadding='0' cellspacing='0'>
 			 <tr>
@@ -184,7 +184,7 @@
 			 </tr> 
 			 <tr>
 			  <td background='templates/jade/tlt.gif'><img name='tlt' src='templates/jade/spacer.gif' width='1' height='1' border='0' alt=''></td>
-			  <td valign='top' bgcolor='#003800'class='nav sidebar-content' align='left' nowrap>{stats} <p>&nbsp;</p> {paypal}</td>
+			  <td valign='top' bgcolor='#003800'class='nav sidebar-content' align='left' nowrap><div data-lotgd-region="stats">{stats}</div> <p>&nbsp;</p> {paypal}</td>
 			  <td background='templates/jade/trt.gif'><img name='trt' src='templates/jade/spacer.gif' width='1' height='1' border='0' alt=''></td>
 			 </tr>
 			 <tr>
@@ -317,3 +317,5 @@
   </td>
  </tr>
 </table>
+<!--!config-->
+{"regions": true, "overlay": true}
