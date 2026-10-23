@@ -13,6 +13,8 @@ use Lotgd\Pvp\Payout;
 use Lotgd\Modules\HookHandler;
 use Lotgd\MySQL\Database;
 use Lotgd\MySQL\StorageEngine;
+use Lotgd\Page\PartialMode;
+use Lotgd\Security\Escape;
 
 /**
  * Live encounters (docs/ReactiveCore.md, Phase 7): one player challenges
@@ -844,6 +846,51 @@ final class Encounter
         }
 
         return "<table class='lotgd-presence'>{$rows}</table>";
+    }
+
+    /**
+     * Why this player cannot fight live here, for a notice on the pages that
+     * offer duels; null when they can. Live duels run in the page itself:
+     * they need partial rendering for the player and a skin that declares
+     * regions.
+     *
+     * @param array<string,mixed> $user The session user, with prefs unserialized.
+     */
+    public static function liveHint(array $user): ?string
+    {
+        if (!self::enabled() || Realtime::enabledFor($user)) {
+            return null;
+        }
+        if (!PartialMode::settingEnabled()) {
+            return Translator::translateInline('`7Live duels play in the page itself, and this game does not change pages in place yet. An administrator can turn it on.`0', 'encounter');
+        }
+        if (!PartialMode::isEnabledFor($user)) {
+            return Translator::translateInline('`7Live duels play in the page itself. Turn on `&Change pages in place`7 in your preferences to fight them.`0', 'encounter');
+        }
+
+        return Translator::translateInline('`7Live duels play in the page itself, and your skin cannot do that yet. Choose a skin that changes pages in place (such as Aurora) in your preferences to fight them.`0', 'encounter');
+    }
+
+    /**
+     * The notice of liveHint() with a link to the preferences, registered
+     * for this page; empty when the player can fight live.
+     *
+     * @param array<string,mixed> $user
+     */
+    public static function liveHintHtml(array $user): string
+    {
+        $hint = self::liveHint($user);
+        if ($hint === null) {
+            return '';
+        }
+        $html = "<p class='lotgd-live-hint'>" . Output::getInstance()->appoencode($hint);
+        if (PartialMode::settingEnabled()) {
+            // The preferences can help only when the game allows it.
+            Nav::add('', 'prefs.php');
+            $html .= " <a href='prefs.php' class='nav'>" . Escape::html(Translator::translateInline('Preferences', 'encounter')) . '</a>';
+        }
+
+        return $html . '</p>';
     }
 
     /**

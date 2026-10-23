@@ -266,7 +266,10 @@ final class PartialMode
         self::$headerSink = null;
     }
 
-    private static function settingEnabled(): bool
+    /**
+     * The game lets pages change in place at all (partial_render).
+     */
+    public static function settingEnabled(): bool
     {
         return Settings::hasInstance() && (int) Settings::getInstance()->getSetting('partial_render', 0) === 1;
     }

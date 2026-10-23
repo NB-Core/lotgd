@@ -117,6 +117,8 @@ if (!Encounter::enabled()) {
 }
 
 if (Encounter::enabled() && !$unverified) {
+    // A player whose page cannot play live learns why, and where to change it.
+    $output->rawOutput(Encounter::liveHintHtml($session['user']));
     // The versions before the content: a change in between comes again.
     Poll::noteRegionVersion('encounter', Poll::regionVersion('encounter', $me));
     Poll::noteRegionVersion('presence', Poll::regionVersion('presence', $me));

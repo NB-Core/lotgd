@@ -122,6 +122,42 @@ final class EncounterPageTest extends TestCase
         self::assertStringContainsString("href='encounter.php?op=watch&amp;id=7", $run->html);
     }
 
+    public function testAPlayerWhoCanPlayLiveSeesNoHint(): void
+    {
+        $run = $this->page('GET', [], [], self::SETTINGS);
+
+        self::assertStringNotContainsString('lotgd-live-hint', $run->html);
+    }
+
+    public function testAPlayerWithoutPartialRenderingLearnsToTurnItOn(): void
+    {
+        $globals = $this->globals();
+        $globals['accounts_table'][1]['prefs'] = serialize(['partialrender' => 0]);
+        $run = PageRunner::withRequest('encounter.php', 0, 'GET', [], [], $globals, self::SETTINGS);
+
+        self::assertStringContainsString("<p class='lotgd-live-hint'>", $run->html);
+        self::assertStringContainsString('Change pages in place', $run->html);
+        self::assertStringContainsString("<a href='prefs.php' class='nav'>", $run->html);
+    }
+
+    public function testAPlayerOnALegacySkinLearnsToChooseAnother(): void
+    {
+        $run = $this->page('GET', [], [], ['defaultskin' => 'jade.htm'] + self::SETTINGS);
+
+        self::assertStringContainsString("<p class='lotgd-live-hint'>", $run->html);
+        self::assertStringContainsString('your skin cannot do that yet', $run->html);
+    }
+
+    public function testWithPagesInPlaceOffForTheGameThePlayerLearnsItIsTheAdministrators(): void
+    {
+        $run = $this->page('GET', [], [], ['partial_render' => 0] + self::SETTINGS);
+
+        self::assertStringContainsString("<p class='lotgd-live-hint'>", $run->html);
+        self::assertStringContainsString('An administrator can turn it on', $run->html);
+        self::assertStringNotContainsString('Change pages in place', $run->html, 'The preferences cannot help.');
+        self::assertStringNotContainsString("<a href='prefs.php' class='nav'>", $run->html);
+    }
+
     public function testWithTheSettingOffTheGroundIsClosed(): void
     {
         $run = $this->page('GET', [], [], ['live_encounters' => 0] + self::SETTINGS);
