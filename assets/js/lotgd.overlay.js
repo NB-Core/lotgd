@@ -76,6 +76,8 @@
         }
         return response.text().then(function (html) {
             currentUrl = response.url;
+            // A popup page counts as activity (lotgd.timeout.js).
+            document.dispatchEvent(new CustomEvent('lotgd:activity'));
             const title = response.headers.get('X-Lotgd-Overlay-Title');
             titleElement.textContent = title ? decodeURIComponent(title) : '';
             bodyElement.innerHTML = html;

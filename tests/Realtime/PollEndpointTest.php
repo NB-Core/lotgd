@@ -206,7 +206,7 @@ final class PollEndpointTest extends TestCase
 
         self::assertInstanceOf(Response::class, $response);
         self::assertSame([], $response->getCommands());
-        self::assertSame(['realtime'], array_keys($response->getData()));
+        self::assertSame(['session', 'realtime'], array_keys($response->getData()));
     }
 
     public function testANegativeCursorIsTreatedAsZero(): void

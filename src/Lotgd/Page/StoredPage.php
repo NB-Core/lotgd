@@ -14,7 +14,8 @@ use Lotgd\Security\Escape;
  *
  * The stored page belongs to the account, not the session: another session
  * of the same player (another browser, the login before this one) may have
- * stored it, with that session's async token in <meta name="lotgd-async">.
+ * stored it, with that session's async token in <meta name="lotgd-async"> and
+ * <meta name="lotgd-session"> (the session panel's "Stay logged in").
  * The page would send that token for as long as it is swapped in place --
  * refused by the stream (async/stream.php) and, with csrf_mode enforced, by
  * every async call. So the token is set to this session's.
@@ -24,20 +25,20 @@ final class StoredPage
     public static function withSessionToken(string $html): string
     {
         return (string) preg_replace_callback(
-            '/<meta name="lotgd-async" content="([^"]*)">/',
+            '/<meta name="(lotgd-async|lotgd-session)" content="([^"]*)">/',
             static function (array $match): string {
-                $config = json_decode(html_entity_decode($match[1], ENT_QUOTES, 'UTF-8'), true);
+                $config = json_decode(html_entity_decode($match[2], ENT_QUOTES, 'UTF-8'), true);
                 if (!is_array($config)) {
                     return $match[0];
                 }
                 // Render-side: showing a page is where a token may be minted.
                 $config['csrf'] = Csrf::token(Csrf::SCOPE_ASYNC);
 
-                return '<meta name="lotgd-async" content="'
+                return '<meta name="' . $match[1] . '" content="'
                     . htmlspecialchars((string) json_encode($config), ENT_QUOTES, 'UTF-8') . '">';
             },
             $html,
-            1
+            2
         );
     }
 

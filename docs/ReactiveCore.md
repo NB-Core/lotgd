@@ -198,8 +198,8 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `lotgd_lastUnreadMailId` and `lotgd_lastUnreadMailCount` after the swap, so
   polling follows the page. The mail slot's copy of the same values
   (`async/maillink.php`, an inline script, removed in Phase 6a) is dropped for partial players.
-  The timeout warning needs nothing: it is computed on the server from
-  `laston`, which every partial request updates.
+  The session panel needs nothing either: a partial answer counts as activity
+  (`laston`), and the panel starts its count again after one.
 - **Late fallback**: the page is stored as usual and answered
   `HX-Redirect: badnav.php`, which shows it, when any region (content, nav,
   stats, a header slot) contains `<script`, when the page wants a different
@@ -208,6 +208,24 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `<meta name="lotgd-head">`, a hash of the head markup without cache
   busters, the canonical link and the client's own meta tags; the client
   sends it back as `X-Lotgd-Head`.
+- **Session panel** (`Lotgd\Page\SessionPanel`, `assets/js/lotgd.timeout.js`):
+  every logged-in player's full page carries `<meta name="lotgd-session">`
+  (session length, `start_timeout_show_seconds`,
+  `never_timeout_if_browser_open`, the async token, the texts). The script
+  counts down locally and shows a notice in the upper right
+  (`.lotgd-timeout`) for the last `start_timeout_show_seconds`, in `m:ss`,
+  with *Stay logged in* (`Timeout.keepAlive()`: async token, `laston` now,
+  answers `session: {remaining}`; on failure the page loads `badnav.php`,
+  which counts as well). Two seconds past zero -- the server counts in whole
+  seconds -- it turns red (`.lotgd-timeout--expired`, `role="alert"`) with
+  *Log in again* (`home.php?op=timeout`). The count starts again after a
+  partial swap and a popup page in the dialog (`lotgd:activity`), follows
+  other tabs through `localStorage`, and takes `data.session.remaining` from
+  any async answer (`window.lotgd.timeout.sync()`): `Timeout.timeoutStatus`
+  in the AJAX poll, `Realtime.poll`, and the calls a player makes, which
+  count as activity themselves (`Timeout::touch()`: a chat line, a duel
+  move). With `never_timeout_if_browser_open` the panel calls `keepAlive`
+  itself before the last minute and stays hidden. It replaces `#notify`.
 - **Indicator**: where the game has `partial_render` on, the mail link
   (`PageParts::mailLink()`, so the page, the realtime refresh and the AJAX
   status alike) ends with a small dot, `PageParts::liveIndicator()`:
@@ -815,8 +833,8 @@ seconds, with a `: ping` comment: the account, read again -- `loggedin`
 cleared (logout, ban), `laston` older than `LOGINTIMEOUT`, or the setting
 turned off ends the stream with `event: end` -- and the channels, derived
 again from that account: a clan hall the player left drops out, as with the
-poll. The stream does not move `laston`; the timeout warning is polled as
-before.
+poll. The stream does not move `laston`; the session panel counts locally
+and takes the time left from the polls and calls that report it.
 
 **The client** (`assets/js/lotgd.async.js`) opens the stream when the page
 names it (`<meta name="lotgd-realtime-stream">`) and the browser has

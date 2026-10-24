@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Lotgd\Async\Handler;
 
 use Doctrine\DBAL\ParameterType;
-use Lotgd\MySQL\Database;
-use Lotgd\Output;
-use Lotgd\Settings;
-use Lotgd\Translator;
 use Lotgd\Async\Response;
+use Lotgd\GameLog;
+use Lotgd\MySQL\Database;
+use Lotgd\Security\Csrf;
+use Lotgd\SecurityLog;
+use Lotgd\Settings;
 
 /**
- * Handle asynchronous timeout checks.
+ * The session timeout over the async endpoint: how long is left, and
+ * keeping the session alive (docs/ReactiveCore.md, Session panel). The
+ * values the panel needs on a page come from configured(), the same file the
+ * async client reads (config/async.settings.php).
  */
 class Timeout
 {
@@ -25,6 +29,8 @@ class Timeout
     private int $checkMailTimeoutSeconds = 10;
 
     private int $clearScriptExecutionSeconds = -1;
+
+    private bool $configured = false;
 
     private function __construct()
     {
@@ -39,8 +45,35 @@ class Timeout
         return self::$instance;
     }
 
+    /**
+     * The instance with the timeout values of config/async.settings.php,
+     * read quietly when async/common/settings.php has not run on this
+     * request (a page without the async client).
+     */
+    public static function configured(): self
+    {
+        $instance = self::getInstance();
+        if ($instance->configured) {
+            return $instance;
+        }
+        $root = dirname(__DIR__, 4) . '/config/';
+        $custom = defined('LOTGD_ASYNC_SETTINGS_FILE') ? (string) LOTGD_ASYNC_SETTINGS_FILE : $root . 'async.settings.php';
+        $values = [];
+        foreach ([$root . 'async.settings.php.dist', $custom] as $file) {
+            if (is_readable($file)) {
+                $read = require $file;
+                $values = is_array($read) ? array_merge($values, $read) : $values;
+            }
+        }
+        $instance->setNeverTimeoutIfBrowserOpen((int) ($values['never_timeout_if_browser_open'] ?? 0) === 1);
+        $instance->setStartTimeoutShowSeconds((int) ($values['start_timeout_show_seconds'] ?? 300));
+
+        return $instance;
+    }
+
     public function setStartTimeoutShowSeconds(int $seconds): void
     {
+        $this->configured = true;
         $this->startTimeoutShowSeconds = $seconds;
     }
 
@@ -80,81 +113,96 @@ class Timeout
     }
 
     /**
-     * Update last activity time and report remaining session timeout.
+     * Seconds until a player whose last activity was $laston is logged out
+     * (ForcedNavigation's rule); 0 once it has passed.
+     */
+    public static function remaining(string $laston, ?int $now = null): int
+    {
+        $last = strtotime($laston);
+        if ($last === false || $last <= 0) {
+            return 0;
+        }
+        $timeout = (int) Settings::getInstance()->getSetting('LOGINTIMEOUT', 900);
+
+        return max(0, $last + $timeout - ($now ?? time()));
+    }
+
+    /**
+     * Count now as the player's last activity, as a page would. For calls
+     * the player made themselves (keepAlive(), a line posted, a duel move):
+     * the async endpoint saves no account, so without this they would time
+     * out while playing on one page.
+     */
+    public static function touch(int $acctid): int
+    {
+        global $session;
+
+        if ($acctid <= 0) {
+            return 0;
+        }
+        $now = date('Y-m-d H:i:s');
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('accounts') . ' SET laston = :laston WHERE acctid = :acctid',
+            ['laston' => $now, 'acctid' => $acctid],
+            ['laston' => ParameterType::STRING, 'acctid' => ParameterType::INTEGER]
+        );
+        if (isset($session['user']) && (int) ($session['user']['acctid'] ?? 0) === $acctid) {
+            $session['user']['laston'] = $now;
+        }
+
+        return self::remaining($now);
+    }
+
+    /**
+     * The session panel's "Stay logged in" (assets/js/lotgd.timeout.js):
+     * counts as activity, like any page. It writes, so the async token is
+     * checked here whatever csrf_mode says. Answers `session: {remaining}`;
+     * 0 when the player is no longer logged in.
+     */
+    public function keepAlive(): Response
+    {
+        global $session;
+
+        $response = new Response();
+        $acctid = (int) ($session['user']['acctid'] ?? 0);
+        if ($acctid <= 0 || empty($session['user']['loggedin'])) {
+            return $response->data('session', ['remaining' => 0]);
+        }
+        if (!Csrf::matches(Csrf::SCOPE_ASYNC, Csrf::requestToken())) {
+            SecurityLog::event('Keep-alive refused: async token does not match', [], $acctid, GameLog::SEVERITY_WARNING, false);
+
+            return $response->data('session', ['remaining' => self::remaining((string) ($session['user']['laston'] ?? ''))]);
+        }
+
+        return $response->data('session', ['remaining' => self::touch($acctid)]);
+    }
+
+    /**
+     * How long the player's session has left, for the session panel, in
+     * data `session` (`{remaining}`): another tab may have kept it alive.
+     * With never_timeout_if_browser_open the poll itself counts as activity.
      */
     public function timeoutStatus(bool $args = false): Response
     {
         global $session;
-        $output = Output::getInstance();
-        $settings = Settings::getInstance();
 
+        $response = new Response();
         if ($args === false) {
-            return new Response();
+            return $response;
         }
 
         if (!isset($session['user'])) {
-            $hasTimedOut = false;
+            // ForcedNavigation emptied the session: it has timed out.
+            $timedOut = (isset($session['loggedin']) && $session['loggedin'] === false)
+                || (isset($session['message']) && stripos((string) $session['message'], 'Your session has expired!') !== false);
 
-            if (isset($session['loggedin']) && $session['loggedin'] === false) {
-                $hasTimedOut = true;
-            }
-
-            if (!$hasTimedOut && isset($session['message']) && stripos($session['message'], 'Your session has expired!') !== false) {
-                $hasTimedOut = true;
-            }
-
-            if (!$hasTimedOut) {
-                return new Response();
-            }
-
-            $objResponse = new Response();
-            $warning = $output->appoencode('`$`b') . 'TIMEOUT: Your session has timed out!' . $output->appoencode('`b');
-            $objResponse->assign('notify', 'innerHTML', $warning);
-
-            return $objResponse;
+            return $timedOut ? $response->data('session', ['remaining' => 0]) : $response;
         }
-
-        $warning = '';
 
         if ($this->isNeverTimeoutIfBrowserOpen()) {
-            $session['user']['laston'] = date('Y-m-d H:i:s'); // set to now
-            Database::getDoctrineConnection()->executeStatement(
-                'UPDATE ' . Database::prefix('accounts') . ' SET laston = :laston WHERE acctid = :acctid',
-                [
-                    'laston' => (string) $session['user']['laston'],
-                    'acctid' => (int) ($session['user']['acctid'] ?? 0),
-                ],
-                [
-                    'laston' => ParameterType::STRING,
-                    'acctid' => ParameterType::INTEGER,
-                ]
-            );
+            return $response->data('session', ['remaining' => self::touch((int) ($session['user']['acctid'] ?? 0))]);
         }
 
-        $timeout = strtotime($session['user']['laston']) - strtotime(date('Y-m-d H:i:s', strtotime('-' . $settings->getSetting('LOGINTIMEOUT', 900) . ' seconds')));
-        Translator::enableTranslation(false);
-
-        if ($timeout <= 1) {
-            // Preserve legacy behaviour by including the TIMEOUT keyword
-            $warning = $output->appoencode('`$`b') . 'TIMEOUT: Your session has timed out!' . $output->appoencode('`b');
-        } elseif ($timeout < $this->getStartTimeoutShowSeconds()) {
-            if ($timeout > 60) {
-                $min = floor($timeout / 60);
-                $sec = $timeout % 60;
-                $warning = '<br/>' . $output->appoencode('`t')
-                    . Translator::sprintfTranslate('TIMEOUT in %d minute%s und %d second%s!', $min, $min > 1 ? Translator::translateInline('s', 'notranslate') : '', $sec, $sec != 1 ? Translator::translateInline('s', 'notranslate') : '');
-            } else {
-                $warning = '<br/>' . $output->appoencode('`t')
-                    . Translator::sprintfTranslate('TIMEOUT in %d second%s!', $timeout, $timeout != 1 ? Translator::translateInline('s', 'notranslate') : '');
-            }
-        } else {
-            $warning = '';
-        }
-
-        $objResponse = new Response();
-        $objResponse->assign('notify', 'innerHTML', $warning);
-
-        Translator::enableTranslation(true);
-        return $objResponse;
+        return $response->data('session', ['remaining' => self::remaining((string) ($session['user']['laston'] ?? ''))]);
     }
 }
