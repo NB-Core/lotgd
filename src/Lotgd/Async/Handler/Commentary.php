@@ -144,6 +144,9 @@ class Commentary
         $result = CoreCommentary::postAsync($section, $comment);
         $result['message'] = Output::getInstance()->appoencode($result['message']);
         $response->data('commentPost', $result);
+        // Writing a line is playing, as a page would count it.
+        global $session;
+        $response->data('session', ['remaining' => Timeout::touch((int) ($session['user']['acctid'] ?? 0))]);
         if ($result['status'] === 'posted' || $result['status'] === 'double') {
             $response->merge($this->commentaryRefresh($section, $lastId));
         }
@@ -205,17 +208,21 @@ class Commentary
             }
         }
 
-        try {
-            $response->merge(Timeout::getInstance()->timeoutStatus(true));
-        } catch (\Throwable $e) {
-            throw new Exception('AJAX polling: Timeout handler error', 0, $e);
-        }
-
         // The realtime announcements ride on the same request (one poll per
         // interval, docs/ReactiveCore.md Phase 6); data `realtime`. A new
         // comment is one of them, and the client fetches it when announced,
         // so a realtime poll does not look for comments itself.
         $live = $cursor !== null && is_numeric($cursor) && \Lotgd\Realtime::enabledFor($session['user'] ?? []);
+
+        // The session's time left (data `session`); the realtime poll below
+        // brings it otherwise.
+        if (!$live) {
+            try {
+                $response->merge(Timeout::configured()->timeoutStatus(true));
+            } catch (\Throwable $e) {
+                throw new Exception('AJAX polling: Timeout handler error', 0, $e);
+            }
+        }
 
         if (!$live && $section !== '') {
             try {

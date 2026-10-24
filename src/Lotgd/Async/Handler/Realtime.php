@@ -21,7 +21,8 @@ class Realtime
      * Announcements for the player after $cursor, in data `realtime`
      * (`{cursor, events, resync?}`, or `{disabled: true}`). With $section,
      * the new comments of that section too -- if the player may read it
-     * (Commentary::mayRead()); otherwise the section is left out.
+     * (Commentary::mayRead()); otherwise the section is left out. And the
+     * session's time left, in data `session`.
      */
     public function poll(int $cursor = 0, string $section = ''): Response
     {
@@ -30,10 +31,13 @@ class Realtime
         $response = new Response();
         $acctid = $this->player();
         if ($acctid === null) {
-            return $response->data('realtime', ['disabled' => true]);
+            return $response->data('realtime', ['disabled' => true])->merge(Timeout::configured()->timeoutStatus(true));
         }
 
-        return $response->data('realtime', Poll::events(Poll::channels($acctid, $session['user'] ?? [], $section), max(0, $cursor)));
+        $response->data('realtime', Poll::events(Poll::channels($acctid, $session['user'] ?? [], $section), max(0, $cursor)));
+
+        // The session panel's time left; another tab may have kept it alive.
+        return $response->merge(Timeout::configured()->timeoutStatus(true));
     }
 
     /**

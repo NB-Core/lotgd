@@ -38,5 +38,9 @@
     "lotgd-showform": {
         "version": "1.0.0",
         "js": "assets/js/lotgd.showform.js"
+    },
+    "lotgd-timeout": {
+        "version": "1.0.0",
+        "js": "assets/js/lotgd.timeout.js"
     }
 }

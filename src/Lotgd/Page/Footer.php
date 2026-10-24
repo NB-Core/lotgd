@@ -223,8 +223,15 @@ class Footer
         // Tabbed forms (Forms::showFormTabbed()) on every page, so the
         // <head> stays the same whether a page has one or not.
         Output::requireVendorAsset('lotgd-showform', 'js');
-        // The partial-rendering dot beside the mail link (PageParts::liveIndicator()).
+        // The partial-rendering dot beside the mail link (PageParts::liveIndicator()),
+        // and the session panel's look.
         Output::requireVendorAsset('lotgd-partial', 'css');
+        // The session panel, for every logged-in player (SessionPanel).
+        Output::requireVendorAsset('lotgd-timeout', 'js');
+        $sessionMeta = SessionPanel::meta($session['user'] ?? []);
+        if ($sessionMeta !== '') {
+            Output::addHeadMarkup($sessionMeta);
+        }
 
         // Popup pages in a dialog (Phase 6b) where the skin declares it.
         if (Overlay::skinSupports()) {

@@ -160,6 +160,10 @@
                     throw error;
                 }
                 apply(payload.commands);
+                // The session's time left, for the session panel (lotgd.timeout.js).
+                if (payload.data && payload.data.session && window.lotgd && window.lotgd.timeout) {
+                    window.lotgd.timeout.sync(Number(payload.data.session.remaining));
+                }
                 return payload.data || {};
             });
         });

@@ -76,8 +76,7 @@ $asyncClientConfig = [
 
 $pre_headscript = ($pre_headscript ?? '')
     . '<meta name="lotgd-async" content="'
-    . htmlspecialchars((string) json_encode($asyncClientConfig), ENT_QUOTES, 'UTF-8') . '">'
-    . "<div id='notify'></div>";
+    . htmlspecialchars((string) json_encode($asyncClientConfig), ENT_QUOTES, 'UTF-8') . '">';
 
 Output::requireVendorAsset('lotgd-async', 'js');
 // jQuery stays on these pages: modules written for the Jaxon era expect it.

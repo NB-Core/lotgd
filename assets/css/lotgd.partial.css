@@ -42,3 +42,89 @@ body.lotgd-partial-loading .lotgd-live--on {
         opacity: 0.4;
     }
 }
+
+/*
+ * The session panel (assets/js/lotgd.timeout.js): the last minutes of a
+ * session, in the upper right, in the colours of the in-page dialog
+ * (--lotgd-overlay-*). Skins may restyle .lotgd-timeout, its parts and
+ * .lotgd-timeout--expired.
+ */
+.lotgd-timeout {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10000;
+    box-sizing: border-box;
+    width: min(24rem, calc(100vw - 32px));
+    padding: 14px 16px;
+    border: 1px solid var(--lotgd-overlay-border, rgba(255, 255, 255, 0.18));
+    border-left: 4px solid #e0a800;
+    border-radius: 6px;
+    background: var(--lotgd-overlay-bg, #1b1b1b);
+    color: var(--lotgd-overlay-fg, #e0e0e0);
+    color-scheme: var(--lotgd-overlay-scheme, dark);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    font-size: 1rem;
+    line-height: 1.4;
+    animation: lotgd-timeout-in 0.2s ease-out;
+}
+
+.lotgd-timeout[hidden] {
+    display: none;
+}
+
+.lotgd-timeout__title {
+    margin: 0 0 6px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #e0a800;
+}
+
+.lotgd-timeout__text {
+    margin: 0 0 12px;
+}
+
+.lotgd-timeout__clock {
+    font-variant-numeric: tabular-nums;
+}
+
+.lotgd-timeout__button {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.lotgd-timeout__button:hover,
+.lotgd-timeout__button:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.lotgd-timeout__button[aria-disabled="true"] {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.lotgd-timeout--expired {
+    border-left-color: #e04040;
+}
+
+.lotgd-timeout--expired .lotgd-timeout__title {
+    color: #e04040;
+}
+
+@keyframes lotgd-timeout-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lotgd-timeout {
+        animation: none;
+    }
+}

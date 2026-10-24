@@ -59,6 +59,8 @@ class Duel
         $params += ['encounter' => $encounter, 'round' => $round];
         $actionId = substr(hash('sha256', $name . '|' . $encounter . '|' . $round . '|' . $acctid . '|' . (string) json_encode($params)), 0, 32);
         $result = Action::run($name, $actionId, $params, static fn (): array => $fn($user));
+        // A move is playing, as a page would count it.
+        $response->data('session', ['remaining' => Timeout::touch($acctid)]);
 
         return $response->data('duel', match ($result->status) {
             ActionResult::DONE, ActionResult::REPLAYED => ['status' => 'done', 'state' => (string) ($result->data['state'] ?? '')],

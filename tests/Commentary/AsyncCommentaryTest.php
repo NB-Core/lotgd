@@ -82,6 +82,8 @@ final class AsyncCommentaryTest extends TestCase
         self::assertCount(1, $this->inserts());
         self::assertSame('posted', $response->getData()['commentPost']['status']);
         self::assertSame(12, $response->getData()['commentary']['lastId']);
+        self::assertGreaterThan(0, $response->getData()['session']['remaining'], 'Writing a line counts as activity.');
+        self::assertNotSame([], preg_grep('/SET laston = :laston/', array_column($this->connection->executeStatements, 'sql')));
         $commands = $response->getCommands();
         self::assertSame('append', $commands[0]['cmd']);
         self::assertSame('village-comment', $commands[0]['id']);
