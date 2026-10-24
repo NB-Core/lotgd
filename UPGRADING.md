@@ -314,16 +314,28 @@ With `partial_render` on, `PageParts::mailLink()` (and so `{mail}`, `maillink()`
 `<span class='lotgd-live lotgd-live--on|off' …>`, styled by `assets/css/lotgd.partial.css`, which every full page
 now loads (popups do not; there the empty `<span>` stays invisible). A skin can restyle `.lotgd-live`, or hide it.
 
-### The session timeout is a notice in the upper right
+### Notices in the upper right: the session timeout, new mail, the Message of the Day
 
 Every full page of a logged-in player now carries `<meta name="lotgd-session">` and loads
-`assets/js/lotgd.timeout.js` (popups do not). The script shows the notice, styled by `assets/css/lotgd.partial.css`
-(`.lotgd-timeout`, `.lotgd-timeout--expired`, in the dialog's `--lotgd-overlay-*` colours). For modules and skins:
+`assets/js/lotgd.notices.js` (popups do not). It shows a stack of notices, styled by `assets/css/lotgd.partial.css`
+(`.lotgd-notices`, `.lotgd-notice`, `.lotgd-notice--mail`, `.lotgd-notice--motd`, `.lotgd-timeout`,
+`.lotgd-timeout--expired`, in the dialog's `--lotgd-overlay-*` colours). For modules and skins:
 - `<div id='notify'>` is gone, and `Timeout.timeoutStatus` answers `data.session.remaining` (seconds) instead of
   assigning text to it. A module that wrote into `#notify` needs an element of its own;
-- new async call `Timeout.keepAlive()` (checks the async token, counts as activity);
+- the mail link no longer comes in `<div id='maillink'>`, and `Mail.mailStatus` answers data (`notices`) instead of
+  assigning `#maillink`, setting the title and calling `lotgdMailNotify`. The notices refresh the link in the skin's
+  `mail` slot. A skin that styled `#maillink` styles `[data-lotgd-slot="mail"]` instead;
+- new async calls `Timeout.keepAlive()` (checks the async token, counts as activity) and `Notices.status` (read only);
+- new setting `notices_poll_seconds` (*Game Settings*, default 60, 0 = only on page changes): how often a page looks
+  for new mail and a new Message of the Day. Players with the AJAX preference get it with their poll instead;
 - `start_timeout_show_seconds` and `never_timeout_if_browser_open` in `config/async.settings.php` apply to every
   player now, not only those with the AJAX preference.
+
+### Player names are text everywhere
+
+A name, a clan's short name, a weapon and an armour are escaped where they are written into the page with colour
+codes kept (`Lotgd\Security\Escape::gameText()`): the chat line, the stats, the donation form, the mail inbox. A
+name that held HTML on purpose (set in the user editor or by a module) now shows it as text.
 
 ### Forms post in place; Game Settings get the preferences' table
 

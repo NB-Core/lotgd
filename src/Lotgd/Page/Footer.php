@@ -224,10 +224,11 @@ class Footer
         // <head> stays the same whether a page has one or not.
         Output::requireVendorAsset('lotgd-showform', 'js');
         // The partial-rendering dot beside the mail link (PageParts::liveIndicator()),
-        // and the session panel's look.
+        // and the notices' look.
         Output::requireVendorAsset('lotgd-partial', 'css');
-        // The session panel, for every logged-in player (SessionPanel).
-        Output::requireVendorAsset('lotgd-timeout', 'js');
+        // The notices in the upper right, for every logged-in player
+        // (SessionPanel, Notices).
+        Output::requireVendorAsset('lotgd-notices', 'js');
         $sessionMeta = SessionPanel::meta($session['user'] ?? []);
         if ($sessionMeta !== '') {
             Output::addHeadMarkup($sessionMeta);

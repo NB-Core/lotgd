@@ -36,6 +36,7 @@
     }
 
     const ENDPOINT = '/async/process.php';
+    const STREAM_ENDPOINT = '/async/stream.php';
     const REGION_SELECTORS = {
         mail: '[data-lotgd-region="header"][data-lotgd-slot="mail"]',
         grants: '[data-lotgd-region="header"][data-lotgd-slot="grants"]',
@@ -160,9 +161,16 @@
                     throw error;
                 }
                 apply(payload.commands);
-                // The session's time left, for the session panel (lotgd.timeout.js).
-                if (payload.data && payload.data.session && window.lotgd && window.lotgd.timeout) {
-                    window.lotgd.timeout.sync(Number(payload.data.session.remaining));
+                // The session's time left, mail and the Message of the Day,
+                // for the notices in the upper right (lotgd.notices.js).
+                const notices = window.lotgd && window.lotgd.notices;
+                if (payload.data && notices) {
+                    if (payload.data.session) {
+                        notices.sync(Number(payload.data.session.remaining));
+                    }
+                    if (payload.data.notices) {
+                        notices.update(payload.data.notices);
+                    }
                 }
                 return payload.data || {};
             });
@@ -498,6 +506,9 @@
                 removeLine(event.version);
             } else {
                 refresh(event.region, event.version);
+                if (event.region === 'mail' && window.lotgd && window.lotgd.notices) {
+                    window.lotgd.notices.refresh();
+                }
             }
         });
         if (typeof answer.cursor === 'number' && answer.cursor > realtime.cursor) {
@@ -559,7 +570,20 @@
         if (stream.off || !realtime.on || !stream.url || typeof window.EventSource !== 'function') {
             return;
         }
-        const url = stream.url
+        // The token goes to this site's stream and nowhere else, whatever
+        // the page says the url is.
+        let target = null;
+        try {
+            target = new URL(stream.url, window.location.origin);
+        } catch (error) {
+            target = null;
+        }
+        if (!target || target.origin !== window.location.origin || target.pathname !== STREAM_ENDPOINT || target.search !== '') {
+            stream.off = true;
+            debug('stream refused', stream.url);
+            return;
+        }
+        const url = target.pathname
             + '?csrf=' + encodeURIComponent(String(settings().csrf || ''))
             + '&cursor=' + encodeURIComponent(String(realtime.cursor))
             + '&section=' + encodeURIComponent(state.section || '');
@@ -773,7 +797,7 @@
             if (realtime.on) {
                 refresh(region, Number.MAX_SAFE_INTEGER);
             } else if (region === 'mail' && settings().updates) {
-                call('Mail', 'mailStatus', [true]).catch(function () {});
+                call('Notices', 'status', []).catch(function () {});
             }
         },
         // The partial client swaps regions its own way (init/destroy, htmx).

@@ -10,6 +10,7 @@ use Lotgd\Nav as Navigation;
 use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\Sanitize;
+use Lotgd\Security\Escape;
 use Lotgd\Http;
 use Lotgd\DataCache;
 use Lotgd\DateTime;
@@ -1303,16 +1304,19 @@ SQL;
      */
     private static function formatName(array $row): string
     {
-        $name = $row['name'] ?? '';
+        $name = (string) ($row['name'] ?? '');
         $superuser = (int) ($row['superuser'] ?? 0);
 
+        // The line is encoded with appoencode(..., true), which keeps markup:
+        // the name and the clan's short name are text (colour codes stay).
         if ($name !== '') {
-            $name = HolidayText::holidayize($name, 'comment');
+            $name = Escape::gameText(HolidayText::holidayize($name, 'comment'));
         }
 
         if (!empty($row['clanrank'])) {
             $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
-            $name = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank'] / 10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank'] / 10)]}&gt; `&" : '') . $name;
+            $clanshort = Escape::gameText((string) ($row['clanshort'] ?? ''));
+            $name = ($clanshort > '' ? "{$clanrankcolors[ceil($row['clanrank'] / 10)]}&lt;`2{$clanshort}{$clanrankcolors[ceil($row['clanrank'] / 10)]}&gt; `&" : '') . $name;
         }
 
         $settings = Settings::getInstance();

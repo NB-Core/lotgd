@@ -364,6 +364,7 @@ function lotgd_async_is_session_readonly_callable(array $requestContext): bool
         // for the next request.
         'Lotgd.Async.Handler.Commentary' => ['commentaryRefresh', 'pollUpdates', 'test'],
         'Lotgd.Async.Handler.Mail' => ['mailStatus'],
+        'Lotgd.Async.Handler.Notices' => ['status'],
         'Lotgd.Async.Handler.Realtime' => ['poll', 'region'],
         'Lotgd.Async.Handler.Timeout' => ['timeoutStatus'],
     ];

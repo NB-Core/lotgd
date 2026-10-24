@@ -154,7 +154,7 @@ class Timeout
     }
 
     /**
-     * The session panel's "Stay logged in" (assets/js/lotgd.timeout.js):
+     * The session panel's "Stay logged in" (assets/js/lotgd.notices.js):
      * counts as activity, like any page. It writes, so the async token is
      * checked here whatever csrf_mode says. Answers `session: {remaining}`;
      * 0 when the player is no longer logged in.

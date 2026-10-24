@@ -11,15 +11,16 @@ use Lotgd\Settings;
 use Lotgd\Translator;
 
 /**
- * The session panel (assets/js/lotgd.timeout.js, docs/ReactiveCore.md):
- * a notice in the upper right that counts down the last minutes of a
- * logged-in player's session, keeps it alive on request, and says so once it
- * has timed out.
+ * The notices in the upper right (assets/js/lotgd.notices.js,
+ * docs/ReactiveCore.md) for a logged-in player: the last minutes of the
+ * session (a countdown, "Stay logged in", timed out), new mail and a new
+ * Message of the Day.
  *
- * The page carries what the panel starts from in <meta name="lotgd-session">:
- * the session length, when to show the notice, whether the browser being
- * open keeps the session alive (never_timeout_if_browser_open), the async
- * token for "Stay logged in", and the texts. A page counts as activity, so
+ * The page carries what they start from in <meta name="lotgd-session">: the
+ * session length, when to warn, whether the browser being open keeps the
+ * session alive (never_timeout_if_browser_open), the async token, how often
+ * to look for mail and the Message of the Day and what the page shows of
+ * them (Notices), whether popup pages open in the dialog, and the texts. A page counts as activity, so
  * the countdown starts at the full length. The meta's content changes from
  * page to page, like every lotgd-* meta, and stays out of the head signature.
  */
@@ -34,18 +35,33 @@ final class SessionPanel
             return '';
         }
         $timeout = Timeout::configured();
+        $notices = Notices::status($user);
+        $popup = (string) ($user['prefs']['popupsize'] ?? '');
         $config = [
             'timeout' => max(1, (int) Settings::getInstance()->getSetting('LOGINTIMEOUT', 900)),
             'warn' => max(0, $timeout->getStartTimeoutShowSeconds()),
             'never' => $timeout->isNeverTimeoutIfBrowserOpen(),
             // Page-render context, so generating here is correct (see Csrf).
             'csrf' => Csrf::token(Csrf::SCOPE_ASYNC),
+            // The notices: how often to look, and what this page shows.
+            'poll' => Notices::interval(),
+            'mail' => $notices['mail'],
+            'motd' => $notices['motd'],
+            'overlay' => Overlay::skinSupports(),
+            'popup' => preg_match('/^\d{2,4}x\d{2,4}$/', $popup) === 1 ? $popup : '550x330',
             'labels' => [
                 'title' => Translator::translateInline('Session timeout', 'common'),
                 'countdown' => Translator::translateInline('You will be logged out in %s.', 'common'),
                 'stay' => Translator::translateInline('Stay logged in', 'common'),
                 'expired' => Translator::translateInline('Your session has timed out.', 'common'),
                 'login' => Translator::translateInline('Log in again', 'common'),
+                'mailTitle' => Translator::translateInline('New mail', 'common'),
+                'mailOne' => Translator::translateInline('You have 1 unread message.', 'common'),
+                'mailMany' => Translator::translateInline('You have %s unread messages.', 'common'),
+                'motdTitle' => Translator::translateInline('Message of the Day', 'common'),
+                'motdText' => Translator::translateInline('There is a new Message of the Day.', 'common'),
+                'read' => Translator::translateInline('Read', 'common'),
+                'dismiss' => Translator::translateInline('Dismiss', 'common'),
             ],
         ];
 

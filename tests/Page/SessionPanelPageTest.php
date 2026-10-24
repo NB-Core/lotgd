@@ -10,7 +10,7 @@ use Lotgd\Tests\Security\PageCsrf\PageRunner;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The session panel (Lotgd\Page\SessionPanel, assets/js/lotgd.timeout.js):
+ * The session panel (Lotgd\Page\SessionPanel, assets/js/lotgd.notices.js):
  * every logged-in player's full page says how long the session lasts, when
  * to warn and what to say, whether the page changes in place or not, and the
  * <head> stays the same from page to page.
@@ -30,7 +30,10 @@ final class SessionPanelPageTest extends TestCase
         self::assertNotSame('', $session['csrf']);
         self::assertSame('Stay logged in', $session['labels']['stay']);
         self::assertStringContainsString('%s', $session['labels']['countdown']);
-        self::assertMatchesRegularExpression('~<script[^>]+src="[^"]*assets/js/lotgd\.timeout\.js~', $run->html);
+        self::assertSame(['unread' => 0, 'lastId' => 0], $session['mail']);
+        self::assertSame(60, $session['poll']);
+        self::assertSame('Read', $session['labels']['read']);
+        self::assertMatchesRegularExpression('~<script[^>]+src="[^"]*assets/js/lotgd\.notices\.js~', $run->html);
         self::assertStringNotContainsString("id='notify'", $run->html);
     }
 
@@ -52,6 +55,17 @@ final class SessionPanelPageTest extends TestCase
         }, ['bank.php', 'forest.php']);
 
         self::assertSame($heads[0], $heads[1]);
+    }
+
+    public function testAPlayersNameIsTextInTheStatsAndTheDonationForm(): void
+    {
+        $globals = ['accounts_table' => [1 => ['name' => "O'><img src=x onerror=alert(1)>"]]];
+
+        $run = PageRunner::withRequest('forest.php', 0, 'GET', [], [], $globals, self::SETTINGS + ['paypalemail' => 'pay@example.com']);
+
+        self::assertStringNotContainsString('<img src=x', $run->html);
+        self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $run->html);
+        self::assertStringNotContainsString("Donation from O'>", $run->html, 'The donation form\'s quoted value stays closed.');
     }
 
     public function testNobodyLoggedInGetsNoPanel(): void

@@ -37,7 +37,7 @@ final class AssembleMailLinkTest extends TestCase
         $this->assertStringNotContainsString("<div id='maillink'>", $header);
     }
 
-    public function testWithAjaxTheLinkCarriesTheIdThePollReplaces(): void
+    public function testWithAjaxTheLinkHasNoWrapperEither(): void
     {
         global $session, $settings;
         $session = ['user' => ['acctid' => 1, 'loggedin' => true, 'prefs' => ['ajax' => 1]]];
@@ -45,8 +45,9 @@ final class AssembleMailLinkTest extends TestCase
         Settings::setInstance($settings);
         Database::$queryCacheResults['mail-1'] = [['seencount' => 0, 'notseen' => 0]];
         [$header] = PageParts::assembleMailLink('{mail}', '');
-        $this->assertStringStartsWith("<div id='maillink'><a href='mail.php'", $header);
-        $this->assertStringEndsWith('</div>', $header);
+        // The notices refresh it in its slot (lotgd.notices.js).
+        $this->assertStringStartsWith("<a href='mail.php'", $header);
+        $this->assertStringNotContainsString("<div id='maillink'>", $header);
         $this->assertStringNotContainsString('<script', $header, 'The async client takes its values from <meta name="lotgd-async">.');
     }
 }

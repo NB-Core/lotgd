@@ -44,21 +44,30 @@ body.lotgd-partial-loading .lotgd-live--on {
 }
 
 /*
- * The session panel (assets/js/lotgd.timeout.js): the last minutes of a
- * session, in the upper right, in the colours of the in-page dialog
- * (--lotgd-overlay-*). Skins may restyle .lotgd-timeout, its parts and
- * .lotgd-timeout--expired.
+ * The notices in the upper right (assets/js/lotgd.notices.js): the session's
+ * last minutes, new mail, a new Message of the Day, stacked, in the colours
+ * of the in-page dialog (--lotgd-overlay-*). Skins may restyle
+ * .lotgd-notices, .lotgd-notice and its parts, .lotgd-notice--mail,
+ * .lotgd-notice--motd, .lotgd-timeout and .lotgd-timeout--expired.
  */
-.lotgd-timeout {
+.lotgd-notices {
     position: fixed;
     top: 16px;
     right: 16px;
     z-index: 10000;
-    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     width: min(24rem, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.lotgd-notice {
+    position: relative;
+    box-sizing: border-box;
     padding: 14px 16px;
     border: 1px solid var(--lotgd-overlay-border, rgba(255, 255, 255, 0.18));
-    border-left: 4px solid #e0a800;
+    border-left: 4px solid #4a9fd8;
     border-radius: 6px;
     background: var(--lotgd-overlay-bg, #1b1b1b);
     color: var(--lotgd-overlay-fg, #e0e0e0);
@@ -66,22 +75,57 @@ body.lotgd-partial-loading .lotgd-live--on {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
     font-size: 1rem;
     line-height: 1.4;
+    pointer-events: auto;
     animation: lotgd-timeout-in 0.2s ease-out;
 }
 
-.lotgd-timeout[hidden] {
+.lotgd-notice[hidden] {
     display: none;
 }
 
+.lotgd-notice__title,
 .lotgd-timeout__title {
     margin: 0 0 6px;
+    padding-right: 1.5em;
     font-size: 1.1rem;
     font-weight: bold;
-    color: #e0a800;
+    color: #4a9fd8;
 }
 
+.lotgd-notice__text,
 .lotgd-timeout__text {
     margin: 0 0 12px;
+}
+
+.lotgd-notice__dismiss {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: 1.4rem;
+    line-height: 1;
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+.lotgd-notice__dismiss::before {
+    content: "\00d7";
+}
+
+.lotgd-notice__dismiss:hover,
+.lotgd-notice__dismiss:focus-visible {
+    opacity: 1;
+}
+
+.lotgd-timeout {
+    border-left-color: #e0a800;
+}
+
+.lotgd-timeout .lotgd-timeout__title {
+    color: #e0a800;
 }
 
 .lotgd-timeout__clock {
@@ -124,7 +168,7 @@ body.lotgd-partial-loading .lotgd-live--on {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .lotgd-timeout {
+    .lotgd-notice {
         animation: none;
     }
 }

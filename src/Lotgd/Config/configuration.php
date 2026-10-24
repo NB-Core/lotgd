@@ -27,6 +27,8 @@ $setup = array(
     "motditems" => "How many items should be shown on the motdlist,int",
     "ajax" => "Turn on AJAX support?,bool",
     "Ajax means you have refreshed content (mail;tab headline) without having ppl to reload the whole page,note",
+    "notices_poll_seconds" => "Seconds between two looks for new mail and a new Message of the Day on an open page (0 = only on page changes),range,0,600,15",
+    "Every logged-in player's page asks this often, with one small request, and shows a notice in the upper right. Players with AJAX or realtime get it with their poll instead,note",
     "partial_render" => "Allow partial rendering (page changes swap only the changed parts; Twig skins that declare regions)?,bool",
     "partial_render_default" => "For players who never chose in their preferences: change pages in place?,bool",
     "Each player can turn it off (or on) in their preferences; this applies to those who never did. Partial rendering itself is off by default. While a player uses it, a second click or tab on the same page is turned away instead of running twice,note",
