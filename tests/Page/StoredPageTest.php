@@ -46,4 +46,21 @@ final class StoredPageTest extends TestCase
         self::assertSame('<head></head><body>x</body>', StoredPage::withSessionToken('<head></head><body>x</body>'));
         self::assertNull(Csrf::peek(Csrf::SCOPE_ASYNC), 'No token minted for a page that sends none.');
     }
+
+    public function testAPreviewIsASealedFrameWithThePageInline(): void
+    {
+        $page = '<!DOCTYPE html><html><head><title>Forest</title><meta name="lotgd-async" content="{&quot;csrf&quot;:&quot;theirs&quot;}">'
+            . '<script>alert("x")</script></head><body><header>Top</header><a href="forest.php?op=search">Search</a></body></html>';
+
+        $frame = StoredPage::preview($page, "Last page's view");
+
+        self::assertMatchesRegularExpression("/^<iframe sandbox loading='lazy' referrerpolicy='no-referrer' title='Last page&#039;s view' width='100%' height='400' srcdoc='[^']*'><\\/iframe>$/", $frame);
+        self::assertStringNotContainsString('<script', $frame, 'Inline, escaped: no markup of the page reaches the editor page.');
+        self::assertStringNotContainsString(' src=', $frame, 'No request of its own.');
+        preg_match("/srcdoc='([^']*)'/", $frame, $match);
+        $inner = html_entity_decode($match[1], ENT_QUOTES, 'UTF-8');
+        self::assertStringNotContainsString('lotgd-async', $inner, "The other player's async token is left out.");
+        self::assertStringContainsString('<head><style>a,button,input,select,textarea,label,summary{pointer-events:none!important}</style><title>Forest</title>', $inner);
+        self::assertStringContainsString('<header>Top</header><a href="forest.php?op=search">Search</a>', $inner);
+    }
 }

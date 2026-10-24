@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Lotgd\Page;
 
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
 use Lotgd\Security\Csrf;
+use Lotgd\Security\Escape;
 
 /**
  * A page stored earlier and shown again (badnav.php) for this session.
@@ -36,5 +39,44 @@ final class StoredPage
             $html,
             1
         );
+    }
+
+    /**
+     * The page an account last stored, uncompressed; '' when there is none
+     * (navigation fixed, never played).
+     */
+    public static function forAccount(int $acctid): string
+    {
+        $stored = Database::getDoctrineConnection()->executeQuery(
+            'SELECT output FROM ' . Database::prefix('accounts_output') . ' WHERE acctid = :acctid',
+            ['acctid' => $acctid],
+            ['acctid' => ParameterType::INTEGER]
+        )->fetchOne();
+        if (!is_string($stored) || $stored === '') {
+            return '';
+        }
+        $page = @gzuncompress($stored);
+
+        return is_string($page) ? $page : '';
+    }
+
+    /**
+     * Another account's stored page as a sealed preview for an editor page:
+     * a sandboxed frame with the page inline (srcdoc), so showing it makes no
+     * request of its own -- which would pass the navigation check and claim
+     * the editor's page revision -- and the page's own scripts never run.
+     * Its links and form controls do nothing; its async token, which belongs
+     * to the other player's session, is left out.
+     */
+    public static function preview(string $html, string $title): string
+    {
+        $html = (string) preg_replace('/<meta name="lotgd-async" content="[^"]*">/', '', $html);
+        $inert = '<style>a,button,input,select,textarea,label,summary{pointer-events:none!important}</style>';
+        $html = preg_match('/<head(\s[^>]*)?>/i', $html) === 1
+            ? (string) preg_replace('/<head(\s[^>]*)?>/i', '$0' . $inert, $html, 1)
+            : $inert . $html;
+
+        return "<iframe sandbox loading='lazy' referrerpolicy='no-referrer' title='" . Escape::html($title)
+            . "' width='100%' height='400' srcdoc='" . Escape::html($html) . "'></iframe>";
     }
 }

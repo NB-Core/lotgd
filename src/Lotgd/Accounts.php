@@ -158,6 +158,9 @@ class Accounts
         foreach ($changed as $key => $val) {
             $baseaccount[$key] = $val;
         }
+        // The account now holds this request's links: a page revision it
+        // claimed is not given back at the end of the request.
+        ForcedNavigation::claimSaved();
     }
 
     /**
