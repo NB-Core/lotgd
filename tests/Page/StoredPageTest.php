@@ -41,6 +41,18 @@ final class StoredPageTest extends TestCase
         self::assertStringEndsWith('<body>csrf stale</body>', $shown, 'Only the meta changes.');
     }
 
+    public function testTheSessionPanelsTokenIsReplacedToo(): void
+    {
+        $config = ['timeout' => 900, 'csrf' => 'stale'];
+        $html = '<head><meta name="lotgd-session" content="'
+            . htmlspecialchars((string) json_encode($config), ENT_QUOTES, 'UTF-8') . '"></head><body></body>';
+
+        preg_match('/<meta name="lotgd-session" content="([^"]*)">/', StoredPage::withSessionToken($html), $match);
+        $now = json_decode(html_entity_decode($match[1], ENT_QUOTES, 'UTF-8'), true);
+        self::assertSame(Csrf::peek(Csrf::SCOPE_ASYNC), $now['csrf']);
+        self::assertSame(900, $now['timeout']);
+    }
+
     public function testAPageWithoutTheAsyncClientIsUnchanged(): void
     {
         self::assertSame('<head></head><body>x</body>', StoredPage::withSessionToken('<head></head><body>x</body>'));

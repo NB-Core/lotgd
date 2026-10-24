@@ -28,6 +28,9 @@
     let panel = null;
     let shown = '';
     let busy = false;
+    // Automatic keep-alives (never_timeout_if_browser_open) after a failure.
+    let backoff = 0;
+    let retryAt = 0;
     let timer = 0;
 
     function readConfig() {
@@ -161,7 +164,7 @@
         }
         if (config.never) {
             // Kept alive by the open browser: ask before the last minute.
-            if (left <= Math.max(60, Math.min(warn, 120)) && !busy) {
+            if (left <= Math.max(60, Math.min(warn, 120)) && !busy && Date.now() >= retryAt) {
                 keepAlive(false);
             }
             if (shown !== '') {
@@ -219,14 +222,17 @@
             });
         }).then(function (session) {
             busy = false;
+            backoff = 0;
             sync(session.remaining);
         }, function () {
             busy = false;
             if (fromPlayer) {
                 window.location.href = 'badnav.php';
-            } else {
-                render();
+                return;
             }
+            // Asked by the page itself: try again later, less often each time.
+            backoff = Math.min(backoff ? backoff * 2 : 5, 60);
+            retryAt = Date.now() + backoff * 1000;
         });
     }
 
@@ -235,7 +241,8 @@
         if (!config || typeof remaining !== 'number' || !isFinite(remaining)) {
             return;
         }
-        setDeadline(Date.now() + Math.max(0, remaining) * 1000, true);
+        // Nothing left is final: the server has logged the player out.
+        setDeadline(Date.now() + (remaining > 0 ? remaining * 1000 : -GRACE * 1000), true);
     }
 
     /** Activity the server counted just now: the full length again. */
