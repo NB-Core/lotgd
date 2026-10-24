@@ -223,6 +223,8 @@ class Footer
         // Tabbed forms (Forms::showFormTabbed()) on every page, so the
         // <head> stays the same whether a page has one or not.
         Output::requireVendorAsset('lotgd-showform', 'js');
+        // The partial-rendering dot beside the mail link (PageParts::liveIndicator()).
+        Output::requireVendorAsset('lotgd-partial', 'css');
 
         // Popup pages in a dialog (Phase 6b) where the skin declares it.
         if (Overlay::skinSupports()) {

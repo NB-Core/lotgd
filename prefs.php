@@ -16,6 +16,7 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Sanitize;
 use Lotgd\Security\Csrf;
+use Lotgd\Security\Escape;
 use Lotgd\Security\ValidationLogin;
 use Lotgd\PasswordHelper;
 use Lotgd\SecurityLog;
@@ -570,7 +571,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // Checked before the form is sent (assets/js/lotgd.showform.js), and
     // again by the server.
     $passwordCheck = " data-lotgd-min-password='" . (int) $minLength . "' data-lotgd-password-warning='"
-        . htmlspecialchars(Translator::sprintfTranslate('Your password is too short.  It must be at least %s characters long.', $minLength), ENT_QUOTES, $settings->getSetting('charset', 'UTF-8')) . "'";
+        . Escape::html(Translator::sprintfTranslate('Your password is too short.  It must be at least %s characters long.', $minLength)) . "'";
     //
     $prefs = $session['user']['prefs'];
     $prefs['bio'] = $session['user']['bio'];

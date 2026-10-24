@@ -19,7 +19,8 @@
     },
     "lotgd-partial": {
         "version": "1.0.0",
-        "js": "assets/js/lotgd.partial.js"
+        "js": "assets/js/lotgd.partial.js",
+        "css": "assets/css/lotgd.partial.css"
     },
     "lotgd-async": {
         "version": "1.0.0",

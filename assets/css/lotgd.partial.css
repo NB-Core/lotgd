@@ -1,0 +1,44 @@
+/*
+ * The dot beside the mail link (PageParts::liveIndicator()): filled when
+ * this player's pages change in place, a hollow ring when they load in full.
+ * While a page is being swapped in (body.lotgd-partial-loading, set by
+ * lotgd.partial.js) it turns into a small spinning ring -- only after a
+ * moment, so a fast swap, such as a fight round, does not flicker.
+ * Skins may restyle .lotgd-live, .lotgd-live--on and .lotgd-live--off.
+ */
+.lotgd-live {
+    display: inline-block;
+    box-sizing: border-box;
+    width: 0.55em;
+    height: 0.55em;
+    margin-left: 0.4em;
+    border: 0.12em solid #888;
+    border-radius: 50%;
+    vertical-align: middle;
+    opacity: 0.75;
+}
+
+.lotgd-live--on {
+    border-color: #3c3;
+    background-color: #3c3;
+}
+
+body.lotgd-partial-loading .lotgd-live--on {
+    background-color: transparent;
+    border-top-color: transparent;
+    transition: background-color 0s linear 120ms, border-top-color 0s linear 120ms;
+    animation: lotgd-live-spin 0.7s linear 120ms infinite;
+}
+
+@keyframes lotgd-live-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.lotgd-partial-loading .lotgd-live--on {
+        animation: none;
+        opacity: 0.4;
+    }
+}

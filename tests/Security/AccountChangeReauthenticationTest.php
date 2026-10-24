@@ -89,7 +89,7 @@ final class AccountChangeReauthenticationTest extends TestCase
 
         // The form carries the minimum and the message; lotgd.showform.js checks.
         self::assertStringContainsString('data-lotgd-min-password=\'" . (int) $minLength . "\'', $prefs);
-        self::assertStringContainsString("htmlspecialchars(Translator::sprintfTranslate('Your password is too short.", $prefs);
+        self::assertStringContainsString("Escape::html(Translator::sprintfTranslate('Your password is too short.", $prefs);
         self::assertStringContainsString('method=\'POST\'{$passwordCheck}>', $prefs);
         $script = self::source('assets/js/lotgd.showform.js');
         self::assertStringContainsString("field.value.length > 0 && field.value.length < min", $script);

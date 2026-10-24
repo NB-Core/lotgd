@@ -1576,6 +1576,6 @@ JS;
             'search' => Translator::translateInline('Search'),
         ];
         $json = (string) json_encode($config, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        Output::getInstance()->rawOutput("<span hidden data-lotgd-showform='" . htmlspecialchars($json, ENT_QUOTES) . "'></span>");
+        Output::getInstance()->rawOutput("<span hidden data-lotgd-showform='" . Escape::html($json) . "'></span>");
     }
 }

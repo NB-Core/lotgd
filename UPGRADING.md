@@ -308,6 +308,12 @@ New setting `partial_render_default` (*For players who never chose in their pref
 - a player who turned the preference off keeps it off;
 - turn the setting off to keep the former opt-in.
 
+### A dot beside the mail link
+
+With `partial_render` on, `PageParts::mailLink()` (and so `{mail}`, `maillink()` and the mail refreshes) ends with
+`<span class='lotgd-live lotgd-live--on|off' …>`, styled by `assets/css/lotgd.partial.css`, which every full page
+now loads (popups do not; there the empty `<span>` stays invisible). A skin can restyle `.lotgd-live`, or hide it.
+
 ### Forms post in place; Game Settings get the preferences' table
 
 With partial rendering on, the bank's bookings, the preferences, the player search, the bartender's colour test
@@ -316,7 +322,7 @@ and the clan's forms post in place. For modules and skins:
   in place. A form the server does not take in place is sent again as an ordinary page change (`X-Lotgd-Resubmit`);
 - `Forms::showFormTabbed()` no longer writes an inline script, and *Game Settings* (standard, extended and module
   settings) use it instead of `Forms::showForm()`. Its search field and tabs come from
-  `assets/js/lotgd.showform.js`, loaded on every page; the preferences no longer load jQuery and DataTables;
+  `assets/js/lotgd.showform.js`, loaded on every full page (not in popups); the preferences no longer load jQuery and DataTables;
 - a module that styles the old *Game Settings* tabs (`#showFormTablist…` buttons with `role="tab"`) finds the
   preferences' tabs there now (`.prefs-tabs`, `[data-showform-tab]`, `.is-active`);
 - the preference *Show config sections in tabs* (`tabconfig`) no longer applies to *Game Settings*: the tab *All*
