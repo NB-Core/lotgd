@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Lotgd\Page;
 
-use Doctrine\DBAL\ParameterType;
 use Lotgd\Async\Handler\Mail;
 use Lotgd\MySQL\Database;
 use Lotgd\Settings;
