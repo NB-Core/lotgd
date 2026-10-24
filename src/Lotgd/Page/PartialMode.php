@@ -41,8 +41,15 @@ final class PartialMode
      * the graveyard's resurrection and haunting.
      *
      * The shops and the inn followed for the same reason: buying, selling,
-     * healing, the bartender and the room are granted GET links too. Their
-     * forms (the bartender's colour test, the bank's bookings) post as ever.
+     * healing, the bartender and the room are granted GET links too.
+     *
+     * Forms post in place where they are listed under POST: the bank's
+     * bookings, the preferences, the player search, the bartender's colour
+     * test and the clan's forms. A form's target is granted like a link
+     * (Nav::add('', target)) and consumes the page revision once, so a second
+     * click is turned away as it would be on a full page; the bank's bookings
+     * are guarded actions on top. The client sends only the forms this list
+     * names (formsMeta()); every other form is an ordinary page change.
      *
      * The village and the inn carry a commentary block; for a partial
      * player its preview field is declarative markup the client handles
@@ -53,7 +60,10 @@ final class PartialMode
     public const ALLOWLIST = [
         'village.php' => ['GET' => ['']],
         'forest.php' => ['GET' => ['', 'search', 'fight', 'run', 'dragon']],
-        'inn.php' => ['GET' => ['', 'strolldown', 'fleedragon', 'converse', 'bartender', 'room']],
+        'inn.php' => [
+            'GET' => ['', 'strolldown', 'fleedragon', 'converse', 'bartender', 'room'],
+            'POST' => ['bartender'],
+        ],
         'gardens.php' => ['GET' => ['']],
         'encounter.php' => ['GET' => ['', 'view']],
         'rock.php' => ['GET' => ['']],
@@ -62,7 +72,7 @@ final class PartialMode
         'lodge.php' => ['GET' => ['', 'points']],
         'gypsy.php' => ['GET' => ['', 'talk', 'pay']],
         'hof.php' => ['GET' => ['', 'kills', 'money', 'gems', 'charm', 'tough', 'resurrects', 'days', 'duels']],
-        'list.php' => ['GET' => ['', 'clan']],
+        'list.php' => ['GET' => ['', 'clan'], 'POST' => ['search']],
         'bio.php' => ['GET' => ['']],
         'news.php' => ['GET' => ['']],
         'about.php' => ['GET' => ['', 'setup', 'listmodules', 'license']],
@@ -73,12 +83,27 @@ final class PartialMode
         'mercenarycamp.php' => ['GET' => ['', 'buy', 'heal']],
         'healer.php' => ['GET' => ['', 'buy', 'companion']],
         'train.php' => ['GET' => ['', 'question', 'challenge', 'autochallenge', 'fight', 'run']],
-        // The forms only: every booking is a POST.
-        'bank.php' => ['GET' => ['', 'transfer', 'deposit', 'withdraw', 'borrow']],
-        'clan.php' => ['GET' => ['', 'list']],
+        'bank.php' => [
+            'GET' => ['', 'transfer', 'deposit', 'withdraw', 'borrow'],
+            'POST' => ['transfer2', 'transfer3', 'depositfinish', 'withdrawfinish'],
+        ],
+        // Leaving a clan (withdraw*) stays a full page.
+        'clan.php' => [
+            'GET' => ['', 'list', 'waiting', 'apply', 'new', 'motd', 'membership', 'grant'],
+            'POST' => ['new', 'motd', 'membership', 'grant'],
+        ],
+        // The preference form; changing the e-mail address and deleting the
+        // character stay full pages.
+        'prefs.php' => ['GET' => [''], 'POST' => ['save']],
         'pvp.php' => ['GET' => ['', 'fight', 'run']],
         'dragon.php' => ['GET' => ['', 'fight', 'run']],
     ];
+
+    /**
+     * Answer to a form sent partially that may not be: the client sends the
+     * same form again as an ordinary page change, so nothing typed is lost.
+     */
+    public const RESUBMIT_HEADER = 'X-Lotgd-Resubmit';
 
     public const REQUEST_HEADER = 'HTTP_HX_REQUEST';
     public const HISTORY_RESTORE_HEADER = 'HTTP_HX_HISTORY_RESTORE_REQUEST';
@@ -107,8 +132,27 @@ final class PartialMode
             return;
         }
 
+        if (strtoupper(self::method()) === 'POST') {
+            // A redirect would turn the POST into a GET and lose the form.
+            // Nothing has run yet, so the client can send it again, whole.
+            self::sendHeader(self::RESUBMIT_HEADER . ': 1');
+            exit();
+        }
+
         self::sendHeader('HX-Redirect: ' . self::requestUri());
         exit();
+    }
+
+    /**
+     * The forms the client may send partially, for its meta tag
+     * `lotgd-partial-forms`: script => method => ops, as the allowlist has
+     * them. The same on every page, so the <head> does not change with it.
+     */
+    public static function formsMeta(): string
+    {
+        $json = (string) json_encode(self::ALLOWLIST, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+
+        return '<meta name="lotgd-partial-forms" content="' . htmlspecialchars($json, ENT_QUOTES) . '">';
     }
 
     /**

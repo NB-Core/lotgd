@@ -308,6 +308,22 @@ New setting `partial_render_default` (*For players who never chose in their pref
 - a player who turned the preference off keeps it off;
 - turn the setting off to keep the former opt-in.
 
+### Forms post in place; Game Settings get the preferences' table
+
+With partial rendering on, the bank's bookings, the preferences, the player search, the bartender's colour test
+and the clan's forms post in place. For modules and skins:
+- a module form posts as before; only the forms `Lotgd\Page\PartialMode::ALLOWLIST` lists under `POST` are sent
+  in place. A form the server does not take in place is sent again as an ordinary page change (`X-Lotgd-Resubmit`);
+- `Forms::showFormTabbed()` no longer writes an inline script, and *Game Settings* (standard, extended and module
+  settings) use it instead of `Forms::showForm()`. Its search field and tabs come from
+  `assets/js/lotgd.showform.js`, loaded on every page; the preferences no longer load jQuery and DataTables;
+- a module that styles the old *Game Settings* tabs (`#showFormTablist…` buttons with `role="tab"`) finds the
+  preferences' tabs there now (`.prefs-tabs`, `[data-showform-tab]`, `.is-active`);
+- the preference *Show config sections in tabs* (`tabconfig`) no longer applies to *Game Settings*: the tab *All*
+  shows every section;
+- an old `showFormTabIndex` row in `settings` or `module_settings`, written by earlier saves, is unused and may be
+  deleted.
+
 ### Shops and the inn change in place
 
 With partial rendering on, the weapon and armour shops, the stables, the healer, the mercenary camp, the gypsy and

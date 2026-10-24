@@ -132,11 +132,11 @@ final class PartialRenderingPageTest extends TestCase
 
     public function testAPageOffTheAllowListBecomesAPageChangeBeforeItRuns(): void
     {
-        $run = $this->request('prefs.php', self::PARTIAL_REQUEST);
+        $run = $this->request('account.php', self::PARTIAL_REQUEST);
 
         // The URI is already reduced to the script and its query at this point,
         // which the client resolves against the page it is on.
-        self::assertSame('prefs.php', $run->header('HX-Redirect'));
+        self::assertSame('account.php', $run->header('HX-Redirect'));
         self::assertSame('', $run->html);
         // Bootstrap may touch the settings table; the page itself, the forced
         // navigation and saveUser() write to accounts, and none of them ran.

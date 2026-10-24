@@ -16,7 +16,6 @@ use Lotgd\Modules\HookHandler;
 use Lotgd\Output;
 use Lotgd\Sanitize;
 use Lotgd\Security\Csrf;
-use Lotgd\Security\Escape;
 use Lotgd\Security\ValidationLogin;
 use Lotgd\PasswordHelper;
 use Lotgd\SecurityLog;
@@ -566,22 +565,12 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     $offsetSeconds = (int) round((float) $session['user']['prefs']['timeoffset'] * 3600);
     $nowWithOffset = time() + $offsetSeconds;
     $form = buildPreferenceForm($session, $settings, $nowWithOffset);
-    Output::requireVendorAsset('jquery', 'js', Output::VENDOR_BUCKET_MID);
-    Output::requireVendorAsset('datatables', 'js', Output::VENDOR_BUCKET_MID);
-    Output::requireVendorAsset('datatables', 'css', Output::VENDOR_BUCKET_MID);
 
-	$minLength = PasswordHelper::minLength($settings);
-	$warn = Escape::js(Translator::sprintfTranslate('Your password is too short.  It must be at least %s characters long.', $minLength));
-	$output->rawOutput("<script>
-	function validatePrefs(){
-		var passbox = document.getElementById('pass1');
-		if (passbox.value.length < {$minLength} && passbox.value.length > 0){
-			alert({$warn});
-			return false;
-		}
-		return true;
-	}
-	</script>");
+    $minLength = PasswordHelper::minLength($settings);
+    // Checked before the form is sent (assets/js/lotgd.showform.js), and
+    // again by the server.
+    $passwordCheck = " data-lotgd-min-password='" . (int) $minLength . "' data-lotgd-password-warning='"
+        . htmlspecialchars(Translator::sprintfTranslate('Your password is too short.  It must be at least %s characters long.', $minLength), ENT_QUOTES) . "'";
     //
     $prefs = $session['user']['prefs'];
     $prefs['bio'] = $session['user']['bio'];
@@ -667,7 +656,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     if (ValidationLogin::passwordResetAllowed((int) $session['user']['acctid'])) {
         $output->output("`@You logged in with a password reset link. Choose a new password now; your current password is not needed for that.`0`n`n");
     }
-    $output->rawOutput("<form action='prefs.php?op=save' method='POST' onSubmit='return(validatePrefs())'>");
+    $output->rawOutput("<form action='prefs.php?op=save' method='POST'{$passwordCheck}>");
     $usernameValue = htmlentities($session['user']['login'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'));
     $output->rawOutput("<input type='hidden' name='username' class='visually-hidden' value='{$usernameValue}' autocomplete='username' readonly>");
     $info = Forms::showFormTabbed($form, $prefs);
