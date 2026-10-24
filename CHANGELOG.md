@@ -54,6 +54,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- With partial rendering on, saving the user editor ended on *badnav.php*: the editor's "last page hit" frame is a request of its own that passed the navigation check, cleared the stored links and ended without saving new ones. A request that ends without saving now leaves the page's links as they were, as it always did without partial rendering; the same held for keepalive frames and editor lookups.
 - Saving *Game Settings* or a module's settings stored the open tab as a setting named `showFormTabIndex`. It is no longer stored; a row left by an earlier save is harmless and can be deleted.
 - The preferences' check for a too short new password never ran: it looked for a field id the password field does not have. It now runs before the form is sent; the server checks as before.
 - A muted player (hook `insertcomment`) and a player out of posts for today could still post a line: the limits were asked only when the talk form was drawn. A post asks them again.

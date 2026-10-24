@@ -169,6 +169,13 @@ player on a skin with regions; everyone else gets exactly the game of before.
   one that is not the account's current revision is turned away the same
   way, so a stale tab cannot follow a link merely because the latest page
   offers the same address.
+  A request that claims the revision and then ends without saving the
+  account gives the claim back when it ends: the user editor's "last page
+  hit" iframe, an editor's XML lookup or a keepalive frame exit without
+  saving, and would otherwise leave the page they were loaded from without
+  links. The release is one conditional update (revision and links put back
+  only while the row is as the claim left it); a request that saves, a lost
+  claim and a page with forced navigation overridden release nothing.
   Same-browser double clicks never reach the server twice: the client sends
   one request at a time, and PHP's session lock serialises the rest.
 - **Answer**: `Lotgd\Page\PartialRenderer` – `<title>` first (htmx only

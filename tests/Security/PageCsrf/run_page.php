@@ -211,7 +211,10 @@ if (($spec['token'] ?? null) !== null) {
 // Everything seeded; hand the session back so common.php can open it itself.
 session_write_close();
 
-register_shutdown_function(static function (): void {
+// Reported from a shutdown handler registered during shutdown, so it runs
+// after the handlers the page registers itself (ForcedNavigation gives an
+// unsaved page-revision claim back from one) and sees their statements too.
+$lotgdHarnessReport = static function (): void {
     // Whether the process is ending because the page finished or because it
     // died. PHP runs shutdown handlers after a fatal error too, so without
     // this the harness happily emits a well-formed payload with an empty
@@ -242,6 +245,9 @@ register_shutdown_function(static function (): void {
         'status' => http_response_code(),
         'fatal' => $fatal,
     ], JSON_THROW_ON_ERROR) . RESULT_MARKER);
+};
+register_shutdown_function(static function () use ($lotgdHarnessReport): void {
+    register_shutdown_function($lotgdHarnessReport);
 });
 
 // Headers the partial-rendering code sends go through one sink, which CLI PHP

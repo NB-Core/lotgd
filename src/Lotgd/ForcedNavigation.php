@@ -21,6 +21,16 @@ class ForcedNavigation
     public static array $baseAccount = [];
 
     /**
+     * The page revision this request claimed and the links it cleared, until
+     * the request saves the account; given back if it never does.
+     *
+     * @var array{acctid:int,loaded:int,navs:string}|null
+     */
+    private static ?array $unsavedClaim = null;
+
+    private static bool $releaseRegistered = false;
+
+    /**
      * Handle forced navigation checks.
      */
     public static function doForcedNav(bool $anonymous, bool $overrideforced): void
@@ -149,6 +159,21 @@ class ForcedNavigation
             $baseaccount['allowednavs'] = '';
             self::$baseAccount['allowednavs'] = '';
 
+            // A request that ends without saving the account (an iframe such
+            // as the user editor's last page hit, the grotto's keepalive, an
+            // editor's XML lookup, a die()) would leave the account without
+            // links. Classic players never lost them there, as nothing was
+            // written; give the claim back at the end instead.
+            self::$unsavedClaim = [
+                'acctid' => (int) $session['user']['acctid'],
+                'loaded' => $loaded,
+                'navs' => (string) ($session['user']['allowednavs'] ?? ''),
+            ];
+            if (!self::$releaseRegistered) {
+                self::$releaseRegistered = true;
+                register_shutdown_function([self::class, 'releaseUnsavedClaim']);
+            }
+
             return;
         }
 
@@ -164,5 +189,55 @@ class ForcedNavigation
         }
 
         Redirect::redirect('badnav.php', 'Page revision ' . $loaded . ' was already consumed by another request');
+    }
+
+    /**
+     * The request wrote the account, and with it its own links.
+     */
+    public static function claimSaved(): void
+    {
+        self::$unsavedClaim = null;
+    }
+
+    /**
+     * End of a request that claimed the page revision and never saved: put
+     * the revision and the links back, as if it had not passed. Only while
+     * the row is still as the claim left it -- once another request claimed
+     * or saved, there is nothing to give back.
+     */
+    public static function releaseUnsavedClaim(): void
+    {
+        $claim = self::$unsavedClaim;
+        self::$unsavedClaim = null;
+        if ($claim === null) {
+            return;
+        }
+
+        try {
+            Database::getDoctrineConnection()->executeStatement(
+                'UPDATE ' . Database::prefix('accounts')
+                . ' SET page_revision = :loaded, allowednavs = :navs'
+                . " WHERE acctid = :acctid AND page_revision = :claimed AND allowednavs = ''",
+                [
+                    'loaded' => $claim['loaded'],
+                    'navs' => $claim['navs'],
+                    'acctid' => $claim['acctid'],
+                    'claimed' => $claim['loaded'] + 1,
+                ],
+                [
+                    'loaded' => ParameterType::INTEGER,
+                    'navs' => ParameterType::STRING,
+                    'acctid' => ParameterType::INTEGER,
+                    'claimed' => ParameterType::INTEGER,
+                ]
+            );
+        } catch (\Throwable $e) {
+            error_log('Could not give back an unsaved page revision claim: ' . $e->getMessage());
+        }
+    }
+
+    public static function resetClaimState(): void
+    {
+        self::$unsavedClaim = null;
     }
 }
