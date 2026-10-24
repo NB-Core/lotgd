@@ -198,8 +198,8 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `lotgd_lastUnreadMailId` and `lotgd_lastUnreadMailCount` after the swap, so
   polling follows the page. The mail slot's copy of the same values
   (`async/maillink.php`, an inline script, removed in Phase 6a) is dropped for partial players.
-  The session panel needs nothing either: a partial answer counts as activity
-  (`laston`), and the panel starts its count again after one.
+  The session notice needs nothing either: a partial answer counts as
+  activity (`laston`), and the notice starts its count again after one.
 - **Late fallback**: the page is stored as usual and answered
   `HX-Redirect: badnav.php`, which shows it, when any region (content, nav,
   stats, a header slot) contains `<script`, when the page wants a different
@@ -208,24 +208,47 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `<meta name="lotgd-head">`, a hash of the head markup without cache
   busters, the canonical link and the client's own meta tags; the client
   sends it back as `X-Lotgd-Head`.
-- **Session panel** (`Lotgd\Page\SessionPanel`, `assets/js/lotgd.timeout.js`):
-  every logged-in player's full page carries `<meta name="lotgd-session">`
-  (session length, `start_timeout_show_seconds`,
-  `never_timeout_if_browser_open`, the async token, the texts). The script
-  counts down locally and shows a notice in the upper right
-  (`.lotgd-timeout`) for the last `start_timeout_show_seconds`, in `m:ss`,
-  with *Stay logged in* (`Timeout.keepAlive()`: async token, `laston` now,
-  answers `session: {remaining}`; on failure the page loads `badnav.php`,
-  which counts as well). Two seconds past zero -- the server counts in whole
-  seconds -- it turns red (`.lotgd-timeout--expired`, `role="alert"`) with
-  *Log in again* (`home.php?op=timeout`). The count starts again after a
-  partial swap and a popup page in the dialog (`lotgd:activity`), follows
-  other tabs through `localStorage`, and takes `data.session.remaining` from
-  any async answer (`window.lotgd.timeout.sync()`): `Timeout.timeoutStatus`
-  in the AJAX poll, `Realtime.poll`, and the calls a player makes, which
-  count as activity themselves (`Timeout::touch()`: a chat line, a duel
-  move). With `never_timeout_if_browser_open` the panel calls `keepAlive`
-  itself before the last minute and stays hidden. It replaces `#notify`.
+- **Notices** (`Lotgd\Page\SessionPanel`, `Lotgd\Page\Notices`,
+  `assets/js/lotgd.notices.js`): a stack in the upper right (`.lotgd-notices`)
+  for every logged-in player. Each full page carries
+  `<meta name="lotgd-session">`: the session length,
+  `start_timeout_show_seconds`, `never_timeout_if_browser_open`, the async
+  token, `poll` (`notices_poll_seconds`, default 60, 0 = off, at least 15),
+  the page's `mail` (`{unread, lastId}`) and unread `motd` (its date, or ''),
+  `overlay`, the player's popup size and the texts.
+  - **Session** (`.lotgd-timeout`): counted locally. A notice for the last
+    `start_timeout_show_seconds`, in `m:ss`, with *Stay logged in*
+    (`Timeout.keepAlive()`: async token, `laston` now, answers
+    `session: {remaining}`; on failure the page loads `badnav.php`, which
+    counts as well). Two seconds past zero -- the server counts in whole
+    seconds -- it turns red (`.lotgd-timeout--expired`, `role="alert"`) with
+    *Log in again* (`home.php?op=timeout`). The count starts again after a
+    partial swap and a popup page in the dialog (`lotgd:activity`), follows
+    other tabs through `localStorage`, and takes `data.session.remaining`
+    from any async answer (`window.lotgd.notices.sync()`); the calls a
+    player makes count as activity themselves (`Timeout::touch()`: a chat
+    line, a duel move). With `never_timeout_if_browser_open` the page calls
+    `keepAlive` itself before the last minute (failures back off, 5 to 60
+    seconds) and stays quiet. A lost session (401, nothing left) is final.
+  - **Mail** (`.lotgd-notice--mail`): mail newer than the player has seen
+    to (the first page in a browser sets that mark) shows *You have N
+    unread messages* with *Read* (the inbox, in the dialog where the skin
+    has one, else its window) and a dismiss button; either moves the mark
+    (`localStorage`), and no unread mail drops the notice. The header's mail
+    link (`[data-lotgd-slot="mail"]`) and the tab title (`(N) …`) follow; a
+    desktop notification only where the player allowed them before (never
+    asked for here).
+  - **Message of the Day** (`.lotgd-notice--motd`): an unread one, *Read*
+    opens it, dismissing remembers its date. Not on a page that opens it
+    itself (`forcedmotdpopup`).
+  - **Where it comes from**: `Notices.status` (read only, session released)
+    answers `notices: {mail, motd, mailLink}` and `session`. The page asks
+    every `poll` seconds unless an answer with `notices` came in meanwhile:
+    the AJAX poll (`Commentary.pollUpdates`) carries it, and a realtime
+    announcement of mail, and closing the dialog, ask at once.
+    `Mail.mailStatus` answers the same; it no longer assigns `#maillink`, sets
+    the title or calls `lotgdMailNotify`, and the mail link has no
+    `<div id='maillink'>` wrapper any more. It replaces `#notify` as well.
 - **Indicator**: where the game has `partial_render` on, the mail link
   (`PageParts::mailLink()`, so the page, the realtime refresh and the AJAX
   status alike) ends with a small dot, `PageParts::liveIndicator()`:
@@ -833,7 +856,7 @@ seconds, with a `: ping` comment: the account, read again -- `loggedin`
 cleared (logout, ban), `laston` older than `LOGINTIMEOUT`, or the setting
 turned off ends the stream with `event: end` -- and the channels, derived
 again from that account: a clan hall the player left drops out, as with the
-poll. The stream does not move `laston`; the session panel counts locally
+poll. The stream does not move `laston`; the session notice counts locally
 and takes the time left from the polls and calls that report it.
 
 **The client** (`assets/js/lotgd.async.js`) opens the stream when the page

@@ -41,7 +41,7 @@ final class MailOverlayMarkupTest extends TestCase
      * @param array<string,string> $post
      * @param array<string,mixed>  $settings
      */
-    private static function page(array $get, bool $overlay, array $post = [], string $method = 'GET', array $settings = []): PageOutcome
+    private static function page(array $get, bool $overlay, array $post = [], string $method = 'GET', array $settings = [], string $sender = 'Sender'): PageOutcome
     {
         return PageRunner::withRequest(
             'mail.php',
@@ -56,9 +56,9 @@ final class MailOverlayMarkupTest extends TestCase
             [
                 '/SELECT acctid FROM .*accounts WHERE login = :login/' => [['acctid' => 2]],
                 '/FROM .*mail.* LEFT JOIN .*accounts.*ORDER BY/s' => [
-                    ['subject' => 'the subject', 'messageid' => 7, 'name' => 'Sender', 'acctid' => 2,
+                    ['subject' => 'the subject', 'messageid' => 7, 'name' => $sender, 'acctid' => 2,
                      'msgfrom' => 2, 'seen' => 0, 'sent' => '2026-01-02 10:00:00'],
-                    ['subject' => 'older', 'messageid' => 5, 'name' => 'Sender', 'acctid' => 2,
+                    ['subject' => 'older', 'messageid' => 5, 'name' => $sender, 'acctid' => 2,
                      'msgfrom' => 2, 'seen' => 1, 'sent' => '2026-01-01 10:00:00'],
                 ],
             ]
@@ -100,6 +100,16 @@ final class MailOverlayMarkupTest extends TestCase
         self::assertStringContainsString("class='button' onClick='check_all()'>", $html);
         self::assertStringNotContainsString('data-lotgd-check-all', $html);
         self::assertStringNotContainsString('data-lotgd-ids', $html);
+    }
+
+    public function testASendersNameIsTextInCheckByName(): void
+    {
+        foreach ([true, false] as $overlay) {
+            $html = self::page([], $overlay, [], 'GET', [], "O'><img src=x onerror=alert(1)>")->html;
+
+            self::assertStringNotContainsString('<img src=x', $html, $overlay ? 'dialog' : 'window');
+            self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;</option>', $html);
+        }
     }
 
     public function testAddressOverlayFocusesWithTheAttribute(): void

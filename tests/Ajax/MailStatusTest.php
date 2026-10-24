@@ -21,13 +21,13 @@ namespace Lotgd\Tests\Ajax {
         {
             global $session;
 
-            $session = ['user' => ['acctid' => 1]];
+            $session = ['user' => ['acctid' => 1, 'loggedin' => 1]];
             require_once __DIR__ . '/../bootstrap.php';
             Settings::setInstance(new DummySettings(['LOGINTIMEOUT' => 360]));
             Database::$queryCacheResults = [];
         }
 
-        public function testUnreadMailTriggersNotify(): void
+        public function testUnreadMailIsReportedForTheNotices(): void
         {
             global $mail_table;
 
@@ -39,19 +39,12 @@ namespace Lotgd\Tests\Ajax {
             ];
 
             $response = (new Mail())->mailStatus(true);
-            $commands = $response->getCommands();
 
-            $assign = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'assign' && ($c['id'] ?? '') === 'maillink'));
-            $this->assertNotEmpty($assign);
-            $this->assertStringContainsString('mail.php', $assign[0]['value']);
-
-            $notify = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'call'));
-            $this->assertNotEmpty($notify);
-            $this->assertSame('lotgdMailNotify', $notify[0]['fn']);
-            $this->assertSame([7, 1], $notify[0]['args']);
-            $title = array_values(array_filter($commands, fn($c) => ($c['cmd'] ?? '') === 'title'));
-            $this->assertNotEmpty($title);
-            $this->assertStringContainsString('Legend of the Green Dragon', $title[0]['value']);
+            // The notices in the upper right take it from here: data, no commands.
+            $this->assertSame([], $response->getCommands());
+            $notices = $response->getData()['notices'] ?? [];
+            $this->assertSame(['unread' => 1, 'lastId' => 7], $notices['mail'] ?? null);
+            $this->assertStringContainsString('mail.php', (string) ($notices['mailLink'] ?? ''));
             $this->assertInstanceOf(Response::class, $response);
         }
 

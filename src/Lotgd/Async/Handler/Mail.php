@@ -6,9 +6,6 @@ namespace Lotgd\Async\Handler;
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
-use Lotgd\PageParts;
-use Lotgd\Settings;
-use Lotgd\Translator;
 use Lotgd\Async\Response;
 
 /**
@@ -17,37 +14,17 @@ use Lotgd\Async\Response;
 class Mail
 {
     /**
-     * Return mail and timeout status information for the active user.
+     * The player's mail for the notices in the upper right: the same answer
+     * as Notices.status (`notices`, `session`). Kept for modules that ask
+     * for it; the header's mail link is no longer assigned to #maillink.
      */
     public function mailStatus(bool $args = false): Response
     {
-        global $session;
-        $settings = Settings::getInstance();
-
-        if ($args === false || empty($session['user']['acctid'])) {
+        if ($args === false) {
             return new Response();
         }
 
-        $timeoutSetting = (int) $settings->getSetting('LOGINTIMEOUT', 360); // seconds
-        $new = PageParts::mailLink();
-        $tabtext = PageParts::mailLinkTabText();
-
-        ['lastid' => $lastMailId, 'unread' => $unreadCount] = self::counts((int) $session['user']['acctid']);
-
-        $objResponse = new Response();
-        $objResponse->assign('maillink', 'innerHTML', $new);
-
-        if ($tabtext === '') {
-            // there are no unseen mails
-            return $objResponse;
-        }
-
-        $tabtext = Translator::translateInline('Legend of the Green Dragon', 'home')
-            . ' - ' . $tabtext;
-        $objResponse->title($tabtext);
-        $objResponse->call('lotgdMailNotify', $lastMailId, $unreadCount);
-
-        return $objResponse;
+        return (new Notices())->status();
     }
 
     /**

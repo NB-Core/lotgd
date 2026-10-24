@@ -228,7 +228,7 @@ final class Poll
         // so the version never claims a change the html does not show.
         $version = self::regionVersion($region, $acctid);
         if ($region === 'mail') {
-            $html = !empty($session['user']['prefs']['ajax']) ? "<div id='maillink'>" . PageParts::mailLink() . '</div>' : PageParts::mailLink();
+            $html = PageParts::mailLink();
         } elseif ($region === 'grants') {
             $html = Grant::enabled() ? Grant::regionHtml($acctid) : '';
         } elseif ($region === 'presence') {

@@ -197,15 +197,13 @@ class Commentary
 
         $response = new Response();
 
-        // The mail link of a realtime player is the realtime region's
-        // (Realtime::region); this poll keeps it for everyone else.
+        // The notices in the upper right (mail, the Message of the Day)
+        // ride on this poll, so the page does not ask for them itself.
         global $session;
-        if (!\Lotgd\Realtime::enabledFor($session['user'] ?? [])) {
-            try {
-                $response->merge((new Mail())->mailStatus(true));
-            } catch (\Throwable $e) {
-                throw new Exception('AJAX polling: Mail handler error', 0, $e);
-            }
+        try {
+            $response->merge((new Notices())->status());
+        } catch (\Throwable $e) {
+            throw new Exception('AJAX polling: Notices handler error', 0, $e);
         }
 
         // The realtime announcements ride on the same request (one poll per
@@ -213,16 +211,6 @@ class Commentary
         // comment is one of them, and the client fetches it when announced,
         // so a realtime poll does not look for comments itself.
         $live = $cursor !== null && is_numeric($cursor) && \Lotgd\Realtime::enabledFor($session['user'] ?? []);
-
-        // The session's time left (data `session`); the realtime poll below
-        // brings it otherwise.
-        if (!$live) {
-            try {
-                $response->merge(Timeout::configured()->timeoutStatus(true));
-            } catch (\Throwable $e) {
-                throw new Exception('AJAX polling: Timeout handler error', 0, $e);
-            }
-        }
 
         if (!$live && $section !== '') {
             try {

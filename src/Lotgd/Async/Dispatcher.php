@@ -33,6 +33,7 @@ final class Dispatcher
         'Commentary' => Handler\Commentary::class,
         'Duel' => Handler\Duel::class,
         'Mail' => Handler\Mail::class,
+        'Notices' => Handler\Notices::class,
         'Realtime' => Handler\Realtime::class,
         'Timeout' => Handler\Timeout::class,
         'TwoFactorAuthPasskey' => Handler\TwoFactorAuthPasskey::class,

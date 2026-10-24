@@ -61,6 +61,13 @@ final class EscapeAndPostButtonTest extends TestCase
         self::assertSame($hostile, json_decode($literal, true));
     }
 
+    public function testGameTextEscapesTheTextAndKeepsTheColourCodes(): void
+    {
+        self::assertSame('`&Admin `$&lt;b&gt;x&lt;/b&gt; &amp; `0', Escape::gameText('`&Admin `$<b>x</b> & `0'));
+        self::assertSame("O&#039;&gt;&lt;img src=x onerror=alert(1)&gt;", Escape::gameText("O'><img src=x onerror=alert(1)>"));
+        self::assertSame('trailing `', Escape::gameText('trailing `'));
+    }
+
     #[\PHPUnit\Framework\Attributes\DataProvider('hostileStrings')]
     public function testHtmlProducesAnAttributeNothingCanEscapeFrom(string $hostile): void
     {

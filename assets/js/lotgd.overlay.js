@@ -149,6 +149,10 @@
         if (window.lotgd && window.lotgd.async && typeof window.lotgd.async.refresh === 'function') {
             window.lotgd.async.refresh('mail');
         }
+        // And in the notices (lotgd.notices.js): unread mail, the MoTD read.
+        if (window.lotgd && window.lotgd.notices && typeof window.lotgd.notices.refresh === 'function') {
+            window.lotgd.notices.refresh();
+        }
     }
 
     function plainClick(event) {

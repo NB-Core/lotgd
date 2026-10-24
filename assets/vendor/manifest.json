@@ -39,8 +39,8 @@
         "version": "1.0.0",
         "js": "assets/js/lotgd.showform.js"
     },
-    "lotgd-timeout": {
+    "lotgd-notices": {
         "version": "1.0.0",
-        "js": "assets/js/lotgd.timeout.js"
+        "js": "assets/js/lotgd.notices.js"
     }
 }

@@ -333,7 +333,8 @@ class PageParts
             $sep = $settings->getSetting('moneythousandssep', ",");
 
             self::addCharStat("Character Info");
-            self::addCharStat("Name", $u['name']);
+            // Escaped like the equipment below: a name is text, its colour codes stay.
+            self::addCharStat("Name", Escape::gameText($u['name']));
             self::addCharStat("Level", "`b" . $u['level'] . PlayerFunctions::checkTempStat("level", 1) . "`b");
             // Note: Number formatting here has been introduced, but not in tempstats yet - I think it may be overhead for now, but could be done later
             if ($u['alive']) {
@@ -396,8 +397,8 @@ class PageParts
             self::addCharStat("Equipment Info");
             // The stat block is encoded with appoencode(..., true), which keeps
             // markup; equipment names can be player-chosen, so escape them here.
-            self::addCharStat("Weapon", Escape::html($u['weapon']));
-            self::addCharStat("Armor", Escape::html($u['armor']));
+            self::addCharStat("Weapon", Escape::gameText($u['weapon']));
+            self::addCharStat("Armor", Escape::gameText($u['armor']));
             if ($u['hashorse'] && isset($mount['mountname'])) {
                 self::addCharStat("Creature", $mount['mountname'] . "`0");
             }
@@ -678,7 +679,7 @@ class PageParts
             $paypalstr .= "<form action=\"https://www.paypal.com/cgi-bin/webscr\" method=\"post\" target=\"_blank\" " . \Lotgd\Security\Escape::confirmAttribute('You are donating to the author of Lotgd. Donation points can not be credited unless you petition. Press Ok to make a donation, or press Cancel.', 'onsubmit') . ">" .
                 "<input type='hidden' name='cmd' value='_xclick'>" .
                 "<input type='hidden' name='business' value='logd@mightye.org'>" .
-                "<input type='hidden' name='item_name' value='Legend of the Green Dragon Author Donation from " . Sanitize::stripAllColorCodes($session['user']['name']) . "'>" .
+                "<input type='hidden' name='item_name' value='Legend of the Green Dragon Author Donation from " . Escape::html(Sanitize::stripAllColorCodes($session['user']['name'])) . "'>" .
                 "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, isset($settings) ? $settings->getSetting('charset', 'UTF-8') : 'UTF-8') . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>" .
                 "<input type='hidden' name='no_shipping' value='1'>" .
                 "<input type='hidden' name='notify_url' value='http://lotgd.net/payment.php'>" .
@@ -695,7 +696,7 @@ class PageParts
             $paypalstr .= '<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">'
                 . "<input type='hidden' name='cmd' value='_xclick'>"
                 . "<input type='hidden' name='business' value='$paysite'>"
-                . "<input type='hidden' name='item_name' value='" . $settings->getSetting('paypaltext', 'Legend of the Green Dragon Site Donation from') . " " . Sanitize::stripAllColorCodes($session['user']['name']) . "'>"
+                . "<input type='hidden' name='item_name' value='" . Escape::html($settings->getSetting('paypaltext', 'Legend of the Green Dragon Site Donation from') . " " . Sanitize::stripAllColorCodes($session['user']['name'])) . "'>"
                 . "<input type='hidden' name='item_number' value='" . htmlentities($session['user']['login'], ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . ":" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "'>"
                 . "<input type='hidden' name='no_shipping' value='1'>";
             if (file_exists('payment.php')) {
@@ -775,16 +776,11 @@ class PageParts
     {
         global $session;
 
-        $settings = Settings::getInstance();
-
         $mailHtml = '';
         if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
-            if ($settings->getSetting('ajax', 0) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-                // The poll replaces the link by this id (Handler\Mail::mailStatus()).
-                $mailHtml = "<div id='maillink'>" . self::mailLink() . "</div>";
-            } else {
-                $mailHtml = self::mailLink();
-            }
+            // The notices in the upper right refresh it in its slot
+            // (lotgd.notices.js).
+            $mailHtml = self::mailLink();
         }
 
         return self::replaceHeaderFooterTokens(

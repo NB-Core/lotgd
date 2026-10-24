@@ -117,6 +117,23 @@ final class AsyncCommentaryTest extends TestCase
         self::assertStringNotContainsString('data-lotgd-comment-remove', $this->fetchedHtml(SU_IS_GAMEMASTER, 3), 'A game master, another\'s line.');
     }
 
+    public function testAnAuthorsNameAndClanAreTextInTheLine(): void
+    {
+        $GLOBALS['session']['last_comment_request_uri'] = '/village.php';
+        $GLOBALS['session']['last_comment_scriptname'] = 'village';
+        $this->connection->queryResultsByPattern['/commentid > :lastId/'] = [['commentid' => 12, 'section' => 'village', 'author' => 3,
+            'comment' => 'Hello', 'postdate' => date('Y-m-d H:i:s'), 'name' => "`&O'><img src=x onerror=alert(1)>", 'acctid' => 3,
+            'superuser' => 0, 'clanrank' => CLAN_MEMBER, 'clanshort' => '<b>X</b>']];
+
+        $html = (string) ((new CommentaryHandler())->commentaryRefresh('village', 11)->getCommands()[0]['value'] ?? '');
+
+        self::assertStringNotContainsString('<img', $html);
+        self::assertStringNotContainsString('<b>X</b>', $html);
+        self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $html);
+        self::assertStringContainsString('&lt;b&gt;X&lt;/b&gt;', $html);
+        self::assertStringContainsString("<span class='colLtWhite'>O&#039;&gt;", $html, 'The colour codes still work.');
+    }
+
     public function testAPetitionTakesNoLineOverTheEndpoint(): void
     {
         // viewpetition.php records who answered when a line is posted to it.

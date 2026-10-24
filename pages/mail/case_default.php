@@ -175,8 +175,8 @@ function renderMailFooter(array $fromList): void
                                                 var elements = document.getElementsByName(\"msg[]\");
                                                 var max = elements.length;
                                                 var Zaehler=0;
-                                                var checktext='" . Translator::translateInline('Check all') . "';
-                                                var unchecktext='" . Translator::translateInline('Uncheck all') . "';
+                                                var checktext=" . Escape::js(Translator::translateInline('Check all')) . ";
+                                                var unchecktext=" . Escape::js(Translator::translateInline('Uncheck all')) . ";
                                                 var check = false;
                                                 for (Zaehler=0;Zaehler<max;Zaehler++) {
                                                         if (elements[Zaehler].checked==true) {
@@ -209,13 +209,14 @@ function renderMailFooter(array $fromList): void
         } else {
             $add .= ',new Array(' . $ids . ')';
         }
-        $option .= "<option value='$i'>" . $key . "</option>
+        // The name is the sender's, colour codes stripped: text.
+        $option .= "<option value='$i'>" . Escape::html((string) $key) . "</option>
                         ";
         $i++;
     }
     $script .= "var container = new Array($add);
                         var who = document.getElementById('check_name_select').value;
-                        var unchecktext='" . Translator::translateInline('Uncheck all') . "';
+                        var unchecktext=" . Escape::js(Translator::translateInline('Uncheck all')) . ";
                         for (var i=0;i<container[who].length;i++) {
                                 document.getElementById(container[who][i]).checked=true;
                         }
@@ -250,7 +251,7 @@ function renderMailFooterDeclarative(array $fromList): void
             explode(',', (string) $ids)
         );
         $option .= "<option value='$i' data-lotgd-ids=\""
-            . htmlspecialchars((string) json_encode($list), $flags) . "\">" . $key . "</option>\n";
+            . htmlspecialchars((string) json_encode($list), $flags) . "\">" . htmlspecialchars((string) $key, $flags) . "</option>\n";
         $i++;
     }
 
