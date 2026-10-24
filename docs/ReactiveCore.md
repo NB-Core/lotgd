@@ -201,6 +201,15 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `<meta name="lotgd-head">`, a hash of the head markup without cache
   busters, the canonical link and the client's own meta tags; the client
   sends it back as `X-Lotgd-Head`.
+- **Indicator**: where the game has `partial_render` on, the mail link
+  (`PageParts::mailLink()`, so the page, the realtime refresh and the AJAX
+  status alike) ends with a small dot, `PageParts::liveIndicator()`:
+  filled (`.lotgd-live--on`) when the player's pages change in place, a
+  hollow ring (`.lotgd-live--off`) with a title saying why not (the
+  preference, or a skin without regions). While a page is swapped in
+  (`body.lotgd-partial-loading`) the dot turns into a small spinning ring,
+  after 120 ms so a fast swap does not flicker; with reduced motion it only
+  fades. Styles in `assets/css/lotgd.partial.css`, loaded on every page.
 - **Redirects** (`Redirect::redirect()`, e.g. the new day or a login timeout)
   inside a partial request are `HX-Redirect` page changes.
 - **Client** (`assets/js/lotgd.partial.js`, after htmx 2.0.4 from

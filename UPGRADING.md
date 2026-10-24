@@ -308,6 +308,12 @@ New setting `partial_render_default` (*For players who never chose in their pref
 - a player who turned the preference off keeps it off;
 - turn the setting off to keep the former opt-in.
 
+### A dot beside the mail link
+
+With `partial_render` on, `PageParts::mailLink()` (and so `{mail}`, `maillink()` and the mail refreshes) ends with
+`<span class='lotgd-live lotgd-live--on|off' …>`, styled by `assets/css/lotgd.partial.css`, which every page now
+loads. A skin can restyle `.lotgd-live`, or hide it.
+
 ### Forms post in place; Game Settings get the preferences' table
 
 With partial rendering on, the bank's bookings, the preferences, the player search, the bartender's colour test

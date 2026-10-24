@@ -18,6 +18,7 @@ use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
 use Lotgd\Page\Overlay;
+use Lotgd\Page\PartialMode;
 use Lotgd\CharStats;
 use Lotgd\Accounts;
 use Lotgd\PlayerFunctions;
@@ -506,10 +507,43 @@ class PageParts
         $row = self::getMailCounts();
 
         if ($row['notseen'] > 0) {
-            return sprintf("<a href='mail.php' target='_blank'" . Overlay::attribute() . " onClick=\"" . self::popup("mail.php") . ";return false;\" class='hotmotd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
+            return sprintf("<a href='mail.php' target='_blank'" . Overlay::attribute() . " onClick=\"" . self::popup("mail.php") . ";return false;\" class='hotmotd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']) . self::liveIndicator();
         }
 
-        return sprintf("<a href='mail.php' target='_blank'" . Overlay::attribute() . " onClick=\"" . self::popup("mail.php") . ";return false;\" class='motd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']);
+        return sprintf("<a href='mail.php' target='_blank'" . Overlay::attribute() . " onClick=\"" . self::popup("mail.php") . ";return false;\" class='motd'>" . Translator::translateInline("Ye Olde Mail: %s new, %s old", "common") . "</a>", $row['notseen'], $row['seencount']) . self::liveIndicator();
+    }
+
+    /**
+     * A dot beside the mail link: whether this player's pages change in
+     * place (partial rendering). It turns into a small spinning ring while a
+     * page is being swapped in (assets/css/lotgd.partial.css, keyed on the
+     * body class lotgd.partial.js sets). Part of the mail link, so it
+     * survives every swap and every refresh of the mail slot. Nothing where
+     * the game does not change pages in place at all.
+     */
+    public static function liveIndicator(): string
+    {
+        global $session;
+
+        if (!PartialMode::settingEnabled()) {
+            return '';
+        }
+
+        $user = $session['user'] ?? [];
+        if (PartialMode::clientActive($user)) {
+            $state = 'on';
+            $text = 'Pages change in place';
+        } elseif (!PartialMode::isEnabledFor($user)) {
+            $state = 'off';
+            $text = 'Pages load in full: turn on "Change pages in place" in your preferences';
+        } else {
+            $state = 'off';
+            $text = 'Pages load in full on this skin';
+        }
+        $charset = Settings::hasInstance() ? Settings::getInstance()->getSetting('charset', 'UTF-8') : 'UTF-8';
+        $label = htmlspecialchars(Translator::translateInline($text, 'common'), ENT_QUOTES, $charset);
+
+        return "<span class='lotgd-live lotgd-live--{$state}' role='img' title='{$label}' aria-label='{$label}'></span>";
     }
 
 /* same, but only the text for the tab */
