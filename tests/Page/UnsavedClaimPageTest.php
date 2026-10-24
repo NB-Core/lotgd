@@ -30,6 +30,16 @@ final class UnsavedClaimPageTest extends TestCase
         self::assertGreaterThan($claim, $release);
     }
 
+    public function testTheUserEditorShowsTheLastPageInlineWithoutARequestOfItsOwn(): void
+    {
+        $target = ['acctid' => 1, 'login' => 'target', 'name' => 'Target', 'dragonkills' => 0, 'dragonpoints' => '', 'loggedin' => 0,
+            'laston' => date('Y-m-d H:i:s'), 'superuser' => 0];
+        $run = $this->request('user.php', ['op' => 'edit', 'userid' => '1'], ['partialrender' => 1], ['/WHERE acctid=1$/' => [$target]]);
+
+        self::assertStringContainsString("<details class='lotgd-lasthit'><summary>Show last page viewed</summary>", $run->html, $this->context($run));
+        self::assertStringNotContainsString("src='user.php?op=lasthit", $run->html, 'The editor makes no second request that could claim its revision.');
+    }
+
     public function testAPageThatSavesKeepsItsClaim(): void
     {
         $run = $this->request('forest.php', [], ['partialrender' => 1]);
@@ -50,7 +60,10 @@ final class UnsavedClaimPageTest extends TestCase
      * @param array<string,string> $get
      * @param array<string,mixed>  $prefs
      */
-    private function request(string $page, array $get, array $prefs): PageOutcome
+    /**
+     * @param array<string,list<array<string,mixed>>> $queries
+     */
+    private function request(string $page, array $get, array $prefs, array $queries = []): PageOutcome
     {
         $row = [
             'alive' => 1, 'location' => 'Degolburg', 'level' => 1, 'gold' => 10, 'hitpoints' => 10, 'maxhitpoints' => 10,
@@ -64,7 +77,10 @@ final class UnsavedClaimPageTest extends TestCase
             $get,
             [],
             ['accounts_table' => [1 => $row]],
-            ['partial_render' => 1, 'defaultskin' => 'twig:aurora']
+            ['partial_render' => 1, 'defaultskin' => 'twig:aurora'],
+            [],
+            [],
+            $queries
         );
     }
 
