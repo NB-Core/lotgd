@@ -146,8 +146,8 @@ player on a skin with regions; everyone else gets exactly the game of before.
   are markup only: one table, every row marked with its section, an empty
   `#showFormSection<id>` above it and a hidden marker after it whose
   `data-lotgd-showform` carries the sections, the tab to start on and the
-  translated labels. `assets/js/lotgd.showform.js`, loaded on every page so
-  the head does not change, builds the search field and the tabs from it on
+  translated labels. `assets/js/lotgd.showform.js`, loaded on every full page
+  (not in popups, which are never swapped) so the head does not change, builds the search field and the tabs from it on
   load and after every swap, and filters and re-stripes the rows; no
   jQuery or DataTables. The tab is posted as `showFormTabIndex[<id>]` and
   the page comes back on it (the game settings no longer store it as a
@@ -209,7 +209,9 @@ player on a skin with regions; everyone else gets exactly the game of before.
   preference, or a skin without regions). While a page is swapped in
   (`body.lotgd-partial-loading`) the dot turns into a small spinning ring,
   after 120 ms so a fast swap does not flicker; with reduced motion it only
-  fades. Styles in `assets/css/lotgd.partial.css`, loaded on every page.
+  fades. Styles in `assets/css/lotgd.partial.css`, loaded on every full page
+  (not in popups, which are never swapped; a legacy popup that prints
+  `{mail}` gets the dot unstyled, an empty and so invisible `<span>`).
 - **Redirects** (`Redirect::redirect()`, e.g. the new day or a login timeout)
   inside a partial request are `HX-Redirect` page changes.
 - **Client** (`assets/js/lotgd.partial.js`, after htmx 2.0.4 from

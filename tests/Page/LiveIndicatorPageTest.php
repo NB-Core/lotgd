@@ -38,11 +38,13 @@ final class LiveIndicatorPageTest extends TestCase
         // Every bundled skin declares regions; a copy of jade that does not.
         $name = 'zz-live-indicator-' . bin2hex(random_bytes(4)) . '.htm';
         $skin = dirname(__DIR__, 2) . '/templates/' . $name;
-        file_put_contents($skin, self::withoutRegions((string) file_get_contents(dirname(__DIR__, 2) . '/templates/jade.htm')));
         try {
+            self::assertNotFalse(file_put_contents($skin, self::withoutRegions((string) file_get_contents(dirname(__DIR__, 2) . '/templates/jade.htm'))));
             $run = $this->page(['partialrender' => 1], ['defaultskin' => $name]);
         } finally {
-            unlink($skin);
+            if (is_file($skin)) {
+                unlink($skin);
+            }
         }
 
         self::assertStringContainsString("class='lotgd-live lotgd-live--off'", $run->html, substr($run->html, 0, 800));
