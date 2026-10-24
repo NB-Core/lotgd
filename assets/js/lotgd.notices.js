@@ -290,7 +290,7 @@
     /*
      * Mail and the Message of the Day.
      */
-    const seen = { mail: 0, unread: 0, motd: '' };
+    const seen = { mail: 0, unread: 0, motd: '', link: '' };
     const items = {};
     let lastStatus = 0;
     let asking = false;
@@ -396,11 +396,13 @@
         const mail = status.mail || {};
         const unread = Math.max(0, Number(mail.unread) || 0);
         const lastId = Math.max(0, Number(mail.lastId) || 0);
-        if (typeof status.mailLink === 'string' && (unread !== seen.unread || lastId !== seen.mail)) {
-            // The header's link, as the page draws it.
+        if (typeof status.mailLink === 'string' && status.mailLink !== seen.link) {
+            // The header's link, as the page draws it: its counts of read
+            // mail change too (one deleted), so the link itself decides.
             document.querySelectorAll('[data-lotgd-slot="mail"]').forEach(function (slot) {
                 slot.innerHTML = status.mailLink;
             });
+            seen.link = status.mailLink;
         }
         const acknowledged = Number(stored(MAIL_KEY)) || 0;
         if (unread === 0) {
