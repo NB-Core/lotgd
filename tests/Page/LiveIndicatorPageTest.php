@@ -36,10 +36,11 @@ final class LiveIndicatorPageTest extends TestCase
     public function testOffOnASkinWithoutRegions(): void
     {
         // Every bundled skin declares regions; a copy of jade that does not.
-        $skin = dirname(__DIR__, 2) . '/templates/zz-live-indicator-test.htm';
-        file_put_contents($skin, str_replace('{"regions": true, "overlay": true}', '{}', (string) file_get_contents(dirname(__DIR__, 2) . '/templates/jade.htm')));
+        $name = 'zz-live-indicator-' . bin2hex(random_bytes(4)) . '.htm';
+        $skin = dirname(__DIR__, 2) . '/templates/' . $name;
+        file_put_contents($skin, self::withoutRegions((string) file_get_contents(dirname(__DIR__, 2) . '/templates/jade.htm')));
         try {
-            $run = $this->page(['partialrender' => 1], ['defaultskin' => 'zz-live-indicator-test.htm']);
+            $run = $this->page(['partialrender' => 1], ['defaultskin' => $name]);
         } finally {
             unlink($skin);
         }
@@ -65,6 +66,23 @@ final class LiveIndicatorPageTest extends TestCase
 
         self::assertSame('1', $run->header('X-Lotgd-Partial'));
         self::assertMatchesRegularExpression('/data-lotgd-slot=&quot;mail&quot;\]">.*lotgd-live--on/s', $run->html);
+    }
+
+    /**
+     * The template with `regions` taken out of its `<!--!config-->` section,
+     * cut as Template::loadTemplate() cuts it.
+     */
+    private static function withoutRegions(string $template): string
+    {
+        $parts = explode('<!--!config-->', $template, 2);
+        self::assertCount(2, $parts, 'jade has a config section');
+        [$section, $rest] = array_pad(explode('<!--!', $parts[1], 2), 2, null);
+        $config = json_decode(trim($section), true);
+        self::assertIsArray($config);
+        self::assertTrue($config['regions'] ?? false, 'jade declares regions, so the copy shows what taking them out does');
+        unset($config['regions']);
+
+        return $parts[0] . '<!--!config-->' . json_encode($config) . "\n" . ($rest === null ? '' : '<!--!' . $rest);
     }
 
     /**
