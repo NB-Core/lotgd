@@ -23,6 +23,24 @@ final class ShowFormTabbedMarkupTest extends TestCase
         $_SERVER['SCRIPT_NAME'] = '/prefs.php';
     }
 
+    public function testTheFormReopensOnTheTabItWasSentFrom(): void
+    {
+        // The form's id is counted per process; render once to learn it.
+        Forms::showFormTabbed(['Probe,title'], [], true);
+        preg_match("/data-lotgd-showform='([^']*)'/", Output::getInstance()->getRawOutput(), $match);
+        $next = json_decode(html_entity_decode($match[1], ENT_QUOTES), true)['id'] + 1;
+
+        Output::setInstance(null);
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_POST = ['showFormTabIndex' => [(string) $next => '2']];
+        Forms::showFormTabbed(['One,title', 'Two,title', 'Three,title'], [], true);
+        preg_match("/data-lotgd-showform='([^']*)'/", Output::getInstance()->getRawOutput(), $match);
+        $config = json_decode(html_entity_decode($match[1], ENT_QUOTES), true);
+
+        self::assertSame($next, $config['id']);
+        self::assertSame(2, $config['start'], 'The posted array is read by the form\'s own id.');
+    }
+
     public function testTheSectionsAreDataAndNoScriptIsWritten(): void
     {
         Forms::showFormTabbed([

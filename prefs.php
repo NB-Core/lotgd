@@ -570,7 +570,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     // Checked before the form is sent (assets/js/lotgd.showform.js), and
     // again by the server.
     $passwordCheck = " data-lotgd-min-password='" . (int) $minLength . "' data-lotgd-password-warning='"
-        . htmlspecialchars(Translator::sprintfTranslate('Your password is too short.  It must be at least %s characters long.', $minLength), ENT_QUOTES) . "'";
+        . htmlspecialchars(Translator::sprintfTranslate('Your password is too short.  It must be at least %s characters long.', $minLength), ENT_QUOTES, $settings->getSetting('charset', 'UTF-8')) . "'";
     //
     $prefs = $session['user']['prefs'];
     $prefs['bio'] = $session['user']['bio'];

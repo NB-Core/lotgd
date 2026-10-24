@@ -928,14 +928,17 @@ JS;
 
         $output->rawOutput("</tbody></table><br>");
 
-        if ($showform_id == 10001) {
-            $startIndex = (int) Http::post('showFormTabIndex');
-            if ($startIndex < 0) {
-                $startIndex = 0;
-            }
-        } else {
-            $startIndex = 0;
+        // The tab the form was sent from: lotgd.showform.js posts it as
+        // showFormTabIndex[<form id>]; a page may have flattened it to one
+        // value already (prefs.php, configuration.php), which counts for the
+        // first form only, as before.
+        $posted = Http::post('showFormTabIndex');
+        if (is_array($posted)) {
+            $posted = $posted[$showform_id] ?? ($showform_id == 10001 ? reset($posted) : false);
+        } elseif ($showform_id != 10001) {
+            $posted = false;
         }
+        $startIndex = is_scalar($posted) && ctype_digit((string) $posted) ? (int) $posted : 0;
 
         Translator::getInstance()->setSchema('showform');
         $allLabel = Translator::translateInline('All');
