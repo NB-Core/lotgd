@@ -235,9 +235,4 @@ class ForcedNavigation
             error_log('Could not give back an unsaved page revision claim: ' . $e->getMessage());
         }
     }
-
-    public static function resetClaimState(): void
-    {
-        self::$unsavedClaim = null;
-    }
 }
