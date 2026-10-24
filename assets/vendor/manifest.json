@@ -33,5 +33,9 @@
     "lotgd-duel": {
         "version": "1.0.0",
         "js": "assets/js/lotgd.duel.js"
+    },
+    "lotgd-showform": {
+        "version": "1.0.0",
+        "js": "assets/js/lotgd.showform.js"
     }
 }

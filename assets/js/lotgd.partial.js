@@ -8,7 +8,11 @@
  * comes back as a page change (HX-Redirect), handled by htmx itself.
  *
  * What this file adds to htmx:
- *  - forms, popup links and links that leave the page stay ordinary;
+ *  - forms are sent in place only where the server lists them (meta
+ *    lotgd-partial-forms); every other form, popup links and links that
+ *    leave the page stay ordinary;
+ *  - a form the server turns away before it ran (X-Lotgd-Resubmit) is sent
+ *    again as an ordinary page change, so nothing typed is lost;
  *  - a response without the partial header is never swapped in, and an
  *    older page revision never replaces a newer one;
  *  - a 409 (the page was already left from another tab or click) and any
@@ -94,10 +98,47 @@
     window.lotgd = window.lotgd || {};
     window.lotgd.regions = regions;
 
+    // script => method => ops the server answers partially (PartialMode).
+    let partialForms = null;
+    function formsAllowed() {
+        if (partialForms === null) {
+            const meta = document.querySelector('meta[name="lotgd-partial-forms"]');
+            try {
+                partialForms = meta ? JSON.parse(meta.getAttribute('content') || '{}') : {};
+            } catch (e) {
+                partialForms = {};
+            }
+        }
+        return partialForms;
+    }
+
+    function isPartialForm(form) {
+        if (form.hasAttribute('data-lotgd-classic')
+            || form.hasAttribute('target')
+            || form.hasAttribute('onsubmit')
+            // Sent by the async client (lotgd.async.js) or as ever.
+            || form.hasAttribute('data-lotgd-commentary-form')
+            || form.hasAttribute('data-lotgd-comment-remove')) {
+            return false;
+        }
+        let url;
+        try {
+            url = new URL(form.getAttribute('action') || window.location.href, window.location.href);
+        } catch (e) {
+            return false;
+        }
+        if (url.host !== window.location.host) {
+            return false;
+        }
+        const script = url.pathname.split('/').pop() || '';
+        const method = (form.getAttribute('method') || 'GET').toUpperCase();
+        const ops = (formsAllowed()[script] || {})[method] || [];
+        return ops.indexOf(url.searchParams.get('op') || '') !== -1;
+    }
+
     function isOrdinaryLink(el) {
         if (el.tagName === 'FORM') {
-            // A form changes state; Phase 2 never sends one partially.
-            return true;
+            return !isPartialForm(el);
         }
         if (el.tagName !== 'A') {
             return false;
@@ -120,6 +161,29 @@
                 el.setAttribute('hx-swap', 'innerHTML');
             });
         });
+    }
+
+    // The button a form was sent with: a form sent again as a page change
+    // must carry its name and value too.
+    document.addEventListener('submit', function (event) {
+        if (event.target && event.target.tagName === 'FORM') {
+            event.target.lotgdSubmitter = event.submitter || null;
+        }
+    }, true);
+
+    function resubmit(form) {
+        form.setAttribute('data-lotgd-classic', '');
+        form.setAttribute('hx-boost', 'false');
+        const submitter = form.lotgdSubmitter;
+        if (submitter && submitter.name) {
+            const field = document.createElement('input');
+            field.type = 'hidden';
+            field.name = submitter.name;
+            field.value = submitter.value;
+            form.appendChild(field);
+        }
+        // The native submit: no submit event, so htmx leaves it alone.
+        HTMLFormElement.prototype.submit.call(form);
     }
 
     document.addEventListener('htmx:beforeProcessNode', function (event) {
@@ -164,6 +228,18 @@
 
     document.addEventListener('htmx:beforeSwap', function (event) {
         const xhr = event.detail.xhr;
+
+        if (xhr.getResponseHeader('X-Lotgd-Resubmit') === '1') {
+            // Turned away before the page ran: send the form as it is.
+            event.detail.shouldSwap = false;
+            const form = event.detail.requestConfig && event.detail.requestConfig.elt;
+            if (form && form.tagName === 'FORM') {
+                resubmit(form);
+            } else {
+                recover();
+            }
+            return;
+        }
 
         if (xhr.status === 409) {
             event.detail.shouldSwap = false;

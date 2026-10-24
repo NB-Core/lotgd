@@ -220,6 +220,10 @@ class Footer
             $headscript     = '';
         }
 
+        // Tabbed forms (Forms::showFormTabbed()) on every page, so the
+        // <head> stays the same whether a page has one or not.
+        Output::requireVendorAsset('lotgd-showform', 'js');
+
         // Popup pages in a dialog (Phase 6b) where the skin declares it.
         if (Overlay::skinSupports()) {
             Output::requireVendorAsset('lotgd-overlay', 'css');
@@ -235,6 +239,7 @@ class Footer
             Output::addHeadMarkup(
                 '<meta name="lotgd-page-revision" content="' . (int) ($session['user']['page_revision'] ?? 0) . '">'
             );
+            Output::addHeadMarkup(PartialMode::formsMeta());
             if ($realtime) {
                 Output::addHeadMarkup($realtimeMeta);
                 // On every page, not only the duelling ground: a page swapped

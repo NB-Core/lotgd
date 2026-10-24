@@ -117,15 +117,44 @@ player on a skin with regions; everyone else gets exactly the game of before.
   the mercenary camp (hire, heal), the gypsy (talk, pay) and the inn
   (strolling, the chat, the bartender, the room). Paying the gypsy and
   taking a room (which logs out) redirect, which a partial request follows
-  as a page change. Their forms post as ever (the bartender's colour test).
-  The bank's focus scripts and the bartender's are `autofocus` now, which
+  as a page change. The bank's focus scripts and the bartender's are `autofocus` now, which
   the partial client applies after a swap; the clan detail editor folds with
   `<details>`.
   Commentary paging and refresh links carry no `op` and swap in too; a
   comment is posted over the async endpoint (*Live commentary*).
+- **Forms** post in place where the allow-list names them under `POST`:
+  the bank's bookings (`transfer2`, `transfer3`, `depositfinish`,
+  `withdrawfinish`), the preferences (`prefs.php?op=save`; the page itself
+  by GET), the player search (`list.php?op=search`), the bartender's colour
+  test (`inn.php?op=bartender`) and the clan's forms (`new`, `motd`,
+  `membership`, `grant`, with their pages by GET). A form's target is
+  registered like a link (`Nav::add('', target)`) and consumes the page
+  revision once, so a second click is turned away as on a full page; the
+  bank's bookings are guarded actions on top. Full pages carry the list as
+  `<meta name="lotgd-partial-forms">` (JSON, script → method → ops, the same
+  on every page), and the client sends only the forms it names; changing
+  the e-mail address, deleting the character, leaving a clan, mail,
+  petitions and every module form stay ordinary page changes.
 - **Early fallback**: `PartialMode::preCheck()` runs in `common.php` before
-  forced navigation. A partial request for any other page gets
-  `HX-Redirect` to the same URL and an empty body; the page has not run.
+  forced navigation. A partial GET for any other page gets `HX-Redirect` to
+  the same URL and an empty body; the page has not run. A partial POST gets
+  `X-Lotgd-Resubmit: 1` and an empty body instead (a redirect would turn it
+  into a GET and lose the form); the client then sends the same form, with
+  the button it was sent with, as an ordinary page change.
+- **Tabbed forms** (`Forms::showFormTabbed()`: the preferences, the game
+  settings – standard, extended and module settings – and the user editor)
+  are markup only: one table, every row marked with its section, an empty
+  `#showFormSection<id>` above it and a hidden marker after it whose
+  `data-lotgd-showform` carries the sections, the tab to start on and the
+  translated labels. `assets/js/lotgd.showform.js`, loaded on every page so
+  the head does not change, builds the search field and the tabs from it on
+  load and after every swap, and filters and re-stripes the rows; no
+  jQuery or DataTables. The tab is posted as `showFormTabIndex[<id>]` and
+  the page comes back on it (the game settings no longer store it as a
+  setting). A form marked `data-lotgd-min-password` checks the length of its
+  new password before it is sent, as the preferences' inline
+  `validatePrefs()` did (which looked for an id the field does not have);
+  the server checks again.
 - **Page revision**: `accounts.page_revision` (migration
   `Version20261020000001`). `ForcedNavigation` claims it with
   `UPDATE … SET page_revision = page_revision + 1, allowednavs = '' WHERE acctid = :id AND page_revision = :loaded`
@@ -175,9 +204,12 @@ player on a skin with regions; everyone else gets exactly the game of before.
 - **Redirects** (`Redirect::redirect()`, e.g. the new day or a login timeout)
   inside a partial request are `HX-Redirect` page changes.
 - **Client** (`assets/js/lotgd.partial.js`, after htmx 2.0.4 from
-  `assets/vendor/htmx/`): boosts links in the `content` and `nav` regions;
-  forms, popup links (`onclick`), `target` links and other hosts stay
-  ordinary; never runs swapped-in scripts; a response without
+  `assets/vendor/htmx/`): boosts links in the `content` and `nav` regions,
+  and the forms there that `lotgd-partial-forms` names; other forms, the
+  commentary forms (the async client sends them), popup links (`onclick`),
+  `target` links and other hosts stay ordinary; a form answered
+  `X-Lotgd-Resubmit` is sent again natively (no submit event, so htmx leaves
+  it alone); never runs swapped-in scripts; a response without
   `X-Lotgd-Partial` or with an older revision is not swapped; 409 and errors
   go to `badnav.php`; Back/Forward go to `badnav.php`; quick keys are bound
   from the access keys in the navigation region (replacing the inline

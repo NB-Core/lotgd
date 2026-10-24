@@ -61,6 +61,17 @@ if (Forms::isUnverifiedCoreOp($op, ['save', 'enablereactive'])) {
     $_POST = [];
 }
 
+// The tab a form was saved on (Forms::showFormTabbed() posts it as
+// showFormTabIndex[<form>]), so the page comes back on it. It is never a
+// setting: the save loops below skip it.
+$tabIndex = Http::post('showFormTabIndex');
+if (is_array($tabIndex)) {
+    $tabIndex = reset($tabIndex);
+}
+if (is_scalar($tabIndex) && $tabIndex !== false) {
+    Http::postSet('showFormTabIndex', (string) $tabIndex);
+}
+
 $moduleRequest = Http::get('module');
 $module = is_string($moduleRequest) ? $moduleRequest : '';
 $typeSettingRequest = Http::get('settings');
@@ -85,13 +96,19 @@ if (!function_exists('lotgd_configuration_reactive_status')) {
             Status::BLOCKED => Translator::translateInline('on, but cannot run'),
         ];
         $output->output("`b`^Live features`0`b`n");
-        $output->rawOutput("<table class='lotgd-reactive-status' cellpadding='2'>");
+        $output->rawOutput("<table class='lotgd-reactive-status' cellpadding='2' cellspacing='0'>");
+        $output->rawOutput("<tr class='trhead'>");
+        foreach (['Feature', 'State', 'What is missing'] as $heading) {
+            $output->rawOutput('<td>' . htmlspecialchars(Translator::translateInline($heading), ENT_QUOTES, 'UTF-8') . '</td>');
+        }
+        $output->rawOutput('</tr>');
+        $stripe = 0;
         foreach ($status->rows() as $row) {
             $missing = [];
             foreach ($row['missing'] as [$text, $args]) {
                 $missing[] = Translator::getInstance()->sprintfTranslate($text, ...$args);
             }
-            $output->rawOutput("<tr><td>");
+            $output->rawOutput("<tr class='" . ($stripe++ % 2 ? 'trdark' : 'trlight') . "'><td>");
             $output->outputNotl("%s", Translator::translateInline($row['feature']));
             $output->rawOutput("</td><td>");
             $output->outputNotl("%s%s`0", $colours[$row['state']], $labels[$row['state']]);
@@ -123,7 +140,7 @@ switch ($type_setting) {
                 $old = $settings_extended->getArray();
                 $current = $settings_extended->getArray();
                 foreach ($post as $key => $val) {
-                    if (!is_string($key) || 'charset' === $key) {
+                    if (!is_string($key) || 'charset' === $key || 'showFormTabIndex' === $key) {
                         continue;
                     }
                     if (is_array($val)) {
@@ -269,7 +286,7 @@ switch ($type_setting) {
                 $old = $settings->getArray();
                 $current = $settings->getArray();
                 foreach ($post as $key => $val) {
-                    if (!is_string($key) || 'charset' === $key) {
+                    if (!is_string($key) || 'charset' === $key || 'showFormTabIndex' === $key) {
                         continue;
                     }
                     if (is_array($val)) {
@@ -393,7 +410,7 @@ switch ($type_setting) {
                             );
                         } else {
                             foreach ($post as $key => $val) {
-                                if (!is_string($key)) {
+                                if (!is_string($key) || 'showFormTabIndex' === $key) {
                                     continue;
                                 }
                                 $key = stripslashes($key);
@@ -462,7 +479,7 @@ switch ($type_setting) {
                             $output->rawOutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>", true);
                             Nav::add("", "configuration.php?op=modulesettings&module=$module&save=1");
                             Translator::getInstance()->setSchema("module-$module");
-                            Forms::showForm($msettings, $module_settings[ModuleManager::getMostRecentModule()]);
+                            Forms::showFormTabbed($msettings, $module_settings[ModuleManager::getMostRecentModule()]);
                             Translator::getInstance()->setSchema();
                             $output->rawOutput("</form>", true);
                         } else {
@@ -520,7 +537,7 @@ switch ($type_setting) {
 
                 $output->rawOutput("<form action='configuration.php?settings=extended&op=save' method='POST'>");
                 Nav::add("", "configuration.php?settings=extended&op=save");
-                Forms::showForm($setup_extended, $vals);
+                Forms::showFormTabbed($setup_extended, $vals);
                 $output->rawOutput("</form>");
                 break;
         }
@@ -587,7 +604,7 @@ switch ($type_setting) {
                 lotgd_configuration_reactive_status($settings);
                 $output->rawOutput("<form action='configuration.php?op=save' method='POST'>");
                 Nav::add("", "configuration.php?op=save");
-                Forms::showForm($setup, $vals);
+                Forms::showFormTabbed($setup, $vals);
                 $output->rawOutput("</form>");
                 break;
         }
