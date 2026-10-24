@@ -6,6 +6,7 @@ use Lotgd\MySQL\Database;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\Security\Csrf;
+use Lotgd\Security\Escape;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
@@ -99,7 +100,7 @@ if (!function_exists('lotgd_configuration_reactive_status')) {
         $output->rawOutput("<table class='lotgd-reactive-status' cellpadding='2' cellspacing='0'>");
         $output->rawOutput("<tr class='trhead'>");
         foreach (['Feature', 'State', 'What is missing'] as $heading) {
-            $output->rawOutput('<td>' . htmlspecialchars(Translator::translateInline($heading), ENT_QUOTES, 'UTF-8') . '</td>');
+            $output->rawOutput('<td>' . Escape::html(Translator::translateInline($heading)) . '</td>');
         }
         $output->rawOutput('</tr>');
         $stripe = 0;

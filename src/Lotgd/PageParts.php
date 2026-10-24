@@ -540,8 +540,7 @@ class PageParts
             $state = 'off';
             $text = 'Pages load in full on this skin';
         }
-        $charset = Settings::hasInstance() ? Settings::getInstance()->getSetting('charset', 'UTF-8') : 'UTF-8';
-        $label = htmlspecialchars(Translator::translateInline($text, 'common'), ENT_QUOTES, $charset);
+        $label = Escape::html(Translator::translateInline($text, 'common'));
 
         return "<span class='lotgd-live lotgd-live--{$state}' role='img' title='{$label}' aria-label='{$label}'></span>";
     }
