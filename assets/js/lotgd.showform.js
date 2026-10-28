@@ -271,6 +271,17 @@
         setupAll(document);
     });
 
+    // A swap replaces the table; DataTables keeps every instance (and its
+    // rows) in a global list until it is destroyed.
+    document.addEventListener('htmx:beforeCleanupElement', function (event) {
+        const table = event.target;
+        const $ = window.jQuery;
+        if (table && table.tagName === 'TABLE' && table.hasAttribute('data-lotgd-datatable-ready')
+            && $ && $.fn.DataTable && $.fn.DataTable.isDataTable(table)) {
+            $(table).DataTable().destroy();
+        }
+    });
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
             setupAll(document);
