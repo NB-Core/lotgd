@@ -314,6 +314,16 @@ With `partial_render` on, `PageParts::mailLink()` (and so `{mail}`, `maillink()`
 `<span class='lotgd-live lotgd-live--on|off' …>`, styled by `assets/css/lotgd.partial.css`, which every full page
 now loads (popups do not; there the empty `<span>` stays invisible). A skin can restyle `.lotgd-live`, or hide it.
 
+### Modules are no longer reinstalled after every deploy
+
+Migration `Version20261028000001` adds `modules.filehash`.
+- `Modules::inject()` upgrades a module only when its file's content changed, not when only its modification time
+  did, as after a new Docker image or a checkout. Each module stores its hash on its next load.
+- The first deploy with this change still upgrades the modules whose times changed, once.
+- *Reinstall* in the module manager still forces the upgrade.
+- To upgrade changed modules right after an update, instead of on the pages that use them first, run
+  `php bin/modules-refresh` (in Docker: `docker compose exec -T --user www-data web php bin/modules-refresh`).
+
 ### Notices in the upper right: the session timeout, new mail, the Message of the Day
 
 Every full page of a logged-in player now carries `<meta name="lotgd-session">` and loads

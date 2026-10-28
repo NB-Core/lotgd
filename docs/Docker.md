@@ -456,6 +456,15 @@ development dependencies and generates an authoritative classmap. PHP hides
 errors from responses, logs them to container stderr, and enables OPcache
 without timestamp validation. Rebuild the image to deploy code changes.
 
+After a rebuild every file has a new modification time. Modules whose content
+did not change are recognised by their stored hash and cost nothing. Modules
+that did change are upgraded on first use (their `_install()` runs again).
+Run that before players do:
+
+```bash
+docker compose exec -T --user www-data web php bin/modules-refresh
+```
+
 Only container port 80 is exposed, and its host mapping is loopback-only. Set
 `LOTGD_HTTP_PORT` to choose another loopback host port. To serve an installed
 game remotely, put a TLS reverse proxy on a public interface and proxy to

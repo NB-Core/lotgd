@@ -1652,6 +1652,9 @@ function get_all_tables()
             'type' => 'datetime',
             'default' => '1970-01-01 00:00:00'
             ),
+        'filehash' => array(
+            'name' => 'filehash', 'type' => 'char(40)', 'null' => '1'
+            ),
         'type' => array(
             'name' => 'type', 'type' => 'tinyint(4)', 'default' => '0'
             ),
