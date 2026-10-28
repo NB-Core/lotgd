@@ -883,7 +883,9 @@ once, plus page requests. A proxy must pass the stream unbuffered: the
 endpoint sends `X-Accel-Buffering: no` (nginx), Caddy flushes event streams
 by itself, and `async/stream.php` turns PHP's output compression off for
 itself. With the PHP built-in server, set `PHP_CLI_SERVER_WORKERS`, or the
-stream blocks every other request.
+stream blocks every other request. Setup for Apache (mod_php and
+php-fpm), nginx (with php-fpm and as a reverse proxy), Caddy and shared
+webspace, and how to check it: [RealtimeHosting.md](RealtimeHosting.md).
 
 Verified in a browser (Chromium against MariaDB, setting `sse`): a transfer
 from A reaches B's mail link 0.1--1.4 s after A sent it, and B makes no
