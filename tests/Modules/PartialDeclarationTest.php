@@ -154,14 +154,20 @@ PHP);
             'runmodule.php?module=partialModule&op=buy&id=3' => true,
             'runmodule.php?module=partialModule&op=list' => true,
             'bank.php?op=depositfinish' => true,
-            // A link to an allowed form target, with the page counter.
-            'bank.php?op=depositfinish&c=12-101010' => true,
+            // A form that posts back to the page's own address, page
+            // counter and all (the bartender's colour test).
+            'inn.php?op=bartender&act=colors&c=12-101010' => true,
+            // A link to a page, not a form target.
+            'bank.php?op=deposit&c=12-101010' => true,
             'mail.php?op=send' => true,
             'clan.php?op=motd' => false,
             'https://example.com/bank.php?op=depositfinish' => true,
         ]);
 
-        self::assertSame(['runmodule.php?module=partialModule&op=buy&id=3', 'bank.php?op=depositfinish'], $forms);
+        self::assertSame(
+            ['runmodule.php?module=partialModule&op=buy&id=3', 'bank.php?op=depositfinish', 'inn.php?op=bartender&act=colors&c=12-101010'],
+            $forms
+        );
     }
 
     /**

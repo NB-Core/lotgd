@@ -171,11 +171,6 @@ final class PartialMode
             }
             $query = [];
             parse_str($parts['query'] ?? '', $query);
-            // A link carries the page counter (Nav::add() with a text); a
-            // form target is granted without one.
-            if (isset($query['c'])) {
-                continue;
-            }
             $op = isset($query['op']) && is_string($query['op']) ? $query['op'] : '';
             if (self::isAllowed(basename($parts['path']), 'POST', $op, $query)) {
                 $forms[$uri] = true;
