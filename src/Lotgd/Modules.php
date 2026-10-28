@@ -113,7 +113,8 @@ class Modules
             Translator::getInstance()->setSchema("module-{$moduleName}");
             if ($withDb) {
                 // SELECT *: filehash only exists once its migration ran.
-                $sql    = 'SELECT * FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
+                $sql    = 'SELECT * FROM ' . Database::prefix('modules')
+                    . ' WHERE modulename = ' . Database::getDoctrineConnection()->quote($moduleName);
                 $result = Database::queryCached($sql, "inject-$moduleName", 3600);
                 if (! $force) {
                     if (Database::numRows($result) == 0) {
@@ -340,7 +341,8 @@ class Modules
         $status         = MODULE_NO_INFO;
         if (file_exists($modulefilename)) {
             // The same row inject() reads, under the same cache key.
-            $sql    = 'SELECT * FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
+            $sql    = 'SELECT * FROM ' . Database::prefix('modules')
+                . ' WHERE modulename = ' . Database::getDoctrineConnection()->quote($moduleName);
             $result = Database::queryCached($sql, "inject-$moduleName", 3600);
             if (Database::numRows($result) > 0) {
                 $status = MODULE_INSTALLED;
