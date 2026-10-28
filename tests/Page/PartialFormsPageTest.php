@@ -127,14 +127,23 @@ final class PartialFormsPageTest extends TestCase
         self::assertSame([], $run->statementsContaining('accounts'), 'The page must not have run.');
     }
 
-    public function testAFullPageCarriesTheListOfFormsThatPostInPlace(): void
+    public function testAFullPageCarriesOnlyItsOwnFormsThatPostInPlace(): void
     {
         $run = PageRunner::withRequest('bank.php', 0, 'GET', ['op' => 'deposit'], [], $this->globals(), self::SETTINGS);
 
         self::assertSame(1, preg_match('/<meta name="lotgd-partial-forms" content="([^"]*)">/', $run->html, $match), self::context($run));
         $forms = json_decode(html_entity_decode($match[1], ENT_QUOTES), true);
-        self::assertContains('depositfinish', $forms['bank.php']['POST']);
-        self::assertSame(['save'], $forms['prefs.php']['POST']);
+        // The deposit form this page offers, not the whole allowlist, and
+        // none of its links.
+        self::assertSame(['bank.php?op=depositfinish'], $forms);
+    }
+
+    public function testAPartialAnswerBringsTheFormsOfThePageSwappedIn(): void
+    {
+        $run = $this->partialGet('bank.php', ['op' => 'deposit']);
+
+        self::assertSame('1', $run->header('X-Lotgd-Partial'), self::context($run));
+        self::assertSame(['bank.php?op=depositfinish'], json_decode((string) $run->header('X-Lotgd-Partial-Forms'), true));
     }
 
     /**

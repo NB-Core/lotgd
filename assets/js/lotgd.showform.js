@@ -11,7 +11,9 @@
  * after every swap.
  *
  * Also here: a form marked data-lotgd-min-password checks the length of its
- * new password (pass1) before it is sent. The server checks again.
+ * new password (pass1) before it is sent. The server checks again. And a
+ * table marked data-lotgd-datatable (Forms::dataTableAttributes()) becomes
+ * sortable and searchable.
  */
 (function () {
     'use strict';
@@ -179,6 +181,75 @@
 
     function setupAll(root) {
         (root || document).querySelectorAll('[data-lotgd-showform]').forEach(setup);
+        (root || document).querySelectorAll('table[data-lotgd-datatable]').forEach(setupTable);
+    }
+
+    /*
+     * Sortable tables (Forms::dataTableAttributes()): jQuery and DataTables
+     * are loaded once, the first time a page shows such a table, so the
+     * <head> stays the same on every page. Without them the table stays as
+     * the server wrote it.
+     */
+    let tableAssets = null;
+    function loadTableAssets(assets) {
+        if (tableAssets === null) {
+            (assets.css || []).forEach(function (href) {
+                if (href && !document.querySelector('link[href="' + href + '"]')) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = href;
+                    document.head.appendChild(link);
+                }
+            });
+            tableAssets = (assets.js || []).reduce(function (ready, src) {
+                return ready.then(function () {
+                    if (!src || (src.indexOf('jquery') !== -1 && window.jQuery)
+                        || (src.indexOf('datatables') !== -1 && window.jQuery && window.jQuery.fn.DataTable)) {
+                        return null;
+                    }
+                    return new Promise(function (resolve, reject) {
+                        const script = document.createElement('script');
+                        script.src = src;
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                });
+            }, Promise.resolve());
+        }
+        return tableAssets;
+    }
+
+    function setupTable(table) {
+        if (table.hasAttribute('data-lotgd-datatable-ready')) {
+            return;
+        }
+        table.setAttribute('data-lotgd-datatable-ready', '');
+        let options;
+        let assets;
+        try {
+            options = JSON.parse(table.getAttribute('data-lotgd-datatable') || '{}') || {};
+            assets = JSON.parse(table.getAttribute('data-lotgd-datatable-assets') || '{}') || {};
+        } catch (e) {
+            return;
+        }
+        loadTableAssets(assets).then(function () {
+            const $ = window.jQuery;
+            if (!$ || !$.fn.DataTable || !table.isConnected) {
+                return;
+            }
+            // The server's striping drifts from the order shown once rows
+            // are sorted or filtered; stripe the rows on the page shown.
+            options.drawCallback = function (settings) {
+                const rows = new $.fn.dataTable.Api(settings).rows({ page: 'current', search: 'applied', order: 'applied' }).nodes();
+                $(rows).removeClass('trlight trdark').each(function (index) {
+                    $(this).addClass(index % 2 === 0 ? 'trlight' : 'trdark');
+                });
+            };
+            $(table).DataTable(options);
+        }).catch(function () {
+            // The plain table stays.
+        });
     }
 
     // Before any other submit handler (htmx sends boosted forms from its own).

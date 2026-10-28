@@ -94,6 +94,28 @@ final class PreviewFieldTest extends TestCase
         self::assertTrue($this->config($this->render())['gamemaster']);
     }
 
+    public function testWithoutATalkLineThePreviewShowsTheTextAlone(): void
+    {
+        $this->enablePartialClient();
+
+        $markup = Forms::previewField('newname', false, false, false, ['size' => 40, 'maxlength' => 255], false);
+
+        self::assertStringNotContainsString('<script', $markup);
+        self::assertStringNotContainsString("type='submit'", $markup, 'The caller writes its own button.');
+        self::assertNull($this->config($markup)['talkline']);
+        self::assertSame(255, $this->config($markup)['limit']);
+    }
+
+    public function testWithoutATalkLineAClassicPlayerKeepsAScriptWithoutOne(): void
+    {
+        Settings::setInstance(new DummySettings(['maxchars' => 200, 'partial_render' => 1]));
+
+        $markup = Forms::previewField('newname', false, false, false, ['size' => 40, 'maxlength' => 255], false);
+
+        self::assertStringContainsString('function previewtextnewname(t, l)', $markup);
+        self::assertStringNotContainsString(', </span><span class="colLtCyan">', $markup, 'No talk line in front.');
+    }
+
     private function enablePartialClient(): void
     {
         Settings::setInstance(new DummySettings(['maxchars' => 200, 'partial_render' => 1]));

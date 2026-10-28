@@ -30,6 +30,8 @@ use Lotgd\Random;
 class Modules
 {
     private static array $injectedModules = [1 => [], 0 => []];
+    /** @var array<string,array<string,list<string>>> */
+    private static array $partialDeclarations = [];
     private static array $modulehookQueries = [];
     private static array $modulePreload = [];
     private static array $blockedModules = [];
@@ -42,6 +44,7 @@ class Modules
     public static function resetInjectedModules(): void
     {
         self::$injectedModules = [1 => [], 0 => []];
+        self::$partialDeclarations = [];
     }
 
     /**
@@ -253,6 +256,9 @@ class Modules
                     }
                 }
             }
+            if (! $force && $withDb && isset($row) && is_array($row) && is_array($info)) {
+                self::rememberPartial($moduleName, $row, $info);
+            }
             Translator::getInstance()->setSchema();
             self::$injectedModules[$force][$moduleName] = true;
             return true;
@@ -299,6 +305,105 @@ class Modules
         DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
 
         return true;
+    }
+
+    /**
+     * The pages of a module that may change in place (runmodule.php):
+     * method => allowed `op` values, '' meaning "no op", as the module
+     * declares them under its info key `partial`, e.g.
+     * `'partial' => ['GET' => ['', 'list'], 'POST' => ['buy']]`.
+     *
+     * Read from the module's stored row, never from the module itself: the
+     * partial decision (PartialMode::preCheck()) is made before any module
+     * code runs. Empty for a module that is unknown, inactive or declares
+     * nothing, so its pages load in full as before.
+     *
+     * @return array<string,list<string>>
+     */
+    public static function partialDeclaration(string $moduleName): array
+    {
+        if ($moduleName === '' || Sanitize::modulenameSanitize($moduleName) !== $moduleName) {
+            return [];
+        }
+        if (!array_key_exists($moduleName, self::$partialDeclarations)) {
+            // The row inject() reads right after, under the same cache key.
+            $rows = Database::queryCached(
+                'SELECT * FROM ' . Database::prefix('modules')
+                    . ' WHERE modulename = ' . Database::getDoctrineConnection()->quote($moduleName),
+                "inject-$moduleName",
+                3600
+            );
+            $row = $rows[0] ?? null;
+            $declaration = [];
+            if (is_array($row) && !empty($row['active']) && isset($row['partial']) && is_string($row['partial'])) {
+                $decoded = json_decode($row['partial'], true);
+                $declaration = self::normalizePartial($decoded) ?? [];
+            }
+            self::$partialDeclarations[$moduleName] = $declaration;
+        }
+
+        return self::$partialDeclarations[$moduleName];
+    }
+
+    /**
+     * A `partial` declaration as it is stored: GET and POST only, op values
+     * as strings, each once. Null when nothing is left.
+     *
+     * @return array<string,list<string>>|null
+     */
+    public static function normalizePartial(mixed $declaration): ?array
+    {
+        if (!is_array($declaration)) {
+            return null;
+        }
+        $normalized = [];
+        foreach ($declaration as $method => $ops) {
+            $method = strtoupper((string) $method);
+            if (!in_array($method, ['GET', 'POST'], true) || !is_array($ops)) {
+                continue;
+            }
+            $list = [];
+            foreach ($ops as $op) {
+                if (is_string($op) && !in_array($op, $list, true)) {
+                    $list[] = $op;
+                }
+            }
+            if ($list !== []) {
+                $normalized[$method] = array_merge($normalized[$method] ?? [], $list);
+            }
+        }
+        ksort($normalized);
+
+        return $normalized === [] ? null : $normalized;
+    }
+
+    /**
+     * Keep the stored `partial` declaration in step with the module's info,
+     * which inject() has read anyway. Writes only when they differ, so a
+     * module's declaration arrives with its first use after a deploy,
+     * without a reinstall; bin/modules-refresh brings it at start-up.
+     *
+     * @param array<string,mixed> $row  The module's row.
+     * @param array<string,mixed> $info The module's info.
+     */
+    private static function rememberPartial(string $moduleName, array $row, array $info): void
+    {
+        if (!array_key_exists('partial', $row)) {
+            // Before its migration.
+            return;
+        }
+        $wanted = self::normalizePartial($info['partial'] ?? null);
+        $encoded = $wanted === null ? null : (string) json_encode($wanted);
+        if ($encoded === (isset($row['partial']) ? (string) $row['partial'] : null)) {
+            return;
+        }
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('modules') . ' SET partial = :partial WHERE modulename = :modulename',
+            ['partial' => $encoded, 'modulename' => $moduleName],
+            ['partial' => $encoded === null ? ParameterType::NULL : ParameterType::STRING, 'modulename' => ParameterType::STRING]
+        );
+        DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
+        unset(self::$partialDeclarations[$moduleName]);
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Page;
 
+use Lotgd\Modules;
 use Lotgd\Settings;
 use Lotgd\Template;
 use Lotgd\TwigTemplate;
@@ -48,8 +49,12 @@ final class PartialMode
      * test and the clan's forms. A form's target is granted like a link
      * (Nav::add('', target)) and consumes the page revision once, so a second
      * click is turned away as it would be on a full page; the bank's bookings
-     * are guarded actions on top. The client sends only the forms this list
-     * names (formsMeta()); every other form is an ordinary page change.
+     * are guarded actions on top. The client sends only the forms the page
+     * names (pageForms()); every other form is an ordinary page change.
+     *
+     * Module pages (runmodule.php) are not listed here: a module declares its
+     * own under the info key `partial`, in the same shape, see
+     * Modules::partialDeclaration().
      *
      * The village and the inn carry a commentary block; for a partial
      * player its preview field is declarative markup the client handles
@@ -126,7 +131,7 @@ final class PartialMode
             return;
         }
 
-        if (self::settingEnabled() && self::isAllowed(self::script(), self::method(), self::op())) {
+        if (self::settingEnabled() && self::isAllowed(self::script(), self::method(), self::op(), $_GET)) {
             self::$active = true;
 
             return;
@@ -144,15 +149,62 @@ final class PartialMode
     }
 
     /**
-     * The forms the client may send partially, for its meta tag
-     * `lotgd-partial-forms`: script => method => ops, as the allowlist has
-     * them. The same on every page, so the <head> does not change with it.
+     * The form targets on this page that may be sent partially: the granted
+     * navigation (allowednavs) whose script and op are allowed for POST.
+     * Only what this page offers, usually none to a handful, never the
+     * whole allowlist.
+     *
+     * @param array<array-key,mixed> $allowednavs The navigation the page just granted.
+     *
+     * @return list<string>
      */
-    public static function formsMeta(): string
+    public static function pageForms(array $allowednavs): array
     {
-        $json = (string) json_encode(self::ALLOWLIST, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $forms = [];
+        foreach ($allowednavs as $uri => $granted) {
+            if (!$granted || !is_string($uri) || $uri === '') {
+                continue;
+            }
+            $parts = parse_url($uri);
+            if ($parts === false || isset($parts['host']) || !isset($parts['path'])) {
+                continue;
+            }
+            $query = [];
+            parse_str($parts['query'] ?? '', $query);
+            // A link carries the page counter (Nav::add() with a text); a
+            // form target is granted without one.
+            if (isset($query['c'])) {
+                continue;
+            }
+            $op = isset($query['op']) && is_string($query['op']) ? $query['op'] : '';
+            if (self::isAllowed(basename($parts['path']), 'POST', $op, $query)) {
+                $forms[$uri] = true;
+            }
+        }
 
-        return '<meta name="lotgd-partial-forms" content="' . htmlspecialchars($json, ENT_QUOTES) . '">';
+        return array_keys($forms);
+    }
+
+    /**
+     * The meta tag `lotgd-partial-forms` with pageForms(). It may differ
+     * from page to page: lotgd-* meta tags are left out of the head
+     * signature, and a partial answer brings the new list in its
+     * X-Lotgd-Partial-Forms header.
+     *
+     * @param list<string> $forms
+     */
+    public static function formsMeta(array $forms): string
+    {
+        return '<meta name="lotgd-partial-forms" content="' . htmlspecialchars(self::formsJson($forms), ENT_QUOTES) . '">';
+    }
+
+    /**
+     * @param list<string> $forms
+     */
+    public static function formsJson(array $forms): string
+    {
+        // ASCII only, so it is a valid header value too.
+        return (string) json_encode(array_values($forms), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES);
     }
 
     /**
@@ -173,8 +225,22 @@ final class PartialMode
             && ($_SERVER[self::HISTORY_RESTORE_HEADER] ?? '') !== 'true';
     }
 
-    public static function isAllowed(string $script, string $method, string $op): bool
+    /**
+     * @param array<array-key,mixed> $query The request's query parameters; a
+     *                                      module page is named by `module`.
+     */
+    public static function isAllowed(string $script, string $method, string $op, array $query = []): bool
     {
+        if ($script === 'runmodule.php') {
+            $module = $query['module'] ?? '';
+            // The module's administration (admin=1) always loads in full.
+            if (!is_string($module) || $module === '' || isset($query['admin'])) {
+                return false;
+            }
+
+            return in_array($op, Modules::partialDeclaration($module)[strtoupper($method)] ?? [], true);
+        }
+
         return in_array($op, self::ALLOWLIST[$script][strtoupper($method)] ?? [], true);
     }
 

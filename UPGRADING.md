@@ -347,12 +347,45 @@ A name, a clan's short name, a weapon and an armour are escaped where they are w
 codes kept (`Lotgd\Security\Escape::gameText()`): the chat line, the stats, the donation form, the mail inbox. A
 name that held HTML on purpose (set in the user editor or by a module) now shows it as text.
 
+### Module pages change in place where the module says so
+
+With partial rendering on, a module page (`runmodule.php`) changes in place when its module declares it in its info:
+
+```php
+function mymodule_getmoduleinfo(): array
+{
+    return [
+        // ...
+        // Pages by GET, forms by POST; '' is the page without an op.
+        'partial' => ['GET' => ['', 'list', 'enter'], 'POST' => ['buy']],
+    ];
+}
+```
+
+- Migration `Version20261029000001` adds `modules.partial`. The declaration is stored the next time the module is
+  used (or by `bin/modules-refresh`); no reinstall is needed. A module without the key is unchanged.
+- Declare only pages that are safe as a full page today: links and form targets the page granted (`addnav()`,
+  `addnav('', $target)`), which claim the page revision like any other. A page that logs out, redirects elsewhere or
+  opens a popup is better left out (a redirect still works: it becomes a page change).
+- A declared page that prints an inline `<script>`, or adds CSS or JavaScript to the `<head>`
+  (`Output::addHeadMarkup()`, `Output::requireVendorAsset()` on that page only), falls back to the stored page; the
+  answer carries `X-Lotgd-Partial-Fallback` with the reason. Instead: `autofocus` for focus scripts,
+  `Forms::previewField()` for a colour preview (`$talkline` may now be `false` for a name or a title), and
+  `Forms::dataTableAttributes()` on a `<table>` for sorting and searching (DataTables, loaded by the core when a page
+  shows such a table).
+- A module with `override_forced_nav` must call `do_forced_nav()` itself on its declared pages (as `cities` does), or
+  they load in full: a page is only swapped when its request claimed the page revision.
+- The module's administration (`admin=1`) always loads in full.
+- `cities` (travelling and its fights) and `lovers` (flirting, talking) declare their pages.
+
 ### Forms post in place; Game Settings get the preferences' table
 
 With partial rendering on, the bank's bookings, the preferences, the player search, the bartender's colour test
 and the clan's forms post in place. For modules and skins:
-- a module form posts as before; only the forms `Lotgd\Page\PartialMode::ALLOWLIST` lists under `POST` are sent
-  in place. A form the server does not take in place is sent again as an ordinary page change (`X-Lotgd-Resubmit`);
+- a module form posts as before unless the module declares it (see *Module pages change in place where the module
+  says so*); only the forms `Lotgd\Page\PartialMode::ALLOWLIST` lists under `POST` are sent in place. A form the
+  server does not take in place is sent again as an ordinary page change (`X-Lotgd-Resubmit`). The page lists only
+  its own such forms (`<meta name="lotgd-partial-forms">`, a JSON list of targets), no longer the whole allow-list;
 - `Forms::showFormTabbed()` no longer writes an inline script, and *Game Settings* (standard, extended and module
   settings) use it instead of `Forms::showForm()`. Its search field and tabs come from
   `assets/js/lotgd.showform.js`, loaded on every full page (not in popups); the preferences no longer load jQuery and DataTables;

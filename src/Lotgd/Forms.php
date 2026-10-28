@@ -566,12 +566,38 @@ class Forms
     }
 
     /**
+     * The attributes that make a table sortable, searchable and paged in the
+     * browser (DataTables), without an inline script and without touching
+     * the page's <head>: `assets/js/lotgd.showform.js` loads jQuery and
+     * DataTables the first time a page shows such a table, and sets each one
+     * up on load and after every partial swap. Rows keep their trlight and
+     * trdark striping in the order shown.
+     *
+     * Put them on the <table> tag: `<table id='list'` . Forms::dataTableAttributes([...]) . `>`.
+     *
+     * @param array<string,mixed> $options DataTables options (JSON-serialisable).
+     */
+    public static function dataTableAttributes(array $options = []): string
+    {
+        $assets = [
+            'css' => [AssetManifest::url('datatables', 'css')],
+            'js' => [AssetManifest::url('jquery', 'js'), AssetManifest::url('datatables', 'js')],
+        ];
+
+        return ' data-lotgd-datatable="' . htmlspecialchars((string) json_encode((object) $options), ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-lotgd-datatable-assets="' . htmlspecialchars((string) json_encode($assets), ENT_QUOTES, 'UTF-8') . '"';
+    }
+
+    /**
      * Render a message preview input field with javascript helper.
+     *
+     * With $talkline false the preview shows the text alone, without the
+     * talk line in front (a name, a title).
      */
     public static function previewField(
         string $name,
         string|bool $startdiv = false,
-        string $talkline = 'says',
+        string|false $talkline = 'says',
         bool $showcharsleft = true,
         array|bool $info = false,
         bool $scriptOutput = true
@@ -579,7 +605,9 @@ class Forms
         global $session;
         $output = Output::getInstance();
 
-        $talkline = Translator::translateInline($talkline, Translator::getInstance()->getSchema());
+        if ($talkline !== false) {
+            $talkline = Translator::translateInline($talkline, Translator::getInstance()->getSchema());
+        }
         $youhave = Translator::translateInline('You have ');
         $charsleft = Translator::translateInline(' characters left.');
         $startdiv = $startdiv === false ? '' : $startdiv;
