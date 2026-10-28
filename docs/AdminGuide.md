@@ -84,6 +84,14 @@ automatic ban that follows repeated failures, not each guess.
 > megausers you must enable `show_error_details` separately, and you should leave it off on a live
 > server.
 
+## Live features and realtime hosting
+
+*Game Settings* opens with a *Live features* table: what is on, and what each
+feature still needs. Realtime polls by default and works on any host.
+Server-sent events are faster but need a host that keeps one PHP worker per
+open page and passes the stream unbuffered. Set them up with
+[RealtimeHosting.md](RealtimeHosting.md).
+
 ## The diagnostics page
 
 `diagnostics.php`, reachable from the Superuser Grotto under **Diagnostics**, answers "is
