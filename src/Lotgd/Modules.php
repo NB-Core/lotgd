@@ -112,7 +112,8 @@ class Modules
         if (file_exists($modulefilename)) {
             Translator::getInstance()->setSchema("module-{$moduleName}");
             if ($withDb) {
-                $sql    = 'SELECT active,filemoddate,infokeys,version FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
+                // SELECT *: filehash only exists once its migration ran.
+                $sql    = 'SELECT * FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
                 $result = Database::queryCached($sql, "inject-$moduleName", 3600);
                 if (! $force) {
                     if (Database::numRows($result) == 0) {
@@ -170,13 +171,21 @@ class Modules
                     $row = Database::fetchAssoc($result);
                 }
                 $filemoddate = date('Y-m-d H:i:s', filemtime($modulefilename));
+                if (self::onlyTouched($moduleName, $modulefilename, $row, $filemoddate)) {
+                    $row['filemoddate'] = $filemoddate;
+                } elseif ($row['filemoddate'] == $filemoddate && array_key_exists('filehash', $row) && empty($row['filehash'])) {
+                    // Up to date, but from before the column: remember its
+                    // content once, so the next deploy finds it unchanged.
+                    self::rememberContent($moduleName, $modulefilename, $row);
+                    DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
+                }
                 if ($row['filemoddate'] != $filemoddate || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
                     $connection = Database::getDoctrineConnection();
                     $needsUpgrade = false;
                     Action::guardImplicitCommit('Refreshing module ' . $moduleName);
                     $connection->executeStatement('LOCK TABLES ' . Database::prefix('modules') . ' WRITE');
                     try {
-                        $sql    = 'SELECT filemoddate, infokeys, version FROM ' . Database::prefix('modules') . ' WHERE modulename = :modulename';
+                        $sql    = 'SELECT * FROM ' . Database::prefix('modules') . ' WHERE modulename = :modulename';
                         $result = $connection->executeQuery(
                             $sql,
                             ['modulename' => $moduleName],
@@ -229,6 +238,7 @@ class Modules
                                 ]
                             );
                             $output->debug($sql);
+                            self::rememberContent($moduleName, $modulefilename, $row);
                             $needsUpgrade = true;
                         }
                     } finally {
@@ -254,6 +264,65 @@ class Modules
     }
 
     /**
+     * A module file whose modification time changed while its content did
+     * not -- every file after a new image, a fresh checkout or a copy. Its
+     * stored time is brought up to date and it is not upgraded: no lock, no
+     * hooks wiped, no _install(), no caches emptied. Without this, the first
+     * pages after a deploy re-ran every module's _install() one by one,
+     * each emptying the hook caches the pages before had just built.
+     *
+     * Only when the module row is otherwise complete and carries the hash
+     * of the content it was last upgraded with (column filehash), and no
+     * reinstall was asked for.
+     *
+     * @param array<string,mixed> $row The module's row.
+     */
+    private static function onlyTouched(string $moduleName, string $modulefilename, array $row, string $filemoddate): bool
+    {
+        // A reinstall (ModuleManager::reinstall()) asks for the upgrade by
+        // setting the time to DATETIME_DATEMIN.
+        $currentOrForced = $row['filemoddate'] == $filemoddate || (string) $row['filemoddate'] === DATETIME_DATEMIN;
+        $complete = !empty($row['filehash']) && $row['infokeys'] != '' && $row['infokeys'][0] == '|' && $row['version'] != '';
+        if ($currentOrForced || !$complete) {
+            return false;
+        }
+        $hash = sha1_file($modulefilename);
+        if ($hash === false || !hash_equals((string) $row['filehash'], $hash)) {
+            return false;
+        }
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('modules') . ' SET filemoddate = :filemoddate WHERE modulename = :modulename',
+            ['filemoddate' => $filemoddate, 'modulename' => $moduleName],
+            ['filemoddate' => ParameterType::STRING, 'modulename' => ParameterType::STRING]
+        );
+        DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
+
+        return true;
+    }
+
+    /**
+     * Store the hash of the content a module was just upgraded with, where
+     * the column exists (its migration may not have run yet).
+     *
+     * @param array<string,mixed> $row The module's row.
+     */
+    private static function rememberContent(string $moduleName, string $modulefilename, array $row): void
+    {
+        if (!array_key_exists('filehash', $row)) {
+            return;
+        }
+        $hash = sha1_file($modulefilename);
+        if ($hash === false) {
+            return;
+        }
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('modules') . ' SET filehash = :filehash WHERE modulename = :modulename',
+            ['filehash' => $hash, 'modulename' => $moduleName],
+            ['filehash' => ParameterType::STRING, 'modulename' => ParameterType::STRING]
+        );
+    }
+
+    /**
      * Return status bitfield for a module.
      */
     /**
@@ -270,7 +339,8 @@ class Modules
         $modulefilename = "modules/$moduleName.php";
         $status         = MODULE_NO_INFO;
         if (file_exists($modulefilename)) {
-            $sql    = 'SELECT active,filemoddate,infokeys,version FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
+            // The same row inject() reads, under the same cache key.
+            $sql    = 'SELECT * FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
             $result = Database::queryCached($sql, "inject-$moduleName", 3600);
             if (Database::numRows($result) > 0) {
                 $status = MODULE_INSTALLED;
