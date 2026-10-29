@@ -207,14 +207,6 @@ class ForcedNavigation
     }
 
     /**
-     * For tests: forget the claim of an earlier request in the same process.
-     */
-    public static function resetClaim(): void
-    {
-        self::$claimedThisRequest = false;
-    }
-
-    /**
      * The request wrote the account, and with it its own links.
      */
     public static function claimSaved(): void
