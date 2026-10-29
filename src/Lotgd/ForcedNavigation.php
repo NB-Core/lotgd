@@ -30,6 +30,9 @@ class ForcedNavigation
 
     private static bool $releaseRegistered = false;
 
+    /** This request claimed the page revision (consumePageRevision()). */
+    private static bool $claimedThisRequest = false;
+
     /**
      * Handle forced navigation checks.
      */
@@ -153,6 +156,7 @@ class ForcedNavigation
             // Written already; keep saveUser()'s diff from writing the revision
             // again, and make it always write the new links, even when they
             // serialize to what was stored before the claim cleared them.
+            self::$claimedThisRequest = true;
             $session['user']['page_revision'] = $loaded + 1;
             $baseaccount['page_revision'] = $loaded + 1;
             self::$baseAccount['page_revision'] = $loaded + 1;
@@ -189,6 +193,17 @@ class ForcedNavigation
         }
 
         Redirect::redirect('badnav.php', 'Page revision ' . $loaded . ' was already consumed by another request');
+    }
+
+    /**
+     * Whether this request claimed the page revision, which is what guards a
+     * page against a double click or a second tab. A page that changes in
+     * place must have; one that skipped forced navigation (a module with
+     * override_forced_nav) has not, and loads in full instead.
+     */
+    public static function claimedThisRequest(): bool
+    {
+        return self::$claimedThisRequest;
     }
 
     /**

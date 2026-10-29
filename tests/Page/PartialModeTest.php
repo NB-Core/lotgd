@@ -219,7 +219,7 @@ final class PartialModeTest extends TestCase
 
         $answer = PartialRenderer::render($state, 7);
 
-        self::assertSame(['X-Lotgd-Partial' => '1', 'X-Lotgd-Page-Revision' => '7'], $answer['headers']);
+        self::assertSame(['X-Lotgd-Partial' => '1', 'X-Lotgd-Page-Revision' => '7', 'X-Lotgd-Partial-Forms' => '[]'], $answer['headers']);
         self::assertStringStartsWith(
             '<title>The &lt;Forest&gt;</title><p>Forest</p>',
             $answer['body'],

@@ -98,18 +98,38 @@
     window.lotgd = window.lotgd || {};
     window.lotgd.regions = regions;
 
-    // script => method => ops the server answers partially (PartialMode).
+    // The form targets of the page shown that the server answers partially
+    // (PartialMode::pageForms()): from the meta tag on a full page load, from
+    // X-Lotgd-Partial-Forms after every swap.
     let partialForms = null;
     function formsAllowed() {
         if (partialForms === null) {
             const meta = document.querySelector('meta[name="lotgd-partial-forms"]');
-            try {
-                partialForms = meta ? JSON.parse(meta.getAttribute('content') || '{}') : {};
-            } catch (e) {
-                partialForms = {};
-            }
+            partialForms = parseForms(meta ? meta.getAttribute('content') : null);
         }
         return partialForms;
+    }
+
+    function parseForms(raw) {
+        try {
+            const list = raw ? JSON.parse(raw) : [];
+            return Array.isArray(list) ? list.map(formKey).filter(Boolean) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    // A target as script name plus query, however the page wrote it.
+    function formKey(target) {
+        try {
+            const url = new URL(String(target), window.location.href);
+            if (url.host !== window.location.host) {
+                return '';
+            }
+            return (url.pathname.split('/').pop() || '') + url.search;
+        } catch (e) {
+            return '';
+        }
     }
 
     function isPartialForm(form) {
@@ -121,19 +141,11 @@
             || form.hasAttribute('data-lotgd-comment-remove')) {
             return false;
         }
-        let url;
-        try {
-            url = new URL(form.getAttribute('action') || window.location.href, window.location.href);
-        } catch (e) {
+        if ((form.getAttribute('method') || 'GET').toUpperCase() !== 'POST') {
             return false;
         }
-        if (url.host !== window.location.host) {
-            return false;
-        }
-        const script = url.pathname.split('/').pop() || '';
-        const method = (form.getAttribute('method') || 'GET').toUpperCase();
-        const ops = (formsAllowed()[script] || {})[method] || [];
-        return ops.indexOf(url.searchParams.get('op') || '') !== -1;
+        const key = formKey(form.getAttribute('action') || window.location.href);
+        return key !== '' && formsAllowed().indexOf(key) !== -1;
     }
 
     function isOrdinaryLink(el) {
@@ -269,6 +281,9 @@
             return;
         }
         displayedRevision = Number.isNaN(revision) ? displayedRevision : revision;
+        // Before the swap: htmx decides which of the new forms to boost as
+        // it processes them.
+        partialForms = parseForms(xhr.getResponseHeader('X-Lotgd-Partial-Forms'));
         regions.run('destroy', document);
     });
 

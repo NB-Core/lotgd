@@ -57,7 +57,7 @@ final class SchemaUpgrade
      * The newest migration in migrations/. Raise it with every new migration;
      * tests/Upgrade/SchemaUpgradeTest.php fails until it names the newest file.
      */
-    public const LATEST_MIGRATION = 'Version20261028000001';
+    public const LATEST_MIGRATION = 'Version20261029000001';
 
     private Closure $log;
     private Closure $clock;

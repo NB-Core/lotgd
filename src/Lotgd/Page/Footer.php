@@ -19,6 +19,7 @@ use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Page as PageSingleton;
 use Lotgd\Encounter;
+use Lotgd\ForcedNavigation;
 use Lotgd\Grant;
 use Lotgd\Presence;
 use Lotgd\Realtime;
@@ -44,11 +45,20 @@ class Footer
         // a full page; false: partial was asked for but this page cannot be
         // swapped in, so the player is sent to the stored page instead.
         $partial = null;
+        $fallback = null;
         if (PartialMode::isActive()) {
             $clientHead = $_SERVER[PartialRenderer::REQUEST_HEAD_SERVER_KEY] ?? null;
-            $partial = PartialRenderer::canRender($state, is_string($clientHead) ? $clientHead : null)
-                && PartialMode::skinSupportsRegions()
-                && PartialMode::isEnabledFor($session['user'] ?? [])
+            $fallback = PartialRenderer::refusal($state, is_string($clientHead) ? $clientHead : null);
+            if ($fallback === null && !PartialMode::skinSupportsRegions()) {
+                $fallback = 'skin';
+            } elseif ($fallback === null && !PartialMode::isEnabledFor($session['user'] ?? [])) {
+                $fallback = 'pref';
+            } elseif ($fallback === null && !ForcedNavigation::claimedThisRequest()) {
+                // Nothing guards this page against a double click or a
+                // second tab (a module page that skips forced navigation).
+                $fallback = 'claim';
+            }
+            $partial = $fallback === null
                 ? PartialRenderer::render($state, (int) ($session['user']['page_revision'] ?? 0))
                 : false;
         }
@@ -66,6 +76,7 @@ class Footer
 
         if ($partial === false) {
             // badnav.php shows the page just stored; the URL does not run twice.
+            PartialMode::sendHeader(PartialRenderer::HEADER_FALLBACK . ': ' . $fallback);
             PartialMode::sendHeader('HX-Redirect: badnav.php');
             exit();
         }
@@ -243,13 +254,15 @@ class Footer
         // The partial client binds the access keys itself, from the links in
         // the navigation region, so its quick keys follow every swap.
         $partialClient = PartialMode::clientActive($session['user'] ?? []);
+        $partialForms = [];
         if ($partialClient) {
             Output::requireVendorAsset('htmx', 'js');
             Output::requireVendorAsset('lotgd-partial', 'js');
             Output::addHeadMarkup(
                 '<meta name="lotgd-page-revision" content="' . (int) ($session['user']['page_revision'] ?? 0) . '">'
             );
-            Output::addHeadMarkup(PartialMode::formsMeta());
+            $partialForms = PartialMode::pageForms(is_array($session['allowednavs'] ?? null) ? $session['allowednavs'] : []);
+            Output::addHeadMarkup(PartialMode::formsMeta($partialForms));
             if ($realtime) {
                 Output::addHeadMarkup($realtimeMeta);
                 // On every page, not only the duelling ground: a page swapped
@@ -402,7 +415,8 @@ class Footer
             PageParts::$twigVars,
             $headSignature,
             $asyncState ?? [],
-            $regionVersions
+            $regionVersions,
+            $partialForms
         );
     }
 

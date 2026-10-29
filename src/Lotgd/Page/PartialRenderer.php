@@ -22,6 +22,8 @@ final class PartialRenderer
     public const HEADER_REVISION = 'X-Lotgd-Page-Revision';
     public const HEADER_ASYNC_STATE = 'X-Lotgd-Async-State';
     public const HEADER_REGION_VERSIONS = 'X-Lotgd-Region-Versions';
+    public const HEADER_FORMS = 'X-Lotgd-Partial-Forms';
+    public const HEADER_FALLBACK = 'X-Lotgd-Partial-Fallback';
     public const REQUEST_HEAD_SERVER_KEY = 'HTTP_X_LOTGD_HEAD';
     public const REQUEST_REVISION_SERVER_KEY = 'HTTP_X_LOTGD_PAGE_REVISION';
 
@@ -58,6 +60,10 @@ final class PartialRenderer
             );
         }
 
+        // The forms of the page swapped in that may be sent partially; the
+        // client replaces the list it had (PartialMode::pageForms()).
+        $headers[self::HEADER_FORMS] = PartialMode::formsJson($state->partialForms);
+
         if ($state->regionVersions !== []) {
             // The versions of the regions this answer swaps in, so the
             // realtime client neither refetches them nor lets an older fetch
@@ -85,21 +91,32 @@ final class PartialRenderer
      */
     public static function canRender(PageState $state, ?string $clientHeadSignature): bool
     {
+        return self::refusal($state, $clientHeadSignature) === null;
+    }
+
+    /**
+     * Why the page cannot be swapped in, or null when it can: `popup`,
+     * `head` (it needs another <head> than the client shows) or `script`
+     * (a region carries an inline script). Sent to the client as
+     * X-Lotgd-Partial-Fallback, for module and skin authors.
+     */
+    public static function refusal(PageState $state, ?string $clientHeadSignature): ?string
+    {
         if ($state->isPopup()) {
-            return false;
+            return 'popup';
         }
 
         if ($clientHeadSignature === null || !hash_equals($state->headSignature, $clientHeadSignature)) {
-            return false;
+            return 'head';
         }
 
         foreach (array_keys(PageState::REGIONS) as $region) {
             if (stripos($state->region($region), '<script') !== false) {
-                return false;
+                return 'script';
             }
         }
 
-        return true;
+        return null;
     }
 
     /**

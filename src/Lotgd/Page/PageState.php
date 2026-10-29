@@ -54,6 +54,8 @@ final class PageState
      *                                            when the player has AJAX off.
      * @param array<string,int>       $regionVersions The version of each realtime region as
      *                                            this page shows it; empty without realtime.
+     * @param list<string>            $partialForms The form targets on this page that may be
+     *                                            sent partially (PartialMode::pageForms()).
      */
     public function __construct(
         public readonly string $template,
@@ -68,6 +70,7 @@ final class PageState
         public readonly string $headSignature = '',
         public readonly array $asyncState = [],
         public readonly array $regionVersions = [],
+        public readonly array $partialForms = [],
     ) {
     }
 

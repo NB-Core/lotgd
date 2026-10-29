@@ -1655,6 +1655,9 @@ function get_all_tables()
         'filehash' => array(
             'name' => 'filehash', 'type' => 'char(40)', 'null' => '1'
             ),
+        'partial' => array(
+            'name' => 'partial', 'type' => 'text', 'null' => '1'
+            ),
         'type' => array(
             'name' => 'type', 'type' => 'tinyint(4)', 'default' => '0'
             ),

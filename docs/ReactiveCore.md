@@ -130,11 +130,40 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `membership`, `grant`, with their pages by GET). A form's target is
   registered like a link (`Nav::add('', target)`) and consumes the page
   revision once, so a second click is turned away as on a full page; the
-  bank's bookings are guarded actions on top. Full pages carry the list as
-  `<meta name="lotgd-partial-forms">` (JSON, script → method → ops, the same
-  on every page), and the client sends only the forms it names; changing
-  the e-mail address, deleting the character, leaving a clan, mail,
-  petitions and every module form stay ordinary page changes.
+  bank's bookings are guarded actions on top. A page names only its own
+  forms that may post in place (`PartialMode::pageForms()`: the targets it
+  granted in `allowednavs` whose script and op are allowed for POST, usually
+  none to a handful), as `<meta name="lotgd-partial-forms">` (a JSON list of
+  targets) on a full page and in `X-Lotgd-Partial-Forms` on every partial
+  answer; the client sends only those. The whole allow-list never leaves the
+  server. Changing the e-mail address, deleting the character, leaving a
+  clan, mail, petitions and every module form a module does not declare
+  stay ordinary page changes.
+- **Module pages** (`runmodule.php`) change in place where the module
+  declares them, under its info key `partial`, in the allow-list's shape:
+  `'partial' => ['GET' => ['', 'list'], 'POST' => ['buy']]` (op values from
+  `$_GET['op']`, `''` meaning none). The declaration is stored in the
+  module's row (`modules.partial`, migration `Version20261029000001`) when
+  `Modules::inject()` reads the module's info anyway, and written only when
+  it changed, so it arrives with the module's first use after a deploy
+  (`bin/modules-refresh` brings it at start-up). `preCheck()` reads it from
+  the stored row (`Modules::partialDeclaration()`, the cached row inject()
+  reads next), so no module code runs before the decision. A module's
+  administration (`admin=1`), an inactive or unknown module and every page
+  it does not declare load in full as before. The same late fallback applies
+  as to core pages. Shipped: travelling and its fights (`cities`), flirting
+  and talking (`lovers`).
+- **The page revision guards every swap**: a page answered partially must
+  have claimed the page revision in its request, or it falls back to the
+  stored page. Every core page on the allow-list does; a module page that
+  skips forced navigation (`override_forced_nav` without its own
+  `do_forced_nav()`) does not, and loads in full.
+- **Why a page fell back**: a partial request that ends on the stored page
+  carries `X-Lotgd-Partial-Fallback` – `script` (a region printed an inline
+  `<script>`), `head` (the page needs another `<head>`, e.g. it added CSS or
+  JavaScript there), `skin`, `pref`, `claim` or `popup`. In the browser's
+  developer tools (Network) it shows on the request that was answered with
+  `HX-Redirect: badnav.php`.
 - **Early fallback**: `PartialMode::preCheck()` runs in `common.php` before
   forced navigation. A partial GET for any other page gets `HX-Redirect` to
   the same URL and an empty body; the page has not run. A partial POST gets
@@ -264,7 +293,8 @@ player on a skin with regions; everyone else gets exactly the game of before.
   inside a partial request are `HX-Redirect` page changes.
 - **Client** (`assets/js/lotgd.partial.js`, after htmx 2.0.4 from
   `assets/vendor/htmx/`): boosts links in the `content` and `nav` regions,
-  and the forms there that `lotgd-partial-forms` names; other forms, the
+  and the forms there the page names (`lotgd-partial-forms`, then
+  `X-Lotgd-Partial-Forms` after each swap); other forms, the
   commentary forms (the async client sends them), popup links (`onclick`),
   `target` links and other hosts stay ordinary; a form answered
   `X-Lotgd-Resubmit` is sent again natively (no submit event, so htmx leaves
