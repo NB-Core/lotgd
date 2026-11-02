@@ -290,6 +290,24 @@ turns this off; see the Administrator Guide. The unused setting `corenewspath`,
 a leftover of the old custom news URL, is no longer offered; a stored value is
 ignored.
 
+### Bold and italic in player texts
+
+*Game Settings* has a new section **Text formatting** with one switch per area:
+`formatting_commentary` (chat, default off), `formatting_bio` (default off), `formatting_mail` and
+`formatting_clan` (default on). The defaults keep what each area did before: chat and bio removed the codes,
+mail and clan texts rendered them. What changes is that a text now closes the bold and italic it opens, so
+none of them reaches past it.
+
+For module authors:
+- `Sanitize::userFormatting($text, Sanitize::formattingAllowed('<area>'))` gives a player's text as it may be
+  shown: balanced where allowed, the codes neutralised where not.
+- `Sanitize::commentSanitize($text, Sanitize::USER_FORMATTING)` keeps `b` and `i` while neutralising the other
+  codes.
+- `Forms::previewField()` takes `$formatting` (last parameter, default `false`) to show bold and italic in the
+  preview.
+- `Output::getOutput()` now really closes tags left open at the end of a page. A page relying on an open tag
+  reaching into the footer no longer gets that.
+
 ### Turning the live features on
 
 *Game Settings* now opens with a table **Live features**:

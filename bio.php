@@ -159,7 +159,8 @@ if (is_array($target)) {
     }
 
     if ($target['bio'] > "") {
-        $output->output("`^Bio: `@`n%s`n", Nltoappon::convert(Censor::soap($target['bio'])));
+        // Whatever the bio opens it closes again (Sanitize::userFormatting()).
+        $output->output("`^Bio: `@`n%s`n", Sanitize::userFormatting(Nltoappon::convert(Censor::soap($target['bio'])), Sanitize::formattingAllowed('bio')));
     }
 
     HookHandler::hook("bioinfo", $target);

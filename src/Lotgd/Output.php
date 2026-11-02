@@ -300,12 +300,16 @@ class Output
     public function getOutput()
     {
         $output = $this->output;
-        foreach (array_keys($this->nestedtags) as $key => $val) {
-            if ($key == 'font') {
-                $key = 'span';
-            }
-            if ($val === true) {
-                $output .= "</" . $key . ">";
+        // What each code opened, so a page that leaves one open still ends
+        // with balanced markup. openTag() keeps them in the order they were
+        // opened, so the reverse closes innermost first.
+        $closers = [
+            'font' => '</span>', 'span' => '</span>', 'div' => '</div>',
+            '<' => '</div>', '>' => '</div>', 'B' => '</em>', 'i' => '</i>', 'b' => '</b>',
+        ];
+        foreach (array_reverse($this->nestedtags, true) as $key => $val) {
+            if ($val === true && isset($closers[$key])) {
+                $output .= $closers[$key];
             }
         }
         return $output;
@@ -393,7 +397,7 @@ class Output
                     if ($this->nestedtags['font']) {
                         $out .= '</span>';
                     } else {
-                        $this->nestedtags['font'] = true;
+                        $this->openTag('font');
                     }
                     $out .= "<span class='" . $this->colors[$data[$pos]] . "'>";
                 } else {
@@ -417,7 +421,7 @@ class Output
                                 $out .= '</b>';
                                 $this->nestedtags['b'] = false;
                             } else {
-                                $this->nestedtags['b'] = true;
+                                $this->openTag('b');
                                 $out .= '<b>';
                             }
                             break;
@@ -426,7 +430,7 @@ class Output
                                 $out .= '</i>';
                                 $this->nestedtags['i'] = false;
                             } else {
-                                $this->nestedtags['i'] = true;
+                                $this->openTag('i');
                                 $out .= '<i>';
                             }
                             break;
@@ -435,7 +439,7 @@ class Output
                                 $out .= '</div>';
                                 $this->nestedtags['div'] = false;
                             } else {
-                                $this->nestedtags['div'] = true;
+                                $this->openTag('div');
                                 $out .= "<div align='center'>";
                             }
                             break;
@@ -444,7 +448,7 @@ class Output
                                 $out .= '</em>';
                                 $this->nestedtags['B'] = false;
                             } else {
-                                $this->nestedtags['B'] = true;
+                                $this->openTag('B');
                                 $out .= '<em>';
                             }
                             break;
@@ -453,7 +457,7 @@ class Output
                                 $this->nestedtags['>'] = false;
                                 $out .= '</div>';
                             } else {
-                                $this->nestedtags['>'] = true;
+                                $this->openTag('>');
                                 $out .= "<div style='float: right; clear: right;'>";
                             }
                             break;
@@ -462,7 +466,7 @@ class Output
                                 $this->nestedtags['<'] = false;
                                 $out .= '</div>';
                             } else {
-                                $this->nestedtags['<'] = true;
+                                $this->openTag('<');
                                 $out .= "<div style='float: left; clear: left;'>";
                             }
                             break;
@@ -471,7 +475,7 @@ class Output
                                 $out .= '</span>';
                                 $this->nestedtags['span'] = false;
                             } else {
-                                $this->nestedtags['span'] = true;
+                                $this->openTag('span');
                                 $out .= "<span class='navhi'>";
                             }
                             break;
@@ -523,6 +527,16 @@ class Output
     {
         $this->colors = $colors;
         $this->setColorMap();
+    }
+
+    /**
+     * Mark a tag open and move it to the end, so the open tags stay in the
+     * order they were opened and getOutput() can close innermost first.
+     */
+    private function openTag(string $tag): void
+    {
+        unset($this->nestedtags[$tag]);
+        $this->nestedtags[$tag] = true;
     }
 
     public function getNestedTags()

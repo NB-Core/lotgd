@@ -94,6 +94,15 @@ function mailRead(): void
     // Message headers
     $output->output('`b`2From:`b `^%s', $message['name']);
     $output->outputNotl('%s', ($statusImage ?? '') . '`n', true);
+    // Players' own subject and body may bold and italicise when the game
+    // allows it; either way they close what they open (system mails are
+    // the game's own text and stay as written).
+    $playerMail = (int) $message['msgfrom'] !== 0;
+    $mailFormatting = Sanitize::formattingAllowed('mail');
+    if ($playerMail) {
+        $message['subject'] = Sanitize::userFormatting((string) $message['subject'], $mailFormatting);
+        $message['body'] = Sanitize::userFormatting((string) $message['body'], $mailFormatting);
+    }
     $output->output('`b`2Subject:`b `^%s`n', $message['subject']);
     $output->output('`b`2Sent:`b `^%s`n', $message['sent']);
 

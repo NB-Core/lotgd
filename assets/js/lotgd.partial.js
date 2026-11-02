@@ -422,6 +422,9 @@
         }
 
         const colors = cfg.colors || {};
+        // Bold and italic where the game allows them, nested properly and
+        // closed at the end (Sanitize::balanceFormatting()).
+        const open = [];
         for (; x < t.length; x++) {
             const y = t.substr(x, 1);
             if (y === '<') {
@@ -433,6 +436,18 @@
                     const z = t.substr(x + 1, 1);
                     if (z === '0') {
                         out += '</span>';
+                    } else if (cfg.formatting && (z === 'b' || z === 'i')) {
+                        const at = open.indexOf(z);
+                        if (at < 0) {
+                            open.push(z);
+                            out += '<' + z + '>';
+                        } else {
+                            const after = open.slice(at + 1);
+                            after.slice().reverse().forEach(function (inner) { out += '</' + inner + '>'; });
+                            out += '</' + z + '>';
+                            after.forEach(function (inner) { out += '<' + inner + '>'; });
+                            open.splice(at, 1);
+                        }
                     } else if (Object.prototype.hasOwnProperty.call(colors, z)) {
                         out += '</span><span class="' + colors[z] + '">';
                     }
@@ -443,6 +458,7 @@
             }
         }
 
+        open.slice().reverse().forEach(function (inner) { out += '</' + inner + '>'; });
         const target = document.getElementById('previewtext' + cfg.name);
         if (target) {
             target.innerHTML = out + end + '<br/>';

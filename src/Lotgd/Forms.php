@@ -592,7 +592,9 @@ class Forms
      * Render a message preview input field with javascript helper.
      *
      * With $talkline false the preview shows the text alone, without the
-     * talk line in front (a name, a title).
+     * talk line in front (a name, a title). With $formatting the preview
+     * shows bold and italic, closed again at its end, as
+     * Sanitize::balanceFormatting() renders them.
      */
     public static function previewField(
         string $name,
@@ -600,7 +602,8 @@ class Forms
         string|false $talkline = 'says',
         bool $showcharsleft = true,
         array|bool $info = false,
-        bool $scriptOutput = true
+        bool $scriptOutput = true,
+        bool $formatting = false
     ): string {
         global $session;
         $output = Output::getInstance();
@@ -624,7 +627,8 @@ class Forms
                 $scriptOutput,
                 $maxChars,
                 $youhave,
-                $charsleft
+                $charsleft,
+                $formatting
             );
         }
 
@@ -694,7 +698,8 @@ JS;
 JS;
         }
 
-        $switchscript = DataCache::getInstance()->datacache('switchscript_comm' . rawurlencode($name));
+        $switchKey = 'switchscript_comm' . rawurlencode($name) . ($formatting ? '-fmt' : '');
+        $switchscript = DataCache::getInstance()->datacache($switchKey);
 
         if (!$switchscript) {
             $colors = $output->getColors();
@@ -702,10 +707,15 @@ JS;
             foreach ($colors as $key => $colorcode) {
                 $cases[] = "case \"{$key}\": out+='</span><span class=\"{$colorcode}\">';break;";
             }
+            if ($formatting) {
+                // Bold and italic, nested properly (Sanitize::balanceFormatting()).
+                $cases[] = "case \"b\": case \"i\": var at = open.indexOf(z); if (at < 0) { open.push(z); out += '<' + z + '>'; } else { var after = open.slice(at + 1); for (var k = after.length - 1; k >= 0; k--) { out += '</' + after[k] + '>'; } out += '</' + z + '>'; for (k = 0; k < after.length; k++) { out += '<' + after[k] + '>'; } open.splice(at, 1); } break;";
+            }
             $cases = implode("\n            ", $cases);
 
             $switchscript = <<<JS
 
+    var open = [];
     for (; x < t.length; x++) {
         y = t.substr(x, 1);
         if (y == '<') {
@@ -726,12 +736,13 @@ JS;
             out += y;
         }
     }
+    for (var c = open.length - 1; c >= 0; c--) { out += '</' + open[c] + '>'; }
     document.getElementById("previewtext{$name}").innerHTML = out + end + '<br/>';
 }
 </script>
 JS;
 
-            DataCache::getInstance()->updatedatacache('switchscript_comm' . rawurlencode($name), $switchscript);
+            DataCache::getInstance()->updatedatacache($switchKey, $switchscript);
         }
 
         $script .= $switchscript;
@@ -790,7 +801,8 @@ JS;
         bool $scriptOutput,
         int $maxChars,
         string $youhave,
-        string $charsleft
+        string $charsleft,
+        bool $formatting = false
     ): string {
         global $session;
         $output = Output::getInstance();
@@ -807,6 +819,7 @@ JS;
             'youHave' => $youhave,
             'charsLeft' => $charsleft,
             'colors' => (object) $output->getColors(),
+            'formatting' => $formatting,
         ];
         $preview = ' data-lotgd-preview="' . htmlspecialchars((string) json_encode($config), ENT_QUOTES, 'UTF-8') . '"';
 

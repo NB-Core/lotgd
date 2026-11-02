@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Lotgd;
 
-use Lotgd\Settings;
-
 class Sanitize
 {
     public const URI_MAX_LENGTH = 200;
@@ -93,14 +91,126 @@ class Sanitize
      *
      * @return string Sanitized value
      */
-    public static function commentSanitize(?string $in): string
+    public static function commentSanitize(?string $in, string $keep = ''): string
     {
         if ($in == '' || $in === null) {
             return '';
         }
-        $out = preg_replace('/[`](?=[^0' . Output::getInstance()->getColormapEscaped() . '])/', chr(1) . chr(1), $in);
+        // Every code but the colours (and the formatting codes in $keep)
+        // becomes literal text: the backtick is doubled.
+        $out = preg_replace('/[`](?=[^0' . Output::getInstance()->getColormapEscaped() . preg_quote($keep, '/') . '])/', chr(1) . chr(1), $in);
         $out = str_replace(chr(1), '`', $out);
         return $out;
+    }
+
+    /**
+     * The formatting codes players may use where it is allowed: bold and
+     * italic.
+     */
+    public const USER_FORMATTING = 'bi';
+
+    /**
+     * Make bold and italic in a player's text safe to show: nested properly
+     * and all closed again at its end, so nothing it opens reaches past it
+     * (the next chat line, the page's navigation).
+     *
+     * `b and `i toggle, as appoencode() reads them. A code that closes a
+     * format below another open one closes that one first and opens it again
+     * after, so `b`ia`bb`i becomes `b`ia`i`b`ib`i. Escaped backticks (``)
+     * stay as they are.
+     */
+    public static function balanceFormatting(string $in): string
+    {
+        if (!str_contains($in, '`')) {
+            return $in;
+        }
+        $out = '';
+        $open = [];
+        $length = strlen($in);
+        for ($pos = 0; $pos < $length; $pos++) {
+            $char = $in[$pos];
+            if ($char !== '`' || $pos + 1 >= $length) {
+                $out .= $char;
+                continue;
+            }
+            $code = $in[$pos + 1];
+            if ($code === '`') {
+                $out .= '``';
+                $pos++;
+                continue;
+            }
+            if (!str_contains(self::USER_FORMATTING, $code)) {
+                $out .= '`' . $code;
+                $pos++;
+                continue;
+            }
+            $pos++;
+            $at = array_search($code, $open, true);
+            if ($at === false) {
+                $open[] = $code;
+                $out .= '`' . $code;
+                continue;
+            }
+            // Close the ones opened after it, then it, then open those again.
+            $after = array_slice($open, $at + 1);
+            foreach (array_reverse($after) as $inner) {
+                $out .= '`' . $inner;
+            }
+            $out .= '`' . $code;
+            foreach ($after as $inner) {
+                $out .= '`' . $inner;
+            }
+            $open = array_merge(array_slice($open, 0, $at), $after);
+        }
+        foreach (array_reverse($open) as $code) {
+            $out .= '`' . $code;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Make the given formatting codes literal text (the backtick doubled),
+     * leaving escaped backticks and every other code as they are.
+     */
+    public static function escapeCodes(string $in, string $codes): string
+    {
+        if ($codes === '' || !str_contains($in, '`')) {
+            return $in;
+        }
+
+        return (string) preg_replace_callback(
+            '/``|`([' . preg_quote($codes, '/') . '])/',
+            static fn (array $m): string => $m[0] === '``' ? '``' : '``' . $m[1],
+            $in
+        );
+    }
+
+    /**
+     * Whether the game lets players use bold and italic in an area: the
+     * setting formatting_<area>. The defaults are what each area did before
+     * the settings: chat lines and bios showed the codes as text, mail and
+     * clan texts used them.
+     *
+     * @param string $area commentary, bio, mail or clan
+     */
+    public static function formattingAllowed(string $area): bool
+    {
+        $defaults = ['commentary' => 0, 'bio' => 0, 'mail' => 1, 'clan' => 1];
+        if (!Settings::hasInstance()) {
+            return (bool) ($defaults[$area] ?? 0);
+        }
+
+        return (int) Settings::getInstance()->getSetting('formatting_' . $area, $defaults[$area] ?? 0) === 1;
+    }
+
+    /**
+     * A player's text as it may be shown: bold and italic balanced where the
+     * game allows them, literal where it does not.
+     */
+    public static function userFormatting(string $in, bool $allowed): string
+    {
+        return $allowed ? self::balanceFormatting($in) : self::escapeCodes($in, self::USER_FORMATTING);
     }
 
     /**
