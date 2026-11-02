@@ -29,6 +29,13 @@ final class ConfigurationStatusPageTest extends TestCase
             $run->html,
             'The default for players shows as on before it was ever saved.'
         );
+        foreach (['formatting_mail', 'formatting_clan'] as $key) {
+            self::assertMatchesRegularExpression(
+                "~<select [^>]*name='{$key}'[^>]*>(?:(?!</select>).)*<option value='1' selected>~s",
+                $run->html,
+                "{$key} shows as on before it was ever saved, so saving other settings keeps it on."
+            );
+        }
     }
 
     public function testTheButtonTurnsOnTheRecommendedSettingsAndLogsThem(): void

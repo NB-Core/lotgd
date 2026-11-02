@@ -596,6 +596,11 @@ switch ($type_setting) {
                 // Default on: stored before the form shows it, so saving
                 // unrelated settings does not turn it off.
                 $settings->getSetting('partial_render_default', 1);
+                // The same for the text formatting switches that are on by
+                // default (Sanitize::formattingAllowed()).
+                foreach (['commentary' => 0, 'bio' => 0, 'mail' => 1, 'clan' => 1] as $area => $default) {
+                    $settings->getSetting('formatting_' . $area, $default);
+                }
 
                 //
 

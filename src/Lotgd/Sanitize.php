@@ -129,8 +129,15 @@ class Sanitize
         $length = strlen($in);
         for ($pos = 0; $pos < $length; $pos++) {
             $char = $in[$pos];
-            if ($char !== '`' || $pos + 1 >= $length) {
+            if ($char !== '`') {
                 $out .= $char;
+                continue;
+            }
+            if ($pos + 1 >= $length) {
+                // A lone backtick at the end would pair with whatever comes
+                // next (the closing codes below, the next line) into an
+                // escaped backtick, leaving the format open: make it literal.
+                $out .= '``';
                 continue;
             }
             $code = $in[$pos + 1];

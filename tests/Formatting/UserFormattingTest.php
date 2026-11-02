@@ -41,6 +41,9 @@ final class UserFormattingTest extends TestCase
         yield 'an escaped backtick is not a code' => ['``b stays', '``b stays'];
         yield 'colours pass through' => ['`b`4red`0 normal', '`b`4red`0 normal`b'];
         yield 'a lone closing code opens and closes' => ['A`b', 'A`b`b'];
+        yield 'a trailing backtick cannot swallow the closer' => ['`bhello`', '`bhello```b'];
+        yield 'a trailing backtick alone is made literal' => ['hello`', 'hello``'];
+        yield 'an escaped backtick at the end stays' => ['`bhello``', '`bhello```b'];
     }
 
     #[DataProvider('balanced')]
@@ -55,6 +58,14 @@ final class UserFormattingTest extends TestCase
         $html = $output->appoencode(Sanitize::balanceFormatting('`bbold `iboth')) . $output->appoencode('after');
 
         self::assertSame('<b>bold <i>both</i></b>after', $html);
+    }
+
+    public function testATrailingBacktickDoesNotLeaveBoldOpen(): void
+    {
+        $output = new Output();
+        $html = $output->appoencode(Sanitize::balanceFormatting('`bhello`')) . $output->appoencode('after');
+
+        self::assertSame('<b>hello`</b>after', $html);
     }
 
     public function testEscapingNeutralisesOnlyTheNamedCodes(): void
