@@ -796,7 +796,10 @@
         refresh: function (region) {
             if (realtime.on) {
                 refresh(region, Number.MAX_SAFE_INTEGER);
-            } else if (region === 'mail' && settings().updates) {
+            } else if (region === 'mail' && settings().updates && !(window.lotgd && window.lotgd.notices)) {
+                // The notices (lotgd.notices.js) ask for the same status and
+                // draw the mail link themselves; a second request at once is
+                // turned away by the rate limit (429).
                 call('Notices', 'status', []).catch(function () {});
             }
         },
