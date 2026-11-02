@@ -597,9 +597,10 @@ switch ($type_setting) {
                 // unrelated settings does not turn it off.
                 $settings->getSetting('partial_render_default', 1);
                 // The same for the text formatting switches that are on by
-                // default (Sanitize::formattingAllowed()).
-                foreach (['commentary' => 0, 'bio' => 0, 'mail' => 1, 'clan' => 1] as $area => $default) {
-                    $settings->getSetting('formatting_' . $area, $default);
+                // default (Sanitize::formattingAllowed()); an absent one that
+                // is off by default already shows as off.
+                foreach (['formatting_mail', 'formatting_clan'] as $defaultOn) {
+                    $settings->getSetting($defaultOn, 1);
                 }
 
                 //

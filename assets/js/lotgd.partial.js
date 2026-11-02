@@ -436,6 +436,9 @@
                     const z = t.substr(x + 1, 1);
                     if (z === '0') {
                         out += '</span>';
+                    } else if (z === '`') {
+                        // An escaped backtick shows as one, as appoencode() does.
+                        out += '`';
                     } else if (cfg.formatting && (z === 'b' || z === 'i')) {
                         const at = open.indexOf(z);
                         if (at < 0) {

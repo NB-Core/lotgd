@@ -703,7 +703,8 @@ JS;
 
         if (!$switchscript) {
             $colors = $output->getColors();
-            $cases = ["case \"0\": out+='</span>';break;"];
+            // An escaped backtick shows as one, as appoencode() does.
+            $cases = ["case \"0\": out+='</span>';break;", "case \"`\": out+='`';break;"];
             foreach ($colors as $key => $colorcode) {
                 $cases[] = "case \"{$key}\": out+='</span><span class=\"{$colorcode}\">';break;";
             }

@@ -300,7 +300,7 @@ none of them reaches past it.
 
 For module authors:
 - `Sanitize::userFormatting($text, Sanitize::formattingAllowed('<area>'))` gives a player's text as it may be
-  shown: balanced where allowed, the codes neutralised where not.
+  shown: balanced where allowed, `b` and `i` made literal where not (other codes are left as they are).
 - `Sanitize::commentSanitize($text, Sanitize::USER_FORMATTING)` keeps `b` and `i` while neutralising the other
   codes.
 - `Forms::previewField()` takes `$formatting` (last parameter, default `false`) to show bold and italic in the

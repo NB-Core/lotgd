@@ -134,6 +134,7 @@ final class PreviewFieldTest extends TestCase
 
         self::assertStringContainsString('case "b": case "i":', $markup);
         self::assertStringContainsString("for (var c = open.length - 1; c >= 0; c--)", $markup, 'What it opened is closed at the end.');
+        self::assertStringContainsString("case \"`\": out+='`';break;", $markup, 'An escaped backtick shows as one.');
     }
 
     private function enablePartialClient(): void
