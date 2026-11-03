@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 const cfg = require('./config');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const BASE = cfg.BASE;
 const results = [];
 function check(name, ok, info = '') { results.push(!!ok); console.log((ok ? 'PASS ' : 'FAIL ') + name + (info ? ' -- ' + info : '')); }
@@ -46,14 +46,14 @@ async function scenario(browser, label, partial) {
   const before = calls.length;
   const maxId = sql(`SELECT COALESCE(MAX(commentid),0) FROM commentary`);
   // Through the core's write path, which announces it (live commentary).
-  execSync(`php ${__dirname}/inject_comment.php '${cfg.GAME}' village 1 'async e2e ${label} hello'`);
+  execFileSync('php', [`${__dirname}/inject_comment.php`, cfg.GAME, 'village', '1', `async e2e ${label} hello`]);
   const appeared = await waitFor(async () => (await page.textContent('body')).includes(`async e2e ${label} hello`), 25000);
   check('a comment posted elsewhere appears', appeared);
   sql(`INSERT INTO mail (msgfrom, msgto, subject, body, sent, seen) VALUES (0, 1, 'e2e', 'hello', NOW(), 0)`);
   if (partial) {
     // What Mail::systemMail() does for a realtime player: announce the region.
     const v = sql(`SELECT MAX(messageid) FROM mail WHERE msgto=1`);
-    execSync(`php ${cfg.REPO}/tests/Integration/realtime_worker.php '${JSON.stringify({ root: cfg.GAME, mode: 'notify', channel: 'user-1', version: Number(v) })}'`);
+    execFileSync('php', [`${cfg.REPO}/tests/Integration/realtime_worker.php`, JSON.stringify({ root: cfg.GAME, mode: 'notify', channel: 'user-1', version: Number(v) })]);
   }
   const mailed = await waitFor(async () => /1 new/.test(await page.textContent(partial ? '[data-lotgd-slot="mail"]' : 'body')), 25000);
   check('the mail link shows the new mail', mailed);

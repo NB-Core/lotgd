@@ -22,8 +22,12 @@ async function waitNotice(p, kind, ms, visible = true) {
 }
 (async () => {
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
+  // Realtime off: with it, a mail announcement asks Notices.status itself,
+  // and this suite checks that the poll alone brings the notice.
+  const oldRealtime = sql(`SELECT value FROM settings WHERE setting='realtime_enabled'`);
   sql(`UPDATE settings SET value='${SKIN}' WHERE setting='defaultskin';
        INSERT INTO settings (setting, value) VALUES ('notices_poll_seconds', '15') ON DUPLICATE KEY UPDATE value='15';
+       UPDATE settings SET value='0' WHERE setting='realtime_enabled';
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:0;s:4:"ajax";i:0;}', alive=1, location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', lastmotd=NOW() WHERE acctid=385;
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:1;s:4:"ajax";i:1;}', alive=1, location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', lastmotd=NOW() WHERE acctid=1;
        UPDATE mail SET seen=1 WHERE msgto IN (1, 385);`);
@@ -87,7 +91,7 @@ async function waitNotice(p, kind, ms, visible = true) {
     await a.screenshot({ path: `${OUT}/97-notices-${tag}-stack.png` });
   } finally {
     await b.close();
-    sql(`DELETE FROM mail WHERE subject='Notice test'; DELETE FROM motd WHERE motdtitle='Notice MoTD'; UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'; DELETE FROM settings WHERE setting='notices_poll_seconds'`);
+    sql(`DELETE FROM mail WHERE subject='Notice test'; DELETE FROM motd WHERE motdtitle='Notice MoTD'; UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'; DELETE FROM settings WHERE setting='notices_poll_seconds'; UPDATE settings SET value='${oldRealtime || 0}' WHERE setting='realtime_enabled'`);
     cfg.clearDataCache(cfg.GAME);
   }
   console.log(`${results.filter(Boolean).length}/${results.length} passed`);

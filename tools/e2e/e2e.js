@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 const cfg = require('./config');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const BASE = cfg.BASE;
 const results = [];
 function check(name, ok, info = '') { results.push({ name, ok: !!ok }); console.log((ok ? 'PASS ' : 'FAIL ') + name + (info ? ' -- ' + info : '')); }
@@ -9,7 +9,7 @@ const settle = (page, ms = 1200) => page.waitForTimeout(ms);
 
 function setPrefs(extra) {
   const current = execSync(cfg.DB_CMD, { input: 'SELECT prefs FROM accounts WHERE acctid=1' }).toString().trim();
-  const merged = execSync(`php -r '$p = @unserialize(stream_get_contents(STDIN)); if (!is_array($p)) { $p = []; } echo serialize(array_merge($p, json_decode($argv[1], true)));' '${JSON.stringify(extra)}'`, { input: current }).toString();
+  const merged = execFileSync('php', ['-r', '$p = @unserialize(stream_get_contents(STDIN)); if (!is_array($p)) { $p = []; } echo serialize(array_merge($p, json_decode($argv[1], true)));', JSON.stringify(extra)], { input: current }).toString();
   execSync(cfg.DB_CMD, { input: `UPDATE accounts SET prefs='${merged.replace(/'/g, "''")}' WHERE acctid=1` });
 }
 
