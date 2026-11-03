@@ -79,12 +79,16 @@ async function waitNotice(p, kind, ms, visible = true) {
     a.on('pageerror', e => console.log('pageerror(a):', e.message));
     let statusCalls = 0;
     a.on('request', r => { if (r.url().includes('/async/process.php') && /Notices/.test(r.postData() || '')) statusCalls++; });
+    // The stack asks by itself only when no AJAX poll brought the notices in
+    // time, e.g. one refused by the rate limit: then that call is right.
+    let failedPolls = 0;
+    a.on('response', r => { if (r.url().includes('/async/process.php') && r.status() !== 200) failedPolls++; });
     await login(a, 'Admin');
     await a.evaluate(() => { window.__noReload = 1; });
     sql(`INSERT INTO mail (msgfrom, msgto, subject, body, sent, seen) VALUES (385, 1, 'Notice test', 'Hello', NOW(), 0)`);
     n = await waitNotice(a, 'mail', 20000);
     check('an AJAX player gets the notice with the poll', n && !n.hidden && await a.evaluate(() => window.__noReload === 1), JSON.stringify(n));
-    check('without asking for it separately', statusCalls === 0, 'Notices.status calls: ' + statusCalls);
+    check('without asking for it separately', statusCalls === 0 || failedPolls > 0, `Notices.status calls: ${statusCalls}, failed async answers: ${failedPolls}`);
     // A MoTD notice from before still comes for this player (its own lastmotd).
     const motdA = await waitNotice(a, 'motd', 2000);
     check('the MoTD notice for this player too', motdA && !motdA.hidden);
