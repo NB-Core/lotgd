@@ -50,8 +50,11 @@ class DbMysqli
 
     /**
      * The open link; after release(), opened again on first use.
+     *
+     * @throws \RuntimeException When there is no link and it cannot be opened
+     *                           (never connected, or the reconnect failed).
      */
-    private function link(): ?\mysqli
+    private function link(): \mysqli
     {
         if ($this->link === null && $this->credentials !== null) {
             $link = mysqli_connect($this->credentials['host'], $this->credentials['user'], $this->credentials['pass']);
@@ -64,6 +67,13 @@ class DbMysqli
                 }
                 $this->link = $link;
             }
+        }
+        if (!$this->link instanceof \mysqli) {
+            throw new \RuntimeException(
+                $this->credentials === null
+                    ? 'The legacy database link is not open.'
+                    : 'The legacy database link could not be opened again: ' . (string) mysqli_connect_error()
+            );
         }
 
         return $this->link;

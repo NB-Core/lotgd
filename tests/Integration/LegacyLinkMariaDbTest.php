@@ -45,7 +45,7 @@ final class LegacyLinkMariaDbTest extends TestCase
     protected function tearDown(): void
     {
         if ($this->dir !== '' && is_dir($this->dir)) {
-            array_map('unlink', (array) glob($this->dir . '/*'));
+            array_map('unlink', glob($this->dir . '/*') ?: []);
             rmdir($this->dir);
         }
     }
@@ -81,6 +81,8 @@ final class LegacyLinkMariaDbTest extends TestCase
         touch($spec['wait']);
         $out = (string) stream_get_contents($pipes[1]);
         $err = (string) stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
         proc_close($process);
         $answer = json_decode($out, true);
         self::assertIsArray($answer, $out . $err);
