@@ -32,6 +32,12 @@ function clearDataCache(game) {
   for (const name of fs.readdirSync(dir)) fs.rmSync(path.join(dir, name), { recursive: true, force: true });
 }
 
+// A string as an SQL literal that means the same whatever the SQL mode
+// (backslashes, quotes, NO_BACKSLASH_ESCAPES): its UTF-8 bytes in hex.
+function sqlString(value) {
+  return `CONVERT(X'${Buffer.from(String(value), 'utf8').toString('hex')}' USING utf8mb4)`;
+}
+
 // Remember the named game settings; the returned function puts them back
 // (and removes those that were not set). sql(query) runs a query and
 // returns its output.
@@ -40,7 +46,7 @@ function keepSettings(sql, names) {
   const rows = sql(`SELECT setting, value FROM settings WHERE setting IN (${list})`);
   const saved = new Map(rows === '' ? [] : rows.split('\n').map(line => line.split('\t')));
   return () => sql(names.map(n => saved.has(n)
-    ? `UPDATE settings SET value='${saved.get(n).replace(/'/g, "''")}' WHERE setting='${n}';`
+    ? `UPDATE settings SET value=${sqlString(saved.get(n))} WHERE setting='${n}';`
     : `DELETE FROM settings WHERE setting='${n}';`).join(' '));
 }
 
@@ -60,6 +66,7 @@ module.exports = {
   overrideAsyncSettings,
   clearDataCache,
   keepSettings,
+  sqlString,
   // Where the screenshots go: run.sh sets OUT, alone a suite writes here.
   OUT: process.env.OUT || '.',
 };

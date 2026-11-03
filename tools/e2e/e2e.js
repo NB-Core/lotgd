@@ -10,7 +10,7 @@ const settle = (page, ms = 1200) => page.waitForTimeout(ms);
 function setPrefs(extra) {
   const current = execSync(cfg.DB_CMD, { input: 'SELECT prefs FROM accounts WHERE acctid=1' }).toString().trim();
   const merged = execFileSync('php', ['-r', '$p = @unserialize(stream_get_contents(STDIN)); if (!is_array($p)) { $p = []; } echo serialize(array_merge($p, json_decode($argv[1], true)));', JSON.stringify(extra)], { input: current }).toString();
-  execSync(cfg.DB_CMD, { input: `UPDATE accounts SET prefs='${merged.replace(/'/g, "''")}' WHERE acctid=1` });
+  execSync(cfg.DB_CMD, { input: `UPDATE accounts SET prefs=${cfg.sqlString(merged)} WHERE acctid=1` });
 }
 
 async function login(page) {
