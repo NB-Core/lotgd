@@ -69,10 +69,12 @@ async function finish(page, script) {
   sql(`UPDATE accounts SET prefs='${prefs}', ${stats}, loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1; DELETE FROM accounts_output WHERE acctid=1`);
   sql(`DELETE FROM module_userprefs WHERE userid=1 AND modulename='specialtydarkarts'; INSERT INTO module_userprefs (modulename,setting,userid,value) VALUES ('specialtydarkarts','skill',1,'10'),('specialtydarkarts','uses',1,'5')`);
   // A sleeping warrior for PvP.
+  // Sam lasts beyond the first round: the attack itself plays one, and with
+  // him dead at once the fight's links are gone before the suite looks.
   sql(`DELETE FROM accounts WHERE login='sleepere2e'`);
   const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','laston','pvpflag','allowednavs','restorepage','prefs','alive','hitpoints','location')`);
   sql(`INSERT INTO accounts (login,name,emailaddress,version,loggedin,laston,pvpflag,allowednavs,restorepage,prefs,alive,hitpoints,location,${cols}) SELECT 'sleepere2e','Sleepy Sam','sleep@example.invalid',0,0,'2020-01-01 00:00:00','2020-01-01 00:00:00','','village.php','a:0:{}',1,20,location,${cols} FROM accounts WHERE acctid=1`);
-  sql(`UPDATE accounts SET level=5, hitpoints=20, maxhitpoints=20, attack=1, defense=1, dragonkills=0, superuser=0, age=30, experience=5000, slaydragon=0, locked=0 WHERE login='sleepere2e'`);
+  sql(`UPDATE accounts SET level=5, hitpoints=300, maxhitpoints=300, attack=1, defense=20, dragonkills=0, superuser=0, age=30, experience=5000, slaydragon=0, locked=0 WHERE login='sleepere2e'`);
   try {
     const browser = await chromium.launch(cfg.launch);
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -193,7 +195,7 @@ async function finish(page, script) {
       await a.waitForSelector('a[href*="pvp.php"][href*="op=fight"]', { timeout: 8000 }).catch(() => {});
       attack = attackHref;
     }
-    check('a pvp attack in place', attack !== null && await noReload(a) && (await hrefOf(a, /^pvp\.php\?.*op=fight/)) !== null, attack || (await text(a)).slice(0, 200));
+    check('a pvp attack in place', attack !== null && await noReload(a) && (await hrefOf(a, /^pvp\.php\?.*op=fight/)) !== null, `${attack || 'no attack link'}: ${(await text(a)).slice(0, 200)}`);
     await finish(a, 'pvp.php');
     check('the pvp fight ends in place', await noReload(a), (await text(a)).slice(-160));
 
