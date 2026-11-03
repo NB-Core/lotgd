@@ -7,6 +7,8 @@ DELETE FROM accounts_output WHERE acctid IN (1, 385, 386);
 DELETE FROM realtime_streams;
 -- Experience back below the next level: with too much, the game forces the
 -- master's challenge and every other link is gone (fights.js sets 100000).
+-- Location back to the capital: a suite that travels leaves it elsewhere.
 UPDATE accounts SET loggedin = 0, transferredtoday = 0, amountouttoday = 0, experience = 1000, seenmaster = 0,
+    location = COALESCE((SELECT value FROM settings WHERE setting = 'villagename'), 'Degolburg'),
     restorepage = 'village.php', allowednavs = 'a:1:{s:11:"village.php";b:1;}'
     WHERE acctid IN (1, 385, 386);

@@ -17,7 +17,9 @@ async function login(page) {
   await page.goto(BASE + 'home.php');
   await page.fill('#name', 'Admin');
   await page.fill('#password', cfg.PASSWORD);
-  await page.click("input[value='Log in']");
+  // Enter rather than a click: without JavaScript, Playwright never finds the
+  // button below the fold stable enough to click.
+  await Promise.all([page.waitForNavigation(), page.press('#password', 'Enter')]);
   await page.waitForLoadState('load');
   await settle(page);
 }

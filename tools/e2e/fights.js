@@ -169,6 +169,8 @@ async function finish(page, script) {
 
     // PvP: attack the sleeping warrior.
     sql(`UPDATE accounts SET alive=1, hitpoints=500, level=5, playerfights=5, badguy='', pvpflag='2020-01-01 00:00:00' WHERE acctid=1`);
+    // PvP lists only players where the attacker is: put Sam there.
+    sql(`UPDATE accounts s JOIN accounts a ON a.acctid=1 SET s.location=a.location WHERE s.login='sleepere2e'`);
     await fresh(a, 'pvp.php');
     const sam = sql(`SELECT acctid FROM accounts WHERE login='sleepere2e'`);
     const attackHref = await a.evaluate(id => {
