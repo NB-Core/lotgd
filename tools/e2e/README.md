@@ -63,7 +63,8 @@ each run, prints a line per run and lists the failed runs at the end.
 Every suite prints `PASS`/`FAIL` lines and a total.
 
 Time on a 4-core machine: one suite 1–5 minutes; everything on Aurora and jade
-about 45 minutes; everything on all skins (`--skins all`) about 3 hours.
+(47 runs) 27 minutes, measured; everything on all skins (`--skins all`) about
+2 hours, estimated from the per-skin suites.
 
 ## The suites
 
