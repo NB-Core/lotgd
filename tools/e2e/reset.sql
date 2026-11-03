@@ -5,6 +5,8 @@ INSERT IGNORE INTO clans (clanid, clanname, clanshort, clanmotd, clandesc, motda
 DELETE FROM action_log WHERE acctid IN (1, 385, 386);
 DELETE FROM accounts_output WHERE acctid IN (1, 385, 386);
 DELETE FROM realtime_streams;
-UPDATE accounts SET loggedin = 0, transferredtoday = 0, amountouttoday = 0,
+-- Experience back below the next level: with too much, the game forces the
+-- master's challenge and every other link is gone (fights.js sets 100000).
+UPDATE accounts SET loggedin = 0, transferredtoday = 0, amountouttoday = 0, experience = 1000, seenmaster = 0,
     restorepage = 'village.php', allowednavs = 'a:1:{s:11:"village.php";b:1;}'
     WHERE acctid IN (1, 385, 386);
