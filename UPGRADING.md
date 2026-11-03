@@ -308,370 +308,191 @@ For module authors:
 - `Output::getOutput()` now really closes tags left open at the end of a page. A page relying on an open tag
   reaching into the footer no longer gets that.
 
-### Turning the live features on
-
-*Game Settings* now opens with a table **Live features**:
-- it shows each reactive feature (guarded actions, partial rendering, the overlay, realtime, server-sent events,
-  grants, live duels and presence), whether it is on, and what keeps it off: a setting it needs, a table that is
-  missing or not InnoDB, a migration not yet applied, a default skin without regions;
-- the button *Turn on the recommended live features* switches on, in one go, those of `guarded_actions`,
-  `partial_render`, `realtime_enabled`, `grants_enabled` and `live_encounters` that this server can run;
-- each change is logged and announced through `changesetting` like a saved form;
-- server-sent events stay a choice of their own, because they depend on the host.
-
-New setting `partial_render_default` (*For players who never chose in their preferences: change pages in place?*,
-**on** by default):
-- once `partial_render` is on, players who never set the preference *Change pages in place* get partial rendering,
-  and with it realtime and live duels;
-- a player who turned the preference off keeps it off;
-- turn the setting off to keep the former opt-in.
-
-### A dot beside the mail link
-
-With `partial_render` on, `PageParts::mailLink()` (and so `{mail}`, `maillink()` and the mail refreshes) ends with
-`<span class='lotgd-live lotgd-live--on|off' …>`, styled by `assets/css/lotgd.partial.css`, which every full page
-now loads (popups do not; there the empty `<span>` stays invisible). A skin can restyle `.lotgd-live`, or hide it.
-
-### Modules are no longer reinstalled after every deploy
-
-Migration `Version20261028000001` adds `modules.filehash`.
-- `Modules::inject()` upgrades a module only when its file's content changed, not when only its modification time
-  did, as after a new Docker image or a checkout. Each module stores its hash on its next load.
-- The first deploy with this change still upgrades the modules whose times changed, once.
-- *Reinstall* in the module manager still forces the upgrade.
-- To upgrade changed modules right after an update, instead of on the pages that use them first, run
-  `php bin/modules-refresh` (in Docker: `docker compose exec -T --user www-data web php bin/modules-refresh`).
-
-### Notices in the upper right: the session timeout, new mail, the Message of the Day
-
-Every full page of a logged-in player now carries `<meta name="lotgd-session">` and loads
-`assets/js/lotgd.notices.js` (popups do not). It shows a stack of notices, styled by `assets/css/lotgd.partial.css`
-(`.lotgd-notices`, `.lotgd-notice`, `.lotgd-notice--mail`, `.lotgd-notice--motd`, `.lotgd-timeout`,
-`.lotgd-timeout--expired`, in the dialog's `--lotgd-overlay-*` colours). For modules and skins:
-- `<div id='notify'>` is gone, and `Timeout.timeoutStatus` answers `data.session.remaining` (seconds) instead of
-  assigning text to it. A module that wrote into `#notify` needs an element of its own;
-- the mail link no longer comes in `<div id='maillink'>`, and `Mail.mailStatus` answers data (`notices`) instead of
-  assigning `#maillink`, setting the title and calling `lotgdMailNotify`. The notices refresh the link in the skin's
-  `mail` slot. A skin that styled `#maillink` styles `[data-lotgd-slot="mail"]` instead;
-- new async calls `Timeout.keepAlive()` (checks the async token, counts as activity) and `Notices.status` (read only);
-- new setting `notices_poll_seconds` (*Game Settings*, default 60, 0 = only on page changes): how often a page looks
-  for new mail and a new Message of the Day. Players with the AJAX preference get it with their poll instead;
-- `start_timeout_show_seconds` and `never_timeout_if_browser_open` in `config/async.settings.php` apply to every
-  player now, not only those with the AJAX preference.
-
-### Player names are text everywhere
-
-A name, a clan's short name, a weapon and an armour are escaped where they are written into the page with colour
-codes kept (`Lotgd\Security\Escape::gameText()`): the chat line, the stats, the donation form, the mail inbox. A
-name that held HTML on purpose (set in the user editor or by a module) now shows it as text.
-
-### Module pages change in place where the module says so
-
-With partial rendering on, a module page (`runmodule.php`) changes in place when its module declares it in its info:
-
-```php
-function mymodule_getmoduleinfo(): array
-{
-    return [
-        // ...
-        // Pages by GET, forms by POST; '' is the page without an op.
-        'partial' => ['GET' => ['', 'list', 'enter'], 'POST' => ['buy']],
-    ];
-}
-```
-
-- Migration `Version20261029000001` adds `modules.partial`. The declaration is stored the next time the module is
-  used (or by `bin/modules-refresh`); no reinstall is needed. A module without the key is unchanged.
-- Declare only pages that are safe as a full page today: links and form targets the page granted (`addnav()`,
-  `addnav('', $target)`), which claim the page revision like any other. A page that logs out, redirects elsewhere or
-  opens a popup is better left out (a redirect still works: it becomes a page change).
-- A declared page that prints an inline `<script>`, or adds CSS or JavaScript to the `<head>`
-  (`Output::addHeadMarkup()`, `Output::requireVendorAsset()` on that page only), falls back to the stored page; the
-  answer carries `X-Lotgd-Partial-Fallback` with the reason. Instead: `autofocus` for focus scripts,
-  `Forms::previewField()` for a colour preview (`$talkline` may now be `false` for a name or a title), and
-  `Forms::dataTableAttributes()` on a `<table>` for sorting and searching (DataTables, loaded by the core when a page
-  shows such a table).
-- A module with `override_forced_nav` must call `do_forced_nav()` itself on its declared pages (as `cities` does), or
-  they load in full: a page is only swapped when its request claimed the page revision.
-- The module's administration (`admin=1`) always loads in full.
-- `cities` (travelling and its fights) and `lovers` (flirting, talking) declare their pages.
-
-### Forms post in place; Game Settings get the preferences' table
-
-With partial rendering on, the bank's bookings, the preferences, the player search, the bartender's colour test
-and the clan's forms post in place. For modules and skins:
-- a module form posts as before unless the module declares it (see *Module pages change in place where the module
-  says so*); only the forms `Lotgd\Page\PartialMode::ALLOWLIST` lists under `POST` are sent in place. A form the
-  server does not take in place is sent again as an ordinary page change (`X-Lotgd-Resubmit`). The page lists only
-  its own such forms (`<meta name="lotgd-partial-forms">`, a JSON list of targets), no longer the whole allow-list;
-- `Forms::showFormTabbed()` no longer writes an inline script, and *Game Settings* (standard, extended and module
-  settings) use it instead of `Forms::showForm()`. Its search field and tabs come from
-  `assets/js/lotgd.showform.js`, loaded on every full page (not in popups); the preferences no longer load jQuery and DataTables;
-- a module that styles the old *Game Settings* tabs (`#showFormTablist…` buttons with `role="tab"`) finds the
-  preferences' tabs there now (`.prefs-tabs`, `[data-showform-tab]`, `.is-active`);
-- the preference *Show config sections in tabs* (`tabconfig`) no longer applies to *Game Settings*: the tab *All*
-  shows every section;
-- an old `showFormTabIndex` row in `settings` or `module_settings`, written by earlier saves, is unused and may be
-  deleted.
-
-### Shops and the inn change in place
-
-With partial rendering on, the weapon and armour shops, the stables, the healer, the mercenary camp, the gypsy and
-the inn swap their pages in place. A module that prints a `<script>` or adds to `<head>` on these pages makes that
-page fall back to a whole page; the click is not run twice.
-
-### The chat posts without reloading
-
-For players with realtime or the AJAX preference, the talk form posts its line over the async endpoint, and
-[Del] removes a line in place. For modules:
-- the hook `insertcomment` (`mute`, `mutemsg`) now applies when a line is posted too, not only when the form is
-  drawn; the daily posting limit is checked the same way;
-- a module with a talk form of its own keeps posting as a form;
-- a module that writes comments with its own SQL instead of `injectrawcomment()` is still not announced.
-
-### Fights change in place
-
-With partial rendering on, forest, graveyard, training, dragon and PvP fights swap their rounds in place.
-For modules:
-- links a specialty adds through `fightnav-specialties` work unchanged;
-- a module that prints a `<script>` or adds to `<head>` during a fight makes that round fall back to a whole page;
-  the round is not played twice.
-
-### Legacy templates change pages in place too
-
-The bundled legacy templates (jade, modern, yarbrough, puritanic_ai) now declare regions and the overlay:
-- with partial rendering on, their players get pages that change in place, realtime and live duels;
-- mail and the MoTD open in a dialog instead of a window.
-
-A legacy template of your own keeps its whole pages and popup windows until you add a `<!--!config-->` section
-and the region markers. `templates/README.md` walks through it, and `tests/Templates/LegacyRegionContractTest.php`
-checks the result. For a Twig skin of your own, see `templates_twig/README.md`.
-
-### Partial rendering (opt-in, off by default)
-
-Migration `Version20261020000001` adds `accounts.page_revision` (an unsigned
-integer, default 0). Nothing reads or writes it until partial rendering is on.
-
-Partial rendering changes a page in place instead of loading it again. It needs
-the game setting *Allow partial rendering* (`partial_render`, *Game Setup*, off
-by default), the player's preference *Change pages in place* and a Twig skin
-that declares regions (every bundled Twig skin does; a skin of your own marks
-its regions as described in docs/ReactiveCore.md, *Region contract for Twig
-skins*, and `tests/Templates/RegionContractTest.php` checks it). For such a
-player only:
-
-- every place that only displays is swapped in -- since Phase 6c not just the
-  village, the forest and the inn, but also the gardens, hall of fame, lists,
-  bios, news, stables, shops, healer, trainer, the bank's forms, clan halls and
-  more (see `PartialMode::ALLOWLIST`); buying, fighting, training and bookings
-  still load normally. A module that prints a `<script>` on such a page makes
-  that page load normally for the moment (the same fallback as before);
-- a link followed from a page that was already left in another tab or on
-  another device is turned away and shows the latest page (`badnav.php`)
-  instead of running a second time (this applies with the setting and the
-  preference alone, on any skin);
-- Back and Forward show the latest page instead of re-running an old link.
-
-`assets/vendor/htmx/` and `assets/js/` are new and must be uploaded with the
-rest. A web server that serves `assets/` already serves them. Custom Twig skins
-keep the full page until they mark their regions; see `docs/ReactiveCore.md`.
-
-### Guarded bank actions (opt-in, off by default)
-
-Migration `Version20261021000001` adds `accounts.version` (an unsigned integer,
-default 0) and the table `action_log`. Unlike the setting below, the column is
-in use as soon as the migration ran: every save that changes the game state
-moves the account's version on by one, and a bank transfer moves the
-recipient's on. Seeing a page (`laston`, the navigation, the page revision)
-does not. Old `action_log` rows are deleted after a day by the daily cleanup.
-
-The game setting *Run bank actions as guarded transactions* (`guarded_actions`,
-*Game Setup*, off by default) runs the bank's deposit, withdrawal, loan and
-transfer as one transaction each, once per form: a form sent twice shows the
-first booking, and a booking racing another change to the same account books
-nothing and tells the player.
-
-The setting only takes effect when `accounts`, `action_log` and `mail` are
-InnoDB (or another transactional engine). An installation upgraded from an old
-release may still have MyISAM tables; a rollback could not undo a write to
-them, so the bank keeps booking as before until they are converted, for
-example `ALTER TABLE accounts ENGINE=InnoDB;`. Check with
-`SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();`.
-
-For module authors:
-
-- `Accounts::saveUser()` behaves as before; it is now `Accounts::persist()`
-  followed by `Accounts::finishRequest()`.
-- Code that may run inside a guarded action must not take `LOCK TABLES`, run
-  DDL or `OPTIMIZE TABLE`: `module_sem_acquire()` throws a `LogicException`
-  there instead of committing the action. Outside a guarded action nothing
-  changes.
-- A write to an account's game state should move its version on
-  (`… version = version + 1`), so that player's guarded actions notice it.
-  The core does this everywhere (PvP, clans, the user editor, donations,
-  mount refunds, bios); module writes do not yet.
-
-The Doctrine metadata cache is now keyed to the entity files, so the new
-column is picked up after the update without clearing the cache by hand.
-
-### Realtime mail and transfers (opt-in, off by default)
-
-Migration `Version20261022000001` adds the tables `events`, `event_deliveries`
-and `relay_sequence`. Nothing writes or reads them while the game setting
-*Show new mail and incoming transfers without a page change*
-(`realtime_enabled`, *Game Setup*) is off.
-
-With it on, players who have partial rendering on (game setting, their
-preference and a skin with regions) see a new mail and incoming money on the
-page they have open. The page polls `async/process.php` (`async/poll.php` until Phase 6a) every
-`realtime_poll_seconds` (default 10). Events are relayed right after the
-change commits; add bit 16 to the `cron.php` call (for example
-`php cron.php 31`) so that events left behind by an interrupted request are
-relayed too. Events are kept `realtime_retention_hours` (default 24).
-
-The poll uses `async/process.php`, which must be reachable; it
-follows `ajax_rate_limit_seconds` from `config/async.settings.php`. The
-outbox needs its tables and `mail` in InnoDB, like the guarded actions.
-
-For module authors:
-
-- `Mail::systemMail()` sends its notification e-mail after the guarded action
-  it is part of commits (outside one: at once, as before).
-- To announce a change of your own to a player's open page, call
-  `Realtime::announce('user-' . $acctid, '<type>', ['region' => 'mail'|'stats',
-  'version' => <int>])` with the change, or `Realtime::publish()` inside
-  `Action::run()`.
-- New comments are announced on `section-<section>` by
-  `injectrawcomment()`/`Commentary::injectRawComment()`; a module that inserts
-  into `commentary` with its own SQL is not announced and should use that
-  function.
-- The async comment calls answer only for a section a page showed the player
-  (`Commentary::mayRead()`). Module JavaScript that asked for a section its
-  page never rendered with `viewcommentary()`/`commentDisplay()` gets nothing.
-
-### Realtime as server-sent events (opt-in, off by default)
-
-Migration `Version20261024000001` adds the table `realtime_streams`. Nothing
-reads or writes it while the game setting *How pages receive realtime events*
-(`realtime_transport`, *Game Setup*) is `poll`, the default.
-
-At `sse`, each realtime page keeps a request to `async/stream.php` open for
-`realtime_stream_seconds` (default 50) and reconnects. Turn it on only where
-the server can hold one PHP worker per player online (Apache
-`MaxRequestWorkers`, PHP-FPM `pm.max_children`) and no proxy buffers the
-response: the endpoint sends `X-Accel-Buffering: no` for nginx; other proxies
-must flush `text/event-stream` responses. On shared webspace keep `poll`.
-Pages fall back to polling by themselves when the stream cannot run.
-
-`async/stream.php` must be reachable like `async/process.php`. It always
-checks the async CSRF token, whatever `csrf_mode` is.
-
-### Live duels (part of live encounters)
-
-Migration `Version20261026000001` adds `encounters.stakes`,
-`encounters.data` and the table `encounter_rounds`. An accepted challenge is
-now a duel in rounds. The settings are `duel_round_seconds` (default 20) and
-`duel_max_rounds` (default 30).
-
-A *serious* duel uses the PvP settings (`pvp`, `pvprange`, `pvpimmunity`,
-`pvpminexp`, `pvpattgain`, `pvpattlose`, `pvpdefgain`, `pvpdeflose`,
-`pvphardlimit*`) and spends one of the challenger's `playerfights`.
-
-For module authors:
-
-- `duel-finished` (`['encounter' => row, 'outcome' => …, 'payout' => …|null]`)
-  runs after the duel's end commits.
-- The hooks `pvpwin` and `pvploss` do **not** run for a duel: their arguments
-  describe pvp.php's offline target. Modules that react to PvP results and
-  should see duels too need `duel-finished`.
-- Buffs (including `allowinpvp` ones) and companions do not count in a duel.
-
-### Presence and live encounters (opt-in, off by default)
-
-Migration `Version20261025000001` adds the tables `presence`, `encounters`
-and `encounter_slots`. With `realtime_enabled` on, every page notes where
-its player is in `presence` (at most one write a minute while the place
-stays the same). Encounters run only with the game setting *Let players
-online challenge each other to a duel* (`live_encounters`), which also needs
-`realtime_enabled`, `grants_enabled` and `guarded_actions`, and the tables
-in InnoDB. Rows older than a day are removed with the daily cleanup.
-
-With live encounters on, `pvp.php` also lists the warriors who are awake (*Warriors about now*) and offers them a
-live duel. A serious one follows PvP's rules. The classic attack on sleeping players is unchanged.
-
-Migration `Version20261027000001` adds `encounters.winner` and `encounters.loser` (with keys on `kind`). A duel
-fills them when it is settled; bios and the hall of fame (*Duels*) count from them. The daily cleanup now keeps
-the row of a decided duel (without its data and rounds), so `encounters` grows by one small row per duel. Duels
-fought before the migration are not counted. New setting `duel_announce_inn` (on): a system comment in the inn when a duel begins.
-
-For module authors:
-
-- `presence-place` (`['script' => …, 'place' => …]`): name the place of a
-  module page; places in `Presence::PEACEFUL` (village, inn, gardens,
-  arena) may be challenged.
-- `encounter-accepted` (`['encounter' => row]`), after the acceptance
-  commits: build on the encounter; announce what happens in it on
-  `Encounter::channel($id)` with `Realtime::publish()` inside
-  `Action::run()`.
-
-### Grants: accepting clan applicants (opt-in, off by default)
-
-Migration `Version20261023000001` adds the table `granted_navs`. Nothing
-writes or reads it while the game setting *Offer clan officers a one-time link
-to accept a new applicant* (`grants_enabled`, *Game Setup*) is off; it also
-needs *Run bank actions as guarded transactions* (`guarded_actions`) and the
-table in InnoDB.
-
-With it on, a clan application offers each officer a link *Accept … into the
-clan* (under *Waiting for you* in the navigation, and in the Aurora header
-with realtime on), valid `grant_ttl_hours` (default 168). Applications still
-send the officers their mail, and the membership page works as before.
-
-The clan membership page now changes ranks and removes players only within
-the officer's own clan.
-
-For module authors: `Nav::grant($acctid, $action, $target, $groupKey, $text,
-$viewLink, $ttlSeconds)` offers a player a link; the page behind it uses the
-grant with `Grant::claim()` inside `Action::run()` and still checks what it
-does on fresh rows. A skin with `"regions": true` can add a header slot
-`grants` (`data-lotgd-region="header" data-lotgd-slot="grants"`, variable
-`grants`).
-
-### One async endpoint; Jaxon removed (Phase 6a)
-
-Every async call (comment refresh, mail link, timeout warning, realtime poll
-and region fetches, bans, passkeys) now goes through `async/process.php` and
-one browser client, `assets/js/lotgd.async.js`. Jaxon (`jaxon-php/jaxon-core`,
-`async/common/jaxon.php`, `async/js/lotgd.jaxon.js`, the vendored
-`async/js/vendor/jaxon`, `async/maillink.php`) and `async/poll.php` are gone.
-
-For operators:
-
-- Nothing to configure. `config/async.settings.php` keeps its keys and still
-  applies (rate limit, `csrf_mode`, intervals).
-- The instruction to promote `csrf_mode` to `enforce` now refers to
-  `Async csrf` lines in `error_log`. The other log lines were renamed the same
-  way: `Async rate limit hit`, `Async authorization:` and `Async bad request`
-  (they were `Jaxon rate limit hit`, `Jaxon authorization:` and
-  `Jaxon bad request`). Adjust log alerts that match the old text.
-- Every request to the endpoint must carry the header `X-Lotgd-Async: 1`;
-  without it the answer is `400`. The shipped client sends it, so a page loaded
-  before the upgrade needs a reload.
-- `async/poll.php` no longer exists; web server rules that mention it can go.
-  `vendor/` shrinks (Jaxon and its dependencies are not installed any more).
-
-For module authors:
-
-- Replace Jaxon calls in browser code with
-  `lotgd.async.call('Class', 'method', [args])`.
-- Register server handlers through the hook `async-handlers`, returning
-  `['Name' => FQCN]`; a request names the registered `Name`, never a PHP class.
-- A handler class returns `Lotgd\Async\Response` (`assign`, `append`, `title`,
-  `call`, `data`) instead of `Jaxon\Response\Response`.
-- `window.getJaxonHandlers()`, `window.Lotgd.Async.Handler.<Class>.<method>(...)`
-  and `window.jaxon.config.requestURI` remain as a deprecated shim so old
-  module code keeps working; see [docs/Deprecations.md](docs/Deprecations.md).
-  It is removed in the next major release.
+### Live features (reactive core)
+
+This release can change pages in place, push mail, chat and stats to an open page, run guarded transactions and
+let players duel live. All of it is **off until you turn it on**, except a few changes that apply to everyone
+(listed under *What changes for everyone* below). How it works inside is in
+[docs/ReactiveCore.md](docs/ReactiveCore.md); hosting for server-sent events is in
+[docs/RealtimeHosting.md](docs/RealtimeHosting.md).
+
+#### At a glance
+
+1. Update as usual. The migrations below run by themselves on the first page request (or with
+   `php bin/doctrine migrations:migrate`); nothing reads the new tables until a feature is on.
+2. Open *Game Settings*. The table **Live features** at the top shows each feature, whether it is on, and what
+   keeps it off: a setting it needs, a table that is missing or not InnoDB, a pending migration, or a default skin
+   without regions.
+3. *Turn on the recommended live features* switches on, in one go, those of `guarded_actions`, `partial_render`,
+   `realtime_enabled`, `grants_enabled` and `live_encounters` this server can run. Each change is logged and runs
+   the hook `changesetting`, like a saved form. Server-sent events stay a choice of their own because they depend
+   on the host.
+4. Players who never chose in their preferences get partial rendering once it is on (`partial_render_default`). A
+   player who turned *Change pages in place* off keeps it off.
+
+#### For operators
+
+**Settings** (*Game Settings*):
+
+| Setting | Default | Needs | What it does |
+|---|---|---|---|
+| `partial_render` | off | a skin with regions | Pages change in place instead of loading in full. |
+| `partial_render_default` | on | `partial_render` | Players who never chose get partial rendering. |
+| `guarded_actions` | off | InnoDB `accounts`, `action_log`, `mail` | Bank bookings run once per form, in one transaction, with the account's version checked. |
+| `realtime_enabled` | off | partial rendering, InnoDB outbox tables | New mail, incoming transfers, chat lines and grants reach the open page. |
+| `realtime_transport` | `poll` | `realtime_enabled` | `poll` every `realtime_poll_seconds` (10), or `sse`: one open stream per player for `realtime_stream_seconds` (50). |
+| `realtime_retention_hours` | 24 | | How long relayed events are kept. |
+| `grants_enabled` | off | `guarded_actions`, InnoDB `granted_navs` | Clan officers get a one-time link to accept an applicant, valid `grant_ttl_hours` (168). |
+| `live_encounters` | off | realtime, grants, guarded actions | *The Duelling Ground*: presence, live challenges (`encounter_challenge_seconds`, 120) and duels in rounds (`duel_round_seconds` 20, `duel_max_rounds` 30); `duel_announce_inn` (on) tells the inn when a duel begins. A *serious* duel follows the PvP settings (`pvp`, `pvprange`, `pvpimmunity`, `pvpminexp`, `pvpattgain`, `pvpattlose`, `pvpdefgain`, `pvpdeflose`, `pvphardlimit*`) and spends one of the challenger's `playerfights`; `pvp.php` then also offers the warriors who are awake a live duel. |
+| `notices_poll_seconds` | 60 | | How often every page looks for new mail and a new Message of the Day (0: only on page changes). |
+
+**Migrations** (all applied by the automatic upgrade):
+
+| Migration | Adds |
+|---|---|
+| `Version20261020000001` | `accounts.page_revision` |
+| `Version20261021000001` | `accounts.version`, table `action_log` |
+| `Version20261022000001` | tables `events`, `event_deliveries`, `relay_sequence` |
+| `Version20261023000001` | table `granted_navs` |
+| `Version20261024000001` | table `realtime_streams` |
+| `Version20261025000001` | tables `presence`, `encounters`, `encounter_slots` |
+| `Version20261026000001` | `encounters.stakes`, `encounters.data`, table `encounter_rounds` |
+| `Version20261027000001` | `encounters.winner`, `encounters.loser` |
+| `Version20261028000001` | `modules.filehash` |
+| `Version20261029000001` | `modules.partial` |
+
+`accounts.version` is in use as soon as its migration ran, whatever the settings: every save that changes the game
+state moves it on by one (a transfer moves the recipient's on). Seeing a page (`laston`, the navigation, the page
+revision) does not.
+
+**InnoDB.** Guarded actions, the outbox, grants and encounters need their tables in InnoDB (or another
+transactional engine); an installation upgraded from an old release may still have MyISAM tables, and the feature
+then stays off and the *Live features* table says why. Check with
+`SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();` and convert with, for
+example, `ALTER TABLE accounts ENGINE=InnoDB;`.
+
+**Cron.** Add bit 16 to the `cron.php` call (for example `php cron.php 31`): it relays events an interrupted
+request left behind. Events are relayed right after each change anyway. The daily cleanup removes old
+`action_log`, event, presence and encounter rows; a decided duel keeps one small row for the duel record.
+
+**Files and endpoints.** Upload `assets/` with the rest (htmx 2.0.4 ships in `assets/vendor/htmx/`). Every async
+call goes to `async/process.php` and needs the header `X-Lotgd-Async: 1`, else the answer is `400` (the shipped
+client sends it; a page loaded before the upgrade needs a reload). The realtime poll follows
+`ajax_rate_limit_seconds`. With `sse`, `async/stream.php` must be reachable too and must not be
+buffered or compressed by any proxy; size the PHP workers for it ([docs/RealtimeHosting.md](docs/RealtimeHosting.md)).
+On shared webspace keep `poll`. `async/poll.php` and Jaxon are gone; web server rules that mention them can go.
+`config/async.settings.php` keeps its keys (rate limit, `csrf_mode`, intervals).
+
+**Log lines.** `Jaxon csrf`, `Jaxon rate limit hit`, `Jaxon authorization:` and `Jaxon bad request` are now
+`Async csrf`, `Async rate limit hit`, `Async authorization:` and `Async bad request`. Adjust alerts that match the
+old text; the advice to move `csrf_mode` to `enforce` now refers to `Async csrf`.
+
+**Modules after a deploy.** `Modules::inject()` now upgrades a module only when its file's content changed
+(`modules.filehash`), not when only its modification time did, as after a new image or a checkout. The first
+deploy with this change still upgrades them once. Run `php bin/modules-refresh` after an update to do that before
+players arrive (Docker: `docker compose exec -T --user www-data web php bin/modules-refresh`). *Reinstall* in the module manager still forces an upgrade.
+
+**The Doctrine metadata cache** is keyed to the entity files, so new columns are picked up without clearing it by
+hand.
+
+#### What changes for everyone
+
+These apply whatever the live settings are:
+
+- **Session timeout, new mail, new Message of the Day** show as notices in the upper right of every full page of a
+  logged-in player (`<meta name="lotgd-session">`, `assets/js/lotgd.notices.js`), with *Stay logged in* and *Read*.
+  `start_timeout_show_seconds` and `never_timeout_if_browser_open` in `config/async.settings.php` now apply to
+  every player, not only those with the AJAX preference.
+- **Mail and the Message of the Day open in a dialog** inside the page on every bundled skin, Twig and legacy.
+  With *Force the MOTD popup* (`forcedmotdpopup`) a new MOTD opens there by itself, so the module
+  `motd_js_popup` is no longer needed; deactivate it to avoid two popups.
+- **A stale link is turned away.** For players with partial rendering, a link followed from a page that another tab
+  or device has already left shows the latest page (`badnav.php`) instead of running a second time; Back and
+  Forward show the latest page.
+- **Player names are text.** A name, a clan's short name, a weapon and an armour are escaped wherever they are
+  written into a page, colour codes kept (`Lotgd\Security\Escape::gameText()`). A name that held HTML on purpose
+  now shows it as text.
+- **The chat checks on posting.** The hook `insertcomment` (`mute`, `mutemsg`) and the daily posting limit now
+  apply when a line is posted, not only when the form is drawn.
+- **Clan membership** changes ranks and removes players only within the officer's own clan.
+- *Game Settings* use the preferences' table (search field and tabs, *All* first); the preference *Show config
+  sections in tabs* (`tabconfig`) no longer applies there. A `showFormTabIndex` row left in `settings` or
+  `module_settings` by earlier saves is unused and may be deleted.
+
+#### For module authors
+
+- **Pages that change in place.** A page swaps in place only if it is on `Lotgd\Page\PartialMode::ALLOWLIST` or, for
+  `runmodule.php`, if the module declares it in its info:
+
+  ```php
+  // Pages by GET, forms by POST; '' is the page without an op.
+  'partial' => ['GET' => ['', 'list', 'enter'], 'POST' => ['buy']],
+  ```
+
+  The declaration is stored with the module the next time it is used (or by `bin/modules-refresh`); no reinstall
+  is needed, and a module without the key is unchanged. Declare only pages whose links and form targets the page
+  granted (`addnav()`, `addnav('', $target)`); leave out pages that log out or open a popup (a redirect still works:
+  it becomes a page change). A module with `override_forced_nav` must call `do_forced_nav()` itself on those pages
+  (as `cities` does). Module administration (`admin=1`) always loads in full. `cities` and `lovers` declare their
+  pages.
+- **No inline scripts on such pages.** A page that prints `<script>` or adds to `<head>` (`Output::addHeadMarkup()`,
+  `Output::requireVendorAsset()` on that page only) falls back to the stored page, once, without running twice;
+  the answer carries `X-Lotgd-Partial-Fallback` with the reason. Use instead: `autofocus` for focus,
+  `Forms::previewField()` for a colour preview (`$talkline` may be `false`; `$formatting` shows bold and italic),
+  `Forms::dataTableAttributes()` on a `<table>` for sorting and searching, and in the dialog the declarative
+  attributes documented in `assets/js/lotgd.overlay.js` (or check `Overlay::isRequested()`).
+- **Forms.** A module form posts as before unless declared under `POST`. A form the server does not take in place
+  is sent again as an ordinary page change (`X-Lotgd-Resubmit`). A page lists only its own forms that post in
+  place (`<meta name="lotgd-partial-forms">`), no longer the whole allow-list. `Forms::showFormTabbed()` writes no script any
+  more; its tabs and search come from `assets/js/lotgd.showform.js` (`.prefs-tabs`, `[data-showform-tab]`,
+  `.is-active` instead of the old `#showFormTablist…` buttons).
+- **Popup links** get the dialog with `Lotgd\Page\Overlay::attribute()` on their `<a>`.
+- **Async.** Browser code calls `lotgd.async.call('Class', 'method', [args])`. Server handlers register through the
+  hook `async-handlers` (`['Name' => FQCN]`) and return `Lotgd\Async\Response` (`assign`, `append`, `title`, `call`,
+  `data`) instead of `Jaxon\Response\Response`. `window.getJaxonHandlers()`, `window.Lotgd.Async.Handler.*` and `window.jaxon.config.requestURI` remain as
+  a deprecated shim until the next major release ([docs/Deprecations.md](docs/Deprecations.md)). New calls:
+  `Timeout.keepAlive()`, `Notices.status`; `Timeout.timeoutStatus` answers `data.session.remaining` and
+  `Mail.mailStatus` answers data (`notices`) instead of assigning `#maillink`, setting the title and calling
+  `lotgdMailNotify`.
+- **Gone from the page:** `<div id='notify'>` and `<div id='maillink'>`. A module that wrote into `#notify` needs an
+  element of its own.
+- **Guarded actions.** `Accounts::saveUser()` is now `Accounts::persist()` followed by `Accounts::finishRequest()`,
+  unchanged in behaviour. Code that may run inside `Action::run()` must not take `LOCK TABLES`, run DDL or
+  `OPTIMIZE TABLE`; `module_sem_acquire()` throws a `LogicException` there. A write to an account's game state
+  should move its version on (`… version = version + 1`), as the core does everywhere. `Mail::systemMail()` sends
+  its e-mail after the guarded action it is part of commits.
+- **Realtime.** Announce a change to a player's open page with `Realtime::announce('user-' . $acctid, '<type>',
+  ['region' => 'mail'|'stats', 'version' => <int>])`, or `Realtime::publish()` inside `Action::run()`. New comments
+  are announced by `injectrawcomment()`/`Commentary::injectRawComment()`; a module that inserts into `commentary`
+  with its own SQL is not announced. The async comment calls answer only for a section a page showed the player
+  (`Commentary::mayRead()`): module JavaScript asking for a section its page never rendered with
+  `viewcommentary()`/`commentDisplay()` gets nothing.
+- **Grants.** `Nav::grant($acctid, $action, $target, $groupKey, $text, $viewLink, $ttlSeconds)` offers a player a
+  one-time link; the page behind it uses it with `Grant::claim()` inside `Action::run()` and still checks fresh rows.
+- **Hooks.** `presence-place` (`['script', 'place']`) names the place of a module page; places in
+  `Presence::PEACEFUL` (village, inn, gardens, arena) may be challenged. `encounter-accepted` (`['encounter']`) runs
+  after an acceptance commits; announce what happens in the encounter on `Encounter::channel($id)` with
+  `Realtime::publish()` inside `Action::run()`. `duel-finished` (`['encounter', 'outcome', 'payout']`) runs after a duel's end
+  commits. `pvpwin` and `pvploss` do **not** run for a duel; buffs and companions do not count in one.
+- **Fights.** Links added through `fightnav-specialties` work unchanged in place.
+
+#### For skin authors
+
+- Every bundled Twig skin and legacy template declares `regions` and `overlay`. A skin of your own keeps whole pages
+  and popup windows until it marks its regions and declares them: `"regions": true, "overlay": true` in a Twig skin's
+  `config.json`, or a `<!--!config-->` section in a legacy template. The region contract is in
+  [docs/ReactiveCore.md](docs/ReactiveCore.md) (*Region contract for Twig skins*), the walk-throughs in
+  `templates_twig/README.md` and `templates/README.md`; `tests/Templates/RegionContractTest.php` and
+  `tests/Templates/LegacyRegionContractTest.php` check the result.
+- Header slots are `motd`, `mail`, `petition`, `petitiondisplay` and `grants`. A skin that styled `#maillink` styles
+  `[data-lotgd-slot="mail"]` instead. Mobile menus marked `data-lotgd-close-on-swap` close after a swap.
+- The dialog takes `--lotgd-overlay-bg`, `--lotgd-overlay-fg`, `--lotgd-overlay-border` and
+  `--lotgd-overlay-scheme` (`dark`, or `light dark` for a skin that follows the system) from the skin; without them
+  the dialog is dark.
+- With `partial_render` on, `PageParts::mailLink()` (and so `{mail}` and `maillink()`) ends with a dot,
+  `<span class='lotgd-live …'>`. `assets/css/lotgd.partial.css` loads on every full page (not in popups) and styles it (`.lotgd-live`,
+  `--on`/`--off`) and the notices (`.lotgd-notices`, `.lotgd-notice`, `.lotgd-notice--mail`,
+  `.lotgd-notice--motd`, `.lotgd-timeout`, `.lotgd-timeout--expired`); a skin can restyle or hide them.
 
 ## 4. Run Legacy Upgrade (1.x → 2.x bridge)
 
@@ -706,25 +527,6 @@ Once the legacy upgrade is complete:
 3. This will apply all new **2.x schema changes**.
 4. Watch for any DB prefix issues — these are now supported and should migrate correctly.
 
-
-### Mail and MOTD inside the page (Phase 6b)
-
-On the bundled Twig skins, mail and the message of the day open in a dialog inside the page
-instead of a browser window. Nothing to configure; a skin of your own and the
-legacy templates keep the window. A Twig skin opts in with `"overlay": true`
-in its `config.json` and gives the dialog its colours in its stylesheet:
-`--lotgd-overlay-bg`, `--lotgd-overlay-fg`, `--lotgd-overlay-border` and
-`--lotgd-overlay-scheme` (`dark`, or `light dark` for a skin that follows the
-system's dark mode). Every bundled skin does; without them the dialog is dark.
-
-- With *Force the MOTD popup* (`forcedmotdpopup`) on, a new MOTD opens in that
-  dialog by itself. The module `motd_js_popup` (jquery-modal from a CDN, in
-  the village) is then no longer needed; deactivate it to avoid two popups.
-- For module authors: a link to a popup page gets the dialog by adding
-  `Lotgd\Page\Overlay::attribute()` to its `<a>`. A popup page shown in the
-  dialog runs no `<script>`; use the declarative attributes documented in
-  `assets/js/lotgd.overlay.js`, or check `Overlay::isRequested()` and keep the
-  script for the window.
 
 ### Password recovery for ancient accounts
 
