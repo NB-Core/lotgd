@@ -59,8 +59,10 @@ node tools/e2e/overlay.js             # one suite by hand (no reset)
 ```
 
 `run.sh` resets what one suite can leave for the next (`reset.sql`) before
-each run, prints a line per run and lists the failed runs at the end.
-Every suite prints `PASS`/`FAIL` lines and a total.
+each run and puts the game settings back after it (a copy in the table
+`e2e_settings_saved`, also on Ctrl-C, and on the next start if a run was cut
+off). It prints a line per run, lists the failed runs at the end and exits
+non-zero if any failed. Every suite prints `PASS`/`FAIL` lines and a total.
 
 Time on a 4-core machine: one suite 1–5 minutes; everything on Aurora and jade
 (47 runs) 27 minutes, measured; everything on all skins (`--skins all`) about

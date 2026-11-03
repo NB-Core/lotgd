@@ -46,6 +46,16 @@ if [ ${#SUITES[@]} -eq 0 ]; then
   read -r -a SUITES <<< "$PER_SKIN legacy $TRANSPORT $OTHERS"
 fi
 
+# The game settings are copied before each suite and restored after it. A run
+# that was stopped mid-suite left its copy behind: restore from it first.
+RESTORE_SETTINGS="SET @q = IF((SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'e2e_settings_saved') > 0, 'DELETE FROM settings', 'DO 0'); PREPARE stmt FROM @q; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @q = IF((SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'e2e_settings_saved') > 0, 'INSERT INTO settings SELECT * FROM e2e_settings_saved', 'DO 0'); PREPARE stmt FROM @q; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+DROP TABLE IF EXISTS e2e_settings_saved;"
+$DB_CMD <<< "$RESTORE_SETTINGS"
+CHILD=
+# Stopped (Ctrl-C, kill): end the running suite, then put the settings back.
+trap '[ -n "$CHILD" ] && kill "$CHILD" 2>/dev/null; $DB_CMD <<< "$RESTORE_SETTINGS"; exit 130' INT TERM
+
 mkdir -p "$OUT/shots"
 RES="$OUT/results.tsv"
 : > "$RES"
@@ -59,10 +69,14 @@ run() { # label suite env...
   local log="$OUT/$(echo "$label" | tr ':/ ' '___').log"
   # Game settings as they were before the suite, back afterwards: what one
   # suite turns on or off never reaches the next.
-  $DB_CMD <<< "DROP TABLE IF EXISTS e2e_settings_saved; CREATE TABLE e2e_settings_saved AS SELECT * FROM settings;"
-  env OUT="$OUT/shots" LOTGD_E2E_GAME="$GAME" "$@" timeout 900 node "$suite.js" "$OUT/shots" > "$log" 2>&1
+  $DB_CMD <<< "CREATE TABLE e2e_settings_saved AS SELECT * FROM settings;"
+  # In the background and waited for: a signal then reaches the trap at once.
+  env OUT="$OUT/shots" LOTGD_E2E_GAME="$GAME" "$@" timeout 900 node "$suite.js" "$OUT/shots" > "$log" 2>&1 &
+  CHILD=$!
+  wait "$CHILD"
   local rc=$?
-  $DB_CMD <<< "DELETE FROM settings; INSERT INTO settings SELECT * FROM e2e_settings_saved; DROP TABLE e2e_settings_saved;"
+  CHILD=
+  $DB_CMD <<< "$RESTORE_SETTINGS"
   local sum
   sum=$(grep -Eo '^[0-9]+/[0-9]+( passed)?$|[0-9]+/[0-9]+ passed' "$log" | tail -1)
   local fails

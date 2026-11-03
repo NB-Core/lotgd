@@ -31,7 +31,13 @@ async function hrefOf(page, re) {
 async function click(page, re) {
   const href = await hrefOf(page, re);
   if (!href) return null;
+  const before = await page.$eval('[data-lotgd-region="nav"]', n => n.innerHTML).catch(() => '');
   await page.click(`[data-lotgd-region="nav"] a[href="${href}"] >> nth=0`);
+  // Until the swap has replaced the links: a slow round outlasts a fixed wait.
+  await page.waitForFunction(b => {
+    const n = document.querySelector('[data-lotgd-region="nav"]');
+    return !n || n.innerHTML !== b;
+  }, before, { timeout: 10000 }).catch(() => {});
   await page.waitForLoadState('load'); await settle(page);
   return href;
 }
@@ -57,7 +63,9 @@ async function finish(page, script) {
   sql(`INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('autofight','1'),('autofightfull','1'),('pvp','1'),('pvpimmunity','0'),('pvpminexp','0'),('realtime_enabled','1'),('realtime_transport','${process.env.TRANSPORT || 'poll'}'),('forestchance','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`UPDATE settings SET value='${skin}' WHERE setting='defaultskin'`);
   const prefs = 'a:1:{s:13:"partialrender";i:1;}';
-  const stats = `level=5, dragonkills=0, alive=1, hitpoints=500, maxhitpoints=500, turns=30, gravefights=10, soulpoints=100, gold=250, experience=100000, playerfights=5, attack=60, defense=60, specialty='DA', seendragon=0, badguy='', bufflist='a:0:{}'`;
+  // Attack 20, not more: the monster must outlive the first round, or its
+  // links (skill, auto-fight) are gone before the suite looks for them.
+  const stats = `level=5, dragonkills=0, alive=1, hitpoints=500, maxhitpoints=500, turns=30, gravefights=10, soulpoints=100, gold=250, experience=100000, playerfights=5, attack=20, defense=60, specialty='DA', seendragon=0, badguy='', bufflist='a:0:{}'`;
   sql(`UPDATE accounts SET prefs='${prefs}', ${stats}, loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1; DELETE FROM accounts_output WHERE acctid=1`);
   sql(`DELETE FROM module_userprefs WHERE userid=1 AND modulename='specialtydarkarts'; INSERT INTO module_userprefs (modulename,setting,userid,value) VALUES ('specialtydarkarts','skill',1,'10'),('specialtydarkarts','uses',1,'5')`);
   // A sleeping warrior for PvP.
@@ -152,7 +160,8 @@ async function finish(page, script) {
     await shot(a, `42-fight-${skin.replace(/[:.]/g, '-')}-niederlage`);
 
     // Graveyard: torment a soul.
-    sql(`UPDATE accounts SET alive=0, hitpoints=0, gravefights=10, attack=60, defense=60, badguy='' WHERE acctid=1`);
+    // Soul points are the dead's life: enough to outlast Death's surprise strike.
+    sql(`UPDATE accounts SET alive=0, hitpoints=0, gravefights=10, soulpoints=1000, attack=60, defense=60, badguy='' WHERE acctid=1`);
     await fresh(a, 'graveyard.php');
     await click(a, /^graveyard\.php\?op=search/);
     check('graveyard search in place', await noReload(a) && (await hrefOf(a, /^graveyard\.php\?.*op=fight/)) !== null, (await text(a)).slice(0, 160));

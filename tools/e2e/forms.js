@@ -29,7 +29,9 @@ async function go(page, re, region = 'nav') {
   return href;
 }
 async function submit(page, formSelector, button = "input[type='submit'], button[type='submit']") {
-  await page.click(`${formSelector} ${button} >> nth=0`);
+  // Scope every alternative to the form: "form a, b" would match any b on the page.
+  const scoped = button.split(',').map(b => `${formSelector} ${b.trim()}`).join(', ');
+  await page.click(`${scoped} >> nth=0`);
   await page.waitForLoadState('load'); await settle(page, 900);
 }
 async function login(page) {
