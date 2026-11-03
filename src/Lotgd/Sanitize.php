@@ -98,9 +98,16 @@ class Sanitize
         }
         // Every code but the colours (and the formatting codes in $keep)
         // becomes literal text: the backtick is doubled.
-        $out = preg_replace('/[`](?=[^0' . Output::getInstance()->getColormapEscaped() . preg_quote($keep, '/') . '])/', chr(1) . chr(1), $in);
-        $out = str_replace(chr(1), '`', $out);
-        return $out;
+        $allowed = '0' . Output::getInstance()->getColormapEscaped() . preg_quote($keep, '/');
+        if ($keep === '') {
+            $out = preg_replace('/[`](?=[^' . $allowed . '])/', chr(1) . chr(1), $in);
+            return str_replace(chr(1), '`', $out);
+        }
+        // With codes kept, an escaped backtick (``) stays one: doubling its
+        // first half would turn ``b (a literal `b) into an escaped backtick
+        // followed by a real `b, unlike the preview and what was typed.
+        // A pair is matched as a whole and written back unchanged.
+        return (string) preg_replace('/``|`(?=[^' . $allowed . '])/', '``', $in);
     }
 
     /**

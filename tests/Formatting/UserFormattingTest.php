@@ -91,6 +91,8 @@ final class UserFormattingTest extends TestCase
     {
         self::assertSame('``cx', Sanitize::commentSanitize('`cx'));
         self::assertSame('`bx``c', Sanitize::commentSanitize('`bx`c', Sanitize::USER_FORMATTING));
+        self::assertSame('``bx', Sanitize::commentSanitize('``bx', Sanitize::USER_FORMATTING), 'A typed literal `b stays literal.');
+        self::assertSame('````bx', Sanitize::commentSanitize('``bx'), 'Without kept codes every backtick is doubled, as before.');
     }
 
     public function testEachAreaHasItsOwnSetting(): void
