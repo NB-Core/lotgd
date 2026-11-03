@@ -54,7 +54,8 @@ run() { # label suite env...
   local label=$1 suite=$2
   shift 2
   $DB_CMD < reset.sql
-  rm -rf "$GAME/data_cache/"* 2>/dev/null
+  # The data cache, if the game keeps one there: its entries, never the directory.
+  [ -n "$GAME" ] && [ -d "$GAME/data_cache" ] && find "$GAME/data_cache" -mindepth 1 -delete
   local log="$OUT/$(echo "$label" | tr ':/ ' '___').log"
   env OUT="$OUT/shots" LOTGD_E2E_GAME="$GAME" "$@" timeout 900 node "$suite.js" "$OUT/shots" > "$log" 2>&1
   local rc=$?

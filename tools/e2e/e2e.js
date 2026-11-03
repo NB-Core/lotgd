@@ -49,7 +49,7 @@ async function reachVillage(page) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(cfg.launch);
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   const partial = [];

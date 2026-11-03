@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 const cfg = require('./config');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const BASE = cfg.BASE;
 const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
 const settle = (p, ms = 800) => p.waitForTimeout(ms);
@@ -8,7 +8,7 @@ const settle = (p, ms = 800) => p.waitForTimeout(ms);
   sql(`UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}', superuser=3923967, loggedin=0, restorepage='superuser.php', allowednavs='a:1:{s:13:"superuser.php";b:1;}', badguy='' WHERE acctid=1; UPDATE accounts SET experience=100 WHERE acctid=385; DELETE FROM accounts_output WHERE acctid=1`);
   // Otto's stored page, which the editor shows inline (reset.sql empties it).
   const page = '<html><head><title>Otto in the village</title></head><body><a href="forest.php">The Forest</a> <a href="inn.php">The Inn</a></body></html>';
-  const hex = execSync(`php -r 'echo bin2hex(gzcompress(stream_get_contents(STDIN)));'`, { input: page }).toString().trim();
+  const hex = execFileSync('php', ['-r', 'echo bin2hex(gzcompress(stream_get_contents(STDIN)));'], { input: page }).toString().trim();
   sql(`REPLACE INTO accounts_output (acctid, output) VALUES (385, UNHEX('${hex}'))`);
   const b = await chromium.launch(cfg.launch);
   const p = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
