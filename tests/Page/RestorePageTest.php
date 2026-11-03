@@ -61,6 +61,21 @@ final class RestorePageTest extends TestCase
         self::assertSame('bank.php?op=deposit', $user['restorepage']);
     }
 
+    /**
+     * HEAD, PUT, OPTIONS and the rest are not repeated by a GET either.
+     */
+    public function testAnyOtherMethodKeepsThePageToo(): void
+    {
+        foreach (['HEAD', 'PUT', 'OPTIONS', 'DELETE'] as $method) {
+            $_SERVER['REQUEST_METHOD'] = $method;
+            $user = ['restorepage' => 'village.php'];
+
+            RestorePage::remember($user, 'forest.php');
+
+            self::assertSame('village.php', $user['restorepage'], $method);
+        }
+    }
+
     public function testWithoutAMethodItCountsAsAGet(): void
     {
         unset($_SERVER['REQUEST_METHOD']);
