@@ -124,9 +124,9 @@ if ($session['user']['clanrank'] >= CLAN_OFFICER) {
     }
 
     $output->output("`&`bCurrent MoTD:`b `#by %s`2`n", $motdauthname);
-    $output->outputNotl(Nltoappon::convert($claninfo['clanmotd']) . "`n");
+    $output->outputNotl(Sanitize::userFormatting(Nltoappon::convert((string) $claninfo['clanmotd']), Sanitize::formattingAllowed('clan')) . "`n");
     $output->output("`&`bCurrent Description:`b `#by %s`2`n", $descauthname);
-    $output->outputNotl(Nltoappon::convert($claninfo['clandesc']) . "`n");
+    $output->outputNotl(Sanitize::userFormatting(Nltoappon::convert((string) $claninfo['clandesc']), Sanitize::formattingAllowed('clan')) . "`n");
 
     $output->rawOutput("<form action='clan.php?op=motd' method='POST'>" . Forms::csrfField());
     Nav::add("", "clan.php?op=motd");

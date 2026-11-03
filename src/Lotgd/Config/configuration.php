@@ -124,6 +124,13 @@ $setup = array(
     "Note: technically up to 500 - you have to alter the commentary table if you need more along with configuration.php,note",
     "moderateexcludes" => "Sections to exclude from comment moderation - use a comma to enter multiple sections,textarea",
 
+    "Text formatting,title",
+    "Bold (`b) and italic (`i) in what players write. Whatever a text opens it closes again at its end, so it cannot reach the rest of the page.,note",
+    "formatting_commentary" => "Allow bold and italic in chat lines?,bool",
+    "formatting_bio" => "Allow bold and italic in bios?,bool",
+    "formatting_mail" => "Allow bold and italic in mail?,bool",
+    "formatting_clan" => "Allow bold and italic in a clan's message of the day and description?,bool",
+
     "Place names and People names,title",
     "villagename" => "Name for the main village",
     "innname" => "Name of the inn",

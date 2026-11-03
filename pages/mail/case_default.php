@@ -146,7 +146,11 @@ function renderMailRows(array $rows, array $userStatusList, string $noSubject): 
         }
 
         $output->rawOutput("<a href='mail.php?op=read&id={$row['messageid']}'>");
-        $output->outputNotl('%s', trim($row['subject']) ? $row['subject'] : $noSubject);
+        $subjectText = trim($row['subject']) ? $row['subject'] : $noSubject;
+        if ((int) $row['msgfrom'] !== 0) {
+            $subjectText = Sanitize::userFormatting((string) $subjectText, Sanitize::formattingAllowed('mail'));
+        }
+        $output->outputNotl('%s', $subjectText);
         $output->rawOutput('</a>');
         $output->rawOutput("</td><td><a href='mail.php?op=read&id={$row['messageid']}'>");
         $output->outputNotl('%s', $row['name']);

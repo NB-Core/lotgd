@@ -116,6 +116,28 @@ final class PreviewFieldTest extends TestCase
         self::assertStringNotContainsString(', </span><span class="colLtCyan">', $markup, 'No talk line in front.');
     }
 
+    public function testFormattingIsOffUnlessTheCallerAsks(): void
+    {
+        $this->enablePartialClient();
+
+        self::assertFalse($this->config($this->render())['formatting']);
+
+        $markup = Forms::previewField('insertcommentary', 'Admin', 'says', true, ['size' => 40], true, true);
+        self::assertTrue($this->config($markup)['formatting']);
+    }
+
+    public function testAClassicPreviewWithFormattingRendersBoldAndItalic(): void
+    {
+        Settings::setInstance(new DummySettings(['maxchars' => 200, 'partial_render' => 1]));
+
+        $markup = Forms::previewField('fmtcomment', 'Admin', 'says', true, ['size' => 40], true, true);
+
+        self::assertStringContainsString('case "b": case "i":', $markup);
+        self::assertStringContainsString("for (var c = open.length - 1; c >= 0; c--)", $markup, 'What it opened is closed at the end.');
+        self::assertStringContainsString("case \"`\": out+='`';break;", $markup, 'An escaped backtick shows as one.');
+        self::assertStringContainsString("// A backtick at the very end is shown, as the page shows it.\n                out += '`';", $markup, 'So does one at the very end.');
+    }
+
     private function enablePartialClient(): void
     {
         Settings::setInstance(new DummySettings(['maxchars' => 200, 'partial_render' => 1]));

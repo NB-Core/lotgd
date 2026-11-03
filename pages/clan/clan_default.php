@@ -6,6 +6,7 @@ use Lotgd\Commentary;
 use Lotgd\Modules;
 use Lotgd\Nav;
 use Lotgd\Nltoappon;
+use Lotgd\Sanitize;
 use Lotgd\Repository\ClanRepository;
 use Lotgd\Translator;
 
@@ -30,7 +31,7 @@ function renderClanDefault(): void
     if (isset($claninfo['clanmotd']) && $claninfo['clanmotd'] !== null && $claninfo['clanmotd'] !== '') {
         $output->rawOutput("<div style='margin-left: 15px; padding-left: 15px;'>");
         $output->output("`&`bCurrent MoTD:`b `#by %s`2`n", $motdAuthorName);
-        $output->outputNotl(Nltoappon::convert($claninfo['clanmotd']) . "`n");
+        $output->outputNotl(Sanitize::userFormatting(Nltoappon::convert((string) $claninfo['clanmotd']), Sanitize::formattingAllowed('clan')) . "`n");
         $output->rawOutput('</div>');
         $output->outputNotl("`n");
     }
@@ -48,7 +49,7 @@ function renderClanDefault(): void
     if (isset($claninfo['clandesc']) && $claninfo['clandesc'] !== null && $claninfo['clandesc'] !== '') {
         Modules::hook('collapse{', ['name' => 'collapsedesc']);
         $output->output("`n`n`&`bCurrent Description:`b `#by %s`2`n", $descAuthorName);
-        $output->outputNotl(Nltoappon::convert($claninfo['clandesc']));
+        $output->outputNotl(Sanitize::userFormatting(Nltoappon::convert((string) $claninfo['clandesc']), Sanitize::formattingAllowed('clan')));
         Modules::hook('}collapse');
     }
 

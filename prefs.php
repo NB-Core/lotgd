@@ -472,8 +472,10 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
         }
         $bioPost = Http::post('bio');
         $bio = is_string($bioPost) ? stripslashes($bioPost) : '';
-        $bio = Sanitize::commentSanitize($bio);
-        if ($bio != Sanitize::commentSanitize($session['user']['bio'])) {
+        // Bold and italic stay where the game allows them in bios.
+        $bioKeep = Sanitize::formattingAllowed('bio') ? Sanitize::USER_FORMATTING : '';
+        $bio = Sanitize::commentSanitize($bio, $bioKeep);
+        if ($bio != Sanitize::commentSanitize($session['user']['bio'], $bioKeep)) {
             if ($session['user']['biotime'] > "9000-01-01") {
                 $output->output("`\$You cannot modify your bio.");
                 $output->output("It has been blocked by the administrators!`0`n");

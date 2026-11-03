@@ -1219,7 +1219,14 @@ SQL;
         global $session;
 
         $realRequestUri = self::determineReturnUrl();
-        $row['comment'] = Sanitize::sanitizeMb(Sanitize::commentSanitize($row['comment']));
+        if (Sanitize::formattingAllowed('commentary')) {
+            // Bold and italic stay, closed again at the end of the line.
+            $row['comment'] = Sanitize::sanitizeMb(Sanitize::balanceFormatting(
+                Sanitize::commentSanitize($row['comment'], Sanitize::USER_FORMATTING)
+            ));
+        } else {
+            $row['comment'] = Sanitize::sanitizeMb(Sanitize::commentSanitize($row['comment']));
+        }
         $ft = self::parseCommandPrefix($row['comment']);
         $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($realRequestUri);
 
@@ -1507,7 +1514,9 @@ SQL;
             [
                 "size" => $settings->getSetting('chatlinelength', 40),
                 "maxlength" => $settings->getSetting('maxchars', 200) - $tll,
-            ]
+            ],
+            true,
+            Sanitize::formattingAllowed('commentary')
         );
         $output->rawOutput("<input type='hidden' name='talkline' value='$talkline'>");
         $output->rawOutput("<input type='hidden' name='schema' value='$schema'>");
