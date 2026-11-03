@@ -31,12 +31,14 @@ A page that streams carries
 source. Without that meta the setting is not active for that page, and it
 polls.
 
-Polling is always the fallback. A page polls instead of streaming:
+A page polls instead of streaming:
 - after a refused or failed connect (three in a row);
 - when a second tab of the same player takes the stream (`event: replaced`);
 - in a browser without `EventSource`.
 
-So a misconfigured server costs speed, not function.
+So a stream that is refused or buffered costs speed, not function. A server
+with too few PHP workers is different: streams are not refused there, they
+wait, and the pages wait with them (see *Workers* below and *Measured*).
 
 ## What every host needs
 
@@ -44,7 +46,7 @@ So a misconfigured server costs speed, not function.
   `realtime_stream_seconds` (50 s by default; the browser reconnects after
   that). Size Apache's `MaxRequestWorkers` (and `ServerLimit`), or PHP-FPM's
   `pm.max_children`, for the players online at the same time **plus** the
-  workers normal page requests need (see *Measured* below). If workers run
+  workers that normal page requests need (see *Measured* below). If workers run
   out, nothing falls back on its own: new streams and page loads wait in the
   same queue until a stream ends, and pages take tens of seconds or minutes.
   Either size the workers or stay on polling. `pm = ondemand` works.
@@ -170,14 +172,14 @@ encode @notstream zstd gzip
 
 ## Measured
 
-A load test with 50 players, run with the code of this release
-(`feature/reactive-core`), gives an idea of the sizes. Each virtual player
+A load test with 50 players, run with the code of this release, gives an idea of the sizes. Each virtual player
 logged in, changed pages in place every 5 to 10 seconds (the village, the
 forest, fights, shops; about one in seven actions was a chat line in the
 village), asked for the notices every minute, and received realtime events by
 polling every 10 s or by one stream. Five minutes per run after a 25 s ramp.
 
-The machine: 4 vCPUs and 16 GB, PHP 8.3 with OPcache, the data cache on,
+The machine: 4 vCPUs and 16 GB, PHP 8.3 with OPcache (the Docker image ships
+PHP 8.4, which was not measured), the data cache on,
 MariaDB 11.4 in a container on the same machine, the load generator too.
 Apache 2.4 with `mpm_prefork` and mod_php; nginx 1.24 with PHP-FPM
 (`pm = static`), with the configuration from this page.
