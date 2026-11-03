@@ -106,7 +106,7 @@ class DateTime
             Output::getInstance()->outputNotl('<!--CheckNewDay()-->', true);
             if (self::isNewDay()) {
                 $session = $revertsession;
-                $session['user']['restorepage'] = $requestUri;
+                \Lotgd\Page\RestorePage::remember($session['user'], $requestUri);
                 $session['allowednavs'] = [];
                 Nav::add('', 'newday.php');
                 Redirect::redirect('newday.php');

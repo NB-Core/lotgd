@@ -543,8 +543,8 @@ if (OVERRIDE_FORCED_NAV) {
     $nokeeprestore[$scriptNameEnv] = 1;
 }
 if (!isset($nokeeprestore[$scriptNameEnv]) || !$nokeeprestore[$scriptNameEnv]) {
-    $session['user']['restorepage'] = PhpGenericEnvironment::getRequestUri();
-} else {
+    // Not a form's target: login.php returns to this page with a GET.
+    \Lotgd\Page\RestorePage::remember($session['user'], PhpGenericEnvironment::getRequestUri());
 }
 
 
