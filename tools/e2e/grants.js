@@ -46,7 +46,7 @@ const slot = async p => (await p.textContent('[data-lotgd-slot="grants"]')).repl
   sql(`DELETE FROM accounts WHERE login IN ('offe2e','appe2e'); DELETE FROM clans WHERE clanshort='E2E'; DELETE FROM granted_navs`);
   sql(`INSERT INTO clans (clanname, clanshort, clanmotd, clandesc, customsay) VALUES ('Grant Hall','E2E','','','')`);
   const clan = sql(`SELECT clanid FROM clans WHERE clanshort='E2E'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema='lotgd' AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','clanid','clanrank','prefs')`);
+  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','clanid','clanrank','prefs')`);
   const prefs = 'a:1:{s:13:"partialrender";i:1;}';
   for (const [id, login, name, cid, rank] of [[385, 'offe2e', 'Otto', clan, 20], [386, 'appe2e', 'Nina', 0, 0]]) {
     // Fixed ids: other suites address these accounts by id.

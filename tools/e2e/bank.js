@@ -109,7 +109,7 @@ async function resend(page, form) {
 
   // 4. A transfer to a second player.
   sql(`DELETE FROM accounts WHERE login='bobe2e'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema='lotgd' AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','goldinbank','version','transferredtoday')`);
+  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','goldinbank','version','transferredtoday')`);
   sql(`INSERT INTO accounts (login,name,emailaddress,goldinbank,version,transferredtoday,${cols}) SELECT 'bobe2e','Bob','bob@example.invalid',0,0,0,${cols} FROM accounts WHERE acctid=1`);
   const bob = sql(`SELECT acctid FROM accounts WHERE login='bobe2e'`);
   await nav(page, 'bank.php?op=transfer');

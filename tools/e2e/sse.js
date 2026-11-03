@@ -44,7 +44,7 @@ async function waitFor(fn, ms) {
 (async () => {
   sql(`INSERT INTO settings (setting,value) VALUES ('realtime_enabled','1'),('partial_render','1'),('guarded_actions','1'),('realtime_poll_seconds','5'),('realtime_transport','sse'),('realtime_stream_seconds','20') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`DELETE FROM accounts WHERE login='bobe2e'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema='lotgd' AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','goldinbank','version','transferredtoday','loggedin','allowednavs','restorepage')`);
+  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','goldinbank','version','transferredtoday','loggedin','allowednavs','restorepage')`);
   sql(`INSERT INTO accounts (login,name,emailaddress,goldinbank,version,transferredtoday,loggedin,allowednavs,restorepage,${cols}) SELECT 'bobe2e','Bob','bob@example.invalid',0,0,0,0,'a:1:{s:11:"village.php";b:1;}','village.php',${cols} FROM accounts WHERE acctid=1`);
   const bob = sql(`SELECT acctid FROM accounts WHERE login='bobe2e'`);
   sql(`UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}' WHERE acctid=${bob}; DELETE FROM mail WHERE msgto=${bob}`);

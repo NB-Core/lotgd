@@ -49,7 +49,7 @@ async function say(p, text) {
   sql(`UPDATE settings SET value='${skin}' WHERE setting='defaultskin'`);
   const prefs = MODE === 'ajax' ? 'a:2:{s:13:"partialrender";i:0;s:4:"ajax";i:1;}' : 'a:2:{s:13:"partialrender";i:1;s:4:"ajax";i:1;}';
   sql(`DELETE FROM accounts WHERE login='chate2e'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema='lotgd' AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','superuser','clanid','clanrank')`);
+  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','superuser','clanid','clanrank')`);
   sql(`INSERT INTO accounts (login,name,emailaddress,version,loggedin,allowednavs,restorepage,prefs,superuser,clanid,clanrank,${cols}) SELECT 'chate2e','\`@Chatty Cat\`0','chat@example.invalid',0,0,'a:1:{s:11:"village.php";b:1;}','village.php','${prefs}',0,0,0,${cols} FROM accounts WHERE acctid=1`);
   sql(`UPDATE accounts SET prefs='${prefs}', alive=1, hitpoints=60, loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', clanid=0 WHERE acctid=1; DELETE FROM accounts_output WHERE acctid=1`);
   const tag = 'e2e' + Date.now().toString(36);

@@ -93,3 +93,5 @@ done
 echo
 echo "Failed runs:"
 awk -F'\t' '$3 != 0 || $4 != 0 { print "  " $1 "\t" $2 "\t" $4 " FAIL" }' "$RES"
+# Non-zero when any run failed, so a script calling this can tell.
+awk -F'\t' '$3 != 0 || $4 != 0 { bad = 1 } END { exit bad }' "$RES"

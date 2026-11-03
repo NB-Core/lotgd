@@ -62,7 +62,7 @@ async function finish(page, script) {
   sql(`DELETE FROM module_userprefs WHERE userid=1 AND modulename='specialtydarkarts'; INSERT INTO module_userprefs (modulename,setting,userid,value) VALUES ('specialtydarkarts','skill',1,'10'),('specialtydarkarts','uses',1,'5')`);
   // A sleeping warrior for PvP.
   sql(`DELETE FROM accounts WHERE login='sleepere2e'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema='lotgd' AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','laston','pvpflag','allowednavs','restorepage','prefs','alive','hitpoints','location')`);
+  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','laston','pvpflag','allowednavs','restorepage','prefs','alive','hitpoints','location')`);
   sql(`INSERT INTO accounts (login,name,emailaddress,version,loggedin,laston,pvpflag,allowednavs,restorepage,prefs,alive,hitpoints,location,${cols}) SELECT 'sleepere2e','Sleepy Sam','sleep@example.invalid',0,0,'2020-01-01 00:00:00','2020-01-01 00:00:00','','village.php','a:0:{}',1,20,location,${cols} FROM accounts WHERE acctid=1`);
   sql(`UPDATE accounts SET level=5, hitpoints=20, maxhitpoints=20, attack=1, defense=1, dragonkills=0, superuser=0, age=30, experience=5000, slaydragon=0, locked=0 WHERE login='sleepere2e'`);
   try {

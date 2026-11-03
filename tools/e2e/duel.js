@@ -48,7 +48,7 @@ const transport = process.env.TRANSPORT || 'sse';
 (async () => {
   sql(`INSERT INTO settings (setting,value) VALUES ('realtime_enabled','1'),('partial_render','1'),('guarded_actions','1'),('grants_enabled','1'),('live_encounters','1'),('realtime_poll_seconds','5'),('realtime_transport','${transport}'),('encounter_challenge_seconds','120'),('duel_round_seconds','10'),('duel_max_rounds','30'),('pvp','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`DELETE FROM accounts WHERE login IN ('duele2e'); DELETE FROM granted_navs; DELETE FROM encounter_slots; DELETE FROM encounter_rounds; DELETE FROM encounters; DELETE FROM presence`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema='lotgd' AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','alive','hitpoints')`);
+  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','alive','hitpoints')`);
   const prefs = 'a:1:{s:13:"partialrender";i:1;}';
   sql(`INSERT INTO accounts (login,name,emailaddress,version,loggedin,allowednavs,restorepage,prefs,alive,hitpoints,${cols}) SELECT 'duele2e','Dora','duel@example.invalid',0,0,'a:1:{s:11:"village.php";b:1;}','village.php','${prefs}',1,50,${cols} FROM accounts WHERE acctid=1`);
   const dora = sql(`SELECT acctid FROM accounts WHERE login='duele2e'`);
