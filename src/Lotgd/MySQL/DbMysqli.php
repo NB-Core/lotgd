@@ -84,7 +84,10 @@ class DbMysqli
      */
     public function connect(string $host, string $user, string $pass): bool
     {
-        $this->link = mysqli_connect($host, $user, $pass);
+        // mysqli_connect() returns false on failure when mysqli reports no
+        // exceptions; the typed property takes only a link or null.
+        $link = mysqli_connect($host, $user, $pass);
+        $this->link = $link instanceof \mysqli ? $link : null;
         $this->credentials = $this->link ? ['host' => $host, 'user' => $user, 'pass' => $pass] : null;
 
         if (!$this->link) {
@@ -103,7 +106,10 @@ class DbMysqli
      */
     public function pconnect(string $host, string $user, string $pass): bool
     {
-        $this->link = mysqli_connect($host, $user, $pass);
+        // mysqli_connect() returns false on failure when mysqli reports no
+        // exceptions; the typed property takes only a link or null.
+        $link = mysqli_connect($host, $user, $pass);
+        $this->link = $link instanceof \mysqli ? $link : null;
         $this->credentials = $this->link ? ['host' => $host, 'user' => $user, 'pass' => $pass] : null;
 
         if (!$this->link) {
