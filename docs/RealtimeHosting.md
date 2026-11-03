@@ -54,8 +54,8 @@ wait, and the pages wait with them (see *Workers* below and *Measured*).
   streams open at once* (`realtime_stream_max`, *Game Settings*, 0 = no limit)
   below the workers, leaving some for the pages: a stream above it is turned
   away at once (`503`), and that player's page polls instead. The limit counts
-  streams that are open (a stream counts until it ends, or for its lifetime and
-  15 s if its worker died); two players starting at the same moment can pass it
+  streams that are open (a stream counts until it ends: when the browser left,
+  at its next ping, within 30 s; if its worker died, for its lifetime and 15 s); two players starting at the same moment can pass it
   by one. `pm = ondemand` works.
 - **Database connections.** A stream holds one connection to the database for
   its whole life: it closes the game's legacy link as it starts and works

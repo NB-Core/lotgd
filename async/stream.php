@@ -115,6 +115,23 @@ function lotgd_stream_entrypoint(int $keepBuffers = 0): void
     $acctid = (int) $session['user']['acctid'];
     $section = is_string($_GET['section'] ?? null) ? substr((string) $_GET['section'], 0, 64) : '';
     $token = \Lotgd\Realtime\Stream::claim($acctid);
+    // Ended: no longer one of the open streams realtime_stream_max counts.
+    // Also when the browser leaves: with ignore_user_abort(false) PHP stops
+    // the script at its next write, which skips a finally block but still
+    // runs shutdown functions.
+    $released = false;
+    $release = static function () use ($acctid, $token, &$released): void {
+        if ($released) {
+            return;
+        }
+        $released = true;
+        try {
+            \Lotgd\Realtime\Stream::release($acctid, $token);
+        } catch (\Throwable) {
+            // The row falls out of the count after its lifetime anyway.
+        }
+    };
+    register_shutdown_function($release);
 
     // Read-only from here: the session stays readable, writes would be lost.
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -154,16 +171,8 @@ function lotgd_stream_entrypoint(int $keepBuffers = 0): void
         static fn (): float => microtime(true),
         static fn (): bool => connection_aborted() === 1
     );
-    try {
-        $stream->run();
-    } finally {
-        // Ended: no longer one of the open streams realtime_stream_max counts.
-        try {
-            \Lotgd\Realtime\Stream::release($acctid, $token);
-        } catch (\Throwable) {
-            // The row falls out of the count after its lifetime anyway.
-        }
-    }
+    $stream->run();
+    $release();
 }
 
 if (!defined('LOTGD_STREAM_TEST_MODE')) {
