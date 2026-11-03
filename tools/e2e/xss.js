@@ -15,6 +15,7 @@ async function login(page, name) {
 }
 (async () => {
   const oldName = sql(`SELECT name FROM accounts WHERE acctid=385`);
+  const restoreSettings = cfg.keepSettings(sql, ['defaultskin', 'partial_render', 'realtime_enabled', 'live_encounters', 'grants_enabled', 'guarded_actions']);
   sql(`UPDATE settings SET value='twig:aurora' WHERE setting='defaultskin'; UPDATE accounts SET name='${esc("`&O'><img src=x onerror=__xss=3>")}' WHERE acctid=385; UPDATE settings SET value='1' WHERE setting IN ('partial_render','realtime_enabled','live_encounters','grants_enabled','guarded_actions');
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:1;s:4:"ajax";i:1;}', alive=1, location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid IN (1,385);
 
@@ -61,6 +62,7 @@ async function login(page, name) {
     check('no request was triggered by injected htmx attributes', probes.length === 0, probes.join(','));
   } finally {
     await b.close();
+    restoreSettings();
     sql(`UPDATE accounts SET name='${esc(oldName)}' WHERE acctid=385; DELETE FROM mail WHERE msgfrom=385 AND msgto=1 AND subject LIKE 'Hi%'; DELETE FROM commentary WHERE comment LIKE 'Line%onerror%'; UPDATE encounters SET state='cancelled' WHERE state='pending'; DELETE FROM encounter_slots;`);
   }
   console.log(`${results.filter(Boolean).length}/${results.length} passed`);

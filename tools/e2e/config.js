@@ -32,6 +32,18 @@ function clearDataCache(game) {
   for (const name of fs.readdirSync(dir)) fs.rmSync(path.join(dir, name), { recursive: true, force: true });
 }
 
+// Remember the named game settings; the returned function puts them back
+// (and removes those that were not set). sql(query) runs a query and
+// returns its output.
+function keepSettings(sql, names) {
+  const list = names.map(n => `'${n}'`).join(',');
+  const rows = sql(`SELECT setting, value FROM settings WHERE setting IN (${list})`);
+  const saved = new Map(rows === '' ? [] : rows.split('\n').map(line => line.split('\t')));
+  return () => sql(names.map(n => saved.has(n)
+    ? `UPDATE settings SET value='${saved.get(n).replace(/'/g, "''")}' WHERE setting='${n}';`
+    : `DELETE FROM settings WHERE setting='${n}';`).join(' '));
+}
+
 module.exports = {
   // The running game, with a trailing slash.
   BASE: process.env.LOTGD_E2E_BASE || 'http://127.0.0.1:8099/',
@@ -47,6 +59,7 @@ module.exports = {
   launch: chromium !== '' ? { executablePath: chromium } : {},
   overrideAsyncSettings,
   clearDataCache,
+  keepSettings,
   // Where the screenshots go: run.sh sets OUT, alone a suite writes here.
   OUT: process.env.OUT || '.',
 };

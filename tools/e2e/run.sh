@@ -7,7 +7,7 @@
 #
 # --skins: default (Aurora and jade), twig, legacy, all.
 # Before each suite, reset.sql puts back what one suite may leave for the
-# next. Results go to $LOTGD_E2E_OUT (default tools/e2e/results/): one log
+# next; the game settings are restored after each suite. Results go to $LOTGD_E2E_OUT (default tools/e2e/results/): one log
 # per run and results.tsv (run, passed/total, exit code, failures).
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -57,8 +57,12 @@ run() { # label suite env...
   # The data cache, if the game keeps one there: its entries, never the directory.
   [ -n "$GAME" ] && [ -d "$GAME/data_cache" ] && find "$GAME/data_cache" -mindepth 1 -delete
   local log="$OUT/$(echo "$label" | tr ':/ ' '___').log"
+  # Game settings as they were before the suite, back afterwards: what one
+  # suite turns on or off never reaches the next.
+  $DB_CMD <<< "DROP TABLE IF EXISTS e2e_settings_saved; CREATE TABLE e2e_settings_saved AS SELECT * FROM settings;"
   env OUT="$OUT/shots" LOTGD_E2E_GAME="$GAME" "$@" timeout 900 node "$suite.js" "$OUT/shots" > "$log" 2>&1
   local rc=$?
+  $DB_CMD <<< "DELETE FROM settings; INSERT INTO settings SELECT * FROM e2e_settings_saved; DROP TABLE e2e_settings_saved;"
   local sum
   sum=$(grep -Eo '^[0-9]+/[0-9]+( passed)?$|[0-9]+/[0-9]+ passed' "$log" | tail -1)
   local fails
