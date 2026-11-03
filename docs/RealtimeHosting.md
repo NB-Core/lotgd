@@ -186,8 +186,8 @@ forest, fights, shops; about one in seven actions was a chat line in the
 village), asked for the notices every minute, and received realtime events by
 polling every 10 s or by one stream. Five minutes per run after a 25 s ramp.
 
-The machine: 4 vCPUs and 16 GB, PHP 8.3 with OPcache (the Docker image ships
-PHP 8.4, which was not measured), the data cache on,
+The machine: 4 vCPUs and 16 GB, PHP 8.3 with OPcache (8.4, which the Docker
+image ships, see *PHP 8.4* below), the data cache on,
 MariaDB 11.4 in a container on the same machine, the load generator too.
 Apache 2.4 with `mpm_prefork` and mod_php; nginx 1.24 with PHP-FPM
 (`pm = static`), with the configuration from this page.
@@ -227,6 +227,20 @@ again:
 No request failed. With the limit, the players above it get their chat lines
 by polling (the p95 above), and every page stays as fast as with enough
 workers.
+
+**PHP 8.4.** The same SSE run (nginx + PHP-FPM, 80 workers, 50 players, one
+connection per stream), once on PHP 8.3 and once on PHP 8.4.27, which the
+Docker image ships:
+
+| 50 players, SSE | PHP 8.3 | PHP 8.4 |
+| --- | --- | --- |
+| Page changed in place, p50 / p95 | 40 / 56 ms | 41 / 57 ms |
+| A chat line reaches the others, p50 / p95 | 0.54 / 0.97 s | 0.52 / 0.97 s |
+| PHP memory, 80 workers | 2.8 GB | 2.7 GB |
+| Database connections, average | 49 | 49 |
+| CPU (4 cores), average | 11 % | 11 % |
+
+The two behave the same; everything on this page holds for both.
 
 What follows from it:
 

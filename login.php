@@ -291,7 +291,12 @@ if ($name != "") {
                 if (!empty($session['user']['restorepage'])) {
                     $link = "<a href='{$session['user']['restorepage']}'>{$session['user']['restorepage']}</a>";
                     $msg  = Translator::getInstance()->sprintfTranslate('Sending you to %s, have a safe journey', $link);
-                    //$session['allowednavs'] = unserialize($session['user']['allowednavs']);
+                    // On purpose, restorepage is not added to the allowed navigation
+                    // here. Unless the player logged out (which adds it, see
+                    // op=logout), the stored links do not contain the page itself,
+                    // so the redirect ends on badnav.php, which shows the page as it
+                    // was stored without running its address again. Running it again
+                    // would repeat what a GET link does: a fight round, a purchase.
                     header("Location: {$session['user']['restorepage']}");
                     Accounts::saveUser();
                     echo $msg;
