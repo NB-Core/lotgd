@@ -1,0 +1,8 @@
+{
+  "name": "lotgd-e2e",
+  "private": true,
+  "description": "Browser suites for developers (not shipped, not run in CI). See README.md.",
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}
