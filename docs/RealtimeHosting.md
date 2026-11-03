@@ -34,7 +34,9 @@ polls.
 A page polls instead of streaming:
 - after a refused or failed connect (three in a row);
 - when a second tab of the same player takes the stream (`event: replaced`);
-- in a browser without `EventSource`.
+- in a browser without `EventSource`;
+- when the server already holds as many streams as *Most server-sent event
+  streams open at once* (`realtime_stream_max`) allows (`503`, see *Workers*).
 
 So a stream that is refused or buffered costs speed, not function. A server
 with too few PHP workers is different: streams are not refused there, they
@@ -47,14 +49,20 @@ wait, and the pages wait with them (see *Workers* below and *Measured*).
   that). Size Apache's `MaxRequestWorkers` (and `ServerLimit`), or PHP-FPM's
   `pm.max_children`, for the players online at the same time **plus** the
   workers that normal page requests need (see *Measured* below). If workers run
-  out, nothing falls back on its own: new streams and page loads wait in the
-  same queue until a stream ends, and pages take tens of seconds or minutes.
-  Either size the workers or stay on polling. `pm = ondemand` works.
-- **Database connections.** Each request holds two connections to the
-  database while it runs (the game's legacy link and Doctrine's), so an open
-  stream holds two for its whole life. Set MariaDB's/MySQL's
-  `max_connections` to at least twice the streaming players plus room for the
-  pages; the default of 151 is used up at about 70 streaming players.
+  out, new streams and page loads wait in the same queue until a stream ends,
+  and pages take tens of seconds or minutes. Set *Most server-sent event
+  streams open at once* (`realtime_stream_max`, *Game Settings*, 0 = no limit)
+  below the workers, leaving some for the pages: a stream above it is turned
+  away at once (`503`), and that player's page polls instead. The limit counts
+  streams that are open (a stream counts until it ends: when the browser left,
+  at its next ping, within 30 s; if its worker died, for its lifetime and 15 s); two players starting at the same moment can pass it
+  by one. `pm = ondemand` works.
+- **Database connections.** A stream holds one connection to the database for
+  its whole life: it closes the game's legacy link as it starts and works
+  through Doctrine's alone (a page request holds both while it runs, which is
+  short). Set MariaDB's/MySQL's `max_connections` to at least the streaming
+  players plus room for the pages; the default of 151 covers about 120
+  streaming players.
 - **No buffering, no compression** for `async/stream.php`, in every layer:
   - PHP: the script turns off output buffering and `zlib.output_compression`
     for itself.
@@ -191,7 +199,7 @@ Apache 2.4 with `mpm_prefork` and mod_php; nginx 1.24 with PHP-FPM
 | A chat line reaches the others, p50 / p95 | 5.1 / 9.5 s | 0.53 / 0.97 s | 5.1 / 9.6 s | 0.52 / 0.97 s |
 | Requests per second | about 13 | about 8 (+ 50 open streams) | about 13 | about 8 (+ 50 open streams) |
 | Busy PHP workers, average / peak | 4 / 6 | 52 / 55 | 1 / 3 | 48 / 53 |
-| Database connections, average / peak | 2 / 5 | 98 / 109 | 2 / 7 | 95 / 106 |
+| Database connections, average / peak | 2 / 5 | 98 / 109 (49 / 56 now, see below) | 2 / 7 | 95 / 106 |
 | CPU (4 cores), average | 10 % | 11 % | 10 % | 11 % |
 
 No request failed in these four runs, and no stream was refused.
@@ -202,18 +210,38 @@ Apache, pages took 139 s at p95 and logins 190 s; on PHP-FPM, pages took 35 s
 at p95. The pages did not fall back to polling, because a stream that waits
 for a worker is not refused, it is only late.
 
+**With the limit and one connection per stream.** Streams now close the
+legacy database link as they start, and *Most server-sent event streams open
+at once* (`realtime_stream_max`) turns streams above it away. The same runs
+again:
+
+| 50 players, SSE | Apache, 150 workers, no limit | Apache, 40 workers, limit 30 | nginx + FPM, 40 workers, limit 30 |
+| --- | --- | --- | --- |
+| Page changed in place, p95 | 63 ms | 59 ms | 60 ms |
+| Streams open / players polling | 50 / 0 | 30 / 20 | 30 / 20 |
+| Streams turned away (`503`) | 0 | 60 (three tries each, then polling) | 60 |
+| A chat line reaches the others, p50 / p95 | 0.52 / 0.97 s | 0.76 / 9.1 s | 0.73 / 9.1 s |
+| Busy PHP workers, average / peak | 51 / 57 | 33 / 35 | 29 / 34 |
+| Database connections, average / peak | 49 / 56 | 31 / 36 | 30 / 35 |
+
+No request failed. With the limit, the players above it get their chat lines
+by polling (the p95 above), and every page stays as fast as with enough
+workers.
+
 What follows from it:
 
 - **Polling** costs little: about one request per player every ten seconds,
   answered in 15–20 ms, and a handful of workers. Chat lines and mail arrive
   within the poll interval (5 s on average at 10 s).
 - **Server-sent events** bring them within a second, at the price of one PHP
-  worker and two database connections per player online, for as long as they
+  worker and one database connection per player online, for as long as they
   are online. CPU is not the limit; workers, memory and connections are.
 - **Workers:** players online × 1.1 plus 10 for the pages is enough at this
   rate of play. A PHP worker that has served the game uses about 35–40 MB of
   memory (RSS), so 100 streaming players need about 4–5 GB for PHP alone.
-- **Database:** `max_connections` ≥ 2 × players online + 20.
+- **Database:** `max_connections` ≥ players online + 20.
+- **Limit:** set `realtime_stream_max` to the workers minus those the pages
+  need (10 at this rate of play for 50 players): with 40 workers, 30.
 - **Choose by what the host can hold.** On a small server, or when you cannot
   raise the limits, keep `poll`; the game plays the same, chat and mail are a
   few seconds slower.
@@ -252,7 +280,8 @@ nginx: the `location = /async/stream.php` block from *nginx with php-fpm*
 above, and `worker_connections` well above the players online (every stream
 is one connection; 4096 was used).
 
-MariaDB: `max_connections = 250` covers 100 streaming players.
+MariaDB: `max_connections = 150` (the default 151) covers 100 streaming
+players and their pages.
 
 ## Shared webspace
 

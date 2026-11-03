@@ -177,5 +177,56 @@ final class StreamEndpointTest extends TestCase
         self::assertStringStartsWith('REPLACE INTO realtime_streams', (string) $this->connection->executeStatements[0]['sql']);
         // The claimed row is not there in the stub: the stream sees itself replaced at once.
         self::assertSame("retry: 2000\n\nevent: replaced\ndata: {}\n\n", $output);
+        self::assertSame(1, Database::$legacyLinkReleases, 'The legacy link is closed before the stream runs.');
+        $last = (array) end($this->connection->executeStatements);
+        self::assertStringStartsWith('DELETE FROM realtime_streams WHERE acctid = :acctid AND token = :token', (string) ($last['sql'] ?? ''), 'Its row is gone once it ended.');
+    }
+
+    public function testAServerAtItsLimitTurnsTheStreamAwaySoThePagePolls(): void
+    {
+        $this->limit(2);
+        $this->connection->queryResultsByPattern = ['/SELECT COUNT\(\*\) FROM realtime_streams/' => [['n' => 2]]];
+
+        self::assertSame([503, 'streams_full'], lotgd_stream_refusal());
+        self::assertArrayNotHasKey('lastrequest', $_SESSION, 'A refused stream sets no rate limit: the retry may come at once.');
+        $counts = array_values(preg_grep('/COUNT\\(\\*\\) FROM realtime_streams/', array_map('strval', $this->connection->queries)));
+        self::assertCount(1, $counts);
+        $count = $counts[0];
+        self::assertStringContainsString('acctid <> :acctid AND started >= :since', $count, 'The player\'s own stream and streams past their life do not count.');
+    }
+
+    public function testBelowTheLimitTheStreamOpens(): void
+    {
+        $this->limit(2);
+        $this->connection->queryResultsByPattern = ['/SELECT COUNT\(\*\) FROM realtime_streams/' => [['n' => 1]]];
+
+        self::assertNull(lotgd_stream_refusal());
+    }
+
+    public function testWithoutALimitNothingIsCounted(): void
+    {
+        self::assertNull(lotgd_stream_refusal());
+        self::assertSame([], preg_grep('/realtime_streams/', array_map('strval', $this->connection->queries)));
+    }
+
+    public function testTheFullAnswerSaysWhy(): void
+    {
+        $this->limit(1);
+        $this->connection->queryResultsByPattern = ['/SELECT COUNT\(\*\) FROM realtime_streams/' => [['n' => 5]]];
+
+        ob_start();
+        lotgd_stream_entrypoint(ob_get_level());
+        $answer = (string) ob_get_clean();
+
+        self::assertSame('{"status":"error","error":"streams_full"}', $answer);
+        self::assertSame([], $this->connection->executeStatements, 'No stream claimed.');
+    }
+
+    private function limit(int $max): void
+    {
+        Settings::setInstance(new DummySettings([
+            'realtime_enabled' => 1, 'partial_render' => 1, 'realtime_transport' => 'sse', 'LOGINTIMEOUT' => 900,
+            'realtime_stream_seconds' => 20, 'realtime_stream_max' => $max,
+        ]));
     }
 }

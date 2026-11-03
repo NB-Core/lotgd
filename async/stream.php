@@ -51,6 +51,11 @@ function lotgd_stream_refusal(): ?array
     if (!\Lotgd\Security\Csrf::matches(\Lotgd\Security\Csrf::SCOPE_ASYNC, $_GET['csrf'] ?? null)) {
         return [403, 'csrf_invalid'];
     }
+    // As many streams as the server allows (realtime_stream_max): the page
+    // polls instead of waiting for a worker that streams hold.
+    if (\Lotgd\Realtime\Stream::full((int) $user['acctid'])) {
+        return [503, 'streams_full'];
+    }
 
     $now = microtime(true);
     $last = $_SESSION['lastrequest']['stream'] ?? null;
@@ -98,6 +103,9 @@ function lotgd_stream_entrypoint(int $keepBuffers = 0): void
             http_response_code($refusal[0]);
             header('Content-Type: application/json; charset=UTF-8');
             header('Cache-Control: no-store');
+            if ($refusal[0] === 503) {
+                header('Retry-After: 60');
+            }
         }
         echo json_encode(['status' => 'error', 'error' => $refusal[1]]);
 
@@ -107,11 +115,31 @@ function lotgd_stream_entrypoint(int $keepBuffers = 0): void
     $acctid = (int) $session['user']['acctid'];
     $section = is_string($_GET['section'] ?? null) ? substr((string) $_GET['section'], 0, 64) : '';
     $token = \Lotgd\Realtime\Stream::claim($acctid);
+    // Ended: no longer one of the open streams realtime_stream_max counts.
+    // Also when the browser leaves: with ignore_user_abort(false) PHP stops
+    // the script at its next write, which skips a finally block but still
+    // runs shutdown functions.
+    $released = false;
+    $release = static function () use ($acctid, $token, &$released): void {
+        if ($released) {
+            return;
+        }
+        $released = true;
+        try {
+            \Lotgd\Realtime\Stream::release($acctid, $token);
+        } catch (\Throwable) {
+            // The row falls out of the count after its lifetime anyway.
+        }
+    };
+    register_shutdown_function($release);
 
     // Read-only from here: the session stays readable, writes would be lost.
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
     }
+    // The stream works through Doctrine alone; the legacy link would stay
+    // open with it for the whole stream (docs/RealtimeHosting.md).
+    \Lotgd\MySQL\Database::releaseLegacyLink();
 
     // Every chunk must reach the browser as it is written.
     @ini_set('zlib.output_compression', '0');
@@ -144,6 +172,7 @@ function lotgd_stream_entrypoint(int $keepBuffers = 0): void
         static fn (): bool => connection_aborted() === 1
     );
     $stream->run();
+    $release();
 }
 
 if (!defined('LOTGD_STREAM_TEST_MODE')) {

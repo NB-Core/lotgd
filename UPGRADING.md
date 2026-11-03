@@ -341,6 +341,7 @@ let players duel live. All of it is **off until you turn it on**, except a few c
 | `guarded_actions` | off | InnoDB `accounts`, `action_log`, `mail` | Bank bookings run once per form, in one transaction, with the account's version checked. |
 | `realtime_enabled` | off | partial rendering, InnoDB outbox tables | New mail, incoming transfers, chat lines and grants reach the open page. |
 | `realtime_transport` | `poll` | `realtime_enabled` | `poll` every `realtime_poll_seconds` (10), or `sse`: one open stream per player for `realtime_stream_seconds` (50). |
+| `realtime_stream_max` | 0 | `sse` | Most streams open at once (0 = no limit); a player above it polls instead of waiting for a worker. |
 | `realtime_retention_hours` | 24 | | How long relayed events are kept. |
 | `grants_enabled` | off | `guarded_actions`, InnoDB `granted_navs` | Clan officers get a one-time link to accept an applicant, valid `grant_ttl_hours` (168). |
 | `live_encounters` | off | realtime, grants, guarded actions | *The Duelling Ground*: presence, live challenges (`encounter_challenge_seconds`, 120) and duels in rounds (`duel_round_seconds` 20, `duel_max_rounds` 30); `duel_announce_inn` (on) tells the inn when a duel begins. A *serious* duel follows the PvP settings (`pvp`, `pvprange`, `pvpimmunity`, `pvpminexp`, `pvpattgain`, `pvpattlose`, `pvpdefgain`, `pvpdeflose`, `pvphardlimit*`) and spends one of the challenger's `playerfights`; `pvp.php` then also offers the warriors who are awake a live duel. |
@@ -379,9 +380,10 @@ request left behind. Events are relayed right after each change anyway. The dail
 call goes to `async/process.php` and needs the header `X-Lotgd-Async: 1`, else the answer is `400` (the shipped
 client sends it; a page loaded before the upgrade needs a reload). The realtime poll follows
 `ajax_rate_limit_seconds`. With `sse`, `async/stream.php` must be reachable too and must not be
-buffered or compressed by any proxy. Each streaming player holds one PHP worker and two database connections
-while online, and too few workers make every page wait rather than fall back to polling; size workers and
-`max_connections` with the measurements in [docs/RealtimeHosting.md](docs/RealtimeHosting.md).
+buffered or compressed by any proxy. Each streaming player holds one PHP worker and one database connection
+while online. Too few workers make every page wait, so set `realtime_stream_max` below your workers: a player
+above it polls instead. Size workers and `max_connections` with the measurements in
+[docs/RealtimeHosting.md](docs/RealtimeHosting.md).
 On shared webspace keep `poll`. `async/poll.php` and Jaxon are gone; web server rules that mention them can go.
 `config/async.settings.php` keeps its keys (rate limit, `csrf_mode`, intervals).
 
