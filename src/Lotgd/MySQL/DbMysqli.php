@@ -16,11 +16,66 @@ class DbMysqli
     protected ?\mysqli $link = null;
 
     /**
+     * What the link was opened with, so that a released link can be opened
+     * again when something still needs it (see release()).
+     *
+     * @var array{host:string,user:string,pass:string}|null
+     */
+    private ?array $credentials = null;
+
+    private ?string $database = null;
+
+    private ?string $charset = null;
+
+    /**
+     * Close the link for good while the request goes on.
+     *
+     * A server-sent event stream (async/stream.php) works through Doctrine's
+     * connection alone and stays open for most of a minute; holding this one
+     * as well doubled the connections each streaming player kept. Should code
+     * after this still use it, link() opens it again with what it was opened
+     * with before.
+     */
+    public function release(): void
+    {
+        if ($this->link instanceof \mysqli) {
+            try {
+                mysqli_close($this->link);
+            } catch (\Throwable) {
+                // Already gone: nothing to close.
+            }
+        }
+        $this->link = null;
+    }
+
+    /**
+     * The open link; after release(), opened again on first use.
+     */
+    private function link(): ?\mysqli
+    {
+        if ($this->link === null && $this->credentials !== null) {
+            $link = mysqli_connect($this->credentials['host'], $this->credentials['user'], $this->credentials['pass']);
+            if ($link instanceof \mysqli) {
+                if ($this->database !== null) {
+                    mysqli_select_db($link, $this->database);
+                }
+                if ($this->charset !== null) {
+                    mysqli_set_charset($link, $this->charset);
+                }
+                $this->link = $link;
+            }
+        }
+
+        return $this->link;
+    }
+
+    /**
      * Open a connection to the database server.
      */
     public function connect(string $host, string $user, string $pass): bool
     {
         $this->link = mysqli_connect($host, $user, $pass);
+        $this->credentials = $this->link ? ['host' => $host, 'user' => $user, 'pass' => $pass] : null;
 
         if (!$this->link) {
             $error = mysqli_connect_error();
@@ -39,6 +94,7 @@ class DbMysqli
     public function pconnect(string $host, string $user, string $pass): bool
     {
         $this->link = mysqli_connect($host, $user, $pass);
+        $this->credentials = $this->link ? ['host' => $host, 'user' => $user, 'pass' => $pass] : null;
 
         if (!$this->link) {
             $error = mysqli_connect_error();
@@ -56,7 +112,12 @@ class DbMysqli
      */
     public function selectDb(string $dbname): bool
     {
-        return mysqli_select_db($this->link, $dbname);
+        $selected = mysqli_select_db($this->link(), $dbname);
+        if ($selected) {
+            $this->database = $dbname;
+        }
+
+        return $selected;
     }
 
     /**
@@ -64,7 +125,12 @@ class DbMysqli
      */
     public function setCharset(string $charset): bool
     {
-        return mysqli_set_charset($this->link, $charset);
+        $set = mysqli_set_charset($this->link(), $charset);
+        if ($set) {
+            $this->charset = $charset;
+        }
+
+        return $set;
     }
 
     /**
@@ -72,7 +138,7 @@ class DbMysqli
      */
     public function query(string $sql): \mysqli_result|bool
     {
-        return mysqli_query($this->link, $sql);
+        return mysqli_query($this->link(), $sql);
     }
 
     /**
@@ -88,7 +154,7 @@ class DbMysqli
      */
     public function insertId(): int|string
     {
-        return mysqli_insert_id($this->link);
+        return mysqli_insert_id($this->link());
     }
 
     /**
@@ -104,7 +170,7 @@ class DbMysqli
      */
     public function affectedRows(): int
     {
-        return mysqli_affected_rows($this->link);
+        return mysqli_affected_rows($this->link());
     }
 
     /**
@@ -112,7 +178,7 @@ class DbMysqli
      */
     public function error(): string
     {
-        return mysqli_error($this->link);
+        return mysqli_error($this->link());
     }
 
     /**
@@ -120,7 +186,7 @@ class DbMysqli
      */
     public function escape(string $string): string
     {
-        return mysqli_real_escape_string($this->link, $string);
+        return mysqli_real_escape_string($this->link(), $string);
     }
 
     /**
@@ -155,6 +221,6 @@ class DbMysqli
      */
     public function getServerVersion(): string
     {
-        return mysqli_get_server_info($this->link);
+        return mysqli_get_server_info($this->link());
     }
 }

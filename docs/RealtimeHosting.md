@@ -34,7 +34,9 @@ polls.
 A page polls instead of streaming:
 - after a refused or failed connect (three in a row);
 - when a second tab of the same player takes the stream (`event: replaced`);
-- in a browser without `EventSource`.
+- in a browser without `EventSource`;
+- when the server already holds as many streams as *Most server-sent event
+  streams open at once* (`realtime_stream_max`) allows (`503`, see *Workers*).
 
 So a stream that is refused or buffered costs speed, not function. A server
 with too few PHP workers is different: streams are not refused there, they
@@ -47,14 +49,20 @@ wait, and the pages wait with them (see *Workers* below and *Measured*).
   that). Size Apache's `MaxRequestWorkers` (and `ServerLimit`), or PHP-FPM's
   `pm.max_children`, for the players online at the same time **plus** the
   workers that normal page requests need (see *Measured* below). If workers run
-  out, nothing falls back on its own: new streams and page loads wait in the
-  same queue until a stream ends, and pages take tens of seconds or minutes.
-  Either size the workers or stay on polling. `pm = ondemand` works.
-- **Database connections.** Each request holds two connections to the
-  database while it runs (the game's legacy link and Doctrine's), so an open
-  stream holds two for its whole life. Set MariaDB's/MySQL's
-  `max_connections` to at least twice the streaming players plus room for the
-  pages; the default of 151 is used up at about 70 streaming players.
+  out, new streams and page loads wait in the same queue until a stream ends,
+  and pages take tens of seconds or minutes. Set *Most server-sent event
+  streams open at once* (`realtime_stream_max`, *Game Settings*, 0 = no limit)
+  below the workers, leaving some for the pages: a stream above it is turned
+  away at once (`503`), and that player's page polls instead. The limit counts
+  streams that are open (a stream counts until it ends, or for its lifetime and
+  15 s if its worker died); two players starting at the same moment can pass it
+  by one. `pm = ondemand` works.
+- **Database connections.** A stream holds one connection to the database for
+  its whole life: it closes the game's legacy link as it starts and works
+  through Doctrine's alone (a page request holds both while it runs, which is
+  short). Set MariaDB's/MySQL's `max_connections` to at least the streaming
+  players plus room for the pages; the default of 151 covers about 120
+  streaming players.
 - **No buffering, no compression** for `async/stream.php`, in every layer:
   - PHP: the script turns off output buffering and `zlib.output_compression`
     for itself.

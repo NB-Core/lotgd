@@ -51,6 +51,11 @@ function lotgd_stream_refusal(): ?array
     if (!\Lotgd\Security\Csrf::matches(\Lotgd\Security\Csrf::SCOPE_ASYNC, $_GET['csrf'] ?? null)) {
         return [403, 'csrf_invalid'];
     }
+    // As many streams as the server allows (realtime_stream_max): the page
+    // polls instead of waiting for a worker that streams hold.
+    if (\Lotgd\Realtime\Stream::full((int) $user['acctid'])) {
+        return [503, 'streams_full'];
+    }
 
     $now = microtime(true);
     $last = $_SESSION['lastrequest']['stream'] ?? null;
@@ -98,6 +103,9 @@ function lotgd_stream_entrypoint(int $keepBuffers = 0): void
             http_response_code($refusal[0]);
             header('Content-Type: application/json; charset=UTF-8');
             header('Cache-Control: no-store');
+            if ($refusal[0] === 503) {
+                header('Retry-After: 60');
+            }
         }
         echo json_encode(['status' => 'error', 'error' => $refusal[1]]);
 
@@ -112,6 +120,9 @@ function lotgd_stream_entrypoint(int $keepBuffers = 0): void
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
     }
+    // The stream works through Doctrine alone; the legacy link would stay
+    // open with it for the whole stream (docs/RealtimeHosting.md).
+    \Lotgd\MySQL\Database::releaseLegacyLink();
 
     // Every chunk must reach the browser as it is written.
     @ini_set('zlib.output_compression', '0');
@@ -143,7 +154,16 @@ function lotgd_stream_entrypoint(int $keepBuffers = 0): void
         static fn (): float => microtime(true),
         static fn (): bool => connection_aborted() === 1
     );
-    $stream->run();
+    try {
+        $stream->run();
+    } finally {
+        // Ended: no longer one of the open streams realtime_stream_max counts.
+        try {
+            \Lotgd\Realtime\Stream::release($acctid, $token);
+        } catch (\Throwable) {
+            // The row falls out of the count after its lifetime anyway.
+        }
+    }
 }
 
 if (!defined('LOTGD_STREAM_TEST_MODE')) {

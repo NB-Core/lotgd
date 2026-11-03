@@ -39,6 +39,8 @@ $setup = array(
     "realtime_retention_hours" => "Hours realtime events are kept for players to catch up,range,1,168,1",
     "realtime_transport" => "How pages receive realtime events,enum,poll,Polling (any host),sse,Server-sent events (needs a host that keeps one PHP worker per open stream)",
     "realtime_stream_seconds" => "Seconds one server-sent event stream stays open before the browser reconnects,range,20,80,5",
+    "realtime_stream_max" => "Most server-sent event streams open at once (0 = no limit),int",
+    "Each stream holds one PHP worker. Set this below your workers (MaxRequestWorkers or pm.max_children) so that pages keep some: players above it poll instead of waiting for a worker,note",
     "With server-sent events each player keeps one stream open; a second tab and any browser that cannot hold the stream poll instead. Proxies must not buffer async/stream.php. Shared webspace: keep polling,note",
     "grants_enabled" => "Offer clan officers a one-time link to accept a new applicant (grants)?,bool",
     "grant_ttl_hours" => "Hours such a link stays valid,range,1,720,1",

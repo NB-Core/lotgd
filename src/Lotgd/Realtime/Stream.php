@@ -90,6 +90,59 @@ final class Stream
     }
 
     /**
+     * Seconds after its start a stream still counts as open when it left no
+     * end behind (a worker that died mid-stream).
+     */
+    public const OPEN_GRACE_SECONDS = 15;
+
+    /**
+     * Most streams open at once (setting realtime_stream_max); 0 for no
+     * limit.
+     */
+    public static function maxStreams(): int
+    {
+        return Settings::hasInstance() ? max(0, (int) Settings::getInstance()->getSetting('realtime_stream_max', 0)) : 0;
+    }
+
+    /**
+     * Whether the other players hold as many streams as the server allows.
+     *
+     * A stream counts from its start until it ends (release()) or, without
+     * an end, until its lifetime and a grace have passed. The player's own
+     * stream is not counted: a new one replaces it. The limit is soft: two
+     * players starting at the same moment can pass it by one, which is
+     * enough to keep the workers from running out.
+     */
+    public static function full(int $acctid): bool
+    {
+        $max = self::maxStreams();
+        if ($max === 0) {
+            return false;
+        }
+        $since = date('Y-m-d H:i:s', time() - self::lifetime() - self::OPEN_GRACE_SECONDS);
+        $open = (int) Database::getDoctrineConnection()->fetchOne(
+            'SELECT COUNT(*) FROM ' . Database::prefix('realtime_streams') . ' WHERE acctid <> :acctid AND started >= :since',
+            ['acctid' => $acctid, 'since' => $since],
+            ['acctid' => ParameterType::INTEGER, 'since' => ParameterType::STRING]
+        );
+
+        return $open >= $max;
+    }
+
+    /**
+     * The stream with this token has ended: it no longer counts as open.
+     * A newer stream of the player (another token) keeps its row.
+     */
+    public static function release(int $acctid, string $token): void
+    {
+        Database::getDoctrineConnection()->executeStatement(
+            'DELETE FROM ' . Database::prefix('realtime_streams') . ' WHERE acctid = :acctid AND token = :token',
+            ['acctid' => $acctid, 'token' => $token],
+            ['acctid' => ParameterType::INTEGER, 'token' => ParameterType::STRING]
+        );
+    }
+
+    /**
      * Make a new stream the player's one stream; the one before ends on its
      * next check. Returns the new stream's token.
      */
