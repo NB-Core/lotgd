@@ -56,7 +56,7 @@ const shot = async (p, name) => { await settle(p, 400); await p.screenshot({ pat
   const dora = sql(`SELECT acctid FROM accounts WHERE login='duele2e'`);
   const stats = `level=5, age=30, dragonkills=1, alive=1, hitpoints=60, maxhitpoints=60, gold=250, experience=1500, playerfights=3, attack=16, defense=14, strength=12, dexterity=12`;
   sql(`UPDATE accounts SET ${stats} WHERE acctid=${dora}; UPDATE accounts SET prefs='${prefs}', ${stats}, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', loggedin=0 WHERE acctid=1; DELETE FROM accounts_output WHERE acctid IN (1,${dora}); DELETE FROM mail WHERE msgto IN (1,${dora})`);
-  const skin = process.env.SKIN || 'jade.htm';
+  const skin = cfg.skin('jade.htm');
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   sql(`UPDATE settings SET value='${skin}' WHERE setting='defaultskin'; UPDATE settings SET value='poll' WHERE setting='realtime_transport'`);
   if (process.env.TRANSPORT === 'sse') sql(`UPDATE settings SET value='sse' WHERE setting='realtime_transport'`);

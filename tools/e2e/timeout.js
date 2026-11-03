@@ -6,7 +6,7 @@ const fs = require('fs');
 const BASE = cfg.BASE;
 const GAME = cfg.GAME;
 const OUT = process.env.OUT || '.';
-const SKIN = process.env.SKIN || 'twig:aurora';
+const SKIN = cfg.skin('twig:aurora');
 const tag = SKIN.replace(/[:.]/g, '-');
 const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
 const results = [];

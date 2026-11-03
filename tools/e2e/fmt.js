@@ -7,7 +7,7 @@ const results = [];
 function check(name, ok, info = '') { results.push(!!ok); console.log((ok ? 'PASS ' : 'FAIL ') + name + (info ? ' -- ' + info : '')); }
 const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
 const settle = (p, ms = 700) => p.waitForTimeout(ms);
-const SKIN = process.env.SKIN || 'twig:aurora';
+const SKIN = cfg.skin('twig:aurora');
 const OUT = process.env.OUT || '.';
 const tag = Date.now().toString(36);
 async function login(page) {

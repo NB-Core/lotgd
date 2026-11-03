@@ -32,6 +32,16 @@ function clearDataCache(game) {
   for (const name of fs.readdirSync(dir)) fs.rmSync(path.join(dir, name), { recursive: true, force: true });
 }
 
+// The skin a suite runs on (SKIN, set by run.sh), or the fallback. Only the
+// forms the game knows pass: suites put it into SQL and into URLs.
+function skin(fallback) {
+  const value = process.env.SKIN || fallback;
+  if (!/^(twig:[A-Za-z0-9_-]+|(legacy:)?[A-Za-z0-9_-]+\.htm)$/.test(value)) {
+    throw new Error(`SKIN must be twig:<name>, legacy:<name>.htm or <name>.htm, not ${JSON.stringify(value)}`);
+  }
+  return value;
+}
+
 // A string as an SQL literal that means the same whatever the SQL mode
 // (backslashes, quotes, NO_BACKSLASH_ESCAPES): its UTF-8 bytes in hex.
 function sqlString(value) {
@@ -67,6 +77,7 @@ module.exports = {
   clearDataCache,
   keepSettings,
   sqlString,
+  skin,
   // Where the screenshots go: run.sh sets OUT, alone a suite writes here.
   OUT: process.env.OUT || '.',
 };

@@ -4,7 +4,7 @@ const cfg = require('./config');
 const { execSync } = require('child_process');
 const BASE = cfg.BASE;
 const OUT = process.env.OUT || '.';
-const SKIN = process.env.SKIN || 'twig:aurora';
+const SKIN = cfg.skin('twig:aurora');
 const tag = SKIN.replace(/[:.]/g, '-');
 const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
 const results = [];

@@ -42,7 +42,7 @@ async function say(p, text) {
 }
 
 (async () => {
-  const skin = process.env.SKIN || 'twig:aurora';
+  const skin = cfg.skin('twig:aurora');
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   const live = MODE === 'ajax' ? '0' : '1';
   sql(`INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('realtime_enabled','${live}'),('realtime_transport','${MODE === 'sse' ? 'sse' : 'poll'}'),('realtime_poll_seconds','5'),('ajax','1'),('postinglimit','0'),('ajax_rate_limit_seconds','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);

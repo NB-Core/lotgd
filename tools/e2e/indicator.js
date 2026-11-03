@@ -7,7 +7,7 @@ const results = [];
 function check(name, ok, info = '') { results.push(!!ok); console.log((ok ? 'PASS ' : 'FAIL ') + name + (info ? ' -- ' + info : '')); }
 const OUT = process.env.OUT || '.';
 (async () => {
-  const skin = process.env.SKIN || 'twig:aurora';
+  const skin = cfg.skin('twig:aurora');
   const tag = skin.replace(/[:.]/g, '-');
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   sql(`UPDATE settings SET value='${skin}' WHERE setting='defaultskin'; UPDATE settings SET value='1' WHERE setting='partial_render'`);

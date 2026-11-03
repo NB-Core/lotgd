@@ -49,7 +49,7 @@ async function toVillage(page) {
 }
 
 (async () => {
-  const skin = process.env.SKIN || 'twig:aurora';
+  const skin = cfg.skin('twig:aurora');
   const tag = skin.replace(/[:.]/g, '-');
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   sql(`INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('realtime_enabled','1'),('realtime_transport','poll'),('guarded_actions','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);

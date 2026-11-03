@@ -58,7 +58,7 @@ async function finish(page, script) {
 }
 
 (async () => {
-  const skin = process.env.SKIN || 'twig:aurora';
+  const skin = cfg.skin('twig:aurora');
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   sql(`INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('autofight','1'),('autofightfull','1'),('pvp','1'),('pvpimmunity','0'),('pvpminexp','0'),('realtime_enabled','1'),('realtime_transport','${process.env.TRANSPORT || 'poll'}'),('forestchance','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`UPDATE settings SET value='${skin}' WHERE setting='defaultskin'`);
