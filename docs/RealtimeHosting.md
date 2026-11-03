@@ -42,10 +42,17 @@ So a misconfigured server costs speed, not function.
 
 - **Workers.** One PHP worker per open stream, held for up to
   `realtime_stream_seconds` (50 s by default; the browser reconnects after
-  that). Size Apache's `MaxRequestWorkers`, or PHP-FPM's `pm.max_children`,
-  for the players online at the same time **plus** normal page requests. If
-  workers run out, new streams are refused and those pages poll, but page
-  loads also start to queue. `pm = ondemand` works.
+  that). Size Apache's `MaxRequestWorkers` (and `ServerLimit`), or PHP-FPM's
+  `pm.max_children`, for the players online at the same time **plus** the
+  workers normal page requests need (see *Measured* below). If workers run
+  out, nothing falls back on its own: new streams and page loads wait in the
+  same queue until a stream ends, and pages take tens of seconds or minutes.
+  Either size the workers or stay on polling. `pm = ondemand` works.
+- **Database connections.** Each request holds two connections to the
+  database while it runs (the game's legacy link and Doctrine's), so an open
+  stream holds two for its whole life. Set MariaDB's/MySQL's
+  `max_connections` to at least twice the streaming players plus room for the
+  pages; the default of 151 is used up at about 70 streaming players.
 - **No buffering, no compression** for `async/stream.php`, in every layer:
   - PHP: the script turns off output buffering and `zlib.output_compression`
     for itself.
@@ -160,6 +167,90 @@ their own. Keep `encode` (compression) away from the stream:
 @notstream not path /async/stream.php
 encode @notstream zstd gzip
 ```
+
+## Measured
+
+A load test with 50 players, run with the code of this release
+(`feature/reactive-core`), gives an idea of the sizes. Each virtual player
+logged in, changed pages in place every 5 to 10 seconds (the village, the
+forest, fights, shops; about one in seven actions was a chat line in the
+village), asked for the notices every minute, and received realtime events by
+polling every 10 s or by one stream. Five minutes per run after a 25 s ramp.
+
+The machine: 4 vCPUs and 16 GB, PHP 8.3 with OPcache, the data cache on,
+MariaDB 11.4 in a container on the same machine, the load generator too.
+Apache 2.4 with `mpm_prefork` and mod_php; nginx 1.24 with PHP-FPM
+(`pm = static`), with the configuration from this page.
+
+| 50 players | Apache, poll | Apache, SSE | nginx + FPM, poll | nginx + FPM, SSE |
+| --- | --- | --- | --- | --- |
+| Page changed in place, p50 / p95 | 41 / 57 ms | 43 / 59 ms | 42 / 59 ms | 44 / 60 ms |
+| Poll, p50 / p95 | 15 / 20 ms | – | 16 / 21 ms | – |
+| A chat line reaches the others, p50 / p95 | 5.1 / 9.5 s | 0.53 / 0.97 s | 5.1 / 9.6 s | 0.52 / 0.97 s |
+| Requests per second | about 13 | about 8 (+ 50 open streams) | about 13 | about 8 (+ 50 open streams) |
+| Busy PHP workers, average / peak | 4 / 6 | 52 / 55 | 1 / 3 | 48 / 53 |
+| Database connections, average / peak | 2 / 5 | 98 / 109 | 2 / 7 | 95 / 106 |
+| CPU (4 cores), average | 10 % | 11 % | 10 % | 11 % |
+
+No request failed in these four runs, and no stream was refused.
+
+**Too few workers.** The same SSE run with 40 workers for 50 players:
+nothing failed, but streams took the workers and everything else waited. On
+Apache, pages took 139 s at p95 and logins 190 s; on PHP-FPM, pages took 35 s
+at p95. The pages did not fall back to polling, because a stream that waits
+for a worker is not refused, it is only late.
+
+What follows from it:
+
+- **Polling** costs little: about one request per player every ten seconds,
+  answered in 15–20 ms, and a handful of workers. Chat lines and mail arrive
+  within the poll interval (5 s on average at 10 s).
+- **Server-sent events** bring them within a second, at the price of one PHP
+  worker and two database connections per player online, for as long as they
+  are online. CPU is not the limit; workers, memory and connections are.
+- **Workers:** players online × 1.1 plus 10 for the pages is enough at this
+  rate of play. A PHP worker that has served the game uses about 35–40 MB of
+  memory (RSS), so 100 streaming players need about 4–5 GB for PHP alone.
+- **Database:** `max_connections` ≥ 2 × players online + 20.
+- **Choose by what the host can hold.** On a small server, or when you cannot
+  raise the limits, keep `poll`; the game plays the same, chat and mail are a
+  few seconds slower.
+
+### Configuration used
+
+Apache, `mpm_prefork` with mod_php (as in the Docker image):
+
+```apache
+<IfModule mpm_prefork_module>
+    StartServers            5
+    MinSpareServers         5
+    MaxSpareServers         10
+    ServerLimit             150
+    MaxRequestWorkers       150
+    MaxConnectionsPerChild  0
+</IfModule>
+Timeout 120
+```
+
+PHP-FPM pool:
+
+```ini
+pm = static
+pm.max_children = 80
+; above one stream's life (realtime_stream_seconds, 50 by default)
+request_terminate_timeout = 120s
+listen.backlog = 511
+```
+
+`pm = dynamic` (with `pm.max_children` as above and enough
+`pm.max_spare_servers`) or `ondemand` work too; `static` avoids starting
+workers while players connect.
+
+nginx: the `location = /async/stream.php` block from *nginx with php-fpm*
+above, and `worker_connections` well above the players online (every stream
+is one connection; 4096 was used).
+
+MariaDB: `max_connections = 250` covers 100 streaming players.
 
 ## Shared webspace
 

@@ -379,7 +379,9 @@ request left behind. Events are relayed right after each change anyway. The dail
 call goes to `async/process.php` and needs the header `X-Lotgd-Async: 1`, else the answer is `400` (the shipped
 client sends it; a page loaded before the upgrade needs a reload). The realtime poll follows
 `ajax_rate_limit_seconds`. With `sse`, `async/stream.php` must be reachable too and must not be
-buffered or compressed by any proxy; size the PHP workers for it ([docs/RealtimeHosting.md](docs/RealtimeHosting.md)).
+buffered or compressed by any proxy. Each streaming player holds one PHP worker and two database connections
+while online, and too few workers make every page wait rather than fall back to polling; size workers and
+`max_connections` with the measurements in [docs/RealtimeHosting.md](docs/RealtimeHosting.md).
 On shared webspace keep `poll`. `async/poll.php` and Jaxon are gone; web server rules that mention them can go.
 `config/async.settings.php` keeps its keys (rate limit, `csrf_mode`, intervals).
 
