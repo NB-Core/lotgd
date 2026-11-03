@@ -25,6 +25,13 @@ function overrideAsyncSettings(game, values) {
   return () => (existed ? fs.writeFileSync(file, saved) : fs.unlinkSync(file));
 }
 
+// Empty the game's data cache without a shell, so any path works.
+function clearDataCache(game) {
+  const dir = path.join(game, 'data_cache');
+  if (!fs.existsSync(dir)) return;
+  for (const name of fs.readdirSync(dir)) fs.rmSync(path.join(dir, name), { recursive: true, force: true });
+}
+
 module.exports = {
   // The running game, with a trailing slash.
   BASE: process.env.LOTGD_E2E_BASE || 'http://127.0.0.1:8099/',
@@ -39,4 +46,7 @@ module.exports = {
   // Playwright's launch options.
   launch: chromium !== '' ? { executablePath: chromium } : {},
   overrideAsyncSettings,
+  clearDataCache,
+  // Where the screenshots go: run.sh sets OUT, alone a suite writes here.
+  OUT: process.env.OUT || '.',
 };

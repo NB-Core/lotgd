@@ -39,7 +39,7 @@ async function waitFor(page, pred, ms) {
        UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}', alive=1, hitpoints=100, maxhitpoints=100, badguy='', location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1;
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:0;s:4:"ajax";i:0;}', alive=1, hitpoints=100, maxhitpoints=100, badguy='', location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=385;
        DELETE FROM accounts_output WHERE acctid IN (1, 385)`);
-  execSync(`rm -rf ${GAME}/data_cache/* 2>/dev/null || true`);
+  cfg.clearDataCache(GAME);
   const b = await chromium.launch(cfg.launch);
   try {
     const p = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
@@ -97,7 +97,7 @@ async function waitFor(page, pred, ms) {
     restoreSettings();
     sql(`UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'`);
     sql(oldTimeout === '' ? `DELETE FROM settings WHERE setting='LOGINTIMEOUT'` : `UPDATE settings SET value='${oldTimeout}' WHERE setting='LOGINTIMEOUT'`);
-    execSync(`rm -rf ${GAME}/data_cache/* 2>/dev/null || true`);
+    cfg.clearDataCache(GAME);
   }
   const passed = results.filter(Boolean).length;
   console.log(`${passed}/${results.length} passed`);

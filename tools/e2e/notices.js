@@ -27,7 +27,7 @@ async function waitNotice(p, kind, ms, visible = true) {
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:0;s:4:"ajax";i:0;}', alive=1, location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', lastmotd=NOW() WHERE acctid=385;
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:1;s:4:"ajax";i:1;}', alive=1, location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', lastmotd=NOW() WHERE acctid=1;
        UPDATE mail SET seen=1 WHERE msgto IN (1, 385);`);
-  execSync(`rm -rf ${cfg.GAME}/data_cache/* 2>/dev/null || true`);
+  cfg.clearDataCache(cfg.GAME);
   const b = await chromium.launch(cfg.launch);
   try {
     // A classic player: no partial client, no AJAX.
@@ -88,7 +88,7 @@ async function waitNotice(p, kind, ms, visible = true) {
   } finally {
     await b.close();
     sql(`DELETE FROM mail WHERE subject='Notice test'; DELETE FROM motd WHERE motdtitle='Notice MoTD'; UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'; DELETE FROM settings WHERE setting='notices_poll_seconds'`);
-    execSync(`rm -rf ${cfg.GAME}/data_cache/* 2>/dev/null || true`);
+    cfg.clearDataCache(cfg.GAME);
   }
   console.log(`${results.filter(Boolean).length}/${results.length} passed`);
 })().catch(e => { console.error(e); process.exit(2); });

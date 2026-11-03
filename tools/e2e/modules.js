@@ -15,7 +15,7 @@ function check(n, ok, i = '') { results.push(!!ok); console.log((ok ? 'PASS ' : 
   const MODS = "'cities','lovers','dwellings','dwshacks','cityprefs'";
   const oldActive = sql(`SELECT GROUP_CONCAT(modulename) FROM modules WHERE active=0 AND modulename IN (${MODS})`);
   sql(`UPDATE modules SET active=1 WHERE modulename IN (${MODS})`);
-  execSync(`rm -rf ${cfg.GAME || ''}/data_cache/* 2>/dev/null || true`);
+  cfg.clearDataCache(cfg.GAME);
   sql(`UPDATE settings SET value='${SKIN}' WHERE setting='defaultskin';
        INSERT INTO settings (setting,value) VALUES ('partial_render','1') ON DUPLICATE KEY UPDATE value='1';
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:1;s:10:"sexuality";i:1;}', alive=1, location='Degolburg', loggedin=0,

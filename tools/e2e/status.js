@@ -44,7 +44,7 @@ const slot = async p => (await p.textContent('[data-lotgd-slot="grants"]')).repl
 
 
 
-const OUT = process.env.OUT;
+const OUT = cfg.OUT;
 const shot = async (p, name) => { await settle(p, 400); await p.screenshot({ path: `${OUT}/${name}.png`, fullPage: false }); console.log('shot', name); };
 (async () => {
   sql(`UPDATE settings SET value='0' WHERE setting IN ('realtime_enabled','partial_render','guarded_actions','grants_enabled','live_encounters'); DELETE FROM settings WHERE setting='partial_render_default'; INSERT INTO settings (setting,value) VALUES ('realtime_transport','poll') ON DUPLICATE KEY UPDATE value=VALUES(value)`);

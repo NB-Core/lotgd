@@ -29,7 +29,7 @@ const settle = (p, ms = 800) => p.waitForTimeout(ms);
   const info = frame ? await frame.evaluate(f => ({ sandbox: f.getAttribute('sandbox'), src: f.getAttribute('src'), h: f.getBoundingClientRect().height })) : null;
   const inner = frame ? await (await frame.contentFrame()).evaluate(() => ({ title: document.title, links: document.querySelectorAll('a').length, ptr: document.querySelector('a') ? getComputedStyle(document.querySelector('a')).pointerEvents : '' })) : null;
   console.log((info && info.sandbox === '' && info.src === null && info.h > 300 && inner && inner.links > 0 && inner.ptr === 'none' && reqs.length === 0 ? 'PASS' : 'FAIL') + ' the last page shows inline, sealed, without a request -- ' + JSON.stringify({ info, inner, reqs }));
-  await p.locator('details.lotgd-lasthit').screenshot({ path: process.env.OUT + '/90-lasthit-preview.png' });
+  await p.locator('details.lotgd-lasthit').screenshot({ path: cfg.OUT + '/90-lasthit-preview.png' });
   const field = await p.$("input[name='experience']");
   await p.click('[data-showform-tab][data-section-id="0"]').catch(() => {});
   await field.fill('4242');
