@@ -396,9 +396,10 @@ class Output
                 if (isset($data[$pos]) && isset($this->colors[$data[$pos]])) {
                     if ($this->nestedtags['font']) {
                         $out .= '</span>';
-                    } else {
-                        $this->openTag('font');
                     }
+                    // Always: the new span is the most recently opened tag, so
+                    // getOutput() closes it before a tag opened after the old one.
+                    $this->openTag('font');
                     $out .= "<span class='" . $this->colors[$data[$pos]] . "'>";
                 } else {
                     if (isset($this->nestedtags_eval[$data[$pos]])) {

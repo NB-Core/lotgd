@@ -732,6 +732,9 @@ JS;
                         {$cases}
                 }
                 x++;
+            } else {
+                // A backtick at the very end is shown, as the page shows it.
+                out += '`';
             }
         } else {
             out += y;

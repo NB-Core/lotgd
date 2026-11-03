@@ -68,6 +68,14 @@ final class UserFormattingTest extends TestCase
         self::assertSame('<b>hello`</b>after', $html);
     }
 
+    public function testAColourChangeInsideBoldIsClosedFirst(): void
+    {
+        $output = new Output();
+        $output->outputNotl('`4a`bb`2c');
+
+        self::assertStringEndsWith("c\n</span></b>", $output->getOutput());
+    }
+
     public function testEscapingNeutralisesOnlyTheNamedCodes(): void
     {
         self::assertSame('``bA ``iB `2c ``c', Sanitize::escapeCodes('`bA `iB `2c ``c', 'bi'));
