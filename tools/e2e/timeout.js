@@ -31,9 +31,9 @@ async function waitFor(page, pred, ms) {
 }
 
 (async () => {
-  const cfg = GAME + '/config/async.settings.php';
-  const savedCfg = fs.readFileSync(cfg, 'utf8');
-  fs.writeFileSync(cfg, savedCfg.replace(/'start_timeout_show_seconds'\s*=>\s*\d+/, `'start_timeout_show_seconds' => ${WARN}`));
+  const settingsFile = GAME + '/config/async.settings.php';
+  const savedCfg = fs.readFileSync(settingsFile, 'utf8');
+  fs.writeFileSync(settingsFile, savedCfg.replace(/'start_timeout_show_seconds'\s*=>\s*\d+/, `'start_timeout_show_seconds' => ${WARN}`));
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   const oldTimeout = sql(`SELECT value FROM settings WHERE setting='LOGINTIMEOUT'`);
   sql(`UPDATE settings SET value='${SKIN}' WHERE setting='defaultskin'; UPDATE settings SET value='1' WHERE setting='partial_render';
@@ -96,7 +96,7 @@ async function waitFor(page, pred, ms) {
     check('and can stay logged in', s && s.hidden);
   } finally {
     await b.close();
-    fs.writeFileSync(cfg, savedCfg);
+    fs.writeFileSync(settingsFile, savedCfg);
     sql(`UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'`);
     sql(oldTimeout === '' ? `DELETE FROM settings WHERE setting='LOGINTIMEOUT'` : `UPDATE settings SET value='${oldTimeout}' WHERE setting='LOGINTIMEOUT'`);
     execSync(`rm -rf ${GAME}/data_cache/* 2>/dev/null || true`);

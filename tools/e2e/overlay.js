@@ -125,7 +125,7 @@ function reset(extra = '') {
 
   // --- A skin without the overlay key: the window as before
   const fs = require('fs');
-  const GAME = __dirname + '/../e2e3/game/templates/';
+  const GAME = cfg.GAME + '/templates/';
   const jade = fs.readFileSync(GAME + 'jade.htm', 'utf8');
   const noOverlay = jade.replace('{"regions": true, "overlay": true}', '{"regions": true}');
   const tmpSkin = 'zz-no-overlay.htm';
