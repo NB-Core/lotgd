@@ -19,6 +19,6 @@ const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
   const want = '`bLIT' + tag + ' <b>BOLD</b>';
   console.log((preview.includes(want) ? 'PASS' : 'FAIL') + ' preview -- ' + preview.slice(-80));
   console.log((line && line.includes(want) ? 'PASS' : 'FAIL') + ' posted line matches the preview -- ' + String(line).slice(-80));
-  sql(`UPDATE settings SET value='0' WHERE setting='formatting_commentary'`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('formatting_commentary','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   await b.close();
 })();

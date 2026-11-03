@@ -90,7 +90,7 @@ function reset(extra = '') {
 
   // --- Aurora: forced MOTD opens by itself
   reset(`UPDATE accounts SET lastmotd='2000-01-01 00:00:00' WHERE acctid=1; INSERT INTO motd (motdtitle, motdbody, motddate, motdtype, motdauthor) VALUES ('Overlay MOTD', 'Hello from the MOTD', NOW(), 0, 1)`);
-  sql(`UPDATE settings SET value='1' WHERE setting='forcedmotdpopup'`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('forcedmotdpopup','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   const ctx2 = await browser.newContext();
   const p2 = await ctx2.newPage();
   let popups2 = 0; ctx2.on('page', () => { popups2++; });
@@ -102,7 +102,7 @@ function reset(extra = '') {
   await p2.goto(BASE + 'badnav.php'); await settle(p2, 1500);
   check('seen once, it does not open again', !(await isOpen(p2)));
   await ctx2.close();
-  sql(`UPDATE settings SET value='0' WHERE setting='forcedmotdpopup'; DELETE FROM motd WHERE motdtitle='Overlay MOTD'`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('forcedmotdpopup','0') ON DUPLICATE KEY UPDATE value=VALUES(value); DELETE FROM motd WHERE motdtitle='Overlay MOTD'`);
 
   // --- Legacy skin (jade): the dialog too, since #1613
   reset(`INSERT INTO mail (msgfrom, msgto, subject, body, sent, seen) VALUES (1, 1, 'Legacy overlay subject', 'Legacy overlay body', NOW(), 0)`);

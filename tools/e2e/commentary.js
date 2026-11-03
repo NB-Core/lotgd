@@ -48,7 +48,7 @@ async function post(page, words) {
 }
 function clone(login, prefs) {
   sql(`DELETE FROM accounts WHERE login='${login}'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','clanid','clanrank','loggedin','allowednavs','restorepage','prefs')`);
+  const cols = cfg.accountColumns(sql, ['acctid','login','name','emailaddress','clanid','clanrank','loggedin','allowednavs','restorepage','prefs']);
   sql(`INSERT INTO accounts (login,name,emailaddress,clanid,clanrank,loggedin,allowednavs,restorepage,prefs,${cols}) SELECT '${login}','${login}','${login}@example.invalid',0,0,0,'a:1:{s:11:"village.php";b:1;}','village.php','${prefs}',${cols} FROM accounts WHERE acctid=1`);
   return sql(`SELECT acctid FROM accounts WHERE login='${login}'`);
 }

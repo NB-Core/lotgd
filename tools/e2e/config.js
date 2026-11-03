@@ -42,10 +42,34 @@ function skin(fallback) {
   return value;
 }
 
+// The realtime transport a suite runs with (TRANSPORT, set by run.sh).
+function transport(fallback) {
+  const value = process.env.TRANSPORT || fallback;
+  if (value !== 'poll' && value !== 'sse') {
+    throw new Error(`TRANSPORT must be poll or sse, not ${JSON.stringify(value)}`);
+  }
+  return value;
+}
+
 // A string as an SQL literal that means the same whatever the SQL mode
 // (backslashes, quotes, NO_BACKSLASH_ESCAPES): its UTF-8 bytes in hex.
 function sqlString(value) {
   return `CONVERT(X'${Buffer.from(String(value), 'utf8').toString('hex')}' USING utf8mb4)`;
+}
+
+// SQL that sets one game setting, creating it if the row is missing (a plain
+// UPDATE would then do nothing).
+function setting(name, value) {
+  return `INSERT INTO settings (setting, value) VALUES (${sqlString(name)}, ${sqlString(value)}) ON DUPLICATE KEY UPDATE value = VALUES(value)`;
+}
+
+// The accounts columns except the named ones, as a backquoted list for an
+// INSERT ... SELECT copy of an account. One row per column: GROUP_CONCAT
+// would cut a long list at group_concat_max_len (1024 on MySQL).
+function accountColumns(sql, exclude) {
+  const names = sql(`SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'accounts' ORDER BY ordinal_position`)
+    .split('\n').map(n => n.trim()).filter(n => n !== '' && !exclude.includes(n));
+  return names.map(n => `\`${n.replace(/`/g, '``')}\``).join(',');
 }
 
 // Remember the named game settings; the returned function puts them back
@@ -56,7 +80,7 @@ function keepSettings(sql, names) {
   const rows = sql(`SELECT setting, value FROM settings WHERE setting IN (${list})`);
   const saved = new Map(rows === '' ? [] : rows.split('\n').map(line => line.split('\t')));
   return () => sql(names.map(n => saved.has(n)
-    ? `UPDATE settings SET value=${sqlString(saved.get(n))} WHERE setting='${n}';`
+    ? `${setting(n, saved.get(n))};`
     : `DELETE FROM settings WHERE setting='${n}';`).join(' '));
 }
 
@@ -77,6 +101,9 @@ module.exports = {
   clearDataCache,
   keepSettings,
   sqlString,
+  transport,
+  setting,
+  accountColumns,
   skin,
   // Where the screenshots go: run.sh sets OUT, alone a suite writes here.
   OUT: process.env.OUT || '.',

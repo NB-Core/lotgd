@@ -60,8 +60,8 @@ async function finish(page, script) {
 (async () => {
   const skin = cfg.skin('twig:aurora');
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
-  sql(`INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('autofight','1'),('autofightfull','1'),('pvp','1'),('pvpimmunity','0'),('pvpminexp','0'),('realtime_enabled','1'),('realtime_transport','${process.env.TRANSPORT || 'poll'}'),('forestchance','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
-  sql(`UPDATE settings SET value='${skin}' WHERE setting='defaultskin'`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('autofight','1'),('autofightfull','1'),('pvp','1'),('pvpimmunity','0'),('pvpminexp','0'),('realtime_enabled','1'),('realtime_transport','${cfg.transport('poll')}'),('forestchance','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
+  sql(`${cfg.setting('defaultskin', skin)}`);
   const prefs = 'a:1:{s:13:"partialrender";i:1;}';
   // Attack 20, not more: the monster must outlive the first round, or its
   // links (skill, auto-fight) are gone before the suite looks for them.
@@ -72,7 +72,7 @@ async function finish(page, script) {
   // Sam lasts beyond the first round: the attack itself plays one, and with
   // him dead at once the fight's links are gone before the suite looks.
   sql(`DELETE FROM accounts WHERE login='sleepere2e'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','laston','pvpflag','allowednavs','restorepage','prefs','alive','hitpoints','location')`);
+  const cols = cfg.accountColumns(sql, ['acctid','login','name','emailaddress','version','loggedin','laston','pvpflag','allowednavs','restorepage','prefs','alive','hitpoints','location']);
   sql(`INSERT INTO accounts (login,name,emailaddress,version,loggedin,laston,pvpflag,allowednavs,restorepage,prefs,alive,hitpoints,location,${cols}) SELECT 'sleepere2e','Sleepy Sam','sleep@example.invalid',0,0,'2020-01-01 00:00:00','2020-01-01 00:00:00','','village.php','a:0:{}',1,20,location,${cols} FROM accounts WHERE acctid=1`);
   sql(`UPDATE accounts SET level=5, hitpoints=300, maxhitpoints=300, attack=1, defense=20, dragonkills=0, superuser=0, age=30, experience=5000, slaydragon=0, locked=0 WHERE login='sleepere2e'`);
   try {
@@ -209,7 +209,7 @@ async function finish(page, script) {
 
     await browser.close();
   } finally {
-    sql(`UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'; DELETE FROM accounts WHERE login='sleepere2e'; UPDATE accounts SET level=5, alive=1, hitpoints=60, maxhitpoints=60, badguy='', dragonkills=1 WHERE acctid=1`);
+    sql(`${cfg.setting('defaultskin', oldSkin)}; DELETE FROM accounts WHERE login='sleepere2e'; UPDATE accounts SET level=5, alive=1, hitpoints=60, maxhitpoints=60, badguy='', dragonkills=1 WHERE acctid=1`);
   }
   const passed = results.filter(Boolean).length;
   console.log(`${passed}/${results.length} passed`);

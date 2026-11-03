@@ -53,7 +53,7 @@ async function toVillage(page) {
   const tag = skin.replace(/[:.]/g, '-');
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   sql(`INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('realtime_enabled','1'),('realtime_transport','poll'),('guarded_actions','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
-  sql(`UPDATE settings SET value='${skin}' WHERE setting='defaultskin'`);
+  sql(`${cfg.setting('defaultskin', skin)}`);
   // The clan these checks use; another suite may have removed it.
   sql(`INSERT INTO clans (clanid,clanname,clanshort,clanmotd,clandesc,motdauthor,descauthor,customsay) VALUES (26,'Formtest Hall','FT','','',1,1,'') ON DUPLICATE KEY UPDATE clanid=clanid`);
   sql(`UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:1;s:9:"mailwidth";i:60;}', alive=1, level=5, dragonkills=1, gold=1000, goldinbank=100, transferredtoday=0, hitpoints=100, maxhitpoints=100, experience=0, seenmaster=1, location='Degolburg', badguy='', clanid=26, clanrank=30, loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1; UPDATE accounts SET level=5, goldinbank=50, transferredtoday=0 WHERE acctid=385; DELETE FROM accounts_output WHERE acctid=1; UPDATE clans SET clanmotd='' WHERE clanid=26`);
@@ -228,7 +228,7 @@ async function toVillage(page) {
 
     await browser.close();
   } finally {
-    sql(`UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'; UPDATE accounts SET clanid=0, clanrank=0, gold=250 WHERE acctid=1`);
+    sql(`${cfg.setting('defaultskin', oldSkin)}; UPDATE accounts SET clanid=0, clanrank=0, gold=250 WHERE acctid=1`);
   }
   const passed = results.filter(Boolean).length;
   console.log(`${passed}/${results.length} passed`);

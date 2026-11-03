@@ -109,7 +109,7 @@ async function resend(page, form) {
 
   // 4. A transfer to a second player.
   sql(`DELETE FROM accounts WHERE login='bobe2e'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','goldinbank','version','transferredtoday')`);
+  const cols = cfg.accountColumns(sql, ['acctid','login','name','emailaddress','goldinbank','version','transferredtoday']);
   sql(`INSERT INTO accounts (login,name,emailaddress,goldinbank,version,transferredtoday,${cols}) SELECT 'bobe2e','Bob','bob@example.invalid',0,0,0,${cols} FROM accounts WHERE acctid=1`);
   const bob = sql(`SELECT acctid FROM accounts WHERE login='bobe2e'`);
   await nav(page, 'bank.php?op=transfer');
@@ -130,7 +130,7 @@ async function resend(page, form) {
   check('resent transfer books nothing', money(bob) === bobAfter && sql(`SELECT COUNT(*) FROM mail WHERE msgto=${bob}`) === '1', money(bob));
 
   // 5. Setting off: the bank as it was.
-  sql(`UPDATE settings SET value='0' WHERE setting='guarded_actions'`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('guarded_actions','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   await nav(page, 'bank.php?op=deposit');
   check('setting off: no action id', await page.$('form input[name="action_id"]') === null);
   await page.fill('form input[name="amount"]', '1');

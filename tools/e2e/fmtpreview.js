@@ -19,6 +19,6 @@ const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
     console.log((pass ? 'PASS ' : 'FAIL ') + skin + ': escaped backtick shows, bold closes -- ' + html.slice(-90));
     await ctx.close();
   }
-  sql(`UPDATE settings SET value='0' WHERE setting='formatting_commentary'`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('formatting_commentary','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   await b.close(); console.log(`${ok}/${n}`);
 })();

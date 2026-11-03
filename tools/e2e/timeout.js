@@ -34,7 +34,7 @@ async function waitFor(page, pred, ms) {
   const restoreSettings = cfg.overrideAsyncSettings(GAME, { start_timeout_show_seconds: WARN });
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   const oldTimeout = sql(`SELECT value FROM settings WHERE setting='LOGINTIMEOUT'`);
-  sql(`UPDATE settings SET value='${SKIN}' WHERE setting='defaultskin'; UPDATE settings SET value='1' WHERE setting='partial_render';
+  sql(`${cfg.setting('defaultskin', SKIN)}; INSERT INTO settings (setting,value) VALUES ('partial_render','1') ON DUPLICATE KEY UPDATE value=VALUES(value);
        INSERT INTO settings (setting, value) VALUES ('LOGINTIMEOUT', '${TIMEOUT}') ON DUPLICATE KEY UPDATE value='${TIMEOUT}';
        UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}', alive=1, hitpoints=100, maxhitpoints=100, badguy='', location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1;
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:0;s:4:"ajax";i:0;}', alive=1, hitpoints=100, maxhitpoints=100, badguy='', location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=385;
@@ -95,8 +95,8 @@ async function waitFor(page, pred, ms) {
   } finally {
     await b.close();
     restoreSettings();
-    sql(`UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'`);
-    sql(oldTimeout === '' ? `DELETE FROM settings WHERE setting='LOGINTIMEOUT'` : `UPDATE settings SET value='${oldTimeout}' WHERE setting='LOGINTIMEOUT'`);
+    sql(`${cfg.setting('defaultskin', oldSkin)}`);
+    sql(oldTimeout === '' ? `DELETE FROM settings WHERE setting='LOGINTIMEOUT'` : `${cfg.setting('LOGINTIMEOUT', oldTimeout)}`);
     cfg.clearDataCache(GAME);
   }
   const passed = results.filter(Boolean).length;

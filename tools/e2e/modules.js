@@ -16,7 +16,7 @@ function check(n, ok, i = '') { results.push(!!ok); console.log((ok ? 'PASS ' : 
   const oldActive = sql(`SELECT GROUP_CONCAT(modulename) FROM modules WHERE active=0 AND modulename IN (${MODS})`);
   sql(`UPDATE modules SET active=1 WHERE modulename IN (${MODS})`);
   cfg.clearDataCache(cfg.GAME);
-  sql(`UPDATE settings SET value='${SKIN}' WHERE setting='defaultskin';
+  sql(`${cfg.setting('defaultskin', SKIN)};
        INSERT INTO settings (setting,value) VALUES ('partial_render','1') ON DUPLICATE KEY UPDATE value='1';
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:1;s:10:"sexuality";i:1;}', alive=1, location='Degolburg', loggedin=0,
          restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', badguy='', specialinc='', specialmisc='', experience=0, seenmaster=0,
@@ -176,7 +176,7 @@ function check(n, ok, i = '') { results.push(!!ok); console.log((ok ? 'PASS ' : 
     check('a page the module does not declare (kicking out) loads in full before it runs', a && a.partial === '' && /op=kickout/.test(a.redirect), JSON.stringify(a));
   } finally {
     await b.close();
-    sql(`UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'; UPDATE module_settings SET value='50' WHERE modulename='cities' AND setting='safechance'`);
+    sql(`${cfg.setting('defaultskin', oldSkin)}; UPDATE module_settings SET value='50' WHERE modulename='cities' AND setting='safechance'`);
     if (oldActive && oldActive !== 'NULL') sql(`UPDATE modules SET active=0 WHERE FIND_IN_SET(modulename, '${oldActive}')`);
   }
   console.log(`${results.filter(Boolean).length}/${results.length} passed`);

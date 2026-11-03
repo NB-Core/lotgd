@@ -43,7 +43,7 @@ async function waitFor(fn, ms) {
 (async () => {
   sql(`INSERT INTO settings (setting,value) VALUES ('realtime_enabled','1'),('partial_render','1'),('guarded_actions','1'),('realtime_poll_seconds','5') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`DELETE FROM accounts WHERE login='bobe2e'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','goldinbank','version','transferredtoday','loggedin','allowednavs','restorepage')`);
+  const cols = cfg.accountColumns(sql, ['acctid','login','name','emailaddress','goldinbank','version','transferredtoday','loggedin','allowednavs','restorepage']);
   sql(`INSERT INTO accounts (login,name,emailaddress,goldinbank,version,transferredtoday,loggedin,allowednavs,restorepage,${cols}) SELECT 'bobe2e','Bob','bob@example.invalid',0,0,0,0,'a:1:{s:11:"village.php";b:1;}','village.php',${cols} FROM accounts WHERE acctid=1`);
   const bob = sql(`SELECT acctid FROM accounts WHERE login='bobe2e'`);
   sql(`UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}' WHERE acctid=${bob}; DELETE FROM mail WHERE msgto=${bob}`);
@@ -82,13 +82,13 @@ async function waitFor(fn, ms) {
   check('B polled', polls.some(u => /^(Realtime\.poll|Commentary\.pollUpdates)/.test(u)) && polls.some(u => u.includes('Realtime.region(["mail"])')) && polls.some(u => u.includes('Realtime.region(["stats"])')), JSON.stringify(polls.slice(0, 6)));
 
   // Setting off: no realtime meta, no polls.
-  sql(`UPDATE settings SET value='0' WHERE setting='realtime_enabled'`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('realtime_enabled','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   await b.goto(BASE + 'badnav.php'); await settle(b);
   polls.length = 0;
   await b.waitForTimeout(12000);
   check('setting off: no realtime meta, no polls', await b.$('meta[name="lotgd-realtime"]') === null && polls.length === 0, JSON.stringify(polls));
 
-  sql(`UPDATE settings SET value='1' WHERE setting='realtime_enabled'`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('realtime_enabled','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`DELETE FROM accounts WHERE login='bobe2e'`);
   await browser.close();
   console.log(`${results.filter(Boolean).length}/${results.length} passed`);

@@ -46,10 +46,10 @@ async function say(p, text) {
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   const live = MODE === 'ajax' ? '0' : '1';
   sql(`INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('realtime_enabled','${live}'),('realtime_transport','${MODE === 'sse' ? 'sse' : 'poll'}'),('realtime_poll_seconds','5'),('ajax','1'),('postinglimit','0'),('ajax_rate_limit_seconds','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
-  sql(`UPDATE settings SET value='${skin}' WHERE setting='defaultskin'`);
+  sql(`${cfg.setting('defaultskin', skin)}`);
   const prefs = MODE === 'ajax' ? 'a:2:{s:13:"partialrender";i:0;s:4:"ajax";i:1;}' : 'a:2:{s:13:"partialrender";i:1;s:4:"ajax";i:1;}';
   sql(`DELETE FROM accounts WHERE login='chate2e'`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','superuser','clanid','clanrank')`);
+  const cols = cfg.accountColumns(sql, ['acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','superuser','clanid','clanrank']);
   sql(`INSERT INTO accounts (login,name,emailaddress,version,loggedin,allowednavs,restorepage,prefs,superuser,clanid,clanrank,${cols}) SELECT 'chate2e','\`@Chatty Cat\`0','chat@example.invalid',0,0,'a:1:{s:11:"village.php";b:1;}','village.php','${prefs}',0,0,0,${cols} FROM accounts WHERE acctid=1`);
   sql(`UPDATE accounts SET prefs='${prefs}', alive=1, hitpoints=60, loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', clanid=0 WHERE acctid=1; DELETE FROM accounts_output WHERE acctid=1`);
   const tag = 'e2e' + Date.now().toString(36);
@@ -140,7 +140,7 @@ async function say(p, text) {
 
     await browser.close();
   } finally {
-    sql(`UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'; DELETE FROM accounts WHERE login='chate2e'; UPDATE settings SET value='1' WHERE setting='postinglimit'`);
+    sql(`${cfg.setting('defaultskin', oldSkin)}; DELETE FROM accounts WHERE login='chate2e'; INSERT INTO settings (setting,value) VALUES ('postinglimit','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   }
   const passed = results.filter(Boolean).length;
   console.log(`${passed}/${results.length} passed`);

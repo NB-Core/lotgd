@@ -16,7 +16,7 @@ async function login(page, name) {
 (async () => {
   const oldName = sql(`SELECT name FROM accounts WHERE acctid=385`);
   const restoreSettings = cfg.keepSettings(sql, ['defaultskin', 'partial_render', 'realtime_enabled', 'live_encounters', 'grants_enabled', 'guarded_actions']);
-  sql(`UPDATE settings SET value='twig:aurora' WHERE setting='defaultskin'; UPDATE accounts SET name=${lit("`&O'><img src=x onerror=__xss=3>")} WHERE acctid=385; UPDATE settings SET value='1' WHERE setting IN ('partial_render','realtime_enabled','live_encounters','grants_enabled','guarded_actions');
+  sql(`INSERT INTO settings (setting,value) VALUES ('defaultskin','twig:aurora') ON DUPLICATE KEY UPDATE value=VALUES(value); UPDATE accounts SET name=${lit("`&O'><img src=x onerror=__xss=3>")} WHERE acctid=385; INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('realtime_enabled','1'),('live_encounters','1'),('grants_enabled','1'),('guarded_actions','1') ON DUPLICATE KEY UPDATE value=VALUES(value);
        UPDATE accounts SET prefs='a:2:{s:13:"partialrender";i:1;s:4:"ajax";i:1;}', alive=1, location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid IN (1,385);
 
        INSERT INTO mail (msgfrom, msgto, subject, body, sent, seen) VALUES (385, 1, ${lit('Hi' + P)}, ${lit('Body' + P)}, NOW(), 0);`);

@@ -47,7 +47,7 @@ const slot = async p => (await p.textContent('[data-lotgd-slot="grants"]')).repl
 const OUT = cfg.OUT;
 const shot = async (p, name) => { await settle(p, 400); await p.screenshot({ path: `${OUT}/${name}.png`, fullPage: false }); console.log('shot', name); };
 (async () => {
-  sql(`UPDATE settings SET value='0' WHERE setting IN ('realtime_enabled','partial_render','guarded_actions','grants_enabled','live_encounters'); DELETE FROM settings WHERE setting='partial_render_default'; INSERT INTO settings (setting,value) VALUES ('realtime_transport','poll') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('realtime_enabled','0'),('partial_render','0'),('guarded_actions','0'),('grants_enabled','0'),('live_encounters','0') ON DUPLICATE KEY UPDATE value=VALUES(value); DELETE FROM settings WHERE setting='partial_render_default'; INSERT INTO settings (setting,value) VALUES ('realtime_transport','poll') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`UPDATE accounts SET prefs='a:0:{}', restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', loggedin=0 WHERE acctid=1; DELETE FROM accounts_output WHERE acctid=1`);
   const browser = await chromium.launch(cfg.launch);
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } }); const a = await ctx.newPage();

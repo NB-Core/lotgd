@@ -8,8 +8,8 @@ const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
   const restoreSettings = cfg.overrideAsyncSettings(GAME, { start_timeout_show_seconds: 60, never_timeout_if_browser_open: 1 });
   // Realtime off: with it, every poll keeps the session alive and no keep-alive is needed.
   const oldRealtime = sql(`SELECT value FROM settings WHERE setting='realtime_enabled'`);
-  sql(`UPDATE settings SET value='0' WHERE setting='realtime_enabled'`);
-  sql(`UPDATE settings SET value='75' WHERE setting='LOGINTIMEOUT'; UPDATE accounts SET loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('realtime_enabled','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
+  sql(`INSERT INTO settings (setting,value) VALUES ('LOGINTIMEOUT','75') ON DUPLICATE KEY UPDATE value=VALUES(value); UPDATE accounts SET loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1`);
   const b = await chromium.launch(cfg.launch);
   try {
     const p = await (await b.newContext()).newPage();
@@ -32,6 +32,6 @@ const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
     const expired = await p.$eval('.lotgd-timeout', e => !e.hidden && e.classList.contains('lotgd-timeout--expired')).catch(() => false);
     console.log((expired && calls === 1 ? 'PASS' : 'FAIL') + ' a lost session is final', calls, expired);
   } finally {
-    await b.close(); restoreSettings(); sql(`UPDATE settings SET value='900' WHERE setting='LOGINTIMEOUT'; UPDATE settings SET value='${oldRealtime || 0}' WHERE setting='realtime_enabled'`);
+    await b.close(); restoreSettings(); sql(`INSERT INTO settings (setting,value) VALUES ('LOGINTIMEOUT','900') ON DUPLICATE KEY UPDATE value=VALUES(value); ${cfg.setting('realtime_enabled', oldRealtime || '0')}`);
   }
 })();

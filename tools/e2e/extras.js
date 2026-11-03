@@ -50,7 +50,7 @@ const shot = async (p, name) => { await settle(p, 400); await p.screenshot({ pat
 (async () => {
   sql(`INSERT INTO settings (setting,value) VALUES ('realtime_enabled','1'),('partial_render','1'),('guarded_actions','1'),('grants_enabled','1'),('live_encounters','1'),('realtime_poll_seconds','5'),('realtime_transport','sse'),('encounter_challenge_seconds','120'),('duel_round_seconds','20'),('duel_max_rounds','30'),('pvp','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`DELETE FROM accounts WHERE login IN ('duele2e'); DELETE FROM granted_navs; DELETE FROM encounter_slots; DELETE FROM encounter_rounds; DELETE FROM encounters; DELETE FROM presence`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','alive','hitpoints')`);
+  const cols = cfg.accountColumns(sql, ['acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','alive','hitpoints']);
   const prefs = 'a:1:{s:13:"partialrender";i:1;}';
   sql(`INSERT INTO accounts (login,name,emailaddress,version,loggedin,allowednavs,restorepage,prefs,alive,hitpoints,${cols}) SELECT 'duele2e','\`%Dora the Bold\`0','duel@example.invalid',0,0,'a:1:{s:11:"village.php";b:1;}','village.php','${prefs}',1,60,${cols} FROM accounts WHERE acctid=1`);
   const dora = sql(`SELECT acctid FROM accounts WHERE login='duele2e'`);
@@ -60,8 +60,8 @@ const shot = async (p, name) => { await settle(p, 400); await p.screenshot({ pat
   sql(`INSERT INTO accounts (login,name,emailaddress,version,loggedin,allowednavs,restorepage,prefs,alive,hitpoints,${cols}) SELECT 'watche2e','\`#Ezra the Onlooker\`0','watch@example.invalid',0,0,'a:1:{s:11:"village.php";b:1;}','village.php','${prefs}',1,60,${cols} FROM accounts WHERE acctid=1`);
   const ezra = sql(`SELECT acctid FROM accounts WHERE login='watche2e'`);
   sql(`UPDATE accounts SET ${stats} WHERE acctid=${ezra}; UPDATE accounts SET superuser=0 WHERE acctid IN (${dora},${ezra})`);
-  const transport = process.env.TRANSPORT || 'sse';
-  sql(`UPDATE settings SET value='${transport}' WHERE setting='realtime_transport'`);
+  const transport = cfg.transport('sse');
+  sql(`${cfg.setting('realtime_transport', transport)}`);
 
   const browser = await chromium.launch(cfg.launch);
   const page = async who => { const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage(); p.on('pageerror', e => console.log(who, 'pageerror:', e.message)); p.on('dialog', d => d.accept()); return p; };

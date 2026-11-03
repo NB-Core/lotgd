@@ -50,7 +50,7 @@ const shot = async (p, name) => { await settle(p, 400); await p.screenshot({ pat
 (async () => {
   sql(`INSERT INTO settings (setting,value) VALUES ('realtime_enabled','1'),('partial_render','1'),('guarded_actions','1'),('grants_enabled','1'),('live_encounters','1'),('realtime_poll_seconds','5'),('realtime_transport','sse'),('encounter_challenge_seconds','120'),('duel_round_seconds','20'),('duel_max_rounds','30'),('pvp','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`DELETE FROM accounts WHERE login IN ('duele2e'); DELETE FROM granted_navs; DELETE FROM encounter_slots; DELETE FROM encounter_rounds; DELETE FROM encounters; DELETE FROM presence`);
-  const cols = sql(`SELECT GROUP_CONCAT(CONCAT('\`',column_name,'\`')) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='accounts' AND column_name NOT IN ('acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','alive','hitpoints')`);
+  const cols = cfg.accountColumns(sql, ['acctid','login','name','emailaddress','version','loggedin','allowednavs','restorepage','prefs','alive','hitpoints']);
   const prefs = 'a:1:{s:13:"partialrender";i:1;}';
   sql(`INSERT INTO accounts (login,name,emailaddress,version,loggedin,allowednavs,restorepage,prefs,alive,hitpoints,${cols}) SELECT 'duele2e','\`%Dora the Bold\`0','duel@example.invalid',0,0,'a:1:{s:11:"village.php";b:1;}','village.php','${prefs}',1,60,${cols} FROM accounts WHERE acctid=1`);
   const dora = sql(`SELECT acctid FROM accounts WHERE login='duele2e'`);
@@ -58,8 +58,8 @@ const shot = async (p, name) => { await settle(p, 400); await p.screenshot({ pat
   sql(`UPDATE accounts SET ${stats} WHERE acctid=${dora}; UPDATE accounts SET prefs='${prefs}', ${stats}, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', loggedin=0 WHERE acctid=1; DELETE FROM accounts_output WHERE acctid IN (1,${dora}); DELETE FROM mail WHERE msgto IN (1,${dora})`);
   const skin = cfg.skin('jade.htm');
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
-  sql(`UPDATE settings SET value='${skin}' WHERE setting='defaultskin'; UPDATE settings SET value='poll' WHERE setting='realtime_transport'`);
-  if (process.env.TRANSPORT === 'sse') sql(`UPDATE settings SET value='sse' WHERE setting='realtime_transport'`);
+  sql(`${cfg.setting('defaultskin', skin)}; INSERT INTO settings (setting,value) VALUES ('realtime_transport','poll') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
+  if (process.env.TRANSPORT === 'sse') sql(`INSERT INTO settings (setting,value) VALUES ('realtime_transport','sse') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   try {
   const browser = await chromium.launch(cfg.launch);
   const page = async who => { const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage(); p.on('pageerror', e => console.log(who, 'pageerror:', e.message)); p.on('dialog', d => d.accept()); return p; };
@@ -99,7 +99,7 @@ const shot = async (p, name) => { await settle(p, 400); await p.screenshot({ pat
   await waitFor(async () => /you win/.test(await encText(a)), 8000);
   await browser.close();
   } finally {
-    sql(`UPDATE settings SET value='${oldSkin}' WHERE setting='defaultskin'; DELETE FROM accounts WHERE login='duele2e'; DELETE FROM encounter_slots; DELETE FROM granted_navs`);
+    sql(`${cfg.setting('defaultskin', oldSkin)}; DELETE FROM accounts WHERE login='duele2e'; DELETE FROM encounter_slots; DELETE FROM granted_navs`);
   }
   const passed = results.filter(Boolean).length;
   console.log(`${passed}/${results.length} passed`);
