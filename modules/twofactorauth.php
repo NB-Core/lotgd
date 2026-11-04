@@ -188,6 +188,19 @@ function twofactorauth_dohook(string $hookname, array $args): array
 
             if (!TwoFactorAuthService::isUriAllowed($normalizedRequestUri, $allowed)) {
                 $challengeUrl = 'runmodule.php?module=twofactorauth&op=challenge';
+                if (defined('AJAX_MODE') && AJAX_MODE) {
+                    // A background request of the challenge page (the realtime
+                    // stream, the notices poll) is not a page change. Redirecting
+                    // it would save the challenge link in place of the page's own
+                    // links, and submitting the token would end on badnav.php.
+                    if (!headers_sent()) {
+                        http_response_code(403);
+                        header('Content-Type: application/json; charset=UTF-8');
+                        header('Cache-Control: no-store');
+                    }
+                    echo json_encode(['status' => 'error', 'error' => '2fa_pending']);
+                    exit();
+                }
                 // Register redirect target right before redirect so core allowed-nav persistence keeps this route.
                 Nav::add('', $challengeUrl);
                 Redirect::redirect($challengeUrl, '2FA jail redirect');
