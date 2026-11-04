@@ -51,6 +51,24 @@ Previously, removed registrations could remain in cached lists until expiry.
 writes do, so prefixes such as `module_prepare` also remove their on-disk
 entries. No module API changes or manual hook deletion are required.
 
+### Updating from 2.0.8 to 2.0.9
+
+1. Replace the code and run `composer install`, as for every update (step 3 above).
+2. Open any page: the migrations of 2.0.9 run automatically, as described under
+   [Updates within 2.x no longer need the installer](#updates-within-2x-no-longer-need-the-installer).
+   `php bin/doctrine migrations:migrate` does the same from the command line.
+3. Run `php bin/modules-refresh` once, so modules are refreshed before players arrive
+   (Docker: `docker compose exec -T --user www-data web php bin/modules-refresh`).
+4. Nothing else changes until you turn something on. *Game Settings* opens with the table **Live
+   features**, which shows what each feature needs; *Turn on the recommended live features* switches on
+   what this server can run. Everything about them is under
+   [Live features (reactive core)](#live-features-reactive-core), hosting for server-sent events in
+   [docs/RealtimeHosting.md](docs/RealtimeHosting.md).
+
+Every player gets two changes right away, whatever the settings: the notices in the upper right
+(session countdown, new mail, a new Message of the Day) and, on every bundled skin, mail and the Message of
+the Day in a dialog inside the page. Skins of your own: see *For skin authors* in the live features section.
+
 ### 2.0.8 is the first release since 2.0.5
 
 2.0.6 and 2.0.7 were never published, so an update from 2.0.5 takes every

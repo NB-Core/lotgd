@@ -10,6 +10,10 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ## [Unreleased]
 
+## [2.0.9] – 2026-11-04
+
+2.0.9 brings the live features of the reactive core: pages that change in place, realtime updates, guarded bank actions, grants and live duels. They are off until an administrator turns them on in *Game Settings* (table **Live features**). Two changes reach every player right away: the notices in the upper right (the session countdown with *Stay logged in*, new mail, a new Message of the Day) and mail and the Message of the Day opening in a dialog inside the page. The migrations run automatically on the first page after the update. Operators and module authors: [UPGRADING.md](UPGRADING.md), *Live features (reactive core)*; hosting for server-sent events: [docs/RealtimeHosting.md](docs/RealtimeHosting.md).
+
 ### Added
 
 - **Live features (reactive core).** Pages that change in place, realtime updates, guarded transactions and live duels, off until an administrator turns them on (the notices in the upper right and the mail dialog apply to everyone). *Game Settings* opens with a table **Live features**: each feature's state and what keeps it off (a setting, a table missing or not InnoDB, a pending migration, a default skin without regions), and a button *Turn on the recommended live features*. Migrations `Version20261020000001` to `Version20261029000001` add the tables and columns; nothing reads them until a feature is on. Operators and module authors: [UPGRADING.md](UPGRADING.md), *Live features*; how it works: [docs/ReactiveCore.md](docs/ReactiveCore.md); hosting: [docs/RealtimeHosting.md](docs/RealtimeHosting.md).
