@@ -68,6 +68,12 @@ class Footer
         }
         $session['user']['gensize'] += strlen($browser_output);
         $session['output'] = $browser_output;
+        // badnav.php puts this address back in the location bar.
+        if ($partial === false) {
+            $session['partial_fallback_address'] = ltrim(PhpGenericEnvironment::getRequestUri(), '/');
+        } else {
+            unset($session['partial_fallback_address']);
+        }
         if ($saveuser === true) {
             Accounts::saveUser();
         }
@@ -77,6 +83,10 @@ class Footer
         if ($partial === false) {
             // badnav.php shows the page just stored; the URL does not run twice.
             PartialMode::sendHeader(PartialRenderer::HEADER_FALLBACK . ': ' . $fallback);
+            $detail = $fallback === 'script' ? PartialRenderer::scriptDetail($state) : null;
+            if ($detail !== null) {
+                PartialMode::sendHeader(PartialRenderer::HEADER_FALLBACK_DETAIL . ': ' . $detail);
+            }
             PartialMode::sendHeader('HX-Redirect: badnav.php');
             exit();
         }

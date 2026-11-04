@@ -43,6 +43,28 @@ final class StoredPage
     }
 
     /**
+     * The stored page with the address it was asked for, for a page shown
+     * on badnav.php after a late partial fallback: the client puts that
+     * address back in the location bar (lotgd.partial.js), so the player
+     * does not see badnav.php for a page they reached normally. Only a
+     * relative game script with its query is taken; anything else, or no
+     * address, leaves the page as it is.
+     */
+    public static function withAddress(string $html, ?string $uri): string
+    {
+        if ($uri === null || preg_match('#^[A-Za-z0-9_/-]+\.php(\?[^\s"\'<>]*)?$#', $uri) !== 1 || str_starts_with($uri, '/')) {
+            return $html;
+        }
+        $meta = '<meta name="lotgd-address" content="' . htmlspecialchars($uri, ENT_QUOTES, 'UTF-8') . '">';
+        $closed = stripos($html, '</head>');
+        if ($closed === false) {
+            return $html;
+        }
+
+        return substr($html, 0, $closed) . $meta . substr($html, $closed);
+    }
+
+    /**
      * The page an account last stored, uncompressed; '' when there is none
      * (navigation fixed, never played).
      */

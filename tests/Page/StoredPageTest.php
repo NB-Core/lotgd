@@ -75,4 +75,36 @@ final class StoredPageTest extends TestCase
         self::assertStringContainsString('<head><style>a,button,input,select,textarea,label,summary{pointer-events:none!important}</style><title>Forest</title>', $inner);
         self::assertStringContainsString('<header>Top</header><a href="forest.php?op=search">Search</a>', $inner);
     }
+
+    public function testTheAddressAskedForIsAddedToTheHead(): void
+    {
+        $shown = StoredPage::withAddress('<html><head><title>x</title></head><body></body></html>', 'forest.php?op=search&c=1');
+
+        self::assertSame(
+            '<html><head><title>x</title><meta name="lotgd-address" content="forest.php?op=search&amp;c=1"></head><body></body></html>',
+            $shown
+        );
+    }
+
+    /**
+     * @return iterable<string,array{0:?string}>
+     */
+    public static function addressesNotTaken(): iterable
+    {
+        yield 'none' => [null];
+        yield 'absolute path' => ['/forest.php'];
+        yield 'another site' => ['https://example.com/forest.php'];
+        yield 'protocol-relative' => ['//example.com/forest.php'];
+        yield 'not a script' => ['forest.html'];
+        yield 'quote in the query' => ['forest.php?x="><script>'];
+        yield 'empty' => [''];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('addressesNotTaken')]
+    public function testAnythingButAGameScriptLeavesThePageAsItIs(?string $uri): void
+    {
+        $html = '<html><head></head><body></body></html>';
+
+        self::assertSame($html, StoredPage::withAddress($html, $uri));
+    }
 }

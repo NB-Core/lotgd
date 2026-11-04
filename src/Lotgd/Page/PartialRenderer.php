@@ -24,6 +24,7 @@ final class PartialRenderer
     public const HEADER_REGION_VERSIONS = 'X-Lotgd-Region-Versions';
     public const HEADER_FORMS = 'X-Lotgd-Partial-Forms';
     public const HEADER_FALLBACK = 'X-Lotgd-Partial-Fallback';
+    public const HEADER_FALLBACK_DETAIL = 'X-Lotgd-Partial-Fallback-Detail';
     public const REQUEST_HEAD_SERVER_KEY = 'HTTP_X_LOTGD_HEAD';
     public const REQUEST_REVISION_SERVER_KEY = 'HTTP_X_LOTGD_PAGE_REVISION';
 
@@ -114,6 +115,29 @@ final class PartialRenderer
             if (stripos($state->region($region), '<script') !== false) {
                 return 'script';
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * Where a page that fell back for "script" carries its script: the
+     * region and the start of the tag, e.g. 'stats: <script src="x.js">'.
+     * For module and skin authors, sent as X-Lotgd-Partial-Fallback-Detail.
+     * Printable ASCII only, so it is safe as a header value.
+     */
+    public static function scriptDetail(PageState $state): ?string
+    {
+        foreach (array_keys(PageState::REGIONS) as $region) {
+            $markup = $state->region($region);
+            $at = stripos($markup, '<script');
+            if ($at === false) {
+                continue;
+            }
+            $snippet = (string) preg_replace('/\s+/', ' ', substr($markup, $at, 120));
+            $snippet = (string) preg_replace('/[^\x20-\x7E]/', '?', $snippet);
+
+            return $region . ': ' . substr($snippet, 0, 80);
         }
 
         return null;

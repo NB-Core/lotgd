@@ -163,7 +163,13 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `<script>`), `head` (the page needs another `<head>`, e.g. it added CSS or
   JavaScript there), `skin`, `pref`, `claim` or `popup`. In the browser's
   developer tools (Network) it shows on the request that was answered with
-  `HX-Redirect: badnav.php`.
+  `HX-Redirect: badnav.php` (tick *Preserve log*: the page change clears the
+  list). For `script`, `X-Lotgd-Partial-Fallback-Detail` names the region and
+  the start of the tag, e.g. `stats: <script src="…">`. badnav.php then shows
+  the stored page under the address the player asked for
+  (`<meta name="lotgd-address">`, put back with `history.replaceState()`), so
+  the location bar does not read badnav.php; a reload of that address shows
+  the stored page again, as after a full page.
 - **Early fallback**: `PartialMode::preCheck()` runs in `common.php` before
   forced navigation. A partial GET for any other page gets `HX-Redirect` to
   the same URL and an empty body; the page has not run. A partial POST gets
