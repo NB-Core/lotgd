@@ -8,12 +8,15 @@ use Lotgd\BootstrapErrorHandler;
 use Lotgd\ErrorHandler;
 use Lotgd\Mail;
 use Lotgd\Newday;
+use Lotgd\Realtime;
+use Lotgd\Realtime\Relay;
 use Lotgd\Settings;
 
 define('CRON_NEWDAY', 1);
 define('CRON_DBCLEANUP', 2);
 define('CRON_COMMENTCLEANUP', 4);
 define('CRON_CHARCLEANUP', 8);
+define('CRON_REALTIME', 16);
 
 define("ALLOW_ANONYMOUS", true);
 
@@ -80,6 +83,7 @@ Provide an integer bitmask combining:
   2  (CRON_DBCLEANUP)      Perform database maintenance
   4  (CRON_COMMENTCLEANUP) Trim commentary tables
   8  (CRON_CHARCLEANUP)    Remove expired characters
+ 16  (CRON_REALTIME)       Relay realtime events a page request left behind
 
 Set [force_db] to 1 to force database optimization even if not scheduled.
 TXT;
@@ -145,5 +149,8 @@ if ($result) {
     }
     if ($executionstyle & CRON_CHARCLEANUP) {
         Newday::charCleanup();
+    }
+    if (($executionstyle & CRON_REALTIME) && Realtime::enabled()) {
+        Relay::drain();
     }
 }

@@ -11,6 +11,7 @@ use Lotgd\Output;
 use Lotgd\Security\Csrf;
 use Lotgd\Security\Escape;
 use Lotgd\Translator;
+use Lotgd\Page\PartialMode;
 use Lotgd\Http;
 use Lotgd\DataCache;
 use Lotgd\GameLog;
@@ -565,26 +566,76 @@ class Forms
     }
 
     /**
+     * The attributes that make a table sortable, searchable and paged in the
+     * browser (DataTables), without an inline script and without touching
+     * the page's <head>: `assets/js/lotgd.showform.js` loads jQuery and
+     * DataTables the first time a page shows such a table, and sets each one
+     * up on load and after every partial swap. Rows keep their trlight and
+     * trdark striping in the order shown.
+     *
+     * Put them on the <table> tag: `<table id='list'` . Forms::dataTableAttributes([...]) . `>`.
+     *
+     * @param array<string,mixed> $options DataTables options (JSON-serialisable).
+     */
+    public static function dataTableAttributes(array $options = []): string
+    {
+        $assets = [
+            'css' => [AssetManifest::url('datatables', 'css')],
+            'js' => [AssetManifest::url('jquery', 'js'), AssetManifest::url('datatables', 'js')],
+        ];
+
+        return ' data-lotgd-datatable="' . htmlspecialchars((string) json_encode((object) $options), ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-lotgd-datatable-assets="' . htmlspecialchars((string) json_encode($assets), ENT_QUOTES, 'UTF-8') . '"';
+    }
+
+    /**
      * Render a message preview input field with javascript helper.
+     *
+     * With $talkline false the preview shows the text alone, without the
+     * talk line in front (a name, a title). With $formatting the preview
+     * shows bold and italic, closed again at its end, as
+     * Sanitize::balanceFormatting() renders them. $emoji is a
+     * Sanitize::EMOJI_* mode: the preview leaves out what the page removes.
      */
     public static function previewField(
         string $name,
         string|bool $startdiv = false,
-        string $talkline = 'says',
+        string|false $talkline = 'says',
         bool $showcharsleft = true,
         array|bool $info = false,
-        bool $scriptOutput = true
+        bool $scriptOutput = true,
+        bool $formatting = false,
+        int $emoji = Sanitize::EMOJI_KEEP
     ): string {
         global $session;
         $output = Output::getInstance();
 
-        $talkline = Translator::translateInline($talkline, Translator::getInstance()->getSchema());
+        if ($talkline !== false) {
+            $talkline = Translator::translateInline($talkline, Translator::getInstance()->getSchema());
+        }
         $youhave = Translator::translateInline('You have ');
         $charsleft = Translator::translateInline(' characters left.');
         $startdiv = $startdiv === false ? '' : $startdiv;
 
-        $encodedStart = addslashes($output->appoencode($startdiv));
         $maxChars = (int) Settings::getInstance()->getSetting('maxchars', 200);
+
+        if (PartialMode::clientActive(is_array($session['user'] ?? null) ? $session['user'] : [])) {
+            return self::declarativePreviewField(
+                $name,
+                $output->appoencode($startdiv),
+                $talkline,
+                $showcharsleft,
+                $info,
+                $scriptOutput,
+                $maxChars,
+                $youhave,
+                $charsleft,
+                $formatting,
+                $emoji
+            );
+        }
+
+        $encodedStart = addslashes($output->appoencode($startdiv));
 
         $script = <<<JS
 <script language="JavaScript">
@@ -650,18 +701,40 @@ JS;
 JS;
         }
 
-        $switchscript = DataCache::getInstance()->datacache('switchscript_comm' . rawurlencode($name));
+        $switchKey = 'switchscript_comm' . rawurlencode($name) . ($formatting ? '-fmt' : '') . ($emoji !== Sanitize::EMOJI_KEEP ? '-emoji' . $emoji : '');
+        $switchscript = DataCache::getInstance()->datacache($switchKey);
 
         if (!$switchscript) {
             $colors = $output->getColors();
-            $cases = ["case \"0\": out+='</span>';break;"];
+            // An escaped backtick shows as one, as appoencode() does.
+            $cases = ["case \"0\": out+='</span>';break;", "case \"`\": out+='`';break;"];
             foreach ($colors as $key => $colorcode) {
                 $cases[] = "case \"{$key}\": out+='</span><span class=\"{$colorcode}\">';break;";
             }
+            if ($formatting) {
+                // Bold and italic, nested properly (Sanitize::balanceFormatting()).
+                $cases[] = "case \"b\": case \"i\": var at = open.indexOf(z); if (at < 0) { open.push(z); out += '<' + z + '>'; } else { var after = open.slice(at + 1); for (var k = after.length - 1; k >= 0; k--) { out += '</' + after[k] + '>'; } out += '</' + z + '>'; for (k = 0; k < after.length; k++) { out += '<' + after[k] + '>'; } open.splice(at, 1); } break;";
+            }
             $cases = implode("\n            ", $cases);
 
-            $switchscript = <<<JS
+            // Emoji go as the page removes them (Sanitize::stripEmoji(), the
+            // same patterns and character references); the counter above
+            // still counts what is stored. Built at run time, so a browser
+            // without \p{} support only skips this.
+            $emojiScript = '';
+            $patterns = Sanitize::emojiPatternsForScript($emoji);
+            if ($patterns !== []) {
+                $json = json_encode($patterns, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                $emojiScript = "\n    try { var er = {$json}.map(function (p) { return new RegExp(p, 'gu'); });"
+                    . " var es = function (v) { for (var i = 0; i < er.length; i++) { v = v.replace(er[i], ''); } return v; };"
+                    . " var ed = document.createElement('textarea');"
+                    . " t = t.substr(0, x) + es(t.substr(x)).replace(/&(?:#[xX][0-9a-fA-F]{1,6}|#[0-9]{1,7}|[A-Za-z][A-Za-z0-9]{1,31});/g,"
+                    . " function (r) { ed.innerHTML = r; var c = ed.value; return c !== r && c !== '' && es(c) === '' ? '' : r; }); } catch (e) {}";
+            }
 
+            $switchscript = <<<JS
+{$emojiScript}
+    var open = [];
     for (; x < t.length; x++) {
         y = t.substr(x, 1);
         if (y == '<') {
@@ -677,17 +750,21 @@ JS;
                         {$cases}
                 }
                 x++;
+            } else {
+                // A backtick at the very end is shown, as the page shows it.
+                out += '`';
             }
         } else {
             out += y;
         }
     }
+    for (var c = open.length - 1; c >= 0; c--) { out += '</' + open[c] + '>'; }
     document.getElementById("previewtext{$name}").innerHTML = out + end + '<br/>';
 }
 </script>
 JS;
 
-            DataCache::getInstance()->updatedatacache('switchscript_comm' . rawurlencode($name), $switchscript);
+            DataCache::getInstance()->updatedatacache($switchKey, $switchscript);
         }
 
         $script .= $switchscript;
@@ -713,6 +790,77 @@ JS;
             } else {
                 $script .= '>';
             }
+        }
+
+        $add = Translator::translateInline('Add');
+        $returnscript = $script . "<div id='previewtext{$name}'></div>";
+        $script .= "<input type='submit' class='button' value='{$add}'><br>";
+        $script .= "<div id='previewtext{$name}'></div>";
+
+        if ($scriptOutput) {
+            $output->rawOutput($script);
+        }
+
+        return $returnscript;
+    }
+
+    /**
+     * The preview field for a player whose pages the partial client swaps in.
+     *
+     * Same elements, ids and attributes as previewField() renders, without
+     * the inline <script> and onKeyUp handlers: a swapped-in page does not
+     * run scripts, so the preview is described in a data-lotgd-preview
+     * attribute and assets/js/lotgd.partial.js renders it.
+     *
+     * @param array<string,mixed>|bool $info
+     */
+    private static function declarativePreviewField(
+        string $name,
+        string $startHtml,
+        string|bool $talkline,
+        bool $showcharsleft,
+        array|bool $info,
+        bool $scriptOutput,
+        int $maxChars,
+        string $youhave,
+        string $charsleft,
+        bool $formatting = false,
+        int $emoji = Sanitize::EMOJI_KEEP
+    ): string {
+        global $session;
+        $output = Output::getInstance();
+
+        $limit = is_array($info) && isset($info['maxlength']) ? (int) $info['maxlength'] : $maxChars;
+        $config = [
+            'name' => $name,
+            'start' => $startHtml,
+            'talkline' => $talkline === false ? null : (string) $talkline,
+            'gamemaster' => (((int) ($session['user']['superuser'] ?? 0)) & SU_IS_GAMEMASTER) === SU_IS_GAMEMASTER,
+            'maxChars' => $maxChars,
+            'limit' => $limit,
+            'showCharsLeft' => $showcharsleft,
+            'youHave' => $youhave,
+            'charsLeft' => $charsleft,
+            'colors' => (object) $output->getColors(),
+            'formatting' => $formatting,
+            'emoji' => $emoji,
+            'emojiPatterns' => Sanitize::emojiPatternsForScript($emoji),
+        ];
+        $preview = ' data-lotgd-preview="' . htmlspecialchars((string) json_encode($config), ENT_QUOTES, 'UTF-8') . '"';
+
+        $script = $showcharsleft ? "<span id='charsleft{$name}'></span>" : '';
+
+        if (!is_array($info)) {
+            $script .= "<input name='{$name}' id='input{$name}' maxsize='" . ($maxChars + 100) . "'{$preview}>";
+        } else {
+            $isTextarea = isset($info['type']) && $info['type'] == 'textarea';
+            $script .= $isTextarea
+                ? "<textarea name='{$name}' id='input{$name}'{$preview} "
+                : "<input name='{$name}' id='input{$name}'{$preview} ";
+            foreach ($info as $key => $val) {
+                $script .= "$key='$val'";
+            }
+            $script .= $isTextarea ? '></textarea>' : '>';
         }
 
         $add = Translator::translateInline('Add');
@@ -846,19 +994,22 @@ JS;
 
         $output->rawOutput("</tbody></table><br>");
 
-        if ($showform_id == 10001) {
-            $startIndex = (int) Http::post('showFormTabIndex');
-            if ($startIndex < 0) {
-                $startIndex = 0;
-            }
-        } else {
-            $startIndex = 0;
+        // The tab the form was sent from: lotgd.showform.js posts it as
+        // showFormTabIndex[<form id>]; a page may have flattened it to one
+        // value already (prefs.php, configuration.php), which counts for the
+        // first form only, as before.
+        $posted = Http::post('showFormTabIndex');
+        if (is_array($posted)) {
+            $posted = $posted[$showform_id] ?? ($showform_id == 10001 ? reset($posted) : false);
+        } elseif ($showform_id != 10001) {
+            $posted = false;
         }
+        $startIndex = is_scalar($posted) && ctype_digit((string) $posted) ? (int) $posted : 0;
 
         Translator::getInstance()->setSchema('showform');
         $allLabel = Translator::translateInline('All');
         Translator::getInstance()->setSchema();
-        self::setupTabbedDataTable($showform_id, $formSections, $startIndex, $allLabel);
+        self::markTabbedForm($showform_id, $formSections, $startIndex, $allLabel);
 
         $output->rawOutput("</td></tr></table>");
         Translator::getInstance()->setSchema('showform');
@@ -1471,368 +1622,26 @@ JS;
     }
 
     /**
-     * Output tab handling JavaScript for a tabbed form rendered as a single table.
+     * Mark a tabbed form for assets/js/lotgd.showform.js, which builds its
+     * search field and tabs: the sections, the tab to start on and the
+     * translated labels, as data instead of an inline script, so a page
+     * with such a form can be swapped in place.
      */
-    private static function setupTabbedDataTable(
+    private static function markTabbedForm(
         int $formId,
         array $sections,
         int $startIndex,
         string $allLabel
     ): void {
-        $output = Output::getInstance();
-        $tabListLabel = Translator::translateInline('Form sections');
-        $searchLabel = Translator::translateInline('Search');
-        $encodedSections = json_encode($sections, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        $encodedAllLabel = json_encode($allLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        $encodedTabListLabel = json_encode($tabListLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        $encodedSearchLabel = json_encode($searchLabel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        $output->rawOutput("<script language='JavaScript'>");
-        $output->rawOutput("window.formSections = window.formSections || [];");
-        $output->rawOutput("formSections[$formId] = JSON.parse('$encodedSections');");
-        $output->rawOutput("
-            (function () {
-                function initFallback() {
-                    var sections = window.formSections ? window.formSections[$formId] : null;
-                    if (!sections) {
-                        return;
-                    }
-                    var table = document.getElementById('showFormTable$formId');
-                    if (!table) {
-                        return;
-                    }
-                    var container = document.getElementById('showFormSection$formId');
-                    if (!container) {
-                        return;
-                    }
-                    container.innerHTML = '';
-                    var tabList = document.createElement('div');
-                    tabList.setAttribute('role', 'group');
-                    tabList.setAttribute('aria-label', $encodedTabListLabel);
-                    tabList.id = 'showFormTablist$formId';
-                    tabList.className = 'prefs-tabs';
-                    container.appendChild(tabList);
-                    function appendTab(sectionId, label, sectionName) {
-                        var tab = document.createElement('button');
-                        tab.type = 'button';
-                        tab.id = 'showFormTab' + sectionId;
-                        tab.className = 'trhead';
-                        tab.setAttribute('data-showform-tab', '$formId');
-                        tab.setAttribute('data-section-id', sectionId);
-                        tab.setAttribute('role', 'button');
-                        tab.setAttribute('aria-pressed', 'false');
-                        tab.style.cssText = 'float: left; cursor: pointer; padding: 5px; border: 1px solid #000000;';
-                        tab.setAttribute('data-section', sectionName || '');
-                        tab.appendChild(document.createTextNode(label));
-                        tabList.appendChild(tab);
-                    }
-                    var allLabel = $encodedAllLabel;
-                    appendTab(0, allLabel, '');
-                    for (var key in sections) {
-                        if (!Object.prototype.hasOwnProperty.call(sections, key)) {
-                            continue;
-                        }
-                        appendTab(key, sections[key], sections[key]);
-                    }
-                    var spacer = document.createElement('div');
-                    spacer.style.display = 'block';
-                    spacer.innerHTML = '&nbsp;';
-                    container.appendChild(spacer);
-                    var hidden = document.createElement('input');
-                    hidden.type = 'hidden';
-                    hidden.name = 'showFormTabIndex[$formId]';
-                    hidden.value = '$startIndex';
-                    hidden.id = 'showFormTabIndex-$formId';
-                    container.appendChild(hidden);
-                    function setActiveTab(sectionId, sectionName) {
-                        var activeLabel = sectionName || '';
-                        var rows = table.querySelectorAll('tbody tr');
-                        var visibleIndex = 0;
-                        rows.forEach(function (row) {
-                            var rowSection = row.getAttribute('data-section') || '';
-                            var shouldShow = !activeLabel || rowSection === activeLabel;
-                            row.style.display = shouldShow ? '' : 'none';
-                            row.style.visibility = shouldShow ? 'visible' : 'hidden';
-                            if (row.classList.contains('trhead')) {
-                                return;
-                            }
-                            row.classList.remove('trlight', 'trdark');
-                            if (shouldShow) {
-                                row.classList.add(visibleIndex % 2 === 0 ? 'trlight' : 'trdark');
-                                visibleIndex++;
-                            }
-                        });
-                        hidden.value = sectionId;
-                        var tabs = tabList.querySelectorAll('[data-showform-tab=\"$formId\"]');
-                        tabs.forEach(function (tab) {
-                            tab.classList.remove('is-active');
-                            tab.setAttribute('aria-pressed', 'false');
-                            tab.tabIndex = -1;
-                        });
-                        var activeTab = document.getElementById('showFormTab' + sectionId);
-                        if (activeTab) {
-                            activeTab.classList.add('is-active');
-                            activeTab.setAttribute('aria-pressed', 'true');
-                            activeTab.tabIndex = 0;
-                            table.setAttribute('aria-labelledby', activeTab.id);
-                        }
-                    }
-                    var initialSection = '';
-                    if ($startIndex && sections[$startIndex]) {
-                        initialSection = sections[$startIndex];
-                    }
-                    setActiveTab($startIndex, initialSection);
-                    tabList.addEventListener('click', function (event) {
-                        var target = event.target;
-                        if (!target || !target.hasAttribute('data-showform-tab')) {
-                            return;
-                        }
-                        var sectionId = target.getAttribute('data-section-id');
-                        var sectionName = target.getAttribute('data-section') || '';
-                        setActiveTab(sectionId, sectionName);
-                    });
-                    tabList.addEventListener('keydown', function (event) {
-                        var keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
-                        if (keys.indexOf(event.key) === -1) {
-                            return;
-                        }
-                        var tabs = tabList.querySelectorAll('[data-showform-tab=\"$formId\"]');
-                        if (!tabs.length) {
-                            return;
-                        }
-                        var currentIndex = 0;
-                        for (var i = 0; i < tabs.length; i++) {
-                            if (tabs[i] === document.activeElement) {
-                                currentIndex = i;
-                                break;
-                            }
-                        }
-                        var nextIndex = currentIndex;
-                        if (event.key === 'ArrowLeft') {
-                            nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-                        }
-                        if (event.key === 'ArrowRight') {
-                            nextIndex = (currentIndex + 1) % tabs.length;
-                        }
-                        if (event.key === 'Home') {
-                            nextIndex = 0;
-                        }
-                        if (event.key === 'End') {
-                            nextIndex = tabs.length - 1;
-                        }
-                        event.preventDefault();
-                        tabs[nextIndex].focus();
-                        var nextSectionId = tabs[nextIndex].getAttribute('data-section-id');
-                        var nextSectionName = tabs[nextIndex].getAttribute('data-section') || '';
-                        setActiveTab(nextSectionId, nextSectionName);
-                    });
-                }
-                if (typeof jQuery === 'undefined') {
-                    initFallback();
-                    return;
-                }
-                var \$table = jQuery('#showFormTable$formId');
-                if (!\$table.length) {
-                    return;
-                }
-                var activeSection = '';
-                var useDataTable = typeof jQuery.fn.DataTable !== 'undefined';
-                var tableApi = null;
-                var searchQuery = '';
-                function applyLegacyRowClasses(\$rows) {
-                    var visibleIndex = 0;
-                    \$rows.removeClass('trlight trdark');
-                    \$rows.each(function () {
-                        var \$row = jQuery(this);
-                        if (\$row.hasClass('trhead')) {
-                            return;
-                        }
-                        var stripeClass = (visibleIndex % 2 === 0) ? 'trlight' : 'trdark';
-                        \$row.addClass(stripeClass);
-                        visibleIndex++;
-                    });
-                }
-                function applyLegacyFilters() {
-                    var \$rows = \$table.find('tbody tr');
-                    var query = searchQuery.toLowerCase();
-                    var visibleIndex = 0;
-                    \$rows.each(function () {
-                        var \$row = jQuery(this);
-                        var rowSection = \$row.data('section') || '';
-                        var matchesSection = !activeSection || rowSection === activeSection;
-                        var matchesSearch = !query || \$row.text().toLowerCase().indexOf(query) !== -1;
-                        var shouldShow = matchesSection && matchesSearch;
-                        \$row.toggle(shouldShow);
-                        \$row.css('visibility', shouldShow ? 'visible' : 'hidden');
-                        if (!\$row.hasClass('trhead')) {
-                            \$row.removeClass('trlight trdark');
-                            if (shouldShow) {
-                                \$row.addClass(visibleIndex % 2 === 0 ? 'trlight' : 'trdark');
-                                visibleIndex++;
-                            }
-                        }
-                    });
-                }
-                if (useDataTable) {
-                    tableApi = \$table.DataTable({
-                        dom: 't',
-                        paging: false,
-                        info: false,
-                        ordering: false,
-                        searching: true,
-                        drawCallback: function () {
-                            var api = this.api();
-                            var \$rows = jQuery(api.rows({ filter: 'applied' }).nodes());
-                            applyLegacyRowClasses(\$rows);
-                        }
-                    });
-                    var globalSearch = '';
-                    \$table.on('search.dt', function () {
-                        globalSearch = tableApi.search();
-                    });
-                    jQuery.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-                        if (settings.nTable !== \$table[0]) {
-                            return true;
-                        }
-                        if (!activeSection) {
-                            return true;
-                        }
-                        var row = settings.aoData[dataIndex].nTr;
-                        return jQuery(row).data('section') === activeSection;
-                    });
-                }
-                function setActiveTab(sectionId, sectionName) {
-                    activeSection = sectionName || '';
-                    if (useDataTable) {
-                        var currentSearch = tableApi.search();
-                        if (globalSearch !== currentSearch) {
-                            globalSearch = currentSearch;
-                        }
-                        tableApi.search(globalSearch).draw();
-                    } else {
-                        applyLegacyFilters();
-                    }
-                    if (\$tabInput.length) {
-                        \$tabInput.val(sectionId);
-                    }
-                    var \$tabs = jQuery('[data-showform-tab=\"$formId\"]');
-                    \$tabs.removeClass('is-active');
-                    \$tabs.attr('aria-pressed', 'false').attr('tabindex', '-1');
-                    var \$activeTab = jQuery('#showFormTab' + sectionId);
-                    \$activeTab.addClass('is-active');
-                    \$activeTab.attr('aria-pressed', 'true').attr('tabindex', '0');
-                    \$table.attr('aria-labelledby', 'showFormTab' + sectionId);
-                }
-                var \$tabsContainer = jQuery('#showFormSection$formId');
-                var tabInputSelector = \"input[name='showFormTabIndex[$formId]']\";
-                var \$tabInput = jQuery();
-                \$tabsContainer.empty();
-                var \$searchWrapper = jQuery('<div/>', {
-                    id: 'showFormTable$formId' + '_search',
-                    'class': 'datatable-search'
-                }).css({
-                    display: 'block',
-                    margin: '0 0 6px 0'
-                });
-                var \$searchInput = jQuery('<input/>', {
-                    type: 'search',
-                    id: 'showFormTable$formId' + '_search_input',
-                    placeholder: $encodedSearchLabel,
-                    'aria-label': $encodedSearchLabel
-                }).css({
-                    display: 'block',
-                    width: '100%',
-                    maxWidth: '320px'
-                });
-                \$searchInput.on('keyup', function () {
-                    searchQuery = this.value;
-                    if (useDataTable) {
-                        tableApi.search(searchQuery).draw();
-                    } else {
-                        applyLegacyFilters();
-                    }
-                });
-                \$searchWrapper.append(\$searchInput);
-                var \$tabList = jQuery('<div/>', {
-                    role: 'group',
-                    'aria-label': $encodedTabListLabel,
-                    id: 'showFormTablist$formId',
-                    'class': 'prefs-tabs'
-                });
-                function appendTab(sectionId, label, sectionName) {
-                    var \$tab = jQuery('<button/>', {
-                        id: 'showFormTab' + sectionId,
-                        type: 'button',
-                        'class': 'trhead',
-                        'data-showform-tab': '$formId',
-                        'data-section-id': sectionId,
-                        role: 'button',
-                        'aria-pressed': 'false'
-                    })
-                        .css({
-                            float: 'left',
-                            cursor: 'pointer',
-                            padding: '5px',
-                            border: '1px solid #000000'
-                        })
-                        .text(label)
-                        .attr('data-section', sectionName || '');
-                    \$tabList.append(\$tab);
-                }
-                var allLabel = $encodedAllLabel;
-                appendTab(0, allLabel, '');
-                for (var key in formSections[$formId]) {
-                    if (!Object.prototype.hasOwnProperty.call(formSections[$formId], key)) {
-                        continue;
-                    }
-                    appendTab(key, formSections[$formId][key], formSections[$formId][key]);
-                }
-                \$tabsContainer.append(\$searchWrapper);
-                \$tabsContainer.append(\$tabList);
-                \$tabsContainer.append(\"<div style='display: block;'>&nbsp;</div>\");
-                \$tabsContainer.append(\"<input type='hidden' name='showFormTabIndex[$formId]' value='$startIndex' id='showFormTabIndex-$formId'>\");
-                \$tabInput = \$tabsContainer.find(tabInputSelector);
-                var initialSection = '';
-                if ($startIndex && formSections[$formId][$startIndex]) {
-                    initialSection = formSections[$formId][$startIndex];
-                }
-                setActiveTab($startIndex, initialSection);
-                \$tabsContainer.on('click', '[data-showform-tab=\"$formId\"]', function () {
-                    var sectionId = jQuery(this).data('section-id');
-                    var sectionName = jQuery(this).data('section') || '';
-                    setActiveTab(sectionId, sectionName);
-                });
-                \$tabsContainer.on('keydown', '[data-showform-tab=\"$formId\"]', function (event) {
-                    var keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
-                    if (keys.indexOf(event.key) === -1) {
-                        return;
-                    }
-                    var \$tabs = \$tabList.find('[data-showform-tab=\"$formId\"]');
-                    if (!\$tabs.length) {
-                        return;
-                    }
-                    var index = \$tabs.index(this);
-                    var nextIndex = index;
-                    if (event.key === 'ArrowLeft') {
-                        nextIndex = (index - 1 + \$tabs.length) % \$tabs.length;
-                    }
-                    if (event.key === 'ArrowRight') {
-                        nextIndex = (index + 1) % \$tabs.length;
-                    }
-                    if (event.key === 'Home') {
-                        nextIndex = 0;
-                    }
-                    if (event.key === 'End') {
-                        nextIndex = \$tabs.length - 1;
-                    }
-                    event.preventDefault();
-                    var \$nextTab = \$tabs.eq(nextIndex);
-                    \$nextTab.focus();
-                    var sectionId = \$nextTab.data('section-id');
-                    var sectionName = \$nextTab.data('section') || '';
-                    setActiveTab(sectionId, sectionName);
-                });
-            })();
-        ");
-        $output->rawOutput("</script>");
+        $config = [
+            'id' => $formId,
+            'sections' => (object) $sections,
+            'start' => $startIndex,
+            'all' => $allLabel,
+            'label' => Translator::translateInline('Form sections'),
+            'search' => Translator::translateInline('Search'),
+        ];
+        $json = (string) json_encode($config, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        Output::getInstance()->rawOutput("<span hidden data-lotgd-showform='" . Escape::html($json) . "'></span>");
     }
 }

@@ -98,7 +98,7 @@ class Pvp
                 return false;
             } elseif ($session['user']['playerfights'] > 0) {
                 $connection->executeStatement(
-                    'UPDATE ' . Database::prefix('accounts') . ' SET pvpflag = :pvpflag WHERE acctid = :acctid',
+                    'UPDATE ' . Database::prefix('accounts') . ' SET pvpflag = :pvpflag, version = version + 1 WHERE acctid = :acctid',
                     ['pvpflag' => date('Y-m-d H:i:s'), 'acctid' => (int) $row['acctid']],
                     ['pvpflag' => ParameterType::STRING, 'acctid' => ParameterType::INTEGER]
                 );
@@ -206,7 +206,8 @@ class Pvp
             . ' SET alive = 0, '
             . 'goldinbank = (goldinbank + IF(gold < :creaturegold_for_bank, gold - :creaturegold_for_delta, 0)), '
             . 'gold = IF(gold < :creaturegold_for_gold, 0, gold - :creaturegold_for_subtract), '
-            . 'experience = IF(experience >= :lostexp_for_check, experience - :lostexp_for_subtract, 0) '
+            . 'experience = IF(experience >= :lostexp_for_check, experience - :lostexp_for_subtract, 0), '
+            . 'version = version + 1 '
             . 'WHERE acctid = :acctid';
         // This used to log the interpolated UPDATE, so the amounts were readable.
         // Since the query is parameterised it would only record the placeholder
@@ -306,7 +307,7 @@ class Pvp
         );
 
         if ($row['level'] >= $badguy['creaturelevel']) {
-            $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET gold = gold + :winamount, experience = experience + :wonexp WHERE acctid = :acctid';
+            $sql = 'UPDATE ' . Database::prefix('accounts') . ' SET gold = gold + :winamount, experience = experience + :wonexp, version = version + 1 WHERE acctid = :acctid';
             // The defender is the one who gains here, so they are the actor and the
             // attacker is the target -- the mirror of the "being slain by" entry
             // written for the attacker a few lines below.

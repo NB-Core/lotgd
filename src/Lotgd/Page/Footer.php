@@ -18,10 +18,90 @@ use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\Page as PageSingleton;
+use Lotgd\Encounter;
+use Lotgd\ForcedNavigation;
+use Lotgd\Grant;
+use Lotgd\Presence;
+use Lotgd\Realtime;
+use Lotgd\Realtime\Poll;
+use Lotgd\Realtime\Stream;
 
 class Footer
 {
+    /**
+     * End the request with the full page.
+     *
+     * Builds the page state (which runs the page-end hooks), renders it,
+     * stores it for badnav.php, saves the user and exits.
+     */
     public static function pageFooter(bool $saveuser = true): void
+    {
+        global $session;
+
+        $state = self::buildPageState();
+        $browser_output = PageRenderer::render($state);
+
+        // Decided before saveUser(), which reduces the session user. null:
+        // a full page; false: partial was asked for but this page cannot be
+        // swapped in, so the player is sent to the stored page instead.
+        $partial = null;
+        $fallback = null;
+        if (PartialMode::isActive()) {
+            $clientHead = $_SERVER[PartialRenderer::REQUEST_HEAD_SERVER_KEY] ?? null;
+            $fallback = PartialRenderer::refusal($state, is_string($clientHead) ? $clientHead : null);
+            if ($fallback === null && !PartialMode::skinSupportsRegions()) {
+                $fallback = 'skin';
+            } elseif ($fallback === null && !PartialMode::isEnabledFor($session['user'] ?? [])) {
+                $fallback = 'pref';
+            } elseif ($fallback === null && !ForcedNavigation::claimedThisRequest()) {
+                // Nothing guards this page against a double click or a
+                // second tab (a module page that skips forced navigation).
+                $fallback = 'claim';
+            }
+            $partial = $fallback === null
+                ? PartialRenderer::render($state, (int) ($session['user']['page_revision'] ?? 0))
+                : false;
+        }
+
+        if (!isset($session['user']['gensize'])) {
+            $session['user']['gensize'] = 0;
+        }
+        $session['user']['gensize'] += strlen($browser_output);
+        $session['output'] = $browser_output;
+        if ($saveuser === true) {
+            Accounts::saveUser();
+        }
+        unset($session['output']);
+        session_write_close();
+
+        if ($partial === false) {
+            // badnav.php shows the page just stored; the URL does not run twice.
+            PartialMode::sendHeader(PartialRenderer::HEADER_FALLBACK . ': ' . $fallback);
+            PartialMode::sendHeader('HX-Redirect: badnav.php');
+            exit();
+        }
+        if ($partial !== null) {
+            PartialMode::sendHeader('Vary: HX-Request');
+            foreach ($partial['headers'] as $name => $value) {
+                PartialMode::sendHeader($name . ': ' . $value);
+            }
+            echo $partial['body'];
+            exit();
+        }
+
+        echo $browser_output;
+        exit();
+    }
+
+    /**
+     * Assemble everything the full page consists of.
+     *
+     * This is where the page end's side effects happen, exactly once: the
+     * built navigation is registered in allowednavs, the footer, favicon,
+     * MOTD-link and stats hooks run, the MOTD check updates the session.
+     * Renderers only read the returned state.
+     */
+    public static function buildPageState(): PageState
     {
         global $session;
         $page      = PageSingleton::getInstance();
@@ -44,7 +124,50 @@ class Footer
         $script = ScriptName::current();
         list($header, $footer) = PageParts::applyFooterHooks($header, $footer, $script);
 
+        // Where the player is, for who is online (Phase 7).
+        Presence::note($session['user'] ?? [], $script);
+        // A duel is watched only while its page is the one shown.
+        Encounter::endWatchUnlessShown();
+
+        // Open grants (docs/ReactiveCore.md, Phase 5): a navigation section on
+        // every skin, and the header slot grants that realtime updates. Their
+        // version is read before they are listed.
+        $grantsVersion = 0;
+        $grantsHtml = '';
+        $grantee = (int) ($session['user']['acctid'] ?? 0);
+        if ($grantee > 0 && !empty($session['user']['loggedin']) && Grant::enabled()) {
+            $grantsVersion = Grant::regionVersion($grantee);
+            Grant::addNavs($grantee);
+            $grantsHtml = Grant::regionHtml($grantee);
+        }
+
         $builtnavs = Nav::buildNavs();
+
+        // Before the regions are built: what they show is at least this new.
+        $realtime = Realtime::enabledFor($session['user'] ?? []);
+        $realtimeMeta = '';
+        $regionVersions = [];
+        if ($realtime) {
+            $acctid = (int) ($session['user']['acctid'] ?? 0);
+            $regionVersions = [
+                'mail' => Poll::regionVersion('mail', $acctid),
+                'stats' => Poll::regionVersion('stats', $acctid),
+                'grants' => $grantsVersion,
+            ];
+            // Regions in the content (encounter.php): versioned by the page,
+            // before it rendered them.
+            $regionVersions += Poll::notedRegionVersions();
+            $realtimeMeta = '<meta name="lotgd-realtime" content="'
+                . max(5, (int) $settings->getSetting('realtime_poll_seconds', 10)) . '">'
+                . '<meta name="lotgd-event-cursor" content="' . Poll::startCursor() . '">'
+                . '<meta name="lotgd-region-versions" content="'
+                . htmlspecialchars((string) json_encode($regionVersions), ENT_QUOTES, 'UTF-8') . '">';
+            if (Stream::enabled()) {
+                // The page reads its events from a stream; polling stays the
+                // fallback (async/stream.php).
+                $realtimeMeta .= '<meta name="lotgd-realtime-stream" content="/async/stream.php">';
+            }
+        }
 
         Buffs::restoreBuffFields();
         Buffs::calculateBuffFields();
@@ -75,7 +198,12 @@ class Footer
                 $session['user']['loggedin']
             ) {
                 if ($settings->getSetting('forcedmotdpopup', 0)) {
-                    $headscript .= PageParts::popup('motd.php');
+                    if (Overlay::skinSupports()) {
+                        // The overlay client opens it once the page is shown.
+                        Output::addHeadMarkup('<meta name="lotgd-overlay-open" content="motd.php">');
+                    } else {
+                        $headscript .= PageParts::popup('motd.php');
+                    }
                 }
                 $session['needtoviewmotd'] = true;
             } else {
@@ -84,13 +212,65 @@ class Footer
             $favicon = ['favicon-link' => $defaultFaviconLink];
             $favicon        = HookHandler::hook('pageparts-favicon', $favicon);
             $pre_headscript = PageParts::canonicalLink() . $favicon['favicon-link'];
-            if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
+            // The async client: for the player's updates (AJAX preference)
+            // and for the realtime poll, which shares its transport.
+            if ($realtime || ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax'])) {
                 if (file_exists('async/setup.php')) {
                     require_once 'async/setup.php';
+                    // The per-page values the poll starts from. A partial
+                    // answer carries them, since it has no <head>.
+                    $asyncState = [
+                        'commentSection' => \Lotgd\Commentary::shownSection(),
+                        'lastCommentId' => (int) ($session['lastcommentid'] ?? 0),
+                        'lastUnreadMailId' => (int) ($lastUnreadMailId ?? 0),
+                        'lastUnreadMailCount' => (int) ($lastUnreadMailCount ?? 0),
+                    ];
                 }
             }
         } else {
             $headscript     = '';
+        }
+
+        // Tabbed forms (Forms::showFormTabbed()) on every page, so the
+        // <head> stays the same whether a page has one or not.
+        Output::requireVendorAsset('lotgd-showform', 'js');
+        // The partial-rendering dot beside the mail link (PageParts::liveIndicator()),
+        // and the notices' look.
+        Output::requireVendorAsset('lotgd-partial', 'css');
+        // The notices in the upper right, for every logged-in player
+        // (SessionPanel, Notices).
+        Output::requireVendorAsset('lotgd-notices', 'js');
+        $sessionMeta = SessionPanel::meta($session['user'] ?? []);
+        if ($sessionMeta !== '') {
+            Output::addHeadMarkup($sessionMeta);
+        }
+
+        // Popup pages in a dialog (Phase 6b) where the skin declares it.
+        if (Overlay::skinSupports()) {
+            Output::requireVendorAsset('lotgd-overlay', 'css');
+            Output::requireVendorAsset('lotgd-overlay', 'js');
+        }
+
+        // The partial client binds the access keys itself, from the links in
+        // the navigation region, so its quick keys follow every swap.
+        $partialClient = PartialMode::clientActive($session['user'] ?? []);
+        $partialForms = [];
+        if ($partialClient) {
+            Output::requireVendorAsset('htmx', 'js');
+            Output::requireVendorAsset('lotgd-partial', 'js');
+            Output::addHeadMarkup(
+                '<meta name="lotgd-page-revision" content="' . (int) ($session['user']['page_revision'] ?? 0) . '">'
+            );
+            $partialForms = PartialMode::pageForms(is_array($session['allowednavs'] ?? null) ? $session['allowednavs'] : []);
+            Output::addHeadMarkup(PartialMode::formsMeta($partialForms));
+            if ($realtime) {
+                Output::addHeadMarkup($realtimeMeta);
+                // On every page, not only the duelling ground: a page swapped
+                // in place keeps the head it was loaded with.
+                if (Encounter::enabled()) {
+                    Output::requireVendorAsset('lotgd-duel', 'js');
+                }
+            }
         }
 
         $header = PageParts::insertHeadScript($header, $pre_headscript, $headscript);
@@ -128,6 +308,9 @@ class Footer
         $script .= "    }\n";
         $script .= "});\n";
         $script .= "</script>\n";
+        if ($partialClient) {
+            $script = '';
+        }
 
         // Resolve this once and keep it first-class in replacements.
         // If a template does not expose {paypal_below}, we append this finalized
@@ -151,12 +334,10 @@ class Footer
         }
 
         list($header, $footer) = PageParts::generateNavigationOutput($header, $footer, $builtnavs);
-        if (TwigTemplate::isActive()) {
-            PageParts::$twigVars['nav']      = $builtnavs;
-            PageParts::$twigVars['navad']    = '';
-            PageParts::$twigVars['verticalad'] = '';
-            PageParts::$twigVars['bodyad']   = '';
-        }
+        PageParts::$twigVars['nav']      = $builtnavs;
+        PageParts::$twigVars['navad']    = '';
+        PageParts::$twigVars['verticalad'] = '';
+        PageParts::$twigVars['bodyad']   = '';
 
         if (defined('DB_CHOSEN') && DB_CHOSEN) {
             $motd_link = PageParts::motdLink();
@@ -169,6 +350,7 @@ class Footer
         list($header, $footer) = PageParts::assembleMailLink($header, $footer);
         list($header, $footer) = PageParts::assemblePetitionLink($header, $footer);
         list($header, $footer) = PageParts::assemblePetitionDisplay($header, $footer);
+        list($header, $footer) = PageParts::replaceHeaderFooterTokens($header, $footer, ['grants' => $grantsHtml]);
         $sourcelink = 'source.php?url=' . preg_replace('/[?].*/', '', (PhpGenericEnvironment::getRequestUri()));
 
         $output = Output::getInstance();
@@ -187,43 +369,87 @@ class Footer
             // {paypal} so one-pass token replacement and Twig rendering stay aligned.
             'paypal_below' => $paypalBelow,
         ];
-        if (TwigTemplate::isActive()) {
-            PageParts::$twigVars = array_merge(PageParts::$twigVars, $replacements);
-        }
+        PageParts::$twigVars = array_merge(PageParts::$twigVars, $replacements);
 
         list($header, $footer) = PageParts::replaceHeaderFooterTokens($header, $footer, $replacements);
 
         Translator::getInstance()->setSchema();
 
-        if (TwigTemplate::isActive()) {
+        $content = $output->getOutput();
+        $isTwig = TwigTemplate::isActive();
+        if ($isTwig) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, [
                 'header' => $header,
                 'footer' => $footer,
-                'content' => $output->getOutput(),
+                'content' => $content,
                 'template_path' => TwigTemplate::getPath(),
             ]);
-            $browser_output = TwigTemplate::render('page.twig', PageParts::$twigVars);
         } else {
             $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
             $header = PageParts::stripAdPlaceholders($header);
-            $browser_output = $header . ($output->getOutput()) . $footer;
         }
         $navInstance->setHeader($header);
-        if (!isset($session['user']['gensize'])) {
-            $session['user']['gensize'] = 0;
+
+        $headSignature = PartialRenderer::headSignature(PageParts::$twigVars);
+        if ($partialClient) {
+            // After the signature, which leaves lotgd-* meta tags out anyway.
+            $headMeta = '<meta name="lotgd-head" content="' . $headSignature . '">';
+            if ($isTwig) {
+                PageParts::$twigVars['headscript_mid'] = (PageParts::$twigVars['headscript_mid'] ?? '') . $headMeta;
+            } else {
+                // A legacy header has its head filled in already.
+                $header = (string) preg_replace('~</head>~i', $headMeta . '</head>', $header, 1);
+                $navInstance->setHeader($header);
+            }
         }
-        $session['user']['gensize'] += strlen($browser_output);
-        $session['output'] = $browser_output;
-        if ($saveuser === true) {
+
+        return new PageState(
+            PageState::TEMPLATE_PAGE,
+            $isTwig,
+            $header,
+            $footer,
+            $content,
+            $builtnavs,
+            $statsOutput,
+            $quickKeys,
+            PageParts::$twigVars,
+            $headSignature,
+            $asyncState ?? [],
+            $regionVersions,
+            $partialForms
+        );
+    }
+
+    /**
+     * End the request with a popup window.
+     */
+    public static function popupFooter(): void
+    {
+        $state = self::buildPopupState();
+        if (Overlay::isRequested()) {
+            // Shown inside the page: the content alone (Phase 6b).
+            $overlay = Overlay::render($state);
             Accounts::saveUser();
+            session_write_close();
+            PartialMode::sendHeader('Vary: X-Lotgd-Overlay');
+            foreach ($overlay['headers'] as $name => $value) {
+                PartialMode::sendHeader($name . ': ' . $value);
+            }
+            echo $overlay['body'];
+            exit();
         }
-        unset($session['output']);
+        $browser_output = PageRenderer::render($state);
+
+        Accounts::saveUser();
         session_write_close();
         echo $browser_output;
         exit();
     }
 
-    public static function popupFooter(): void
+    /**
+     * Assemble everything a popup consists of; see buildPageState().
+     */
+    public static function buildPopupState(): PageState
     {
         global $session;
         $page     = PageSingleton::getInstance();
@@ -239,7 +465,6 @@ class Footer
             $footer = $template['popupfoot'];
         }
         $pre_headscript   = PageParts::canonicalLink();
-        $maillink_add_after = '';
         if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
             if (file_exists('async/setup.php')) {
                 require_once 'async/setup.php';
@@ -250,15 +475,6 @@ class Footer
 
         $output = Output::getInstance();
 
-        if (isset($session['user']['acctid']) && $session['user']['acctid'] > 0 && $session['user']['loggedin']) {
-            if ($settings->getSetting('ajax', 1) == 1 && isset($session['user']['prefs']['ajax']) && $session['user']['prefs']['ajax']) {
-                if (file_exists('async/maillink.php')) {
-                    require 'async/maillink.php';
-                }
-            } else {
-                $maillink_add_after = '';
-            }
-        }
         $header = PageParts::insertHeadScript($header, $pre_headscript, $headscript);
 
         $page->antiCheatProtection();
@@ -271,29 +487,28 @@ class Footer
             'copyright' => $copyright,
         ]);
 
-        if (TwigTemplate::isActive()) {
+        $content = $output->getOutput();
+        $isTwig = TwigTemplate::isActive();
+        if ($isTwig) {
             PageParts::$twigVars = array_merge(PageParts::$twigVars, [
                 'header' => $header,
                 'footer' => $footer,
-                'content' => $maillink_add_after . $output->getOutput(),
+                'content' => $content,
                 'template_path' => TwigTemplate::getPath(),
             ]);
-            $browser_output = TwigTemplate::render('popup.twig', PageParts::$twigVars);
-            $navInstance->setHeader($header);
-            Accounts::saveUser();
-            session_write_close();
-            echo $browser_output;
-            exit();
+        } else {
+            $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
+            $header = PageParts::stripAdPlaceholders($header);
         }
-
-        $footer = preg_replace('/{[^} \t\n\r]*}/i', '', $footer);
-        $header = PageParts::stripAdPlaceholders($header);
-
-        $browser_output = $header . $maillink_add_after . ($output->getOutput()) . $footer;
         $navInstance->setHeader($header);
-        Accounts::saveUser();
-        session_write_close();
-        echo $browser_output;
-        exit();
+
+        return new PageState(
+            PageState::TEMPLATE_POPUP,
+            $isTwig,
+            $header,
+            $footer,
+            $content,
+            templateVars: PageParts::$twigVars
+        );
     }
 }

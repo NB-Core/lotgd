@@ -14,29 +14,28 @@
 </head>
 <body class="main-body">
 {% set right_sidebar %}
-    {{ stats|raw }}<br/>
+    <div data-lotgd-region="stats">{{ stats|raw }}</div><br/>
     {{ paypal|raw }}
 {% endset %}
 <div class="container-fluid">
     <div class="row page-header align-items-center">
         <div class="col-4 pageheader-left text-center">
             <div class="d-flex gap-2 justify-content-center">
-                <div class="motd">&nbsp;&nbsp;<strong>{{ motd|raw }}</strong></div>
-                <div class="petition"><strong>{{ petition|raw }}</strong></div>
+                <div class="motd">&nbsp;&nbsp;<strong data-lotgd-region="header" data-lotgd-slot="motd">{{ motd|raw }}</strong></div>
+                <div class="petition"><strong data-lotgd-region="header" data-lotgd-slot="petition">{{ petition|raw }}</strong></div>
             </div>
         </div>
-        <div class="col-4 pageheader-center text-center">
-            {{ title }}
-        </div>
+        <div class="col-4 pageheader-center text-center" data-lotgd-title>{{ title }}</div>
         <div class="col-4 pageheader-right text-end">
             <nav class="mail-nav justify-content-end" aria-label="Player notifications">
                 <span class="mail-nav__link">
                     <img src="{{ '/' ~ template_path }}/assets/mail.gif" width="24" height="19" alt="Mail">
-                    <strong>{{ mail|raw }}</strong>
+                    <strong data-lotgd-region="header" data-lotgd-slot="mail">{{ mail|raw }}</strong>
                 </span>
-                <span class="mail-nav__link">
+                <span class="mail-nav__link" data-lotgd-region="header" data-lotgd-slot="petitiondisplay">
                     {{ petitiondisplay|raw }}
                 </span>
+                <span class="mail-nav__link mail-nav__grants" data-lotgd-region="header" data-lotgd-slot="grants">{{ grants|raw }}</span>
             </nav>
         </div>
     </div>
@@ -55,12 +54,12 @@
     <div class="row">
         <nav class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content">
             <div class="navad-wrapper">{{ navad|raw }}</div>
-            <div class="nav-container" role="navigation">{{ nav|raw }}</div>
+            <div class="nav-container" role="navigation" data-lotgd-region="nav">{{ nav|raw }}</div>
         </nav>
         <main class="col flex-grow-1 main-content">
             <div class="verticalad-wrapper">{{ verticalad|raw }}</div>
             {{ bodyad|raw }}
-            {{ content|raw }}
+            <div data-lotgd-region="content">{{ content|raw }}</div>
         </main>
         <aside class="col-lg-auto flex-shrink-0 d-none d-lg-block sidebar-content">
             {{ right_sidebar|raw }}
@@ -75,18 +74,18 @@
         </div>
     </div>
 </div>
-<div class="offcanvas offcanvas-start" tabindex="-1" id="leftSidebar">
+<div class="offcanvas offcanvas-start" tabindex="-1" id="leftSidebar" data-lotgd-close-on-swap>
     <div class="offcanvas-header">
         <h5 class="offcanvas-title">Menu</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
         {{ navad|raw }}
-        {{ nav|raw }}
+        <div data-lotgd-region="nav">{{ nav|raw }}</div>
     </div>
 </div>
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar">
+<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" data-lotgd-close-on-swap>
     <div class="offcanvas-header">
         <h5 class="offcanvas-title">Info</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>

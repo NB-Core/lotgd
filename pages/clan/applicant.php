@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Lotgd\Clan\Application;
 use Lotgd\Page\Header;
 use Lotgd\Nav;
 use Lotgd\MySQL\Database;
@@ -31,6 +32,7 @@ if ($op == "apply") {
     if ($op == "withdraw") {
         $session['user']['clanid'] = 0;
         $session['user']['clanrank'] = CLAN_APPLICANT;
+        Application::withdraw((int) $session['user']['acctid']);
         $session['user']['clanjoindate'] = DATETIME_DATEMIN;
         $output->output("`7You tell `%%s`7 that you're no longer interested in joining %s.", $registrar, $claninfo['clanname']);
         $output->output("She reaches into her desk, withdraws your application, and tears it up.  \"`5You wouldn't have been happy there anyhow, I don't think,`7\" as she tosses the shreds in her trash can.");

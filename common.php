@@ -17,6 +17,7 @@ use Lotgd\Accounts;
 use Lotgd\Settings;
 use Lotgd\PhpGenericEnvironment;
 use Lotgd\ForcedNavigation;
+use Lotgd\Page\PartialMode;
 use Lotgd\Nav;
 use Lotgd\LocalConfig;
 use Lotgd\PageParts;
@@ -76,7 +77,7 @@ $license = "\n<!-- Creative Commons License -->\n<a rel='license' href='http://c
 // work.  This license text may not be removed nor altered in any way.
 // Please see the file LICENSE for a full textual description of the license.
 
-$logd_version = "2.0.8 +nb Edition";
+$logd_version = "2.0.9 +nb Edition";
 Page::getInstance()->setLogdVersion($logd_version);
 
 // Include some commonly needed and useful routines
@@ -504,6 +505,9 @@ $session['lasthit'] = strtotime("now");
 
 PhpGenericEnvironment::setup($session);
 if (!AJAX_MODE) {
+    // Before anything changes state: a partial request this page cannot
+    // answer becomes a normal page change to the same URL here.
+    PartialMode::preCheck();
     ForcedNavigation::doForcedNav(ALLOW_ANONYMOUS, OVERRIDE_FORCED_NAV);
 }
 
@@ -539,8 +543,9 @@ if (OVERRIDE_FORCED_NAV) {
     $nokeeprestore[$scriptNameEnv] = 1;
 }
 if (!isset($nokeeprestore[$scriptNameEnv]) || !$nokeeprestore[$scriptNameEnv]) {
-    $session['user']['restorepage'] = PhpGenericEnvironment::getRequestUri();
-} else {
+    // login.php returns to restorepage with a GET; RestorePage::remember()
+    // notes only GET requests, so a form's target never becomes it.
+    \Lotgd\Page\RestorePage::remember($session['user'], PhpGenericEnvironment::getRequestUri());
 }
 
 

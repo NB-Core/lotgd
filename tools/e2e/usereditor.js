@@ -1,0 +1,42 @@
+const { chromium } = require('playwright');
+const cfg = require('./config');
+const { execSync, execFileSync } = require('child_process');
+const BASE = cfg.BASE;
+const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
+const settle = (p, ms = 800) => p.waitForTimeout(ms);
+(async () => {
+  sql(`UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}', superuser=3923967, loggedin=0, restorepage='superuser.php', allowednavs='a:1:{s:13:"superuser.php";b:1;}', badguy='' WHERE acctid=1; UPDATE accounts SET experience=100 WHERE acctid=385; DELETE FROM accounts_output WHERE acctid=1`);
+  // Otto's stored page, which the editor shows inline (reset.sql empties it).
+  const page = '<html><head><title>Otto in the village</title></head><body><a href="forest.php">The Forest</a> <a href="inn.php">The Inn</a></body></html>';
+  const hex = execFileSync('php', ['-r', 'echo bin2hex(gzcompress(stream_get_contents(STDIN)));'], { input: page }).toString().trim();
+  sql(`REPLACE INTO accounts_output (acctid, output) VALUES (385, UNHEX('${hex}'))`);
+  const b = await chromium.launch(cfg.launch);
+  const p = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  p.on('dialog', d => d.accept());
+  await p.goto(BASE + 'home.php'); await p.fill('#name', 'Admin'); await p.fill('#password', cfg.PASSWORD);
+  await p.click("input[value='Log in']"); await p.waitForLoadState('load'); await settle(p);
+  await p.goto(BASE + 'badnav.php'); await settle(p);
+  // Grotto -> User Editor -> search -> edit Otto.
+  const click = async re => { const h = await p.evaluate(src => { const a = [...document.querySelectorAll('a')].find(x => new RegExp(src).test(x.getAttribute('href') || '')); return a ? a.getAttribute('href') : null; }, re.source); if (!h) throw new Error('no link ' + re); await p.click(`a[href="${h}"] >> nth=0`); await p.waitForLoadState('load'); await settle(p); };
+  if (!/superuser|Grotto/i.test(await p.title())) await click(/^superuser\.php/);
+  await click(/^user\.php(\?c=|$)/);
+  await p.fill("input[name='q']", 'offe2e').catch(() => {});
+  await p.press("input[name='q']", 'Enter').catch(() => {}); await p.waitForLoadState('load'); await settle(p);
+  await click(/^user\.php\?op=edit&userid=385/);
+  const reqs = []; p.on('request', r => { if (/op=lasthit/.test(r.url())) reqs.push(r.url()); });
+  await p.click('details.lotgd-lasthit summary'); await p.waitForTimeout(1500);
+  const frame = await p.$('details.lotgd-lasthit iframe');
+  const info = frame ? await frame.evaluate(f => ({ sandbox: f.getAttribute('sandbox'), src: f.getAttribute('src'), h: f.getBoundingClientRect().height })) : null;
+  const inner = frame ? await (await frame.contentFrame()).evaluate(() => ({ title: document.title, links: document.querySelectorAll('a').length, ptr: document.querySelector('a') ? getComputedStyle(document.querySelector('a')).pointerEvents : '' })) : null;
+  console.log((info && info.sandbox === '' && info.src === null && info.h > 300 && inner && inner.links > 0 && inner.ptr === 'none' && reqs.length === 0 ? 'PASS' : 'FAIL') + ' the last page shows inline, sealed, without a request -- ' + JSON.stringify({ info, inner, reqs }));
+  await p.locator('details.lotgd-lasthit').screenshot({ path: cfg.OUT + '/90-lasthit-preview.png' });
+  const field = await p.$("input[name='experience']");
+  await p.click('[data-showform-tab][data-section-id="0"]').catch(() => {});
+  await field.fill('4242');
+  await p.click("form[action*='op=save'] input[type='submit'] >> nth=0");
+  await p.waitForLoadState('load'); await settle(p);
+  const url = p.url();
+  const exp = sql('SELECT experience FROM accounts WHERE acctid=385');
+  console.log((!/badnav/.test(url) && exp === '4242' ? 'PASS' : 'FAIL') + ' saving the user editor after its iframe loaded -- ' + url + ' experience=' + exp + ' title=' + await p.title());
+  await b.close();
+})().catch(e => { console.error(e); process.exit(2); });

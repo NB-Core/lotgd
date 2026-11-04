@@ -6,12 +6,7 @@ namespace Lotgd\Async\Handler;
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
-use Lotgd\PageParts;
-use Lotgd\Settings;
-use Lotgd\Translator;
-use Jaxon\Response\Response;
-
-use function Jaxon\jaxon;
+use Lotgd\Async\Response;
 
 /**
  * Handle asynchronous mail status requests.
@@ -19,50 +14,36 @@ use function Jaxon\jaxon;
 class Mail
 {
     /**
-     * Return mail and timeout status information for the active user.
+     * The player's mail for the notices in the upper right: the same answer
+     * as Notices.status (`notices`, `session`). Kept for modules that ask
+     * for it; the header's mail link is no longer assigned to #maillink.
      */
     public function mailStatus(bool $args = false): Response
     {
-        global $session;
-        $settings = Settings::getInstance();
-
-        if ($args === false || empty($session['user']['acctid'])) {
-            return jaxon()->newResponse();
+        if ($args === false) {
+            return new Response();
         }
 
-        $timeoutSetting = (int) $settings->getSetting('LOGINTIMEOUT', 360); // seconds
-        $new = PageParts::mailLink();
-        $tabtext = PageParts::mailLinkTabText();
+        return (new Notices())->status();
+    }
 
-        // Get the highest message ID and unread mail count for the current user
-        $sql = 'SELECT MAX(messageid) AS lastid, SUM(seen=0) AS unread FROM '
-            . Database::prefix('mail')
-            . ' WHERE msgto = :acctid';
-        $conn = Database::getDoctrineConnection();
-        $row = $conn->executeQuery(
-            $sql,
-            ['acctid' => (int) $session['user']['acctid']],
+    /**
+     * The highest message id and the unread count of a player's mail: what
+     * the page starts from (async/setup.php) and what a poll compares with.
+     *
+     * @return array{lastid:int,unread:int}
+     */
+    public static function counts(int $acctid): array
+    {
+        $row = Database::getDoctrineConnection()->executeQuery(
+            'SELECT MAX(messageid) AS lastid, SUM(seen=0) AS unread FROM ' . Database::prefix('mail') . ' WHERE msgto = :acctid',
+            ['acctid' => $acctid],
             ['acctid' => ParameterType::INTEGER]
         )->fetchAssociative();
-        if ($row === false) {
-            $row = ['lastid' => 0, 'unread' => 0];
-        }
-        $lastMailId = (int) ($row['lastid'] ?? 0);
-        $unreadCount = (int) ($row['unread'] ?? 0);
 
-        $objResponse = jaxon()->newResponse();
-        $objResponse->assign('maillink', 'innerHTML', $new);
-
-        if ($tabtext === '') {
-            // there are no unseen mails
-            return $objResponse;
-        }
-
-        $tabtext = Translator::translateInline('Legend of the Green Dragon', 'home')
-            . ' - ' . $tabtext;
-        $objResponse->script->jo('document')->title = $tabtext;
-        $objResponse->call('lotgdMailNotify', $lastMailId, $unreadCount);
-
-        return $objResponse;
+        return [
+            'lastid' => is_array($row) ? (int) ($row['lastid'] ?? 0) : 0,
+            'unread' => is_array($row) ? (int) ($row['unread'] ?? 0) : 0,
+        ];
     }
 }

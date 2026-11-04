@@ -73,10 +73,42 @@ final class PageRunner
     }
 
     /**
+     * A request with its own method, server variables (request headers such as
+     * HTTP_HX_REQUEST) and scripted statement results, carrying the token.
+     *
+     * @param array<string,string> $get
+     * @param array<string,string> $post
+     * @param array<string,mixed>  $globals          Tables the page reads, by global name.
+     * @param array<string,mixed>  $settings         Game settings beyond the harness defaults.
+     * @param array<string,string> $server           Entries laid over $_SERVER.
+     * @param array<string,int>    $statementResults Regex => the value executeStatement() returns
+     *                                               for a matching statement.
+     * @param array<string,list<array<string,mixed>>> $queryResults Regex => the rows a matching query finds.
+     */
+    public static function withRequest(
+        string $page,
+        int $superuser,
+        string $method,
+        array $get = [],
+        array $post = [],
+        array $globals = [],
+        array $settings = [],
+        array $server = [],
+        array $statementResults = [],
+        array $queryResults = []
+    ): PageOutcome {
+        return self::run($page, $superuser, $get, $post, self::TOKEN, $globals, $settings, $method, $server, $statementResults, true, $queryResults);
+    }
+
+    /**
      * @param array<string,string> $get
      * @param array<string,string> $post
      * @param array<string,mixed>  $globals Tables the page reads, by global name.
      * @param array<string,mixed>  $settings Game settings beyond the harness defaults.
+     * @param array<string,string> $server
+     * @param array<string,int>    $statementResults
+     * @param bool                 $asyncToken Seed the async CSRF token, as one session would carry it.
+     * @param array<string,list<array<string,mixed>>> $queryResults
      */
     private static function run(
         string $page,
@@ -85,7 +117,12 @@ final class PageRunner
         array $post,
         ?string $token,
         array $globals = [],
-        array $settings = []
+        array $settings = [],
+        string $method = 'POST',
+        array $server = [],
+        array $statementResults = [],
+        bool $asyncToken = false,
+        array $queryResults = []
     ): PageOutcome {
         $root = dirname(__DIR__, 3);
 
@@ -100,6 +137,13 @@ final class PageRunner
             'version' => self::version($root),
             'globals' => $globals,
             'settings' => $settings,
+            'method' => $method,
+            'server' => $server,
+            'statement_results' => $statementResults,
+            'query_results' => $queryResults,
+            // withRequest() runs stand for pages of one session: the async
+            // token, which an AJAX player's <head> carries, is the same.
+            'async_token' => $asyncToken,
         ];
 
         // The page's own markup goes to a file of this run's own rather than to
@@ -182,7 +226,13 @@ final class PageRunner
             );
         }
 
-        return new PageOutcome($decoded['statements'], $decoded['queries'], $decoded['status'], $html);
+        return new PageOutcome(
+            $decoded['statements'],
+            $decoded['queries'],
+            $decoded['status'],
+            $html,
+            $decoded['headers'] ?? []
+        );
     }
 
     /**

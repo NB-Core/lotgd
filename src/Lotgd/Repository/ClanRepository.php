@@ -77,7 +77,7 @@ class ClanRepository
     {
         $connection = Database::getDoctrineConnection();
         $connection->executeStatement(
-            'UPDATE ' . Database::prefix('accounts') . ' SET clanrank = :leaderRank WHERE acctid = :acctid',
+            'UPDATE ' . Database::prefix('accounts') . ' SET clanrank = :leaderRank, version = version + 1 WHERE acctid = :acctid',
             [
                 'leaderRank' => CLAN_LEADER,
                 'acctid' => $acctid,

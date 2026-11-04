@@ -14,6 +14,7 @@ use Lotgd\Output;
 use Lotgd\Modules\HookHandler;
 use Lotgd\PlayerSearch;
 use Lotgd\Settings;
+use Lotgd\Page\Overlay;
 
 // addnews ready
 // translator ready
@@ -208,7 +209,7 @@ foreach ($rows as $i => $row) {
     $output->outputNotl("`^%s`0", $row['level']);
     $output->rawOutput("</td><td>");
     if ($session['user']['loggedin']) {
-        $output->rawOutput("<a href=\"mail.php?op=write&to=" . rawurlencode($row['login']) . "\" target=\"_blank\" onClick=\"" . popup("mail.php?op=write&to=" . rawurlencode($row['login']) . "") . ";return false;\">");
+        $output->rawOutput("<a href=\"mail.php?op=write&to=" . rawurlencode($row['login']) . "\" target=\"_blank\"" . Overlay::attribute() . " onClick=\"" . popup("mail.php?op=write&to=" . rawurlencode($row['login']) . "") . ";return false;\">");
         $output->rawOutput("<img src='images/newscroll.GIF' width='16' height='16' alt='$writemail' border='0'></a>");
         $output->rawOutput("<a href='bio.php?char=" . $row['acctid'] . "'>");
         Nav::add("", "bio.php?char=" . $row['acctid'] . "");

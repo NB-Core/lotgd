@@ -86,14 +86,14 @@ This iteration adds passkeys as an **alternative** challenge method while keepin
 - Passkey registration/authentication success/failure are audit-logged without sensitive credential material.
 - Passkey deletion requires both account ownership checks and a CSRF token.
 
-### Async architecture: why passkey flows now run through Jaxon
+### Async architecture: why passkey flows run through the async endpoint
 
-Passkey setup/login begin+finish calls are routed through a dedicated Jaxon handler (`Lotgd.Async.Handler.TwoFactorAuthPasskey`) and `async/process.php`.
+Passkey setup/login begin+finish calls are routed through a dedicated async handler (`Lotgd\Async\Handler\TwoFactorAuthPasskey`, registered as `TwoFactorAuthPasskey`) and `async/process.php`, the single async endpoint. Until Phase 6a (reactive core) this ran on Jaxon; the module's bridge still calls the deprecated `window.Lotgd.Async.Handler.TwoFactorAuthPasskey.<method>(...)` shim, which now forwards to `lotgd.async.call()`, and its callback `twofactorauthHandleJaxonResponse` keeps working.
 
 Rationale:
 
 - `async/process.php` is explicitly built for async transport and uses `OVERRIDE_FORCED_NAV`, so payload responses are not replaced by forced-navigation redirects.
-- Jaxon handler responses keep the flow inside the established async pipeline used by core AJAX features (commentary/mail/timeout), improving consistency and observability.
+- Async handler responses (`Lotgd\Async\Response`) keep the flow inside the established async pipeline used by core AJAX features (commentary/mail/timeout), improving consistency and observability.
 - The passkey domain logic remains centralized in `PasskeyService` + `PasskeyCredentialRepository`; the async handler is a transport/orchestration layer only.
 
 Why direct `runmodule.php` fetch is problematic in this context:
@@ -112,9 +112,9 @@ Why direct `runmodule.php` fetch is problematic in this context:
 
 ### Challenge polling behaviour and failure modes
 
-- The challenge page initializes Jaxon and background polling via `async/setup.php` while the user submits the classic verify form (`runmodule.php?module=twofactorauth&op=verify`).
+- The challenge page initializes the async client (`assets/js/lotgd.async.js`, configured by `<meta name="lotgd-async">` written by `async/setup.php`) and background polling while the user submits the classic verify form (`runmodule.php?module=twofactorauth&op=verify`).
 - Polling setup is guarded in JavaScript to avoid duplicate interval registration and competing async requests.
-- If async endpoints return empty or invalid JSON, browser-side Jaxon parsing can fail with `SyntaxError` (for example `Unexpected end of JSON input`).
+- If async endpoints return empty or invalid JSON, browser-side response parsing can fail with `SyntaxError` (for example `Unexpected end of JSON input`).
 
 ### Quick troubleshooting sequence (challenge)
 

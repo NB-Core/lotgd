@@ -193,20 +193,16 @@ final class CsrfCentralizationRegressionTest extends TestCase
      */
     public function testAsyncCsrfHeaderIsScopedToTheCurrentOrigin(): void
     {
-        $source = $this->source('async/js/lotgd.jaxon.js');
+        $source = $this->source('assets/js/lotgd.async.js');
 
         self::assertStringContainsString(
-            'target.origin === window.location.origin',
+            'target.origin === window.location.origin && target.pathname === ENDPOINT',
             $source,
-            'the async CSRF header must be restricted to this origin'
+            'the async CSRF header must be restricted to this origin and endpoint'
         );
-        self::assertStringContainsString("target.pathname === '/async/process.php'", $source);
-
-        // The shape that leaked: a path comparison standing on its own.
-        self::assertStringNotContainsString(
-            "return new URL(url, window.location.origin).pathname === '/async/process.php';",
-            $source
-        );
+        self::assertStringContainsString("const ENDPOINT = '/async/process.php';", $source);
+        self::assertStringContainsString("mode: 'same-origin'", $source);
+        self::assertStringContainsString("'X-Lotgd-Async': '1'", $source);
     }
 
     private function source(string $relativePath): string

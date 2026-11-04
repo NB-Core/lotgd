@@ -118,6 +118,12 @@ function get_all_tables()
         'allowednavs' => array(
             'name' => 'allowednavs', 'type' => 'mediumtext' //what navs is he allowed to access (excluding anonymous ones
             ),
+        'page_revision' => array(
+            'name' => 'page_revision', 'type' => 'int(11) unsigned', 'default' => '0' // navigation revision partial rendering consumes atomically
+            ),
+        'version' => array(
+            'name' => 'version', 'type' => 'int(11) unsigned', 'default' => '0' // moves on with every change to the game state; guarded actions check it
+            ),
         'loggedin' => array(
             'name' => 'loggedin', 'type' => 'tinyint(4) unsigned', 'default' => '0' //is he currently logged in? (note to check for a timeout too!)
             ),
@@ -1118,6 +1124,343 @@ function get_all_tables()
             'columns' => 'modid'
             )
         ),
+    'action_log' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'action_id' => array(
+            'name' => 'action_id', 'type' => 'char(32)', 'default' => ''
+            ),
+        'action_name' => array(
+            'name' => 'action_name', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'params_hash' => array(
+            'name' => 'params_hash', 'type' => 'char(64)', 'default' => ''
+            ),
+        'request_uri' => array(
+            'name' => 'request_uri', 'type' => 'varchar(255)', 'default' => ''
+            ),
+        'result' => array(
+            'name' => 'result', 'type' => 'text'
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'acctid,action_id'
+            ),
+        'key-created' => array(
+            'name' => 'created', 'type' => 'key', 'columns' => 'created'
+            ),
+        ),
+    'events' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'id' => array(
+            'name' => 'id', 'type' => 'bigint(20) unsigned', 'extra' => 'auto_increment'
+            ),
+        'event_id' => array(
+            'name' => 'event_id', 'type' => 'char(32)', 'default' => ''
+            ),
+        'channel' => array(
+            'name' => 'channel', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'type' => array(
+            'name' => 'type', 'type' => 'varchar(32)', 'default' => ''
+            ),
+        'payload' => array(
+            'name' => 'payload', 'type' => 'text'
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'relayed_at' => array(
+            'name' => 'relayed_at', 'type' => 'datetime', 'null' => '1'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'id'
+            ),
+        'key-event_id' => array(
+            'name' => 'event_id', 'type' => 'unique key', 'columns' => 'event_id'
+            ),
+        'key-pending' => array(
+            'name' => 'pending', 'type' => 'key', 'columns' => 'relayed_at,id'
+            ),
+        ),
+    'event_deliveries' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'seq' => array(
+            'name' => 'seq', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'event_id' => array(
+            'name' => 'event_id', 'type' => 'char(32)', 'default' => ''
+            ),
+        'channel' => array(
+            'name' => 'channel', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'type' => array(
+            'name' => 'type', 'type' => 'varchar(32)', 'default' => ''
+            ),
+        'payload' => array(
+            'name' => 'payload', 'type' => 'text'
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'seq'
+            ),
+        'key-channel_seq' => array(
+            'name' => 'channel_seq', 'type' => 'key', 'columns' => 'channel,seq'
+            ),
+        'key-created' => array(
+            'name' => 'created', 'type' => 'key', 'columns' => 'created'
+            ),
+        ),
+    'relay_sequence' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'id' => array(
+            'name' => 'id', 'type' => 'tinyint(3) unsigned', 'default' => '1'
+            ),
+        'next_seq' => array(
+            'name' => 'next_seq', 'type' => 'bigint(20) unsigned', 'default' => '1'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'id'
+            ),
+        ),
+    'realtime_streams' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'token' => array(
+            'name' => 'token', 'type' => 'char(32)', 'default' => ''
+            ),
+        'started' => array(
+            'name' => 'started', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'acctid'
+            ),
+        ),
+    'presence' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'place' => array(
+            'name' => 'place', 'type' => 'varchar(32)', 'default' => ''
+            ),
+        'seen' => array(
+            'name' => 'seen', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'changed_us' => array(
+            'name' => 'changed_us', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'acctid'
+            ),
+        'key-seen' => array(
+            'name' => 'seen', 'type' => 'key', 'columns' => 'seen'
+            ),
+        ),
+    'encounters' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'id' => array(
+            'name' => 'id', 'type' => 'int(11) unsigned', 'extra' => 'auto_increment'
+            ),
+        'kind' => array(
+            'name' => 'kind', 'type' => 'varchar(16)', 'default' => ''
+            ),
+        'challenger' => array(
+            'name' => 'challenger', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'opponent' => array(
+            'name' => 'opponent', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'state' => array(
+            'name' => 'state', 'type' => 'varchar(16)', 'default' => ''
+            ),
+        'grant_id' => array(
+            'name' => 'grant_id', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'expires_at' => array(
+            'name' => 'expires_at', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'changed_us' => array(
+            'name' => 'changed_us', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'stakes' => array(
+            'name' => 'stakes', 'type' => 'varchar(16)', 'default' => 'friendly'
+            ),
+        'data' => array(
+            'name' => 'data', 'type' => 'text', 'null' => '1'
+            ),
+        'winner' => array(
+            'name' => 'winner', 'type' => 'int(11) unsigned', 'null' => '1'
+            ),
+        'loser' => array(
+            'name' => 'loser', 'type' => 'int(11) unsigned', 'null' => '1'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'id'
+            ),
+        'key-kind_winner' => array(
+            'name' => 'kind_winner', 'type' => 'key', 'columns' => 'kind,winner'
+            ),
+        'key-kind_loser' => array(
+            'name' => 'kind_loser', 'type' => 'key', 'columns' => 'kind,loser'
+            ),
+        'key-challenger' => array(
+            'name' => 'challenger', 'type' => 'key', 'columns' => 'challenger'
+            ),
+        'key-opponent' => array(
+            'name' => 'opponent', 'type' => 'key', 'columns' => 'opponent'
+            ),
+        'key-created' => array(
+            'name' => 'created', 'type' => 'key', 'columns' => 'created'
+            ),
+        ),
+    'encounter_rounds' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'encounter_id' => array(
+            'name' => 'encounter_id', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'round' => array(
+            'name' => 'round', 'type' => 'smallint(5) unsigned', 'default' => '0'
+            ),
+        'challenger_choice' => array(
+            'name' => 'challenger_choice', 'type' => 'varchar(16)', 'null' => '1'
+            ),
+        'opponent_choice' => array(
+            'name' => 'opponent_choice', 'type' => 'varchar(16)', 'null' => '1'
+            ),
+        'deadline' => array(
+            'name' => 'deadline', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'resolved_at' => array(
+            'name' => 'resolved_at', 'type' => 'datetime', 'null' => '1'
+            ),
+        'result' => array(
+            'name' => 'result', 'type' => 'text', 'null' => '1'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'encounter_id,round'
+            ),
+        ),
+    'encounter_slots' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'encounter_id' => array(
+            'name' => 'encounter_id', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'acctid'
+            ),
+        'key-encounter_id' => array(
+            'name' => 'encounter_id', 'type' => 'key', 'columns' => 'encounter_id'
+            ),
+        ),
+    'granted_navs' => array(
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'id' => array(
+            'name' => 'id', 'type' => 'bigint(20) unsigned', 'extra' => 'auto_increment'
+            ),
+        'acctid' => array(
+            'name' => 'acctid', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'granted_by' => array(
+            'name' => 'granted_by', 'type' => 'int(11) unsigned', 'default' => '0'
+            ),
+        'action' => array(
+            'name' => 'action', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'target' => array(
+            'name' => 'target', 'type' => 'text'
+            ),
+        'target_key' => array(
+            'name' => 'target_key', 'type' => 'varchar(64)', 'default' => ''
+            ),
+        'text' => array(
+            'name' => 'text', 'type' => 'varchar(255)', 'default' => ''
+            ),
+        'link' => array(
+            'name' => 'link', 'type' => 'varchar(255)', 'default' => ''
+            ),
+        'method' => array(
+            'name' => 'method', 'type' => 'varchar(8)', 'default' => ''
+            ),
+        'created' => array(
+            'name' => 'created', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'expires_at' => array(
+            'name' => 'expires_at', 'type' => 'datetime', 'default' => '1970-01-01 00:00:00'
+            ),
+        'used_at' => array(
+            'name' => 'used_at', 'type' => 'datetime', 'null' => '1'
+            ),
+        'used_by_action_id' => array(
+            'name' => 'used_by_action_id', 'type' => 'char(32)', 'default' => ''
+            ),
+        'changed_us' => array(
+            'name' => 'changed_us', 'type' => 'bigint(20) unsigned', 'default' => '0'
+            ),
+        'key-PRIMARY' => array(
+            'name' => 'PRIMARY',
+            'type' => 'primary key',
+            'unique' => '1',
+            'columns' => 'id'
+            ),
+        'key-open_for' => array(
+            'name' => 'open_for', 'type' => 'key', 'columns' => 'acctid,used_at,expires_at'
+            ),
+        'key-target_key' => array(
+            'name' => 'target_key', 'type' => 'key', 'columns' => 'target_key'
+            ),
+        ),
     'twofactorauth_passkeys' => array(
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
@@ -1308,6 +1651,12 @@ function get_all_tables()
             'name' => 'filemoddate',
             'type' => 'datetime',
             'default' => '1970-01-01 00:00:00'
+            ),
+        'filehash' => array(
+            'name' => 'filehash', 'type' => 'char(40)', 'null' => '1'
+            ),
+        'partial' => array(
+            'name' => 'partial', 'type' => 'text', 'null' => '1'
             ),
         'type' => array(
             'name' => 'type', 'type' => 'tinyint(4)', 'default' => '0'

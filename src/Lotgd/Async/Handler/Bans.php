@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace Lotgd\Async\Handler;
 
 use Doctrine\DBAL\ParameterType;
-use Jaxon\Response\Response;
+use Lotgd\Async\Response;
 use Lotgd\MySQL\Database;
 use Lotgd\Output;
 use Lotgd\Translator;
-
-use function Jaxon\jaxon;
 
 /**
  * Handle asynchronous lookups for accounts affected by a ban rule.
@@ -69,7 +67,7 @@ class Bans
             $names[] = $output->appoencode($none);
         }
 
-        $response = jaxon()->newResponse();
+        $response = new Response();
         $response->assign($targetId, 'innerHTML', implode('<br>', $names));
 
         return $response;

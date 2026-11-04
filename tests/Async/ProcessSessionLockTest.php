@@ -9,7 +9,7 @@ namespace Lotgd\Tests\Async {
 
     /**
      * Guards the read-only allowlist that decides whether the async entry point may
-     * release the PHP session lock before dispatching a Jaxon callable.
+     * release the PHP session lock before dispatching an async callable.
      *
      * @runTestsInSeparateProcesses
      * @preserveGlobalState disabled
@@ -21,6 +21,7 @@ namespace Lotgd\Tests\Async {
         protected function setUp(): void
         {
             $_GET = [];
+            $_SERVER['HTTP_X_LOTGD_ASYNC'] = '1';
             $_POST = [];
             unset($_SERVER['CONTENT_TYPE'], $_SERVER['HTTP_CONTENT_TYPE']);
 
@@ -72,6 +73,10 @@ namespace Lotgd\Tests\Async {
                 // viewCommentary() persists the section/scriptname/last-id triple that the
                 // next page load and the next poll both read back.
                 'commentary text' => ['Lotgd.Async.Handler.Commentary', 'commentaryText'],
+                // A post sets the double-post flag and the laston of the account
+                // it writes for; a removal writes the moderation record.
+                'commentary post' => ['Lotgd.Async.Handler.Commentary', 'post'],
+                'commentary remove' => ['Lotgd.Async.Handler.Commentary', 'remove'],
                 'passkey begin registration' => ['Lotgd.Async.Handler.TwoFactorAuthPasskey', 'beginRegistration'],
                 'passkey finish registration' => ['Lotgd.Async.Handler.TwoFactorAuthPasskey', 'finishRegistration'],
                 'passkey begin authentication' => ['Lotgd.Async.Handler.TwoFactorAuthPasskey', 'beginAuthentication'],
@@ -89,7 +94,7 @@ namespace Lotgd\Tests\Async {
         }
 
         /**
-         * Handlers dropped into the Jaxon callable directory by modules are unknown to
+         * Handlers registered by modules are unknown to
          * core and must keep the previous behaviour.
          *
          * @return array<string, array{0:string, 1:string}>
@@ -139,21 +144,20 @@ namespace Lotgd\Tests\Async {
         }
 
         /**
-         * Wiring check: the entry point must drop the lock before Jaxon dispatch,
+         * Wiring check: the entry point must drop the lock before dispatch,
          * not merely be able to.
          */
         public function testEntrypointReleasesTheLockBeforeDispatchingAPollingCallable(): void
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $_POST['jxncls'] = 'Lotgd.Async.Handler.Commentary';
-            $_POST['jxnmthd'] = 'pollUpdates';
+            $_POST['call'] = json_encode(['class' => 'Commentary', 'method' => 'pollUpdates', 'args' => []], JSON_THROW_ON_ERROR);
 
             session_start();
             $_SESSION['session']['user']['loggedin'] = true;
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public ?int $statusDuringDispatch = null;
 
                 public function canProcessRequest(): bool
@@ -161,9 +165,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->statusDuringDispatch = session_status();
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -171,24 +176,26 @@ namespace Lotgd\Tests\Async {
             lotgd_async_process_entrypoint();
             ob_end_clean();
 
-            $this->assertSame(PHP_SESSION_NONE, $jaxon->statusDuringDispatch);
+            $this->assertSame(PHP_SESSION_NONE, $asyncDispatcher->statusDuringDispatch);
             // The rate-limit timestamp is still written before the lock is released.
             $this->assertArrayHasKey('lastrequest', $_SESSION);
+            $this->assertIsArray($_SESSION['lastrequest']);
+            $this->assertArrayHasKey('Lotgd.Async.Handler.Commentary::pollUpdates', $_SESSION['lastrequest']);
+            $this->assertIsFloat($_SESSION['lastrequest']['Lotgd.Async.Handler.Commentary::pollUpdates']);
         }
 
         /**
-         * End-to-end shape check with the payload a real Jaxon 5 client sends. Without
-         * `jxncall` parsing the context stayed empty and the lock was never released in
+         * End-to-end shape check with the payload the real client sends. Without
+         * `call` parsing the context stayed empty and the lock was never released in
          * production, so this is the test that proves the optimisation actually applies.
          */
-        public function testEntrypointReleasesTheLockForARealisticJxncallPayload(): void
+        public function testEntrypointReleasesTheLockForARealisticCallPayload(): void
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $_POST['jxncall'] = json_encode([
-                'type' => 'class',
-                'name' => 'Lotgd.Async.Handler.Commentary',
+            $_POST['call'] = json_encode([
+                'class' => 'Commentary',
                 'method' => 'pollUpdates',
                 'args' => ['village', 0],
             ], JSON_THROW_ON_ERROR);
@@ -196,7 +203,7 @@ namespace Lotgd\Tests\Async {
             session_start();
             $_SESSION['session']['user']['loggedin'] = true;
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public ?int $statusDuringDispatch = null;
 
                 public function canProcessRequest(): bool
@@ -204,9 +211,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->statusDuringDispatch = session_status();
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -214,21 +222,20 @@ namespace Lotgd\Tests\Async {
             lotgd_async_process_entrypoint();
             ob_end_clean();
 
-            $this->assertSame(PHP_SESSION_NONE, $jaxon->statusDuringDispatch);
+            $this->assertSame(PHP_SESSION_NONE, $asyncDispatcher->statusDuringDispatch);
         }
 
         public function testEntrypointKeepsTheLockForSessionWritingCallables(): void
         {
-            global $jaxon, $ajax_rate_limit_seconds;
+            global $asyncDispatcher, $ajax_rate_limit_seconds;
 
             $ajax_rate_limit_seconds = 1.0;
-            $_POST['jxncls'] = 'Lotgd.Async.Handler.TwoFactorAuthPasskey';
-            $_POST['jxnmthd'] = 'beginRegistration';
+            $_POST['call'] = json_encode(['class' => 'TwoFactorAuthPasskey', 'method' => 'beginRegistration', 'args' => []], JSON_THROW_ON_ERROR);
 
             session_start();
             $_SESSION['session']['user']['loggedin'] = true;
 
-            $jaxon = new class {
+            $asyncDispatcher = new class {
                 public ?int $statusDuringDispatch = null;
 
                 public function canProcessRequest(): bool
@@ -236,9 +243,10 @@ namespace Lotgd\Tests\Async {
                     return true;
                 }
 
-                public function processRequest(): void
+                public function processRequest(): \Lotgd\Async\Response
                 {
                     $this->statusDuringDispatch = session_status();
+                    return new \Lotgd\Async\Response();
                 }
             };
 
@@ -246,7 +254,7 @@ namespace Lotgd\Tests\Async {
             lotgd_async_process_entrypoint();
             ob_end_clean();
 
-            $this->assertSame(PHP_SESSION_ACTIVE, $jaxon->statusDuringDispatch);
+            $this->assertSame(PHP_SESSION_ACTIVE, $asyncDispatcher->statusDuringDispatch);
 
             session_write_close();
         }

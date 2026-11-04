@@ -121,7 +121,7 @@ if ($op == "deactivate") {
             SecurityLog::event('Refused a mount refund: the stored mount identifier was invalid', ['page' => 'mounts.php', 'op' => $op]);
         } else {
             $connection->executeStatement(
-                "UPDATE " . Database::prefix("accounts") . " SET gems = gems + :gems, goldinbank = goldinbank + :gold, hashorse = :none WHERE hashorse = :mountId",
+                "UPDATE " . Database::prefix("accounts") . " SET gems = gems + :gems, goldinbank = goldinbank + :gold, hashorse = :none, version = version + 1 WHERE hashorse = :mountId",
                 ['gems' => $refundGems, 'gold' => $refundGold, 'none' => 0, 'mountId' => $ownedMountId],
                 ['gems' => ParameterType::INTEGER, 'gold' => ParameterType::INTEGER, 'none' => ParameterType::INTEGER, 'mountId' => ParameterType::INTEGER]
             );

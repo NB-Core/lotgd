@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Lotgd\MySQL\Database;
 use Lotgd\Translator;
 use Lotgd\SuAccess;
+use Lotgd\Page\Overlay;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\Commentary;
 use Lotgd\Page\Header;
@@ -400,7 +401,7 @@ if ($op == "") {
 
     $output->output("`@From: ");
     if ($row['login'] > "") {
-        $output->rawOutput("<a href=\"mail.php?op=write&to=" . rawurlencode($row['login']) . "&body=" . rawurlencode("\n\n----- $yourpeti -----\n$reppet") . "&subject=RE:+$peti\" target=\"_blank\" onClick=\"" . popup("mail.php?op=write&to=" . rawurlencode($row['login']) . "&body=" . rawurlencode("\n\n----- $yourpeti -----\n$reppet") . "&subject=RE:+$peti") . ";return false;\"><img src='images/newscroll.GIF' width='16' height='16' alt='$write' border='0'></a>");
+        $output->rawOutput("<a href=\"mail.php?op=write&to=" . rawurlencode($row['login']) . "&body=" . rawurlencode("\n\n----- $yourpeti -----\n$reppet") . "&subject=RE:+$peti\" target=\"_blank\"" . Overlay::attribute() . " onClick=\"" . popup("mail.php?op=write&to=" . rawurlencode($row['login']) . "&body=" . rawurlencode("\n\n----- $yourpeti -----\n$reppet") . "&subject=RE:+$peti") . ";return false;\"><img src='images/newscroll.GIF' width='16' height='16' alt='$write' border='0'></a>");
     }
     $output->outputNotl("`^`b%s`b`n", $row['name']);
     $output->output("`@Date: `^`b%s`b (%s)`n", $row['date'], reltime(strtotime($row['date'])));

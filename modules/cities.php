@@ -24,6 +24,8 @@ function cities_getmoduleinfo(): array
         "download" => "core_module",
         "allowanonymous" => true,
         "override_forced_nav" => true,
+        // Travelling and its fights change in place (PartialMode); the FAQ is a popup.
+        "partial" => array("GET" => array("", "travel", "fight", "run")),
         "settings" => array(
             "Cities Settings,title",
             "allowance" => "Daily Travel Allowance,int|3",

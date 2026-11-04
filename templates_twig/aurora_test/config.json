@@ -2,5 +2,7 @@
   "name": "Aurora Test",
   "author": "LotGD Community",
   "license": "MIT",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "regions": true,
+  "overlay": true
 }

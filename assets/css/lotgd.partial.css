@@ -1,0 +1,174 @@
+/*
+ * The dot beside the mail link (PageParts::liveIndicator()): filled when
+ * this player's pages change in place, a hollow ring when they load in full.
+ * While a page is being swapped in (body.lotgd-partial-loading, set by
+ * lotgd.partial.js) it turns into a small spinning ring -- only after a
+ * moment, so a fast swap, such as a fight round, does not flicker.
+ * Skins may restyle .lotgd-live, .lotgd-live--on and .lotgd-live--off.
+ */
+.lotgd-live {
+    display: inline-block;
+    box-sizing: border-box;
+    width: 0.55em;
+    height: 0.55em;
+    margin-left: 0.4em;
+    border: 0.12em solid #888;
+    border-radius: 50%;
+    vertical-align: middle;
+    opacity: 0.75;
+}
+
+.lotgd-live--on {
+    border-color: #3c3;
+    background-color: #3c3;
+}
+
+body.lotgd-partial-loading .lotgd-live--on {
+    background-color: transparent;
+    border-top-color: transparent;
+    transition: background-color 0s linear 120ms, border-top-color 0s linear 120ms;
+    animation: lotgd-live-spin 0.7s linear 120ms infinite;
+}
+
+@keyframes lotgd-live-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.lotgd-partial-loading .lotgd-live--on {
+        animation: none;
+        opacity: 0.4;
+    }
+}
+
+/*
+ * The notices in the upper right (assets/js/lotgd.notices.js): the session's
+ * last minutes, new mail, a new Message of the Day, stacked, in the colours
+ * of the in-page dialog (--lotgd-overlay-*). Skins may restyle
+ * .lotgd-notices, .lotgd-notice and its parts, .lotgd-notice--mail,
+ * .lotgd-notice--motd, .lotgd-timeout and .lotgd-timeout--expired.
+ */
+.lotgd-notices {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(24rem, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.lotgd-notice {
+    position: relative;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    border: 1px solid var(--lotgd-overlay-border, rgba(255, 255, 255, 0.18));
+    border-left: 4px solid #4a9fd8;
+    border-radius: 6px;
+    background: var(--lotgd-overlay-bg, #1b1b1b);
+    color: var(--lotgd-overlay-fg, #e0e0e0);
+    color-scheme: var(--lotgd-overlay-scheme, dark);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    font-size: 1rem;
+    line-height: 1.4;
+    pointer-events: auto;
+    animation: lotgd-timeout-in 0.2s ease-out;
+}
+
+.lotgd-notice[hidden] {
+    display: none;
+}
+
+.lotgd-notice__title,
+.lotgd-timeout__title {
+    margin: 0 0 6px;
+    padding-right: 1.5em;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #4a9fd8;
+}
+
+.lotgd-notice__text,
+.lotgd-timeout__text {
+    margin: 0 0 12px;
+}
+
+.lotgd-notice__dismiss {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: 1.4rem;
+    line-height: 1;
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+.lotgd-notice__dismiss::before {
+    content: "\00d7";
+}
+
+.lotgd-notice__dismiss:hover,
+.lotgd-notice__dismiss:focus-visible {
+    opacity: 1;
+}
+
+.lotgd-timeout {
+    border-left-color: #e0a800;
+}
+
+.lotgd-timeout .lotgd-timeout__title {
+    color: #e0a800;
+}
+
+.lotgd-timeout__clock {
+    font-variant-numeric: tabular-nums;
+}
+
+.lotgd-timeout__button {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.lotgd-timeout__button:hover,
+.lotgd-timeout__button:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.lotgd-timeout__button[aria-disabled="true"] {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.lotgd-timeout--expired {
+    border-left-color: #e04040;
+}
+
+.lotgd-timeout--expired .lotgd-timeout__title {
+    color: #e04040;
+}
+
+@keyframes lotgd-timeout-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lotgd-notice {
+        animation: none;
+    }
+}

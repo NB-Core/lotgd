@@ -565,6 +565,14 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             self::$instance = $instance;
         }
 
+        /** How often releaseLegacyLink() was called (async/stream.php). */
+        public static int $legacyLinkReleases = 0;
+
+        public static function releaseLegacyLink(): void
+        {
+            self::$legacyLinkReleases++;
+        }
+
         /**
          * Restore every shared field to its declared initial value.
          *
@@ -600,6 +608,7 @@ if (!class_exists(__NAMESPACE__ . '\\Database', false)) {
             self::$alterFail               = false;
             self::$queries                 = [];
             self::$instance                = null;
+            self::$legacyLinkReleases      = 0;
             self::resetDoctrineConnection();
         }
     }

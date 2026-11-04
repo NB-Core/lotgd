@@ -10,6 +10,7 @@ use Lotgd\Nav as Navigation;
 use Lotgd\Output;
 use Lotgd\Translator;
 use Lotgd\Sanitize;
+use Lotgd\Security\Escape;
 use Lotgd\Http;
 use Lotgd\DataCache;
 use Lotgd\DateTime;
@@ -33,6 +34,265 @@ class Commentary
      * Flag indicating an empty post was submitted.
      */
     private static bool $emptypost = false;
+
+    /** How many sections a player's session remembers as shown. */
+    private const SHOWN_SECTIONS = 8;
+
+    /**
+     * The section this request showed, '' when it showed none.
+     */
+    private static string $shownSection = '';
+
+    /**
+     * The section this request rendered, '' when it rendered none: the async
+     * client asks for updates of this one only.
+     */
+    public static function shownSection(): string
+    {
+        return self::$shownSection;
+    }
+
+    /**
+     * For tests.
+     */
+    public static function resetState(): void
+    {
+        self::$shownSection = '';
+    }
+
+    /**
+     * Whether the player may read $section outside a page (the async
+     * handlers, the realtime channel): a page must have shown it to them in
+     * this session -- the page is what decides who reads a section -- and the
+     * account read for this request must still pass the checks the pages
+     * make for the sections that belong to someone.
+     *
+     * @param array<string,mixed> $user The session user, as read for this request.
+     */
+    public static function mayRead(string $section, array $user): bool
+    {
+        global $session;
+
+        if ($section === '' || empty($user['loggedin'])) {
+            return false;
+        }
+        if (!in_array($section, (array) ($session['commentary_sections'] ?? []), true)) {
+            return false;
+        }
+
+        $superuser = (int) ($user['superuser'] ?? 0);
+        if (preg_match('/^clan-(\d+)/', $section, $match) === 1) {
+            // clan.php shows the clan hall to members only.
+            return (int) ($user['clanid'] ?? 0) === (int) $match[1]
+                && (int) ($user['clanrank'] ?? CLAN_APPLICANT) > CLAN_APPLICANT;
+        }
+        if (str_starts_with($section, 'superuser')) {
+            // superuser.php: anyone with a grotto bit, but not a translator alone.
+            return ($superuser & (0xFFFFFFFF & ~SU_DOESNT_GIVE_GROTTO)) !== 0 && $superuser !== SU_IS_TRANSLATOR;
+        }
+        if (str_starts_with($section, 'pet-')) {
+            return ($superuser & SU_EDIT_PETITIONS) !== 0;
+        }
+
+        return true;
+    }
+
+    /**
+     * A page showed $section: remember it for mayRead().
+     */
+    private static function noteShown(string $section): void
+    {
+        global $session;
+
+        self::$shownSection = $section;
+        $shown = array_values(array_filter(
+            (array) ($session['commentary_sections'] ?? []),
+            static fn ($known): bool => $known !== $section
+        ));
+        array_unshift($shown, $section);
+        $session['commentary_sections'] = array_slice($shown, 0, self::SHOWN_SECTIONS);
+    }
+
+    /**
+     * How this page offered to talk in $section -- talkline, schema and limit
+     * -- for a comment posted to it over the async endpoint, which takes them
+     * from here rather than from the request. Kept for the same sections as
+     * noteShown().
+     *
+     * @param string|bool $schema
+     */
+    private static function rememberTalk(string $section, string $talkline, $schema, int $limit): void
+    {
+        global $session;
+
+        $talk = array_intersect_key(
+            (array) ($session['commentary_talk'] ?? []),
+            array_flip((array) ($session['commentary_sections'] ?? []))
+        );
+        $talk[$section] = ['talkline' => $talkline, 'schema' => (string) $schema, 'limit' => $limit];
+        $session['commentary_talk'] = $talk;
+    }
+
+    /**
+     * The player's pages run the async client (assets/js/lotgd.async.js):
+     * realtime, or the game's and the player's AJAX setting. Their talk form
+     * posts over it, and their lines carry their comment id.
+     *
+     * @param array<string,mixed> $user The session user, with prefs unserialized.
+     */
+    public static function asyncClient(array $user): bool
+    {
+        if (Realtime::enabledFor($user)) {
+            return true;
+        }
+        $prefs = $user['prefs'] ?? [];
+
+        return (int) Settings::getInstance()->getSetting('ajax', 1) === 1 && is_array($prefs) && !empty($prefs['ajax']);
+    }
+
+    /**
+     * How many of the last $limit posts of today in $section are the
+     * player's; a clan's chat has no limit and counts none.
+     */
+    public static function postsToday(string $section, int $limit, int $acctid): int
+    {
+        if (mb_substr($section, 0, 5) === 'clan-') {
+            return 0;
+        }
+        $sql = 'SELECT author FROM ' . Database::prefix('commentary')
+            . ' WHERE section = :section AND postdate > :postdate ORDER BY commentid DESC LIMIT ' . max(1, $limit);
+        $rows = Database::getDoctrineConnection()->fetchAllAssociative(
+            $sql,
+            ['section' => $section, 'postdate' => date('Y-m-d 00:00:00')],
+            ['section' => ParameterType::STRING, 'postdate' => ParameterType::STRING]
+        );
+
+        return count(array_filter($rows, static fn (array $row): bool => (int) $row['author'] === $acctid));
+    }
+
+    /**
+     * Why the player may not post in $section now, or null: muted by a
+     * module (hook `insertcomment`), or out of posts for today. The rules of
+     * talkLine() and talkForm(), which used to be asked only when the form
+     * was drawn; a post is asked them again.
+     */
+    public static function postRefusal(string $section, int $limit): ?string
+    {
+        global $session;
+
+        $superuser = (int) ($session['user']['superuser'] ?? 0);
+        $args = HookHandler::hook('insertcomment', ['section' => $section]);
+        if (!empty($args['mute']) && !($superuser & SU_EDIT_COMMENTS)) {
+            return (string) ($args['mutemsg'] ?? '');
+        }
+        $exempt = ($superuser & ~SU_DOESNT_GIVE_GROTTO)
+            || ($superuser & SU_IS_GAMEMASTER) === SU_IS_GAMEMASTER
+            || !Settings::getInstance()->getSetting('postinglimit', 1);
+        if (!$exempt && round($limit / 2, 0) - self::postsToday($section, $limit, (int) ($session['user']['acctid'] ?? 0)) <= 0) {
+            return Translator::translateInline("`)You are out of posts for the time being.  Once some of your existing posts have moved out of the comment area, you'll be allowed to post again.`0", 'commentary');
+        }
+
+        return null;
+    }
+
+    /**
+     * A comment posted over the async endpoint, to a section a page showed
+     * this player (mayRead()) with the talkline and schema that page used.
+     * Every check of a posted form is made here too: mute, the daily limit,
+     * an empty line, the length; then injectCommentary() as the page would.
+     *
+     * @return array{status:string,message:string,postsLeft:int|null}
+     */
+    public static function postAsync(string $section, string $comment): array
+    {
+        global $session;
+
+        $talk = $session['commentary_talk'][$section] ?? null;
+        if (!is_array($talk) || mb_substr($section, 0, 4) === 'pet-' || !self::mayRead($section, $session['user'] ?? [])) {
+            return ['status' => 'refused', 'message' => '', 'postsLeft' => null];
+        }
+        $limit = (int) ($talk['limit'] ?? 10);
+        $refusal = self::postRefusal($section, $limit);
+        if ($refusal !== null) {
+            return ['status' => 'refused', 'message' => $refusal, 'postsLeft' => 0];
+        }
+
+        $comment = trim($comment);
+        $bare = Sanitize::colorSanitize($comment);
+        if ($bare === '' || $bare === ':' || $bare === '::' || $bare === '/me') {
+            return ['status' => 'empty', 'message' => Translator::translateInline('`$`bWell, they say silence is a virtue.`b`0', 'commentary'), 'postsLeft' => null];
+        }
+        $talkline = (string) $talk['talkline'];
+        $schema = $talk['schema'] === '' ? false : (string) $talk['schema'];
+        $said = (string) Translator::translateInline($talkline, $schema);
+        $room = (int) Settings::getInstance()->getSetting('maxchars', 200) - ($said !== 'says' ? strlen($said) + 11 : 0);
+        $comment = mb_substr($comment, 0, max(1, $room));
+
+        self::injectCommentary($section, $talkline, $comment, $schema);
+
+        $left = null;
+        $notice = '';
+        if (Settings::getInstance()->getSetting('postinglimit', 1) && mb_substr($section, 0, 5) !== 'clan-') {
+            $left = max(0, (int) (round($limit / 2, 0) - self::postsToday($section, $limit, (int) $session['user']['acctid'])));
+            if ($left < 3) {
+                // As the form says it (talkForm()).
+                $notice = sprintf((string) Translator::translateInline('`)(You have %s posts left today)`0', 'commentary'), $left);
+            }
+        }
+
+        return self::isDoublePost()
+            ? ['status' => 'double', 'message' => trim(Translator::translateInline('`$`bDouble post?`b`0', 'commentary') . ' ' . $notice), 'postsLeft' => $left]
+            : ['status' => 'posted', 'message' => $notice, 'postsLeft' => $left];
+    }
+
+    /**
+     * The [Del] control for a line fetched over the async endpoint, for the
+     * players the page draws it for (viewCommentary()): comment moderators,
+     * and game masters on their own lines; '' for anyone else. It returns to
+     * the page the line is shown on.
+     *
+     * @param array<string,mixed> $row A commentary row with its author.
+     */
+    public static function asyncRemoveButton(array $row, string $section): string
+    {
+        global $session;
+
+        $superuser = (int) ($session['user']['superuser'] ?? 0);
+        $own = (int) ($row['author'] ?? 0) === (int) ($session['user']['acctid'] ?? 0);
+        if (!($superuser & SU_EDIT_COMMENTS) && !(($superuser & SU_IS_GAMEMASTER) && $own)) {
+            return '';
+        }
+        $uri = (string) ($session['last_comment_request_uri'] ?? '');
+        $script = (string) ($session['last_comment_scriptname'] ?? '');
+        if ($script === '') {
+            return '';
+        }
+        $pos = strpos($uri, '?');
+        $return = $script . '.php' . ($pos === false ? '' : mb_substr($uri, $pos));
+
+        return self::removeButton($return, (int) $row['commentid'], $section, true);
+    }
+
+    /**
+     * [Del] over the async endpoint: the line's own section must be one this
+     * player reads, then the rules and records of the page's [Del]
+     * (removeIfAllowed()).
+     */
+    public static function removeAsync(int $commentId): bool
+    {
+        global $session;
+
+        $section = Database::getDoctrineConnection()->fetchOne(
+            'SELECT section FROM ' . Database::prefix('commentary') . ' WHERE commentid = :commentid',
+            ['commentid' => $commentId],
+            ['commentid' => ParameterType::INTEGER]
+        );
+        if (!is_string($section) || !self::mayRead($section, $session['user'] ?? [])) {
+            return false;
+        }
+
+        return self::removeIfAllowed($section, $commentId);
+    }
 
     /**
      * Determine whether the last action was a double post.
@@ -188,19 +448,44 @@ class Commentary
      * addCommentary() deletes nothing on a link. The URL is still granted as a
      * navigation: the post goes through ForcedNavigation like any request.
      */
-    public static function removeButton(string $return, int $commentId, string $section): string
+    public static function removeButton(string $return, int $commentId, string $section, bool $async = false): string
     {
         $url = $return . (strpos($return, '?') === false ? '?' : '&')
             . "removecomment={$commentId}&section=$section&returnpath=/" . URLEncode($return);
         Navigation::add('', $url);
 
-        return '`2[' . Forms::postButton($url, Translator::translateInline('Del')) . '`2]`0&nbsp;';
+        $button = Forms::postButton($url, Translator::translateInline('Del'));
+        if ($async) {
+            $button = preg_replace('/^<form /', "<form data-lotgd-comment-remove='{$commentId}' ", $button, 1);
+        }
+
+        return '`2[' . $button . '`2]`0&nbsp;';
     }
 
     /**
      * Remove a commentary post and log the action.
      */
     private static function handleRemoval(string $section, string $returnPath, int $removeId): void
+    {
+        if (!self::removeIfAllowed($section, $removeId)) {
+            return;
+        }
+
+        $returnPath = Sanitize::cmdSanitize($returnPath);
+        $returnPath = basename($returnPath);
+        if (strpos($returnPath, '?') === false && strpos($returnPath, '&') !== false) {
+            $x = strpos($returnPath, '&');
+            $returnPath = mb_substr($returnPath, 0, $x - 1) . '?' . mb_substr($returnPath, $x + 1);
+        }
+        Redirect::redirect($returnPath);
+    }
+
+    /**
+     * Remove one comment if this account may: comment moderators, and game
+     * masters for their own lines. Records the line in moderatedcomments and
+     * tells the section's readers it is gone; false when refused.
+     */
+    private static function removeIfAllowed(string $section, int $removeId): bool
     {
         global $session;
         $connection = Database::getDoctrineConnection();
@@ -243,7 +528,7 @@ SQL;
                 $acctId
             );
 
-            return;
+            return false;
         }
 
         $moderated = Database::prefix('moderatedcomments');
@@ -279,13 +564,12 @@ SQL;
         DataCache::getInstance()->invalidatedatacache('comments-or11');
         $session['user']['specialinc'] == '';
 
-        $returnPath = Sanitize::cmdSanitize($returnPath);
-        $returnPath = basename($returnPath);
-        if (strpos($returnPath, '?') === false && strpos($returnPath, '&') !== false) {
-            $x = strpos($returnPath, '&');
-            $returnPath = mb_substr($returnPath, 0, $x - 1) . '?' . mb_substr($returnPath, $x + 1);
+        if ($row !== false) {
+            // Its readers drop the line where they show it (lotgd.async.js).
+            Realtime::announce(Realtime::sectionChannel((string) $row['section']), 'comment-removed', ['region' => 'commentary', 'version' => $removeId]);
         }
-        Redirect::redirect($returnPath);
+
+        return true;
     }
 
 
@@ -305,13 +589,25 @@ SQL;
      */
     public static function injectRawComment(string $section, int $author, string $comment): void
     {
-        Database::getDoctrineConnection()->executeStatement(
+        $conn = Database::getDoctrineConnection();
+        $conn->executeStatement(
             'INSERT INTO ' . Database::prefix('commentary') . ' (postdate,section,author,comment) VALUES (:postdate, :section, :author, :comment)',
             ['postdate' => date('Y-m-d H:i:s'), 'section' => $section, 'author' => $author, 'comment' => $comment],
             ['postdate' => ParameterType::STRING, 'section' => ParameterType::STRING, 'author' => ParameterType::INTEGER, 'comment' => ParameterType::STRING]
         );
+        // Read before anything else runs a statement: Realtime::enabled()
+        // asks the database the first time in a process.
+        $commentId = (int) $conn->lastInsertId();
         DataCache::getInstance()->invalidatedatacache("comments-{$section}");
         DataCache::getInstance()->invalidatedatacache('comments-or11');
+
+        // Players reading the section fetch the new line (docs/ReactiveCore.md,
+        // live commentary); the version is the comment id, which only grows.
+        Realtime::announce(
+            Realtime::sectionChannel($section),
+            'comment',
+            ['region' => 'commentary', 'version' => $commentId]
+        );
     }
 
     /**
@@ -686,6 +982,7 @@ SQL;
         if (isset($args['block']) && ($args['block'] == 'yes')) {
             return null;
         }
+        self::noteShown($section);
 
         if ($schema === false) {
             $schema = Translator::getNamespace();
@@ -754,16 +1051,21 @@ SQL;
         $return = $scriptnameForReturn . ($pos === false ? '' : mb_substr($real_request_uri, $pos));
 
         $editrights = ($session['user']['superuser'] & SU_EDIT_COMMENTS ? 1 : 0);
+        // The async client adds, posts and removes lines in place: each one
+        // carries its comment id, and its [Del] says which line it removes.
+        $async = self::asyncClient($session['user'] ?? []);
+        $lineIds = [];
         for (; $i >= 0; $i--) {
             $out = '';
             if ($editrights || in_array($i, $gm_array)) {
-                $out .= self::removeButton($return, (int) $commentids[$i], $section);
+                $out .= self::removeButton($return, (int) $commentids[$i], $section, $async);
             }
             $out .= $op[$i];
             if (!array_key_exists($sect, $outputcomments) || !is_array($outputcomments[$sect])) {
                 $outputcomments[$sect] = [];
             }
             array_push($outputcomments[$sect], $out);
+            $lineIds[$sect][] = (int) $commentids[$i];
         }
 
         ksort($outputcomments);
@@ -789,6 +1091,9 @@ SQL;
                 $args = ['commentline' => $val];
                 $args = HookHandler::hook('viewcommentary', $args);
                 $val = $args['commentline'];
+                if ($async) {
+                    $val = "<div data-cid='" . $lineIds[$sec][$key] . "'>" . $val . '`0</div>';
+                }
                 $output->outputNotl($val, true);
             }
         }
@@ -802,6 +1107,7 @@ SQL;
         $output->rawOutput("<div id='$section-talkline'>");
 
         if ($session['user']['loggedin'] && !$viewonly) {
+            self::rememberTalk($section, $talkline, $schema, $limit);
             self::talkLine($section, $talkline, $limit, $schema, $counttoday, $message);
         }
         $output->rawOutput("</div><div id='$section-nav'>");
@@ -913,7 +1219,16 @@ SQL;
         global $session;
 
         $realRequestUri = self::determineReturnUrl();
-        $row['comment'] = Sanitize::sanitizeMb(Sanitize::commentSanitize($row['comment']));
+        // Emoji go when the game says so (commentary_emoji); the stored line keeps them.
+        $row['comment'] = Sanitize::stripEmoji((string) $row['comment'], Sanitize::commentaryEmojiMode());
+        if (Sanitize::formattingAllowed('commentary')) {
+            // Bold and italic stay, closed again at the end of the line.
+            $row['comment'] = Sanitize::sanitizeMb(Sanitize::balanceFormatting(
+                Sanitize::commentSanitize($row['comment'], Sanitize::USER_FORMATTING)
+            ));
+        } else {
+            $row['comment'] = Sanitize::sanitizeMb(Sanitize::commentSanitize($row['comment']));
+        }
         $ft = self::parseCommandPrefix($row['comment']);
         $link = 'bio.php?char=' . $row['acctid'] . '&ret=' . URLEncode($realRequestUri);
 
@@ -998,16 +1313,19 @@ SQL;
      */
     private static function formatName(array $row): string
     {
-        $name = $row['name'] ?? '';
+        $name = (string) ($row['name'] ?? '');
         $superuser = (int) ($row['superuser'] ?? 0);
 
+        // The line is encoded with appoencode(..., true), which keeps markup:
+        // the name and the clan's short name are text (colour codes stay).
         if ($name !== '') {
-            $name = HolidayText::holidayize($name, 'comment');
+            $name = Escape::gameText(HolidayText::holidayize($name, 'comment'));
         }
 
         if (!empty($row['clanrank'])) {
             $clanrankcolors = ['`!', '`#', '`^', '`&', '`$'];
-            $name = ($row['clanshort'] > '' ? "{$clanrankcolors[ceil($row['clanrank'] / 10)]}&lt;`2{$row['clanshort']}{$clanrankcolors[ceil($row['clanrank'] / 10)]}&gt; `&" : '') . $name;
+            $clanshort = Escape::gameText((string) ($row['clanshort'] ?? ''));
+            $name = ($clanshort > '' ? "{$clanrankcolors[ceil($row['clanrank'] / 10)]}&lt;`2{$clanshort}{$clanrankcolors[ceil($row['clanrank'] / 10)]}&gt; `&" : '') . $name;
         }
 
         $settings = Settings::getInstance();
@@ -1170,7 +1488,19 @@ SQL;
                 $req .= "#$section";
         }
         Navigation::add("", $req);
-        $output->outputNotl("<form action=\"$req\" method='POST' autocomplete='false'>", true);
+        // The async client posts the line without leaving the page; the
+        // form posts as ever where it does not run (lotgd.async.js). Only a
+        // form viewCommentary() drew for this section, whose talkline it
+        // remembered (rememberTalk()): moderate.php's own forms post. And not
+        // a petition's: viewpetition.php records who answered when a line is
+        // posted to it, which only the page does.
+        $asyncForm = $section !== 'X'
+            && mb_substr($section, 0, 4) !== 'pet-'
+            && isset($session['commentary_talk'][$section])
+            && self::asyncClient($session['user'] ?? [])
+            ? " data-lotgd-commentary-form='" . htmlspecialchars($section, ENT_QUOTES, 'UTF-8') . "'"
+            : '';
+        $output->outputNotl("<form action=\"$req\" method='POST' autocomplete='false'$asyncForm>", true);
         $output->rawOutput(Forms::csrfField());
         // Every commentary form posts back to the page it is rendered on, and
         // some of those pages guard the write it drives -- viewpetition.php
@@ -1186,7 +1516,10 @@ SQL;
             [
                 "size" => $settings->getSetting('chatlinelength', 40),
                 "maxlength" => $settings->getSetting('maxchars', 200) - $tll,
-            ]
+            ],
+            true,
+            Sanitize::formattingAllowed('commentary'),
+            Sanitize::commentaryEmojiMode()
         );
         $output->rawOutput("<input type='hidden' name='talkline' value='$talkline'>");
         $output->rawOutput("<input type='hidden' name='schema' value='$schema'>");
@@ -1207,6 +1540,9 @@ SQL;
         }
         if (round($limit / 2, 0) - $counttoday < 3 && $settings->getSetting('postinglimit', 1)) {
                 $output->output("`)(You have %s posts left today)`n`0", (round($limit / 2, 0) - $counttoday));
+        }
+        if ($asyncForm !== '') {
+            $output->rawOutput("<div data-lotgd-commentary-status aria-live='polite'></div>");
         }
         $output->rawOutput("<div id='previewtext'></div></form>");
         $translator->setSchema();

@@ -1,0 +1,56 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/*
+ * Bring every active module up to date now, instead of on the first page
+ * that uses it.
+ *
+ *   php bin/modules-refresh
+ *   docker compose exec -T --user www-data web php bin/modules-refresh
+ *
+ * A module whose file changed is upgraded on its first use (Modules::inject():
+ * its _install() runs again and the hook caches are emptied). Run after
+ * updating modules, so players do not wait for it page by page. A module
+ * whose file only got a new modification time -- a new image, a checkout --
+ * is recognised by its content and costs nothing either way.
+ */
+
+use Lotgd\DataCache;
+use Lotgd\Modules;
+use Lotgd\MySQL\Database;
+
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit(1);
+}
+
+define('ALLOW_ANONYMOUS', true);
+$root = dirname(__DIR__);
+chdir($root);
+require $root . '/autoload.php';
+require $root . '/common.php';
+
+$started = microtime(true);
+// Read every module's row fresh, not as cached before an update.
+DataCache::getInstance()->massinvalidate('inject-');
+$names = Database::getDoctrineConnection()->fetchFirstColumn(
+    'SELECT modulename FROM ' . Database::prefix('modules') . ' WHERE active = 1 ORDER BY modulename'
+);
+$failed = [];
+foreach ($names as $name) {
+    try {
+        if (!Modules::inject((string) $name)) {
+            $failed[] = (string) $name;
+        }
+    } catch (\Throwable $error) {
+        $failed[] = $name . ' (' . $error->getMessage() . ')';
+    }
+}
+
+printf("%d active modules checked in %.1f s.\n", count($names), microtime(true) - $started);
+if ($failed !== []) {
+    fwrite(STDERR, "Not loaded: " . implode(', ', $failed) . "\n");
+    exit(1);
+}

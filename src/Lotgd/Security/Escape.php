@@ -40,6 +40,28 @@ final class Escape
     }
 
     /**
+     * Game text with colour codes, for a place that is encoded with
+     * `appoencode(..., true)`, which keeps markup: the stat block, a comment
+     * line. The text is escaped as {@see self::html()} does; each code -- a
+     * backtick and the character after it, `` `& `` for white among them --
+     * stays, so the colours still show.
+     */
+    public static function gameText(string|int|float|null $value): string
+    {
+        $parts = preg_split('/(`.)/su', (string) $value, -1, PREG_SPLIT_DELIM_CAPTURE);
+        if ($parts === false) {
+            return self::html($value);
+        }
+        $out = '';
+        foreach ($parts as $index => $part) {
+            // Odd entries are the codes the split kept.
+            $out .= $index % 2 === 1 ? $part : self::html($part);
+        }
+
+        return $out;
+    }
+
+    /**
      * A value as a complete JavaScript literal, including its own quotes.
      *
      * Use it bare: `confirm(" . Escape::js($text) . ")`, never wrapped in

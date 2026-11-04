@@ -22,6 +22,7 @@ class Newday
     public static function dbCleanup(): void
     {
         global $session;
+        Action::guardImplicitCommit('Newday::dbCleanup()');
         Settings::getInstance()->saveSetting("lastdboptimize", date("Y-m-d H:i:s"));
         // Fetch all table names at once to avoid leaving an unbuffered
         // result active which can cause "Cannot execute queries while other
@@ -194,6 +195,81 @@ class Newday
             );
             GameLog::log(
                 'Deleted ' . $affectedRows . ' records from ' . Database::prefix('faillog') . " older than $timestamp.",
+                GameLog::CATEGORY_MAINTENANCE,
+                false,
+                $session['user']['acctid'] ?? 0
+            );
+        }
+
+        // Guarded actions only need their log while a form could still be sent
+        // again: a day is ample. The table exists once the migration has run.
+        if (Database::tableExists(Database::prefix('action_log'))) {
+            $timestamp = self::calculateExpirationTimestamp('1 days');
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('action_log') . ' WHERE created < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            GameLog::log(
+                'Deleted ' . $affectedRows . ' records from ' . Database::prefix('action_log') . " older than $timestamp.",
+                GameLog::CATEGORY_MAINTENANCE,
+                false,
+                $session['user']['acctid'] ?? 0
+            );
+        }
+
+        // Realtime events only need to outlive the longest a player stays on
+        // one page; a poll older than that resynchronises. Both tables exist
+        // once the migration has run.
+        if (Database::tableExists(Database::prefix('event_deliveries'))) {
+            $timestamp = self::calculateExpirationTimestamp((int) $settings->getSetting('realtime_retention_hours', 24) . ' hours');
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('event_deliveries') . ' WHERE created < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            $affectedRows += $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('events') . ' WHERE relayed_at IS NOT NULL AND relayed_at < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            GameLog::log(
+                'Deleted ' . $affectedRows . ' realtime events older than ' . $timestamp . '.',
+                GameLog::CATEGORY_MAINTENANCE,
+                false,
+                $session['user']['acctid'] ?? 0
+            );
+        }
+
+        // A used, voided or expired grant is only kept to answer for itself
+        // for a while. The table exists once the migration has run.
+        if (Database::tableExists(Database::prefix('granted_navs'))) {
+            $timestamp = self::calculateExpirationTimestamp('7 days');
+            $affectedRows = $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('granted_navs') . ' WHERE (used_at IS NOT NULL AND used_at < :timestamp) OR expires_at < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            GameLog::log(
+                'Deleted ' . $affectedRows . ' records from ' . Database::prefix('granted_navs') . " older than $timestamp.",
+                GameLog::CATEGORY_MAINTENANCE,
+                false,
+                $session['user']['acctid'] ?? 0
+            );
+        }
+
+        // Encounters answer for themselves for a day; an open one past its
+        // time frees its players. Presence rows of players gone for a day go.
+        if (Database::tableExists(Database::prefix('encounters'))) {
+            $timestamp = self::calculateExpirationTimestamp('1 day');
+            $affectedRows = \Lotgd\Encounter::cleanup($timestamp);
+            $affectedRows += $connection->executeStatement(
+                'DELETE FROM ' . Database::prefix('presence') . ' WHERE seen < :timestamp',
+                ['timestamp' => $timestamp],
+                ['timestamp' => ParameterType::STRING]
+            );
+            GameLog::log(
+                'Deleted ' . $affectedRows . " encounter and presence records older than $timestamp.",
                 GameLog::CATEGORY_MAINTENANCE,
                 false,
                 $session['user']['acctid'] ?? 0

@@ -84,7 +84,9 @@ if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
     $result1 = Database::queryCached($sql, "clandata-" . (int) $detail, 3600);
     $row1 = Database::fetchAssoc($result1);
 if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
-    $output->rawOutput("<div id='hidearea'>");
+    // Folded away until opened; no script, so it works on a swapped page too.
+    $e = Translator::translateInline("Edit Clan Info");
+    $output->rawOutput("<details id='hidearea'><summary>$e</summary>", true);
     $output->rawOutput("<form action='clan.php?detail=$detail' method='POST'>" . Forms::csrfField());
     Nav::add("", "clan.php?detail=$detail");
     $output->output("Superuser / Moderator renaming:`n");
@@ -103,10 +105,7 @@ if ($session['user']['superuser'] & SU_AUDIT_MODERATION) {
         $output->rawOutput("<input type='submit' name='block' value=\"$snb\" class='button'>");
     }
     $output->rawOutput("</form>");
-    $output->rawOutput("</div>");
-    $output->rawOutput("<script language='JavaScript'>var hidearea = document.getElementById('hidearea');hidearea.style.visibility='hidden';hidearea.style.display='none';</script>", true);
-    $e = Translator::translateInline("Edit Clan Info");
-    $output->rawOutput("<a href='#' onClick='hidearea.style.visibility=\"visible\"; hidearea.style.display=\"inline\"; return false;'>$e</a>", true);
+    $output->rawOutput("</details>");
     $output->outputNotl("`n");
 }
 

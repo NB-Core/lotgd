@@ -11,7 +11,7 @@ namespace {
 }
 
 namespace Lotgd {
-    if (! class_exists(__NAMESPACE__ . '\\Translator', false)) {
+    if (! class_exists(__NAMESPACE__ . '\\Translator')) {
         class Translator
         {
             public static function getInstance(): self

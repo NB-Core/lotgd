@@ -196,6 +196,9 @@ Nav::add("F?Forest", "forest.php");
 if ((int) $settings->getSetting('pvp', 1)) {
     Nav::add("S?Slay Other Players", "pvp.php");
 }
+if (\Lotgd\Encounter::enabled()) {
+    Nav::add("D?The Duelling Ground", "encounter.php");
+}
 if ((bool) $settings->getSetting('enablecompanions', true)) {
     $translator->setSchema($schemas['mercenarycamp']);
     Nav::add($texts['mercenarycamp'], "mercenarycamp.php");

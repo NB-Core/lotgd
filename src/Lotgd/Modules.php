@@ -30,6 +30,8 @@ use Lotgd\Random;
 class Modules
 {
     private static array $injectedModules = [1 => [], 0 => []];
+    /** @var array<string,array<string,list<string>>> */
+    private static array $partialDeclarations = [];
     private static array $modulehookQueries = [];
     private static array $modulePreload = [];
     private static array $blockedModules = [];
@@ -42,6 +44,7 @@ class Modules
     public static function resetInjectedModules(): void
     {
         self::$injectedModules = [1 => [], 0 => []];
+        self::$partialDeclarations = [];
     }
 
     /**
@@ -112,7 +115,9 @@ class Modules
         if (file_exists($modulefilename)) {
             Translator::getInstance()->setSchema("module-{$moduleName}");
             if ($withDb) {
-                $sql    = 'SELECT active,filemoddate,infokeys,version FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
+                // SELECT *: filehash only exists once its migration ran.
+                $sql    = 'SELECT * FROM ' . Database::prefix('modules')
+                    . ' WHERE modulename = ' . Database::getDoctrineConnection()->quote($moduleName);
                 $result = Database::queryCached($sql, "inject-$moduleName", 3600);
                 if (! $force) {
                     if (Database::numRows($result) == 0) {
@@ -170,12 +175,21 @@ class Modules
                     $row = Database::fetchAssoc($result);
                 }
                 $filemoddate = date('Y-m-d H:i:s', filemtime($modulefilename));
+                if (self::onlyTouched($moduleName, $modulefilename, $row, $filemoddate)) {
+                    $row['filemoddate'] = $filemoddate;
+                } elseif ($row['filemoddate'] == $filemoddate && array_key_exists('filehash', $row) && empty($row['filehash'])) {
+                    // Up to date, but from before the column: remember its
+                    // content once, so the next deploy finds it unchanged.
+                    self::rememberContent($moduleName, $modulefilename, $row);
+                    DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
+                }
                 if ($row['filemoddate'] != $filemoddate || $row['infokeys'] == '' || $row['infokeys'][0] != '|' || $row['version'] == '') {
                     $connection = Database::getDoctrineConnection();
                     $needsUpgrade = false;
+                    Action::guardImplicitCommit('Refreshing module ' . $moduleName);
                     $connection->executeStatement('LOCK TABLES ' . Database::prefix('modules') . ' WRITE');
                     try {
-                        $sql    = 'SELECT filemoddate, infokeys, version FROM ' . Database::prefix('modules') . ' WHERE modulename = :modulename';
+                        $sql    = 'SELECT * FROM ' . Database::prefix('modules') . ' WHERE modulename = :modulename';
                         $result = $connection->executeQuery(
                             $sql,
                             ['modulename' => $moduleName],
@@ -228,6 +242,7 @@ class Modules
                                 ]
                             );
                             $output->debug($sql);
+                            self::rememberContent($moduleName, $modulefilename, $row);
                             $needsUpgrade = true;
                         }
                     } finally {
@@ -241,6 +256,9 @@ class Modules
                     }
                 }
             }
+            if (! $force && $withDb && isset($row) && is_array($row) && is_array($info)) {
+                self::rememberPartial($moduleName, $row, $info);
+            }
             Translator::getInstance()->setSchema();
             self::$injectedModules[$force][$moduleName] = true;
             return true;
@@ -250,6 +268,164 @@ class Modules
         $output->outputNotl(Backtrace::show(), true);
         self::$injectedModules[$force][$moduleName] = false;
         return false;
+    }
+
+    /**
+     * A module file whose modification time changed while its content did
+     * not -- every file after a new image, a fresh checkout or a copy. Its
+     * stored time is brought up to date and it is not upgraded: no lock, no
+     * hooks wiped, no _install(), no caches emptied. Without this, the first
+     * pages after a deploy re-ran every module's _install() one by one,
+     * each emptying the hook caches the pages before had just built.
+     *
+     * Only when the module row is otherwise complete and carries the hash
+     * of the content it was last upgraded with (column filehash), and no
+     * reinstall was asked for.
+     *
+     * @param array<string,mixed> $row The module's row.
+     */
+    private static function onlyTouched(string $moduleName, string $modulefilename, array $row, string $filemoddate): bool
+    {
+        // A reinstall (ModuleManager::reinstall()) asks for the upgrade by
+        // setting the time to DATETIME_DATEMIN.
+        $currentOrForced = $row['filemoddate'] == $filemoddate || (string) $row['filemoddate'] === DATETIME_DATEMIN;
+        $complete = !empty($row['filehash']) && $row['infokeys'] != '' && $row['infokeys'][0] == '|' && $row['version'] != '';
+        if ($currentOrForced || !$complete) {
+            return false;
+        }
+        $hash = sha1_file($modulefilename);
+        if ($hash === false || !hash_equals((string) $row['filehash'], $hash)) {
+            return false;
+        }
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('modules') . ' SET filemoddate = :filemoddate WHERE modulename = :modulename',
+            ['filemoddate' => $filemoddate, 'modulename' => $moduleName],
+            ['filemoddate' => ParameterType::STRING, 'modulename' => ParameterType::STRING]
+        );
+        DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
+
+        return true;
+    }
+
+    /**
+     * The pages of a module that may change in place (runmodule.php):
+     * method => allowed `op` values, '' meaning "no op", as the module
+     * declares them under its info key `partial`, e.g.
+     * `'partial' => ['GET' => ['', 'list'], 'POST' => ['buy']]`.
+     *
+     * Read from the module's stored row, never from the module itself: the
+     * partial decision (PartialMode::preCheck()) is made before any module
+     * code runs. Empty for a module that is unknown, inactive or declares
+     * nothing, so its pages load in full as before.
+     *
+     * @return array<string,list<string>>
+     */
+    public static function partialDeclaration(string $moduleName): array
+    {
+        if ($moduleName === '' || Sanitize::modulenameSanitize($moduleName) !== $moduleName) {
+            return [];
+        }
+        if (!array_key_exists($moduleName, self::$partialDeclarations)) {
+            // The row inject() reads right after, under the same cache key.
+            $rows = Database::queryCached(
+                'SELECT * FROM ' . Database::prefix('modules')
+                    . ' WHERE modulename = ' . Database::getDoctrineConnection()->quote($moduleName),
+                "inject-$moduleName",
+                3600
+            );
+            $row = $rows[0] ?? null;
+            $declaration = [];
+            if (is_array($row) && !empty($row['active']) && isset($row['partial']) && is_string($row['partial'])) {
+                $decoded = json_decode($row['partial'], true);
+                $declaration = self::normalizePartial($decoded) ?? [];
+            }
+            self::$partialDeclarations[$moduleName] = $declaration;
+        }
+
+        return self::$partialDeclarations[$moduleName];
+    }
+
+    /**
+     * A `partial` declaration as it is stored: GET and POST only, op values
+     * as strings, each once. Null when nothing is left.
+     *
+     * @return array<string,list<string>>|null
+     */
+    public static function normalizePartial(mixed $declaration): ?array
+    {
+        if (!is_array($declaration)) {
+            return null;
+        }
+        $normalized = [];
+        foreach ($declaration as $method => $ops) {
+            $method = strtoupper((string) $method);
+            if (!in_array($method, ['GET', 'POST'], true) || !is_array($ops)) {
+                continue;
+            }
+            $list = [];
+            foreach ($ops as $op) {
+                if (is_string($op) && !in_array($op, $list, true)) {
+                    $list[] = $op;
+                }
+            }
+            if ($list !== []) {
+                $normalized[$method] = array_merge($normalized[$method] ?? [], $list);
+            }
+        }
+        ksort($normalized);
+
+        return $normalized === [] ? null : $normalized;
+    }
+
+    /**
+     * Keep the stored `partial` declaration in step with the module's info,
+     * which inject() has read anyway. Writes only when they differ, so a
+     * module's declaration arrives with its first use after a deploy,
+     * without a reinstall; bin/modules-refresh brings it at start-up.
+     *
+     * @param array<string,mixed> $row  The module's row.
+     * @param array<string,mixed> $info The module's info.
+     */
+    private static function rememberPartial(string $moduleName, array $row, array $info): void
+    {
+        if (!array_key_exists('partial', $row)) {
+            // Before its migration.
+            return;
+        }
+        $wanted = self::normalizePartial($info['partial'] ?? null);
+        $encoded = $wanted === null ? null : (string) json_encode($wanted);
+        if ($encoded === (isset($row['partial']) ? (string) $row['partial'] : null)) {
+            return;
+        }
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('modules') . ' SET partial = :partial WHERE modulename = :modulename',
+            ['partial' => $encoded, 'modulename' => $moduleName],
+            ['partial' => $encoded === null ? ParameterType::NULL : ParameterType::STRING, 'modulename' => ParameterType::STRING]
+        );
+        DataCache::getInstance()->invalidatedatacache("inject-$moduleName");
+        unset(self::$partialDeclarations[$moduleName]);
+    }
+
+    /**
+     * Store the hash of the content a module was just upgraded with, where
+     * the column exists (its migration may not have run yet).
+     *
+     * @param array<string,mixed> $row The module's row.
+     */
+    private static function rememberContent(string $moduleName, string $modulefilename, array $row): void
+    {
+        if (!array_key_exists('filehash', $row)) {
+            return;
+        }
+        $hash = sha1_file($modulefilename);
+        if ($hash === false) {
+            return;
+        }
+        Database::getDoctrineConnection()->executeStatement(
+            'UPDATE ' . Database::prefix('modules') . ' SET filehash = :filehash WHERE modulename = :modulename',
+            ['filehash' => $hash, 'modulename' => $moduleName],
+            ['filehash' => ParameterType::STRING, 'modulename' => ParameterType::STRING]
+        );
     }
 
     /**
@@ -269,7 +445,9 @@ class Modules
         $modulefilename = "modules/$moduleName.php";
         $status         = MODULE_NO_INFO;
         if (file_exists($modulefilename)) {
-            $sql    = 'SELECT active,filemoddate,infokeys,version FROM ' . Database::prefix('modules') . " WHERE modulename='$moduleName'";
+            // The same row inject() reads, under the same cache key.
+            $sql    = 'SELECT * FROM ' . Database::prefix('modules')
+                . ' WHERE modulename = ' . Database::getDoctrineConnection()->quote($moduleName);
             $result = Database::queryCached($sql, "inject-$moduleName", 3600);
             if (Database::numRows($result) > 0) {
                 $status = MODULE_INSTALLED;
@@ -1561,6 +1739,7 @@ class Modules
      */
     public static function semAcquire(): void
     {
+        Action::guardImplicitCommit('module_sem_acquire()');
         Database::getDoctrineConnection()->executeStatement('LOCK TABLES ' . Database::prefix('module_settings') . ' WRITE');
     }
 

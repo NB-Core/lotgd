@@ -232,7 +232,7 @@ if (Database::numRows($result) > 0 && $session['user']['level'] < (int) $setting
             if ($session['user']['referer'] > 0 && ($session['user']['level'] >= (int) $settings->getSetting('referminlevel', 4) || $session['user']['dragonkills'] > 0) && $session['user']['refererawarded'] < 1) {
                 Database::getDoctrineConnection()->executeStatement(
                     'UPDATE ' . Database::prefix('accounts')
-                    . ' SET donation = donation + :award WHERE acctid = :acctid',
+                    . ' SET donation = donation + :award, version = version + 1 WHERE acctid = :acctid',
                     [
                         'award' => (int) $settings->getSetting('refereraward', 25),
                         'acctid' => (int) $session['user']['referer'],

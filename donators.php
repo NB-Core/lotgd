@@ -178,7 +178,7 @@ if ($op == "add2") {
     // bound rather than interpolated. $id is already an integer here.
     Database::getDoctrineConnection()->executeStatement(
         "UPDATE " . Database::prefix("accounts")
-            . " SET donation = donation + :points WHERE acctid = :acctid",
+            . " SET donation = donation + :points, version = version + 1 WHERE acctid = :acctid",
         ['points' => (int) $points, 'acctid' => $id],
         ['points' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
     );

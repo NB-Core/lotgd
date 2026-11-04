@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 // addnews ready
 // translator ready
@@ -24,7 +25,9 @@ use Lotgd\Nltoappon;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\PageParts;
+use Lotgd\Page\Overlay;
 use Lotgd\Censor;
+use Lotgd\Encounter;
 
 require_once __DIR__ . "/common.php";
 $output = Output::getInstance();
@@ -43,16 +46,21 @@ if ($ret == "") {
     $return = Sanitize::cmdSanitize($ret);
 }
 
-$char = Http::get('char');
-//Legacy support
-if (is_numeric($char)) {
-    $where = "acctid = $char";
+$char = (string) Http::get('char');
+// An account id (legacy links) or a login, always as a bound parameter: the
+// value comes straight from the URL.
+if (ctype_digit($char)) {
+    $where = 'acctid = :char';
+    $charType = ParameterType::INTEGER;
+    $charValue = (int) $char;
 } else {
-    $where = "login = '$char'";
+    $where = 'login = :char';
+    $charType = ParameterType::STRING;
+    $charValue = $char;
 }
 $sql = "SELECT login, name, level, sex, title, specialty, hashorse, acctid, resurrections, bio, dragonkills, race, clanname, clanshort, clanrank, " . Database::prefix("accounts") . ".clanid, laston, loggedin FROM " . Database::prefix("accounts") . " LEFT JOIN " . Database::prefix("clans") . " ON " . Database::prefix("accounts") . ".clanid = " . Database::prefix("clans") . ".clanid WHERE $where";
-$result = Database::query($sql);
-if ($target = Database::fetchAssoc($result)) {
+$target = Database::getDoctrineConnection()->fetchAssociative($sql, ['char' => $charValue], ['char' => $charType]);
+if (is_array($target)) {
     // Let a module get the values if necessary
     $target = HookHandler::hook("biotarget", $target);
     $target['login'] = rawurlencode($target['login']);
@@ -77,7 +85,7 @@ if ($target = Database::fetchAssoc($result)) {
     $output->output("`^Biography for %s`^.", $target['name']);
     $write = Translator::translateInline("Write Mail");
     if ($session['user']['loggedin']) {
-        $output->rawOutput("<a href=\"mail.php?op=write&to={$target['login']}\" target=\"_blank\" onClick=\"" . PageParts::popup("mail.php?op=write&to={$target['login']}") . ";return false;\"><img src='images/newscroll.GIF' width='16' height='16' alt='$write' border='0'></a>");
+        $output->rawOutput("<a href=\"mail.php?op=write&to={$target['login']}\" target=\"_blank\"" . Overlay::attribute() . " onClick=\"" . PageParts::popup("mail.php?op=write&to={$target['login']}") . ";return false;\"><img src='images/newscroll.GIF' width='16' height='16' alt='$write' border='0'></a>");
     }
     $output->outputNotl("`n`n");
 
@@ -136,6 +144,14 @@ if ($target = Database::fetchAssoc($result)) {
     }
     $output->output("`^Creature: `@%s`0`n", $mount['mountname']);
 
+    // Live duels, once fought on this server: won (of those serious), lost.
+    if (Encounter::enabled()) {
+        $record = Encounter::record((int) $target['acctid']);
+        if ($record['won'] + $record['lost'] > 0) {
+            $output->output("`^Duels: `@%s won`0 (`@%s serious`0), `@%s lost`0`n", $record['won'], $record['serious'], $record['lost']);
+        }
+    }
+
     HookHandler::hook("biostat", $target);
 
     if ($target['dragonkills'] > 0) {
@@ -143,7 +159,8 @@ if ($target = Database::fetchAssoc($result)) {
     }
 
     if ($target['bio'] > "") {
-        $output->output("`^Bio: `@`n%s`n", Nltoappon::convert(Censor::soap($target['bio'])));
+        // Whatever the bio opens it closes again (Sanitize::userFormatting()).
+        $output->output("`^Bio: `@`n%s`n", Sanitize::userFormatting(Nltoappon::convert(Censor::soap($target['bio'])), Sanitize::formattingAllowed('bio')));
     }
 
     HookHandler::hook("bioinfo", $target);

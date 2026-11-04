@@ -114,18 +114,14 @@ $bans = $conn->fetchAllAssociative(
 $output->rawOutput("<script>
 (function () {
     function lotgdLoadAffectedUsers(ip, id, index) {
-        var handlers = typeof window.getJaxonHandlers === 'function'
-            ? window.getJaxonHandlers()
-            : (window.Lotgd && window.Lotgd.Async && window.Lotgd.Async.Handler)
-                || (window.JaxonLotgd && window.JaxonLotgd.Async && window.JaxonLotgd.Async.Handler)
-                || null;
-
-        if (!handlers || !handlers.Bans || typeof handlers.Bans.affectedUsers !== 'function') {
-            console.error('Lotgd.Async.Handler.Bans.affectedUsers is unavailable');
+        if (!window.lotgd || !window.lotgd.async) {
+            console.error('The async client (lotgd.async.js) is not loaded');
             return false;
         }
 
-        handlers.Bans.affectedUsers(ip, id, 'user' + index);
+        window.lotgd.async.call('Bans', 'affectedUsers', [ip, id, 'user' + index]).catch(function (error) {
+            console.error('Bans.affectedUsers failed', error);
+        });
         return false;
     }
 

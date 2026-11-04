@@ -646,3 +646,11 @@ form > .button {
     flex: 0 1 auto;
     min-width: 0;
 }
+
+/* The in-page dialog for mail and the MOTD (assets/css/lotgd.overlay.css). */
+:root {
+    --lotgd-overlay-bg: #282828;
+    --lotgd-overlay-fg: #eeeeee;
+    --lotgd-overlay-border: #444444;
+    --lotgd-overlay-scheme: dark;
+}

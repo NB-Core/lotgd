@@ -12,5 +12,35 @@
         "version": "2.3.7",
         "css": "assets/vendor/datatables/datatables.min.css",
         "js": "assets/vendor/datatables/datatables.min.js"
+    },
+    "htmx": {
+        "version": "2.0.4",
+        "js": "assets/vendor/htmx/htmx.min.js"
+    },
+    "lotgd-partial": {
+        "version": "1.0.0",
+        "js": "assets/js/lotgd.partial.js",
+        "css": "assets/css/lotgd.partial.css"
+    },
+    "lotgd-async": {
+        "version": "1.0.0",
+        "js": "assets/js/lotgd.async.js"
+    },
+    "lotgd-overlay": {
+        "version": "1.0.0",
+        "css": "assets/css/lotgd.overlay.css",
+        "js": "assets/js/lotgd.overlay.js"
+    },
+    "lotgd-duel": {
+        "version": "1.0.0",
+        "js": "assets/js/lotgd.duel.js"
+    },
+    "lotgd-showform": {
+        "version": "1.0.0",
+        "js": "assets/js/lotgd.showform.js"
+    },
+    "lotgd-notices": {
+        "version": "1.0.0",
+        "js": "assets/js/lotgd.notices.js"
     }
 }

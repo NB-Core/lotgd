@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Ajax {
 
-    use Jaxon\Response\Response;
+    use Lotgd\Async\Response;
     use Lotgd\Async\Handler\Mail;
     use Lotgd\Tests\Stubs\Database;
     use Lotgd\Tests\Stubs\DummySettings;
@@ -21,13 +21,13 @@ namespace Lotgd\Tests\Ajax {
         {
             global $session;
 
-            $session = ['user' => ['acctid' => 1]];
+            $session = ['user' => ['acctid' => 1, 'loggedin' => 1]];
             require_once __DIR__ . '/../bootstrap.php';
             Settings::setInstance(new DummySettings(['LOGINTIMEOUT' => 360]));
             Database::$queryCacheResults = [];
         }
 
-        public function testUnreadMailTriggersNotify(): void
+        public function testUnreadMailIsReportedForTheNotices(): void
         {
             global $mail_table;
 
@@ -39,20 +39,12 @@ namespace Lotgd\Tests\Ajax {
             ];
 
             $response = (new Mail())->mailStatus(true);
-            $commands = $response->getCommands();
 
-            $assign = array_values(array_filter($commands, fn($c) => ($c['name'] ?? '') === 'node.assign' && ($c['args']['id'] ?? '') === 'maillink'));
-            $this->assertNotEmpty($assign);
-            $this->assertStringContainsString('mail.php', $assign[0]['args']['value']);
-
-            $notify = array_values(array_filter($commands, fn($c) => ($c['name'] ?? '') === 'script.exec.call'));
-            $this->assertNotEmpty($notify);
-            $this->assertSame('lotgdMailNotify', $notify[0]['args']['func']);
-            $this->assertSame([7, 1], $notify[0]['args']['args']);
-            $title = array_values(array_filter($commands, fn($c) => ($c['name'] ?? '') === 'script.exec.expr'));
-            $this->assertNotEmpty($title);
-            $exprData = $title[0]['args']['expr']->jsonSerialize();
-            $this->assertSame('title', $exprData['calls'][1]['_name']);
+            // The notices in the upper right take it from here: data, no commands.
+            $this->assertSame([], $response->getCommands());
+            $notices = $response->getData()['notices'] ?? [];
+            $this->assertSame(['unread' => 1, 'lastId' => 7], $notices['mail'] ?? null);
+            $this->assertStringContainsString('mail.php', (string) ($notices['mailLink'] ?? ''));
             $this->assertInstanceOf(Response::class, $response);
         }
 
@@ -70,7 +62,7 @@ namespace Lotgd\Tests\Ajax {
             $response = (new Mail())->mailStatus(true);
             $commands = $response->getCommands();
 
-            $scripts = array_values(array_filter($commands, fn($c) => str_starts_with($c['name'] ?? '', 'script.exec')));
+            $scripts = array_values(array_filter($commands, fn($c) => in_array($c['cmd'] ?? '', ['call', 'title'], true)));
             $this->assertCount(0, $scripts);
         }
 

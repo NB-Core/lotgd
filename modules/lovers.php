@@ -27,6 +27,8 @@ function lovers_getmoduleinfo(): array
         "version" => "1.0",
         "category" => "Inn",
         "download" => "core_module",
+        // Flirting and talking change in place (PartialMode).
+        "partial" => array("GET" => array("flirt", "chat")),
         "prefs" => array(
             "Lover Module User Preferences,title",
             "seenlover" => "Visited Lover Today?,bool|0"

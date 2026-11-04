@@ -1,9 +1,0 @@
-preset: psr1
-
-risky: false
-
-finder:
-  exclude:
-    - "tests"
-  name:
-    - "*.php"

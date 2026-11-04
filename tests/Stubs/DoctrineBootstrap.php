@@ -81,12 +81,41 @@ class DoctrineConnection
     public array $executeStatements = [];
     /** @var array<int,int> */
     public array $executeStatementResults = [];
+    /**
+     * Regex => value executeStatement() returns for a matching statement,
+     * checked before everything else.
+     *
+     * @var array<string,int>
+     */
+    public array $statementResultsByPattern = [];
+    /**
+     * Rows answered for a matching query, ahead of every other fixture: for a
+     * page whose branch depends on what a lookup finds (an action already in
+     * action_log, the version an account row is locked at).
+     *
+     * @var array<string,list<array<string,mixed>>>
+     */
+    public array $queryResultsByPattern = [];
     public array $lastExecuteStatementParams = [];
     public array $lastExecuteStatementTypes = [];
     public array $executeQueryParams = [];
     public array $executeQueryTypes = [];
     /** When true, the next fetchAllAssociative() throws instead of returning rows. */
     public bool $throwOnceOnFetchAll = false;
+
+    /**
+     * @return list<array<string,mixed>>|null
+     */
+    private function scriptedRows(string $sql): ?array
+    {
+        foreach ($this->queryResultsByPattern as $pattern => $rows) {
+            if (preg_match($pattern, $sql) === 1) {
+                return $rows;
+            }
+        }
+
+        return null;
+    }
 
     private function makeResult(array $rows): DoctrineResult
     {
@@ -108,6 +137,11 @@ class DoctrineConnection
         $this->queries[] = $sql;
         $this->executeQueryParams[] = $params;
         $this->executeQueryTypes[] = $types;
+
+        $scripted = $this->scriptedRows($sql);
+        if ($scripted !== null) {
+            return $this->makeResult($scripted);
+        }
 
         $accountsTable = Database::prefix('accounts');
 
@@ -368,6 +402,17 @@ class DoctrineConnection
             throw new \RuntimeException('simulated query failure');
         }
 
+        $scripted = $this->scriptedRows($sql);
+        if ($scripted !== null) {
+            return $scripted;
+        }
+
+        // Every table of the stub database is InnoDB unless a test scripts
+        // otherwise (queryResultsByPattern is consulted first).
+        if (str_contains($sql, 'information_schema.TABLES') && isset($params['names']) && is_array($params['names'])) {
+            return array_map(static fn ($name): array => ['TABLE_NAME' => (string) $name, 'ENGINE' => 'InnoDB'], $params['names']);
+        }
+
         if (!empty(Database::$mockResults)) {
             $rows = array_shift(Database::$mockResults);
 
@@ -391,6 +436,11 @@ class DoctrineConnection
             'params' => $params,
             'types'  => $types,
         ];
+
+        $scripted = $this->scriptedRows($sql);
+        if ($scripted !== null) {
+            return $scripted[0] ?? false;
+        }
 
         $accountsTable = Database::prefix('accounts');
 
@@ -476,6 +526,11 @@ class DoctrineConnection
         ];
         $this->lastExecuteStatementParams = $params;
         $this->lastExecuteStatementTypes = $types;
+        foreach ($this->statementResultsByPattern as $pattern => $result) {
+            if (preg_match($pattern, $sql) === 1) {
+                return (int) $result;
+            }
+        }
         if ($this->executeStatementResults !== []) {
             return (int) array_shift($this->executeStatementResults);
         }
@@ -655,6 +710,25 @@ class DoctrineEntityManager
             $this->entity->setAcctid($id);
         }
         return $this->entity;
+    }
+
+    public function contains(object $entity): bool
+    {
+        return $this->entity === $entity;
+    }
+
+    public function detach(object $entity): void
+    {
+        if ($this->entity === $entity) {
+            $this->entity = null;
+        }
+        $this->connection->queries[] = 'DETACH ENTITY';
+    }
+
+    public function clear(): void
+    {
+        $this->entity = null;
+        $this->connection->queries[] = 'CLEAR ENTITY MANAGER';
     }
 
     public function flush(): void

@@ -6,6 +6,7 @@ use Lotgd\MySQL\Database;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\Translator;
 use Lotgd\Security\Csrf;
+use Lotgd\Security\Escape;
 use Lotgd\SuAccess;
 use Lotgd\Nav\SuperuserNav;
 use Lotgd\DateTime;
@@ -21,6 +22,7 @@ use Lotgd\Page\Header;
 use Lotgd\Page\Footer;
 use Lotgd\Http;
 use Lotgd\Modules\HookHandler;
+use Lotgd\Reactive\Status;
 
 // translator ready
 // addnews ready
@@ -54,10 +56,21 @@ $op = is_string($opRequest) ? $opRequest : '';
 // `testsmtp` is not listed: it is reached only by a nav link, so it has
 // never been a token-carrying POST, and it writes nothing -- it sends one
 // test mail to the address the admin just configured.
-if (Forms::isUnverifiedCoreOp($op, ['save'])) {
+if (Forms::isUnverifiedCoreOp($op, ['save', 'enablereactive'])) {
     http_response_code(400);
     $op = '';
     $_POST = [];
+}
+
+// The tab a form was saved on (Forms::showFormTabbed() posts it as
+// showFormTabIndex[<form>]), so the page comes back on it. It is never a
+// setting: the save loops below skip it.
+$tabIndex = Http::post('showFormTabIndex');
+if (is_array($tabIndex)) {
+    $tabIndex = reset($tabIndex);
+}
+if (is_scalar($tabIndex) && $tabIndex !== false) {
+    Http::postSet('showFormTabIndex', (string) $tabIndex);
 }
 
 $moduleRequest = Http::get('module');
@@ -66,6 +79,57 @@ $typeSettingRequest = Http::get('settings');
 $type_setting = is_string($typeSettingRequest) ? $typeSettingRequest : '';
 // Set by the SMTP test; the link goes under "Navigation" once that exists.
 $backToSettingsList = false;
+
+// The function_exists guard: this page is pulled in with require by its tests.
+if (!function_exists('lotgd_configuration_reactive_status')) {
+    /**
+     * The live features at a glance, above the form: each with its state and
+     * what keeps it off, and a button that turns on what can run here.
+     */
+    function lotgd_configuration_reactive_status(Settings $settings): void
+    {
+        $output = Output::getInstance();
+        $status = new Status($settings);
+        $colours = [Status::ON => '`@', Status::OFF => '`7', Status::BLOCKED => '`$'];
+        $labels = [
+            Status::ON => Translator::translateInline('on'),
+            Status::OFF => Translator::translateInline('off'),
+            Status::BLOCKED => Translator::translateInline('on, but cannot run'),
+        ];
+        $output->output("`b`^Live features`0`b`n");
+        $output->rawOutput("<table class='lotgd-reactive-status' cellpadding='2' cellspacing='0'>");
+        $output->rawOutput("<tr class='trhead'>");
+        foreach (['Feature', 'State', 'What is missing'] as $heading) {
+            $output->rawOutput('<td>' . Escape::html(Translator::translateInline($heading)) . '</td>');
+        }
+        $output->rawOutput('</tr>');
+        $stripe = 0;
+        foreach ($status->rows() as $row) {
+            $missing = [];
+            foreach ($row['missing'] as [$text, $args]) {
+                $missing[] = Translator::getInstance()->sprintfTranslate($text, ...$args);
+            }
+            $output->rawOutput("<tr class='" . ($stripe++ % 2 ? 'trdark' : 'trlight') . "'><td>");
+            $output->outputNotl("%s", Translator::translateInline($row['feature']));
+            $output->rawOutput("</td><td>");
+            $output->outputNotl("%s%s`0", $colours[$row['state']], $labels[$row['state']]);
+            $output->rawOutput("</td><td>");
+            $output->rawOutput(htmlspecialchars(implode('; ', $missing), ENT_QUOTES, 'UTF-8'));
+            $output->rawOutput("</td></tr>");
+        }
+        $output->rawOutput("</table>");
+        if ($status->recommended() !== []) {
+            $url = 'configuration.php?op=enablereactive';
+            Nav::add('', $url);
+            $output->rawOutput(Forms::postButton(
+                $url,
+                Translator::translateInline('Turn on the recommended live features'),
+                Translator::translateInline('Turn on guarded actions, partial rendering, realtime, grants and live duels where this server can run them?')
+            ));
+        }
+        $output->output("`n`7Server-sent events depend on the host and stay a choice of their own (Realtime transport below).`0`n`n");
+    }
+}
 
 //standardsettings
 switch ($type_setting) {
@@ -77,7 +141,7 @@ switch ($type_setting) {
                 $old = $settings_extended->getArray();
                 $current = $settings_extended->getArray();
                 foreach ($post as $key => $val) {
-                    if (!is_string($key) || 'charset' === $key) {
+                    if (!is_string($key) || 'charset' === $key || 'showFormTabIndex' === $key) {
                         continue;
                     }
                     if (is_array($val)) {
@@ -114,6 +178,28 @@ switch ($type_setting) {
         break;
     default:
         switch ($op) {
+            case "enablereactive":
+                // The live features whose tables are ready, in the order they
+                // need each other; logged and announced like a saved form.
+                include_once("lib/gamelog.php");
+                $enabled = (new Status($settings))->recommended();
+                foreach ($enabled as $key) {
+                    $old = (string) $settings->getSetting($key, '0');
+                    $hasSaved = $settings->saveSetting($key, '1');
+                    $output->output("Setting %s to %s (Saved: %s)`n", $key, '1', $hasSaved ? "`2Yes`0" : '`$No`0');
+                    gamelog("`@Changed core setting `^$key`@ from `#{$old}`@ to `&1`0", "settings");
+                    HookHandler::hook(
+                        "changesetting",
+                        array("module" => "core", "setting" => $key, "old" => $old, "new" => '1'),
+                        true
+                    );
+                }
+                if ($enabled === []) {
+                    $output->output("`7Nothing more can be turned on here; see what is missing below.`0`n");
+                }
+                $op = "";
+                break;
+
             case "save":
                 include_once("lib/gamelog.php");
                 $blockDupEmail = Http::post('blockdupemail');
@@ -201,7 +287,7 @@ switch ($type_setting) {
                 $old = $settings->getArray();
                 $current = $settings->getArray();
                 foreach ($post as $key => $val) {
-                    if (!is_string($key) || 'charset' === $key) {
+                    if (!is_string($key) || 'charset' === $key || 'showFormTabIndex' === $key) {
                         continue;
                     }
                     if (is_array($val)) {
@@ -325,7 +411,7 @@ switch ($type_setting) {
                             );
                         } else {
                             foreach ($post as $key => $val) {
-                                if (!is_string($key)) {
+                                if (!is_string($key) || 'showFormTabIndex' === $key) {
                                     continue;
                                 }
                                 $key = stripslashes($key);
@@ -394,7 +480,7 @@ switch ($type_setting) {
                             $output->rawOutput("<form action='configuration.php?op=modulesettings&module=$module&save=1' method='POST'>", true);
                             Nav::add("", "configuration.php?op=modulesettings&module=$module&save=1");
                             Translator::getInstance()->setSchema("module-$module");
-                            Forms::showForm($msettings, $module_settings[ModuleManager::getMostRecentModule()]);
+                            Forms::showFormTabbed($msettings, $module_settings[ModuleManager::getMostRecentModule()]);
                             Translator::getInstance()->setSchema();
                             $output->rawOutput("</form>", true);
                         } else {
@@ -452,7 +538,7 @@ switch ($type_setting) {
 
                 $output->rawOutput("<form action='configuration.php?settings=extended&op=save' method='POST'>");
                 Nav::add("", "configuration.php?settings=extended&op=save");
-                Forms::showForm($setup_extended, $vals);
+                Forms::showFormTabbed($setup_extended, $vals);
                 $output->rawOutput("</form>");
                 break;
         }
@@ -507,15 +593,25 @@ switch ($type_setting) {
                 // the form shows it; the range field would otherwise start at 4.
                 \Lotgd\PasswordHelper::minLength($settings);
                 $settings->getSetting(\Lotgd\Update\UpstreamVersion::SETTING_ENABLED, 1);
+                // Default on: stored before the form shows it, so saving
+                // unrelated settings does not turn it off.
+                $settings->getSetting('partial_render_default', 1);
+                // The same for the text formatting switches that are on by
+                // default (Sanitize::formattingAllowed()); an absent one that
+                // is off by default already shows as off.
+                foreach (['formatting_mail', 'formatting_clan'] as $defaultOn) {
+                    $settings->getSetting($defaultOn, 1);
+                }
 
                 //
 
 
                 $vals = $settings->getArray() + $useful_vals;
 
+                lotgd_configuration_reactive_status($settings);
                 $output->rawOutput("<form action='configuration.php?op=save' method='POST'>");
                 Nav::add("", "configuration.php?op=save");
-                Forms::showForm($setup, $vals);
+                Forms::showFormTabbed($setup, $vals);
                 $output->rawOutput("</form>");
                 break;
         }

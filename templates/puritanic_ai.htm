@@ -56,15 +56,15 @@
                         <td class='noborder pageheader-left' align='center'>
                             <table>
                                 <tr>
-                                    <td class='noborder motd' align='left' valign='bottom' width='50%'>&nbsp;&nbsp;<b>{motd}</b></td>
-                                    <td class='noborder' align='right' width='50%' valign='bottom'><b>{petition}</b></td>
+                                    <td class='noborder motd' align='left' valign='bottom' width='50%'>&nbsp;&nbsp;<b><span data-lotgd-region="header" data-lotgd-slot="motd">{motd}</span></b></td>
+                                    <td class='noborder' align='right' width='50%' valign='bottom'><b><span data-lotgd-region="header" data-lotgd-slot="petition">{petition}</span></b></td>
                                 </tr>
                             </table>
                         </td>
-                        <td align='center' class='noborder pageheader-center'>{title}</td>
+                        <td align='center' class='noborder pageheader-center'><span data-lotgd-title>{title}</span></td>
                         <td class='noborder pageheader-right'>
-                            <img src='templates/puritanic_ai/images/mail.gif' alt='Mail Icon' width='24' height='19'><b>{mail}</b>&nbsp;&nbsp;
-	    		   {petitiondisplay}
+                            <img src='templates/puritanic_ai/images/mail.gif' alt='Mail Icon' width='24' height='19'><b><span data-lotgd-region="header" data-lotgd-slot="mail">{mail}</span></b> <span data-lotgd-region="header" data-lotgd-slot="grants">{grants}</span>&nbsp;&nbsp;
+	    		   <div data-lotgd-region="header" data-lotgd-slot="petitiondisplay">{petitiondisplay}</div>
                         </td>
                     </tr>
                 </table>
@@ -76,15 +76,16 @@
                     <tr>
                         <td valign='top' width='200' class='sidebar-content'>
                             <div style='position: relative; top: -15;' align='center'>{navad}</div>
-                            <div align="center" role='navigation'>{nav}</div>
+                            <div align="center" role='navigation' data-lotgd-region="nav">{nav}</div>
                         </td>
                         <td valign='top' width="100%" class='main-content'>
                             <div style="float: right">{verticalad}</div>
-                            {bodyad}
+                            {bodyad}<div data-lotgd-region="content">
                             <!--!footer-->
+                            </div>
                         </td>
                         <td valign='top' width='132' class='sidebar-content'>
-                            {stats}
+                            <div data-lotgd-region="stats">{stats}</div>
                             <br>
                             {paypal}
                         </td>
@@ -189,3 +190,5 @@
         </td>
     </tr>
 </table>
+<!--!config-->
+{"regions": true, "overlay": true}

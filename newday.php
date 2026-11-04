@@ -367,6 +367,7 @@ if ($dp < $dkills) {
         if (gmdate("Ymd", $gametoday) != gmdate("Ymd", $lastnewdaysemaphore)) {
                 // it appears to be a different game day, acquire semaphore and
                 // check again.
+            \Lotgd\Action::guardImplicitCommit('The game-day rollover');
             $sql = "LOCK TABLES " . Database::prefix("settings") . " WRITE";
             Database::query($sql);
             $settings->clearSettings();

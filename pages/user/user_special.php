@@ -14,7 +14,7 @@ if (Http::post('newday') !== false) {
     $sql = "UPDATE " . Database::prefix("accounts") . " SET lasthit='" . DATETIME_DATEMIN . "' WHERE acctid=" . (int)$userid;
     Database::query($sql);
 } elseif (Http::post('fixnavs') !== false) {
-    $sql = "UPDATE " . Database::prefix("accounts") . " SET allowednavs='', restorepage='', specialinc='' WHERE acctid=" . (int)$userid;
+    $sql = "UPDATE " . Database::prefix("accounts") . " SET allowednavs='', restorepage='', specialinc='', version = version + 1 WHERE acctid=" . (int)$userid;
     Database::query($sql);
     $sql = "DELETE FROM " . Database::prefix("accounts_output") . " WHERE acctid=" . (int)$userid . ";";
     Database::query($sql);

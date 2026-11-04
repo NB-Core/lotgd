@@ -90,6 +90,13 @@ class Mail
                 'sent'    => date('Y-m-d H:i:s'),
             ]
         );
+        // The recipient's open page learns of it; in a guarded action with
+        // the action, otherwise on its own (docs/ReactiveCore.md, Phase 4).
+        Realtime::announce(
+            Realtime::userChannel($to),
+            'mail',
+            ['region' => 'mail', 'version' => (int) $conn->lastInsertId()]
+        );
         DataCache::getInstance()->invalidatedatacache("mail-$to");
         $email = false;
         if (isset($prefs['emailonmail']) && $prefs['emailonmail'] && $from > 0) {
@@ -144,7 +151,10 @@ class Mail
             $to_array = [$emailadd => $toline];
             $adminEmail = $settings->getSetting('gameadminemail', 'postmaster@localhost');
             $from_array = [$adminEmail => $adminEmail];
-            self::send($to_array, $mailbody, $mailsubj, $from_array, false, 'text/plain');
+            // Cannot be taken back: in a guarded action it waits for the commit.
+            Action::afterCommit(static function () use ($to_array, $mailbody, $mailsubj, $from_array): void {
+                self::send($to_array, $mailbody, $mailsubj, $from_array, false, 'text/plain');
+            });
         }
         DataCache::getInstance()->invalidatedatacache("mail-$to");
     }

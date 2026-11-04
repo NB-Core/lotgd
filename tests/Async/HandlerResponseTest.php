@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lotgd\Tests\Async {
 
     use Doctrine\DBAL\ParameterType;
-    use Jaxon\Response\Response;
+    use Lotgd\Async\Response;
     use Lotgd\Async\Handler\Bans;
     use Lotgd\Async\Handler\Commentary;
     use Lotgd\Async\Handler\Mail;
@@ -26,7 +26,11 @@ namespace Lotgd\Tests\Async {
         protected function setUp(): void
         {
             global $session, $output;
-            $session = [];
+            // A player whose page showed these sections (Commentary::mayRead()).
+            $session = [
+                'user' => ['acctid' => 1, 'loggedin' => 1, 'superuser' => 0],
+                'commentary_sections' => ['section', "Trader's \\ Den"],
+            ];
             $_SERVER['SCRIPT_NAME'] = 'test.php';
             $_SERVER['REQUEST_URI'] = '/async/process.php';
             $output = new class {
@@ -82,8 +86,8 @@ namespace Lotgd\Tests\Async {
 
             $commands = $response->getCommands();
             $this->assertNotEmpty($commands);
-            $this->assertSame('node.append', $commands[0]['name']);
-            $this->assertSame($section . '-comment', $commands[0]['args']['id']);
+            $this->assertSame('append', $commands[0]['cmd']);
+            $this->assertSame($section . '-comment', $commands[0]['id']);
 
             $conn = Database::getDoctrineConnection();
             $this->assertSame($section, $conn->lastFetchAllParams['section'] ?? null);
@@ -113,12 +117,12 @@ namespace Lotgd\Tests\Async {
             $commands = $response->getCommands();
             $assign = array_values(array_filter(
                 $commands,
-                fn($command) => ($command['name'] ?? '') === 'node.assign' && ($command['args']['id'] ?? '') === 'user3'
+                fn($command) => ($command['cmd'] ?? '') === 'assign' && ($command['id'] ?? '') === 'user3'
             ));
 
             $this->assertNotEmpty($assign);
-            $this->assertStringContainsString('Alpha', $assign[0]['args']['value']);
-            $this->assertStringContainsString('Beta', $assign[0]['args']['value']);
+            $this->assertStringContainsString('Alpha', $assign[0]['value']);
+            $this->assertStringContainsString('Beta', $assign[0]['value']);
 
             $conn = Database::getDoctrineConnection();
             $this->assertSame(

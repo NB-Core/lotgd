@@ -7,7 +7,7 @@ namespace Lotgd\Tests\Async {
     use PHPUnit\Framework\TestCase;
 
     /**
-     * Jaxon 5 dispatches on the JSON `jxncall` descriptor. The async policy layer must
+     * The dispatcher runs the JSON `call` field. The async policy layer must
      * read the same value, otherwise authorization and the session-lock decision apply
      * to a different callable than the one that actually runs.
      *
@@ -34,19 +34,14 @@ namespace Lotgd\Tests\Async {
         /**
          * @param array<string, mixed> $call
          */
-        private function postJxncall(array $call): void
+        private function postCall(array $call): void
         {
-            $_POST['jxncall'] = json_encode($call, JSON_THROW_ON_ERROR);
+            $_POST['call'] = json_encode($call, JSON_THROW_ON_ERROR);
         }
 
-        public function testContextIsReadFromTheJxncallDescriptor(): void
+        public function testContextIsReadFromTheCallField(): void
         {
-            $this->postJxncall([
-                'type' => 'class',
-                'name' => 'Lotgd.Async.Handler.Commentary',
-                'method' => 'pollUpdates',
-                'args' => [],
-            ]);
+            $this->postCall(['class' => 'Commentary', 'method' => 'pollUpdates', 'args' => []]);
 
             $this->assertSame(
                 ['class' => 'Lotgd.Async.Handler.Commentary', 'method' => 'pollUpdates'],
@@ -54,46 +49,24 @@ namespace Lotgd\Tests\Async {
             );
         }
 
-        public function testJxncallIsAlsoReadFromQueryParameters(): void
+        public function testCallInQueryParametersIsNotAContextButIsNotFallenBackFrom(): void
         {
-            $_GET['jxncall'] = json_encode([
-                'type' => 'class',
-                'name' => 'Lotgd.Async.Handler.Mail',
-                'method' => 'mailStatus',
-            ], JSON_THROW_ON_ERROR);
+            $_GET['call'] = json_encode(['class' => 'Mail', 'method' => 'mailStatus'], JSON_THROW_ON_ERROR);
+            $_POST['jxncls'] = 'Lotgd.Async.Handler.Commentary';
+            $_POST['jxnmthd'] = 'pollUpdates';
 
-            $this->assertSame(
-                ['class' => 'Lotgd.Async.Handler.Mail', 'method' => 'mailStatus'],
-                lotgd_async_request_context()
-            );
-        }
-
-        public function testMultipartPayloadsAreUrlDecodedLikeJaxonDoes(): void
-        {
-            $_SERVER['CONTENT_TYPE'] = 'multipart/form-data; boundary=x';
-            $_POST['jxncall'] = rawurlencode(json_encode([
-                'type' => 'class',
-                'name' => 'Lotgd.Async.Handler.Commentary',
-                'method' => 'pollUpdates',
-            ], JSON_THROW_ON_ERROR));
-
-            $this->assertSame(
-                ['class' => 'Lotgd.Async.Handler.Commentary', 'method' => 'pollUpdates'],
-                lotgd_async_request_context()
-            );
+            // The dispatcher reads POST only; a GET `call` field must not decide anything,
+            // and its presence still blocks the legacy fields.
+            $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
         }
 
         /**
-         * A payload that describes one callable to Jaxon and another to the policy layer
-         * must never be resolved in favour of the legacy fields.
+         * A payload that names one callable in `call` and another in the legacy
+         * fields must never be resolved in favour of the legacy fields.
          */
-        public function testLegacyFieldsCannotOverrideTheJxncallDescriptor(): void
+        public function testLegacyFieldsCannotOverrideTheCallField(): void
         {
-            $this->postJxncall([
-                'type' => 'class',
-                'name' => 'Lotgd.Async.Handler.TwoFactorAuthPasskey',
-                'method' => 'beginRegistration',
-            ]);
+            $this->postCall(['class' => 'TwoFactorAuthPasskey', 'method' => 'beginRegistration']);
             $_POST['jxncls'] = 'Lotgd.Async.Handler.Commentary';
             $_POST['jxnmthd'] = 'pollUpdates';
 
@@ -101,89 +74,72 @@ namespace Lotgd\Tests\Async {
 
             $this->assertSame('Lotgd.Async.Handler.TwoFactorAuthPasskey', $context['class']);
             $this->assertSame('beginRegistration', $context['method']);
-            // ...so the session lock is kept for the handler Jaxon really dispatches.
+            // ...so the session lock is kept for the handler the dispatcher really runs.
             $this->assertFalse(lotgd_async_is_session_readonly_callable($context));
         }
 
         /**
-         * A `func` descriptor is dispatchable by Jaxon's FunctionPlugin, so it must not
-         * be reinterpreted through the legacy fields either.
-         */
-        public function testNonClassDescriptorsYieldAnUnknownCallable(): void
-        {
-            $this->postJxncall([
-                'type' => 'func',
-                'name' => 'Lotgd.Async.Handler.Commentary',
-                'method' => 'pollUpdates',
-            ]);
-            $_POST['jxncls'] = 'Lotgd.Async.Handler.Commentary';
-            $_POST['jxnmthd'] = 'pollUpdates';
-
-            $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
-        }
-
-        /**
-         * Presence of the field is what makes it authoritative: an unusable descriptor
+         * Presence of the field is what makes it authoritative: an unusable call
          * must not hand control back to fields the same request also controls.
          */
-        public function testMalformedJxncallDoesNotFallBackToLegacyFields(): void
+        public function testMalformedCallDoesNotFallBackToLegacyFields(): void
         {
-            $_POST['jxncall'] = '{not valid json';
+            $_POST['call'] = '{not valid json';
             $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
             $_POST['jxnmthd'] = 'mailStatus';
 
             $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
         }
 
-        public function testDescriptorWithNonStringKeysDoesNotFallBackToLegacyFields(): void
+        public function testCallWithNonStringKeysDoesNotFallBackToLegacyFields(): void
         {
-            $this->postJxncall([
-                'type' => 'class',
-                'name' => ['Lotgd.Async.Handler.Commentary'],
-                'method' => 'pollUpdates',
-            ]);
+            $this->postCall(['class' => ['Commentary'], 'method' => 'pollUpdates']);
             $_POST['jxncls'] = 'Lotgd.Async.Handler.Commentary';
             $_POST['jxnmthd'] = 'pollUpdates';
 
             $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
         }
 
-        /**
-         * The legacy scan is only reachable when no descriptor is present at all, which
-         * is a payload shape Jaxon refuses to dispatch.
-         */
-        public function testLegacyFieldsAreUsedOnlyWithoutAnyDescriptor(): void
+        public function testCallNamingAClassPathDoesNotFallBackToLegacyFields(): void
         {
-            $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
-            $_POST['jxnmthd'] = 'mailStatus';
-
-            $this->assertSame(
-                ['class' => 'Lotgd.Async.Handler.Mail', 'method' => 'mailStatus'],
-                lotgd_async_request_context()
-            );
-        }
-
-        public function testEmptyJxncallStringDoesNotFallBackToLegacyFields(): void
-        {
-            $_POST['jxncall'] = '';
+            $this->postCall(['class' => 'Lotgd.Async.Handler.Commentary', 'method' => 'pollUpdates']);
             $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
             $_POST['jxnmthd'] = 'mailStatus';
 
             $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
         }
 
-        public function testControlCharactersAreStrippedFromTheDescriptor(): void
+        /**
+         * The legacy scan is only reachable when no call is present at all, which
+         * is a payload shape the dispatcher refuses to run.
+         */
+        public function testLegacyFieldsAreUsedOnlyWithoutAnyCall(): void
         {
-            $this->postJxncall([
-                'type' => 'class',
-                'name' => "Lotgd.Async.Handler.Mail\n",
-                'method' => "mailStatus\r",
-            ]);
+            $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
+            $_POST['jxnmthd'] = 'mailStatus';
 
             $this->assertSame(
                 ['class' => 'Lotgd.Async.Handler.Mail', 'method' => 'mailStatus'],
                 lotgd_async_request_context()
             );
+        }
+
+        public function testEmptyCallStringDoesNotFallBackToLegacyFields(): void
+        {
+            $_POST['call'] = '';
+            $_POST['jxncls'] = 'Lotgd.Async.Handler.Mail';
+            $_POST['jxnmthd'] = 'mailStatus';
+
+            $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
+        }
+
+        public function testANameWithAControlCharacterIsNoCall(): void
+        {
+            // Not stripped into a valid name: refused, so the policy and the
+            // dispatcher never see two spellings of one call.
+            $this->postCall(['class' => "Mail\n", 'method' => "mailStatus\n"]);
+
+            $this->assertSame(['class' => '', 'method' => ''], lotgd_async_request_context());
         }
 
         public function testEmptyPayloadYieldsAnEmptyContext(): void

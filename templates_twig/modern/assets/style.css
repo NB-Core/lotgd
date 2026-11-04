@@ -56,6 +56,12 @@ a{
     margin-bottom: 4px;
 }
 
+/* Below the MoTD link, which floats at full width (a.hotmotd): beside it the
+   bar would be squeezed to nothing and spill into the content column. */
+nav .mail-nav {
+    clear: both;
+}
+
 .action-bar__link,
 .mail-nav__link {
     display: inline-flex;
@@ -441,4 +447,12 @@ form > .button {
 .mail-nav__link {
     flex: 0 1 auto;
     min-width: 0;
+}
+
+/* The in-page dialog for mail and the MOTD (assets/css/lotgd.overlay.css). */
+:root {
+    --lotgd-overlay-bg: #352d20;
+    --lotgd-overlay-fg: #cccccc;
+    --lotgd-overlay-border: #433828;
+    --lotgd-overlay-scheme: dark;
 }

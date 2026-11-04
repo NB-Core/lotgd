@@ -96,6 +96,19 @@ class Database
     }
 
     /**
+     * Close the legacy mysqli link for the rest of a long request (the
+     * server-sent event stream), leaving Doctrine's connection the only one
+     * it holds. Code that still uses the legacy functions afterwards opens
+     * the link again (DbMysqli::release()).
+     */
+    public static function releaseLegacyLink(): void
+    {
+        if (self::$instance !== null) {
+            self::$instance->release();
+        }
+    }
+
+    /**
      * Get or create the Doctrine DBAL connection.
      */
     public static function getDoctrineConnection(): Connection

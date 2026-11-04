@@ -92,15 +92,19 @@ class Bootstrap
         // Disable metadata caching only when datacache path is not configured
         $isDevMode = empty($settings['DB_USEDATACACHE']) || empty($settings['DB_DATACACHEPATH']);
 
-        // Include the table prefix in the cache namespace so metadata isn't reused across different prefixes.
+        // Include the table prefix in the cache namespace so metadata isn't reused across different prefixes,
+        // and the state of the entity files, so an update that maps a new column is not served the old
+        // mapping from a cache that outlives the deploy (without DB_DATACACHEPATH it sits in the system's
+        // temporary directory and is never cleared).
+        $paths = [$rootDir . '/src/Lotgd/Entity'];
+        $namespace = $DB_PREFIX . 'm' . \Lotgd\Doctrine\EntityFingerprint::of($paths[0]);
         if (class_exists(FilesystemAdapter::class)) {
-            $cache = new FilesystemAdapter($DB_PREFIX, 0, $cacheDir);
+            $cache = new FilesystemAdapter($namespace, 0, $cacheDir);
         } else {
             // Fallback to an in-memory cache when Symfony cache is missing.
-            $cache = (new ArrayAdapter())->withSubNamespace($DB_PREFIX);
+            $cache = (new ArrayAdapter())->withSubNamespace($namespace);
         }
 
-        $paths = [$rootDir . '/src/Lotgd/Entity'];
         $config = ORMSetup::createAttributeMetadataConfiguration($paths, $isDevMode, null, $cache);
 
         $eventManager = new EventManager();

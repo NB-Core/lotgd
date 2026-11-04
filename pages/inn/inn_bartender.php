@@ -124,10 +124,9 @@ if ($act == "") {
     $output->output("You entered %s`n", Sanitize::preventColors(HTMLEntities($testtext, ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'))), true);
     $output->output("It looks like %s`n", $testtext);
     $try = Translator::translateInline("Try");
-    $output->rawOutput("<input name='testtext' id='input'>");
+    $output->rawOutput("<input name='testtext' id='input' autofocus>");
     $output->rawOutput("<input type='submit' class='button' value='$try'>");
     $output->rawOutput("</form>");
-    $output->rawOutput("<script language='javascript'>document.getElementById('input').focus();</script>");
         $output->output("`0`n`nThese colors can be used in your name, and in any conversations you have.");
     Nav::add("", PhpGenericEnvironment::getRequestUri());
 } elseif ($act == "specialty") {

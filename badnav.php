@@ -19,6 +19,7 @@ use Lotgd\Nav;
 use Lotgd\DateTime;
 use Lotgd\MySQL\Database;
 use Lotgd\Redirect;
+use Lotgd\Page\PartialRenderer;
 
 // addnews ready
 // mail ready
@@ -83,7 +84,13 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
         }
         Footer::pageFooter();
     }
-    echo $row['output'];
+    echo \Lotgd\Page\StoredPage::withSessionToken(\Lotgd\Realtime\Poll::storedPage(
+        \Lotgd\Page\Overlay::storedPage(
+            PartialRenderer::withRevision((string) $row['output'], (int) ($session['user']['page_revision'] ?? 0)),
+            !empty($session['needtoviewmotd'])
+        ),
+        $session['user']
+    ));
     $session['debug'] = "";
     $session['user']['allowednavs'] = $session['allowednavs'];
     Accounts::saveUser();

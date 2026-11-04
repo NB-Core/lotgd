@@ -273,3 +273,11 @@ div.debug {
     font-weight: bolder;
     margin-left: 10px;
 }
+
+/* The in-page dialog for mail and the MoTD (assets/css/lotgd.overlay.css). */
+:root {
+    --lotgd-overlay-bg: #352d20;
+    --lotgd-overlay-fg: #cccccc;
+    --lotgd-overlay-border: #433828;
+    --lotgd-overlay-scheme: dark;
+}

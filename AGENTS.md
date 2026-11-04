@@ -5,7 +5,7 @@ This repository uses PHP with Composer and PHPUnit. To ensure quality and consis
 ## Project Goals & Scope
 
 - Modernize the classic Legend of the Green Dragon codebase while preserving legacy gameplay and module compatibility.
-- Prefer the modern stack (Composer/PSR-4, Doctrine, Twig, Async/Jaxon), but keep legacy `lib/*.php` and globals available for existing modules.
+- Prefer the modern stack (Composer/PSR-4, Doctrine, Twig, Async), but keep legacy `lib/*.php` and globals available for existing modules.
 - Introduce deprecations gradually; avoid breaking changes within 2.x unless essential for security or stability.
 
 ## Testing
@@ -102,11 +102,11 @@ These rules apply to all directories unless a more specific file overrides them.
 - Use positional placeholders compatible with `sprintf` to support localisation (`%s`, `%d`).
 - Keep module text within module-specific namespaces to prevent collisions.
 
-### Async / Jaxon
+### Async
 
-- New Ajax features should use Jaxon. Respect configured rate limits (HTTP 429 on excess).
+- New Ajax features go through the single async endpoint `async/process.php`: a handler class returning `Lotgd\Async\Response`, registered in `Lotgd\Async\Dispatcher` (core) or by a module through the hook `async-handlers` (`['Name' => FQCN]`), called from the browser with `lotgd.async.call('Name','method',[args])` (`assets/js/lotgd.async.js`). Jaxon is gone. Respect configured rate limits (HTTP 429 on excess).
 - Validate session/auth for async endpoints; avoid exposing privileged actions via unauthenticated calls.
-- The endpoint carries a CSRF token (`Csrf::SCOPE_ASYNC`), issued by `async/setup.php` and sent as an `X-LotGD-Csrf` header by `async/js/lotgd.jaxon.js`. Request-handling code checks it and must never issue it: the session lock may already be released, so a token minted there is lost. `csrf_mode` in `config/async.settings.php` selects `off`/`log`/`enforce`.
+- The endpoint carries a CSRF token (`Csrf::SCOPE_ASYNC`), issued by `async/setup.php` and sent as an `X-LotGD-Csrf` header by `assets/js/lotgd.async.js` (every request also needs `X-Lotgd-Async: 1`, else 400). Request-handling code checks it and must never issue it: the session lock may already be released, so a token minted there is lost. `csrf_mode` in `config/async.settings.php` selects `off`/`log`/`enforce`.
 - Authentication is not authorization. A handler is reached directly, so the `SuAccess::check()` on the page that renders its trigger never runs. A handler that needs rights needs an entry in `lotgd_async_required_superuser_bits()` in `async/process.php`. Do not call `SuAccess::check()` from a handler — it renders a page and kills the character on failure.
 - Prefer small payloads and incremental updates (mail/commentary patterns) over full-page refreshes.
 

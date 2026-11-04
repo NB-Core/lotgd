@@ -11,6 +11,8 @@ use Lotgd\Translator;
 use Lotgd\Output;
 use Lotgd\Settings;
 use Lotgd\Http;
+use Lotgd\Page\StoredPage;
+use Lotgd\Security\Escape;
 
 $result = Database::query("SELECT * FROM " . Database::prefix("accounts") . " WHERE acctid=" . (int)$userid);
 $row = Database::fetchAssoc($result);
@@ -87,11 +89,16 @@ if (Http::get('subop') == "") {
     $info = Forms::showFormTabbed($showformargs['userinfo'], $showformargs['user']);
     $output->rawOutput("<input type='hidden' value=\"" . htmlentities(serialize($info), ENT_COMPAT, $charset) . "\" name='oldvalues'>");
     $output->rawOutput("</form>");
-        $output->output("`n`nLast Page Viewed:`n");
-    $output->rawOutput("<iframe src='user.php?op=lasthit&userid=$userid' width='100%' height='400'>");
-    $output->output("You need iframes to view the user's last hit here.");
-    $output->output("Use the link in the nav instead.");
-    $output->rawOutput("</iframe>");
+    // The stored page inline, in a sealed frame: no request of its own,
+    // which would claim this page's revision and leave Save without links.
+    $lastPage = StoredPage::forAccount((int) $userid);
+    $output->rawOutput("<details class='lotgd-lasthit'><summary>" . Escape::html(Translator::translateInline("Show last page viewed")) . "</summary>");
+    if ($lastPage === '') {
+        $output->output("`n`\$This user has had his navs fixed OR has an empty page stored. Nothing can be displayed to you -_-`0`n");
+    } else {
+        $output->rawOutput(StoredPage::preview($lastPage, Translator::translateInline("Last page viewed")));
+    }
+    $output->rawOutput("</details>");
 } elseif (Http::get('subop') == "module") {
     //Show a user's prefs for a given module.
     Nav::add("Navigation");
@@ -133,4 +140,3 @@ if (Http::get('subop') == "") {
     }
 }
 Modules::editorNavs('prefs', "user.php?op=edit&subop=module&userid=$userid$returnpetition&module=");
-Nav::add("", "user.php?op=lasthit&userid=$userid");

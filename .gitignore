@@ -16,3 +16,5 @@ logs/*.log
 
 # Development tools (composer tools:install); never deployed or committed.
 tools/vendor/
+tools/e2e/node_modules/
+tools/e2e/results/

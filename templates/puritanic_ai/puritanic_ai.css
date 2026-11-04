@@ -354,3 +354,11 @@ td.dragon {
     font-weight: bolder;
     margin-left: 10px;
 }
+
+/* The in-page dialog for mail and the MoTD (assets/css/lotgd.overlay.css). */
+:root {
+    --lotgd-overlay-bg: #2b2b2b;
+    --lotgd-overlay-fg: #cccccc;
+    --lotgd-overlay-border: #555555;
+    --lotgd-overlay-scheme: dark;
+}

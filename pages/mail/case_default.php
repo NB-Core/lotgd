@@ -146,7 +146,11 @@ function renderMailRows(array $rows, array $userStatusList, string $noSubject): 
         }
 
         $output->rawOutput("<a href='mail.php?op=read&id={$row['messageid']}'>");
-        $output->outputNotl('%s', trim($row['subject']) ? $row['subject'] : $noSubject);
+        $subjectText = trim($row['subject']) ? $row['subject'] : $noSubject;
+        if ((int) $row['msgfrom'] !== 0) {
+            $subjectText = Sanitize::userFormatting((string) $subjectText, Sanitize::formattingAllowed('mail'));
+        }
+        $output->outputNotl('%s', $subjectText);
         $output->rawOutput('</a>');
         $output->rawOutput("</td><td><a href='mail.php?op=read&id={$row['messageid']}'>");
         $output->outputNotl('%s', $row['name']);
@@ -165,13 +169,18 @@ function renderMailRows(array $rows, array $userStatusList, string $noSubject): 
 function renderMailFooter(array $fromList): void
 {
     $output = Output::getInstance();
+    if (\Lotgd\Page\Overlay::isRequested()) {
+        renderMailFooterDeclarative($fromList);
+
+        return;
+    }
     $script = "<script type='text/javascript'>
                                         function check_all() {
                                                 var elements = document.getElementsByName(\"msg[]\");
                                                 var max = elements.length;
                                                 var Zaehler=0;
-                                                var checktext='" . Translator::translateInline('Check all') . "';
-                                                var unchecktext='" . Translator::translateInline('Uncheck all') . "';
+                                                var checktext=" . Escape::js(Translator::translateInline('Check all')) . ";
+                                                var unchecktext=" . Escape::js(Translator::translateInline('Uncheck all')) . ";
                                                 var check = false;
                                                 for (Zaehler=0;Zaehler<max;Zaehler++) {
                                                         if (elements[Zaehler].checked==true) {
@@ -204,13 +213,14 @@ function renderMailFooter(array $fromList): void
         } else {
             $add .= ',new Array(' . $ids . ')';
         }
-        $option .= "<option value='$i'>" . $key . "</option>
+        // The name is the sender's, colour codes stripped: text.
+        $option .= "<option value='$i'>" . Escape::html((string) $key) . "</option>
                         ";
         $i++;
     }
     $script .= "var container = new Array($add);
                         var who = document.getElementById('check_name_select').value;
-                        var unchecktext='" . Translator::translateInline('Uncheck all') . "';
+                        var unchecktext=" . Escape::js(Translator::translateInline('Uncheck all')) . ";
                         for (var i=0;i<container[who].length;i++) {
                                 document.getElementById(container[who][i]).checked=true;
                         }
@@ -223,6 +233,43 @@ function renderMailFooter(array $fromList): void
     $checknames = $output->appoencode(Translator::translateInline('`vCheck by Name`0'));
     $output->outputNotl("<label for='check_name_select'>" . $checknames . "</label> <select onchange='check_name()' id='check_name_select'>" . $option . "</select><br>", true);
     $output->rawOutput("<input type='button' id='button_check' value=\"$checkall\" class='button' onClick='check_all()'>");
+    $output->rawOutput("<input type='submit' class='button' value=\"$delchecked\">");
+    HookHandler::hook('mailform', []);
+    $output->rawOutput('</form>');
+}
+
+/**
+ * The mail table controls for the overlay, which runs no scripts: the
+ * handlers in assets/js/lotgd.overlay.js read the data-lotgd-* attributes.
+ */
+function renderMailFooterDeclarative(array $fromList): void
+{
+    $output = Output::getInstance();
+    $flags = ENT_QUOTES | ENT_SUBSTITUTE;
+
+    $option = "<option value=''>---</option>\n";
+    $i = 0;
+    foreach ($fromList as $key => $ids) {
+        $list = array_map(
+            static fn(string $id): string => trim($id, " '"),
+            explode(',', (string) $ids)
+        );
+        $option .= "<option value='$i' data-lotgd-ids=\""
+            . htmlspecialchars((string) json_encode($list), $flags) . "\">" . htmlspecialchars((string) $key, $flags) . "</option>\n";
+        $i++;
+    }
+
+    $checkLabel = Translator::translateInline('Check all');
+    $uncheckLabel = Translator::translateInline('Uncheck all');
+    $checkall = $output->appoencode(Translator::translateInline('Check All'));
+    $delchecked = $output->appoencode(Translator::translateInline('Delete Checked'));
+    $checknames = $output->appoencode(Translator::translateInline('`vCheck by Name`0'));
+    $output->outputNotl("<label for='check_name_select'>" . $checknames . "</label> <select data-lotgd-check-by id='check_name_select'>" . $option . "</select><br>", true);
+    $output->rawOutput(
+        "<input type='button' id='button_check' value=\"$checkall\" class='button' data-lotgd-check-all=\"msg[]\""
+        . ' data-lotgd-check-label="' . htmlspecialchars($checkLabel, $flags) . '"'
+        . ' data-lotgd-uncheck-label="' . htmlspecialchars($uncheckLabel, $flags) . '">'
+    );
     $output->rawOutput("<input type='submit' class='button' value=\"$delchecked\">");
     HookHandler::hook('mailform', []);
     $output->rawOutput('</form>');

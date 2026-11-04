@@ -84,6 +84,14 @@ automatic ban that follows repeated failures, not each guess.
 > megausers you must enable `show_error_details` separately, and you should leave it off on a live
 > server.
 
+## Live features and realtime hosting
+
+*Game Settings* opens with a *Live features* table: what is on, and what each
+feature still needs. Realtime polls by default and works on any host.
+Server-sent events are faster but need a host that keeps one PHP worker per
+open page and passes the stream unbuffered. Set them up with
+[RealtimeHosting.md](RealtimeHosting.md).
+
 ## The diagnostics page
 
 `diagnostics.php`, reachable from the Superuser Grotto under **Diagnostics**, answers "is
@@ -115,8 +123,8 @@ Two things it deliberately does **not** show:
   the column, so a database restored from an older backup cannot expose it here.
 - **The PHP error log itself.** In the Docker image `error_log` points at `/dev/stderr`, which is
   write-only, so nothing in PHP can read it back. The page names the destination and tells you
-  where to look instead. This is why the async diagnostics (`Jaxon csrf`, rate-limit and
-  bad-request lines) and individual failed-login records do not appear there: use
+  where to look instead. This is why the async diagnostics (`Async csrf`, `Async rate limit hit`, `Async authorization:` and
+  `Async bad request` lines) and individual failed-login records do not appear there: use
   `docker compose logs web`. Failed logins are still visible on the page through the `faillog`
   table.
 

@@ -291,7 +291,12 @@ if ($name != "") {
                 if (!empty($session['user']['restorepage'])) {
                     $link = "<a href='{$session['user']['restorepage']}'>{$session['user']['restorepage']}</a>";
                     $msg  = Translator::getInstance()->sprintfTranslate('Sending you to %s, have a safe journey', $link);
-                    //$session['allowednavs'] = unserialize($session['user']['allowednavs']);
+                    // On purpose, restorepage is not added to the allowed navigation
+                    // here. Unless the player logged out (which adds it, see
+                    // op=logout), the stored links do not contain the page itself,
+                    // so the redirect ends on badnav.php, which shows the page as it
+                    // was stored without running its address again. Running it again
+                    // would repeat what a GET link does: a fight round, a purchase.
                     header("Location: {$session['user']['restorepage']}");
                     Accounts::saveUser();
                     echo $msg;
@@ -533,6 +538,7 @@ if ($name != "") {
     if ($session['user']['loggedin']) {
         $sql = "UPDATE " . Database::prefix("accounts") . " SET loggedin=0 WHERE acctid = " . (int) $session['user']['acctid'];
         Database::query($sql);
+        \Lotgd\Presence::leave((int) $session['user']['acctid']);
         DataCache::getInstance()->massinvalidate('charlisthomepage');
         DataCache::getInstance()->invalidatedatacache("list.php-warsonline");
 
@@ -551,6 +557,12 @@ if ($name != "") {
         if (Database::numRows($result) == 1) {
             $row = Database::fetchAssoc($result);
             $allowednavs = \Lotgd\Serialization::safeUnserialize($row['allowednavs']);
+            // Empty when the page revision claim cleared the stored links
+            // (ForcedNavigation::consumePageRevision()) and nothing saved
+            // new ones since: an empty string, not a list.
+            if (!is_array($allowednavs)) {
+                $allowednavs = [];
+            }
             $allowednavs[$row['restorepage']] = true;
             // Write back to database
             $serialized = Database::escape(serialize($allowednavs));
