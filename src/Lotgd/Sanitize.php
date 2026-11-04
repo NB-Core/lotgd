@@ -272,7 +272,8 @@ class Sanitize
      * Remove emoji from a text.
      *
      * EMOJI_ALL removes every emoji sequence built on a character Unicode
-     * marks Extended_Pictographic (this includes ©, ®, ™ and arrows).
+     * marks Extended_Pictographic (this includes ©, ®, ™ and arrows), flag
+     * letters and lone skin tones; a keycap keeps its digit or sign.
      * EMOJI_PICTOGRAPHS removes those from U+2300 on and any character
      * written in emoji form (followed by U+FE0F), so text symbols below
      * U+2300 stay. A character reference (&#x1F600;, &hearts;) that the page
@@ -284,7 +285,7 @@ class Sanitize
     public static function stripEmoji(string $in, int $mode): string
     {
         $patterns = self::emojiPatterns($mode);
-        if ($patterns === []) {
+        if ($patterns === [] || !mb_check_encoding($in, 'UTF-8')) {
             return $in;
         }
         $regexes = array_map(static fn (string $p): string => '/' . $p . '/u', $patterns);

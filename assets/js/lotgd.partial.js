@@ -449,7 +449,7 @@
 
         // Emoji go as the page removes them (Sanitize::stripEmoji(),
         // commentary_emoji); the counter above still counts what is stored.
-        if (cfg.emojiPatterns) {
+        if (Array.isArray(cfg.emojiPatterns) && cfg.emojiPatterns.length > 0) {
             t = t.slice(0, x) + stripEmoji(t.slice(x), cfg.emojiPatterns);
         }
 

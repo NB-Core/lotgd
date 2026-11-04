@@ -303,7 +303,7 @@ removes faces, objects, flags and the like but keeps text symbols such as Â©, â„
 Unicode marks as emoji* removes those too. It applies when a line is shown, like bold and italic: lines are
 stored as written, so switching it on also cleans older lines and switching it off brings them back. The
 comment preview follows it. Modules can use `Sanitize::stripEmoji($text, $mode)` with the same modes
-(`Sanitize::EMOJI_KEEP`, `EMOJI_PICTOGRAPHS`, `EMOJI_ALL`).
+(`Sanitize::EMOJI_KEEP`, `Sanitize::EMOJI_PICTOGRAPHS`, `Sanitize::EMOJI_ALL`).
 
 For module authors:
 - `Sanitize::userFormatting($text, Sanitize::formattingAllowed('<area>'))` gives a player's text as it may be
