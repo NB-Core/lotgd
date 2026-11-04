@@ -48,8 +48,8 @@ final class Encounter
     /** Seconds an accepted encounter stays open: longer than the longest duel (50 rounds of 60 s). */
     public const ACCEPTED_SECONDS = 3600;
 
-    /** Tables an encounter step writes in its transaction. */
-    public const TABLES = ['encounters', 'encounter_slots'];
+    /** Tables an encounter step writes in its transaction (a duel's rounds too). */
+    public const TABLES = ['encounters', 'encounter_slots', 'encounter_rounds'];
 
     private static ?bool $transactional = null;
 

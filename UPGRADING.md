@@ -391,9 +391,9 @@ let players duel live. All of it is **off until you turn it on**, except a few c
 state moves it on by one (a transfer moves the recipient's on). Seeing a page (`laston`, the navigation, the page
 revision) does not.
 
-**InnoDB.** Guarded actions, the outbox, grants and encounters need their tables in InnoDB (or another
-transactional engine); an installation upgraded from an old release may still have MyISAM tables, and the feature
-then stays off and the *Live features* table says why. Check with
+**InnoDB.** Guarded actions, the outbox, grants and encounters need their tables in InnoDB (MariaDB's XtraDB
+counts too, Aria does not: it cannot roll a transaction back); an installation upgraded from an old release may
+still have MyISAM or Aria tables, and the feature then stays off and the *Live features* table says why. Check with
 `SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();` and convert with, for
 example, `ALTER TABLE accounts ENGINE=InnoDB;`.
 

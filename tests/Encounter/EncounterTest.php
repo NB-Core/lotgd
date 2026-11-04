@@ -65,6 +65,13 @@ final class EncounterTest extends TestCase
         unset($GLOBALS['session'], $GLOBALS['baseaccount']);
     }
 
+    public function testTheTransactionCheckCoversTheDuelRounds(): void
+    {
+        // A duel step writes its round in the same transaction: on MyISAM a
+        // rollback would keep the round resolved and refuse the next move.
+        self::assertSame(['encounters', 'encounter_slots', 'encounter_rounds'], Encounter::TABLES);
+    }
+
     public function testEncountersNeedTheirSettingRealtimeAndGrants(): void
     {
         self::assertTrue(Encounter::enabled());

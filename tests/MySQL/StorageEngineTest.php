@@ -37,6 +37,17 @@ final class StorageEngineTest extends TestCase
         self::assertSame(['accounts', 'action_log'], StorageEngine::nonTransactional(['accounts', 'action_log', 'mail']));
     }
 
+    public function testAriaIsNotTransactional(): void
+    {
+        // Crash-safe, but it cannot roll a transaction back.
+        $this->connection->queryResultsByPattern = ['/information_schema\.TABLES/' => [
+            ['TABLE_NAME' => 'accounts', 'ENGINE' => 'Aria'],
+            ['TABLE_NAME' => 'mail', 'ENGINE' => 'InnoDB'],
+        ]];
+
+        self::assertSame(['accounts'], StorageEngine::nonTransactional(['accounts', 'mail']));
+    }
+
     public function testInnoDbTablesPass(): void
     {
         self::assertSame([], StorageEngine::nonTransactional(['accounts', 'mail']));

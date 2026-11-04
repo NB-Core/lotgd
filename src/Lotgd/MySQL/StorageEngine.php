@@ -10,13 +10,17 @@ use Doctrine\DBAL\ArrayParameterType;
  * Which tables can take part in a transaction.
  *
  * An installation upgraded from an old release may still hold some tables in
- * MyISAM. A transaction cannot roll a write to such a table back, and
- * SELECT … FOR UPDATE takes no row lock on it, so a guarded action that
+ * MyISAM (or Aria). A transaction cannot roll a write to such a table back,
+ * and SELECT … FOR UPDATE takes no row lock on it, so a guarded action that
  * touched one would only look atomic.
  */
 final class StorageEngine
 {
-    private const TRANSACTIONAL = ['innodb', 'xtradb', 'aria'];
+    /**
+     * Engines with rollback and row locks. Not Aria: it is crash-safe, but it
+     * cannot roll a transaction back, not even with TRANSACTIONAL=1.
+     */
+    private const TRANSACTIONAL = ['innodb', 'xtradb'];
 
     /**
      * The given tables (without prefix) that are missing or not transactional.
