@@ -72,7 +72,7 @@ const shot = async (p, name) => { await settle(p, 400); await p.screenshot({ pat
 
   await nav(a, 'encounter.php');
   await waitFor(async () => (await button()) !== null, 8000);
-  await (await button()).click(); await a.waitForLoadState('load');
+  await a.click(`button[name="target"][value="${dora}"]`); await a.waitForLoadState('load');
   await waitFor(async () => /challenges you/.test(await slot(d)), 8000);
   await d.click('[data-lotgd-slot="grants"] a'); await d.waitForLoadState('load');
   await d.click('input[value="Accept"]'); await d.waitForLoadState('load');

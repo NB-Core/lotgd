@@ -366,6 +366,32 @@
      * settings in data-lotgd-preview instead of an inline script. The output
      * matches the inline previewtext<name>() function it replaces.
      */
+
+    // Sanitize::stripEmoji() with the patterns the page uses
+    // (Sanitize::emojiPatternsForScript()), and character references that
+    // the page would show as such an emoji. Patterns are built at run time,
+    // so a browser without \p{} support only skips this.
+    let decoder = null;
+    function stripEmoji(text, patterns) {
+        if (!Array.isArray(patterns) || patterns.length === 0) {
+            return text;
+        }
+        try {
+            const regexes = patterns.map(function (p) { return new RegExp(p, 'gu'); });
+            const strip = function (value) {
+                return regexes.reduce(function (acc, re) { return acc.replace(re, ''); }, value);
+            };
+            decoder = decoder || document.createElement('textarea');
+            return strip(text).replace(/&(?:#[xX][0-9a-fA-F]{1,6}|#[0-9]{1,7}|[A-Za-z][A-Za-z0-9]{1,31});/g, function (ref) {
+                decoder.innerHTML = ref;
+                const char = decoder.value;
+                return char !== ref && char !== '' && strip(char) === '' ? '' : ref;
+            });
+        } catch (e) {
+            return text;
+        }
+    }
+
     function renderPreview(field) {
         let cfg;
         try {
@@ -373,7 +399,7 @@
         } catch (e) {
             return;
         }
-        const t = field.value || '';
+        let t = field.value || '';
         let l = cfg.limit;
         let out = "<span class='colLtWhite'>" + (cfg.start || '') + ' ';
         let end = '</span>';
@@ -419,6 +445,12 @@
             if (counter) {
                 counter.innerHTML = charsleft + '<br/>';
             }
+        }
+
+        // Emoji go as the page removes them (Sanitize::stripEmoji(),
+        // commentary_emoji); the counter above still counts what is stored.
+        if (Array.isArray(cfg.emojiPatterns) && cfg.emojiPatterns.length > 0) {
+            t = t.slice(0, x) + stripEmoji(t.slice(x), cfg.emojiPatterns);
         }
 
         const colors = cfg.colors || {};

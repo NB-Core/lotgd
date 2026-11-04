@@ -1219,6 +1219,8 @@ SQL;
         global $session;
 
         $realRequestUri = self::determineReturnUrl();
+        // Emoji go when the game says so (commentary_emoji); the stored line keeps them.
+        $row['comment'] = Sanitize::stripEmoji((string) $row['comment'], Sanitize::commentaryEmojiMode());
         if (Sanitize::formattingAllowed('commentary')) {
             // Bold and italic stay, closed again at the end of the line.
             $row['comment'] = Sanitize::sanitizeMb(Sanitize::balanceFormatting(
@@ -1516,7 +1518,8 @@ SQL;
                 "maxlength" => $settings->getSetting('maxchars', 200) - $tll,
             ],
             true,
-            Sanitize::formattingAllowed('commentary')
+            Sanitize::formattingAllowed('commentary'),
+            Sanitize::commentaryEmojiMode()
         );
         $output->rawOutput("<input type='hidden' name='talkline' value='$talkline'>");
         $output->rawOutput("<input type='hidden' name='schema' value='$schema'>");

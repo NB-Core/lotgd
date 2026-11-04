@@ -218,6 +218,113 @@ class Sanitize
         return (int) Settings::getInstance()->getSetting('formatting_' . $area, $defaults[$area] ?? 0) === 1;
     }
 
+    /** Emoji in chat lines (commentary_emoji): kept. */
+    public const EMOJI_KEEP = 0;
+
+    /** Emoji in chat lines: pictographs removed, text symbols (©, ™, arrows) kept. */
+    public const EMOJI_PICTOGRAPHS = 1;
+
+    /** Emoji in chat lines: everything Unicode marks as an emoji removed. */
+    public const EMOJI_ALL = 2;
+
+    /**
+     * The patterns stripEmoji() removes, without delimiters or flags, written
+     * so JavaScript reads them the same way after \x{...} becomes \u{...}
+     * (the comment previews get them through emojiPatternsForScript()).
+     *
+     * An emoji is matched as a whole sequence: a pictograph, its modifiers
+     * (variation selectors, skin tones, tag characters) and further
+     * pictographs joined by a zero width joiner. A joiner elsewhere (Indic
+     * shaping) is not part of an emoji and stays. Flag letters go; a keycap
+     * keeps its digit or sign.
+     *
+     * @return list<string>
+     */
+    public static function emojiPatterns(int $mode): array
+    {
+        if ($mode !== self::EMOJI_PICTOGRAPHS && $mode !== self::EMOJI_ALL) {
+            return [];
+        }
+        // Pictographs only: from U+2300 on, or anything written in emoji form.
+        $pictograph = $mode === self::EMOJI_ALL
+            ? '\p{Extended_Pictographic}'
+            : '(?:(?=\p{Extended_Pictographic})[\x{2300}-\x{10FFFF}]|\p{Extended_Pictographic}(?=\x{FE0F}))';
+        $modifiers = '[\x{FE0E}\x{FE0F}\x{1F3FB}-\x{1F3FF}\x{E0020}-\x{E007F}]*';
+
+        return [
+            $pictograph . $modifiers . '(?:\x{200D}' . $pictograph . $modifiers . ')*',
+            '[\x{1F1E6}-\x{1F1FF}\x{1F3FB}-\x{1F3FF}]',
+            '(?<=[0-9#*])\x{FE0F}?\x{20E3}',
+        ];
+    }
+
+    /**
+     * emojiPatterns() for JavaScript's RegExp (with the u flag).
+     *
+     * @return list<string>
+     */
+    public static function emojiPatternsForScript(int $mode): array
+    {
+        return array_map(static fn (string $p): string => str_replace('\\x{', '\\u{', $p), self::emojiPatterns($mode));
+    }
+
+    /**
+     * Remove emoji from a text.
+     *
+     * EMOJI_ALL removes every emoji sequence built on a character Unicode
+     * marks Extended_Pictographic (this includes ©, ®, ™ and arrows), flag
+     * letters and lone skin tones; a keycap keeps its digit or sign.
+     * EMOJI_PICTOGRAPHS removes those from U+2300 on and any character
+     * written in emoji form (followed by U+FE0F), so text symbols below
+     * U+2300 stay. A character reference (&#x1F600;, &hearts;) that the page
+     * would show as such an emoji goes too. Colour and formatting codes,
+     * letters of any script, joiners outside emoji and text emoticons like
+     * :-) are never touched; a text that is not valid UTF-8 comes back
+     * unchanged.
+     */
+    public static function stripEmoji(string $in, int $mode): string
+    {
+        $patterns = self::emojiPatterns($mode);
+        if ($patterns === [] || !mb_check_encoding($in, 'UTF-8')) {
+            return $in;
+        }
+        $regexes = array_map(static fn (string $p): string => '/' . $p . '/u', $patterns);
+        $out = preg_replace($regexes, '', $in);
+        if (!is_string($out)) {
+            return $in;
+        }
+        // References the browser turns into an emoji (the page keeps & as is).
+        $out = preg_replace_callback(
+            '/&(?:#[xX][0-9a-fA-F]{1,6}|#[0-9]{1,7}|[A-Za-z][A-Za-z0-9]{1,31});/',
+            static function (array $m) use ($regexes): string {
+                $char = html_entity_decode($m[0], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                if ($char === $m[0] || $char === '') {
+                    return $m[0];
+                }
+                $left = preg_replace($regexes, '', $char);
+
+                return is_string($left) && $left === '' ? '' : $m[0];
+            },
+            $out
+        );
+
+        return is_string($out) ? $out : $in;
+    }
+
+    /**
+     * How the game treats emoji in chat lines: the setting commentary_emoji,
+     * EMOJI_KEEP unless it holds one of the other modes.
+     */
+    public static function commentaryEmojiMode(): int
+    {
+        if (!Settings::hasInstance()) {
+            return self::EMOJI_KEEP;
+        }
+        $mode = (int) Settings::getInstance()->getSetting('commentary_emoji', self::EMOJI_KEEP);
+
+        return in_array($mode, [self::EMOJI_PICTOGRAPHS, self::EMOJI_ALL], true) ? $mode : self::EMOJI_KEEP;
+    }
+
     /**
      * A player's text as it may be shown: bold and italic balanced where the
      * game allows them, literal where it does not.

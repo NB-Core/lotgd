@@ -6,6 +6,7 @@ namespace Lotgd\Tests\Forms;
 
 use Lotgd\Forms;
 use Lotgd\Output;
+use Lotgd\Sanitize;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\TwigTemplate;
@@ -136,6 +137,27 @@ final class PreviewFieldTest extends TestCase
         self::assertStringContainsString("for (var c = open.length - 1; c >= 0; c--)", $markup, 'What it opened is closed at the end.');
         self::assertStringContainsString("case \"`\": out+='`';break;", $markup, 'An escaped backtick shows as one.');
         self::assertStringContainsString("// A backtick at the very end is shown, as the page shows it.\n                out += '`';", $markup, 'So does one at the very end.');
+    }
+
+    public function testThePreviewLeavesOutTheEmojiThePageRemoves(): void
+    {
+        $this->enablePartialClient();
+        self::assertSame(Sanitize::EMOJI_KEEP, $this->config($this->render())['emoji'], 'Kept unless the caller says.');
+        $markup = Forms::previewField('insertcommentary', 'Admin', 'says', true, ['size' => 40], true, false, Sanitize::EMOJI_ALL);
+        self::assertSame(Sanitize::EMOJI_ALL, $this->config($markup)['emoji']);
+        self::assertSame(Sanitize::emojiPatternsForScript(Sanitize::EMOJI_ALL), $this->config($markup)['emojiPatterns'], 'The page\'s own patterns.');
+    }
+
+    public function testAClassicPreviewRemovesEmojiOnlyWhenAsked(): void
+    {
+        Settings::setInstance(new DummySettings(['maxchars' => 200, 'partial_render' => 1]));
+
+        self::assertStringNotContainsString('Extended_Pictographic', Forms::previewField('plaincomment', 'Admin', 'says', true, ['size' => 40], true));
+
+        $markup = Forms::previewField('emojicomment', 'Admin', 'says', true, ['size' => 40], true, false, Sanitize::EMOJI_PICTOGRAPHS);
+        $json = json_encode(Sanitize::emojiPatternsForScript(Sanitize::EMOJI_PICTOGRAPHS), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        self::assertStringContainsString("try { var er = {$json}.map(", $markup, 'The page\'s own patterns, only when the browser can.');
+        self::assertStringContainsString('t = t.substr(0, x) + es(t.substr(x))', $markup, 'After the prefix.');
     }
 
     private function enablePartialClient(): void

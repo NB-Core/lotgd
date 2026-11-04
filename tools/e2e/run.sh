@@ -41,7 +41,7 @@ esac
 # the realtime suites (both transports) and the rest.
 PER_SKIN="town fights forms chat indicator notices timeout fmt modules"
 TRANSPORT="duel encounters extras"
-OTHERS="skins overlay async realtime sse commentary bank grants staletab pvplive status usereditor never xss keys dweditor dwtypes fmtpreview fmtliteral tour e2e"
+OTHERS="skins overlay async realtime sse commentary bank grants staletab pvplive status usereditor never xss keys dweditor dwtypes fmtpreview fmtliteral emoji tour e2e"
 if [ ${#SUITES[@]} -eq 0 ]; then
   read -r -a SUITES <<< "$PER_SKIN legacy $TRANSPORT $OTHERS"
 fi

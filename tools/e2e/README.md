@@ -65,7 +65,7 @@ off). It prints a line per run, lists the failed runs at the end and exits
 non-zero if any failed. Every suite prints `PASS`/`FAIL` lines and a total.
 
 Time on a 4-core machine: one suite 1–5 minutes; everything on Aurora and jade
-(47 runs) 27 minutes, measured; everything on all skins (`--skins all`) about
+(48 runs) 27 minutes, measured; everything on all skins (`--skins all`) about
 2 hours, estimated from the per-skin suites.
 
 ## The suites
@@ -79,6 +79,7 @@ Time on a 4-core machine: one suite 1–5 minutes; everything on Aurora and jade
 | `duel`, `encounters`, `extras`, `pvplive`, `grants` | Live duels, challenges, rematch and spectators, grants |
 | `bank`, `staletab`, `tour`, `e2e` | Guarded bank actions, stale tabs, pages changing in place |
 | `fmt`, `fmtpreview`, `fmtliteral` | Bold and italic in player texts and the preview |
+| `emoji` | Emoji in chat lines (`commentary_emoji`): kept or removed, preview and page |
 | `status`, `usereditor`, `xss` | Live features table, user editor, escaping of player names |
 | `modules`, `keys`, `dweditor`, `dwtypes` | cities, lovers and the dwellings modules |
 

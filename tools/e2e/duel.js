@@ -67,7 +67,8 @@ const transport = cfg.transport('sse');
     await nav(a, 'encounter.php');
     await waitFor(async () => (await button()) !== null, 8000);
     await a.check(`input[name="stakes"][value="${stakes}"]`);
-    await (await button()).click(); await a.waitForLoadState('load'); await settle(a);
+    // By selector, not a handle: the live presence list can swap the button out meanwhile.
+    await a.click(`button[name="target"][value="${dora}"]`); await a.waitForLoadState('load'); await settle(a);
     await waitFor(async () => /challenges you/.test(await slot(d)), 8000);
     const offer = await slot(d);
     await d.click('[data-lotgd-slot="grants"] a'); await d.waitForLoadState('load'); await settle(d);

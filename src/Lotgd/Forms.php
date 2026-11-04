@@ -594,7 +594,8 @@ class Forms
      * With $talkline false the preview shows the text alone, without the
      * talk line in front (a name, a title). With $formatting the preview
      * shows bold and italic, closed again at its end, as
-     * Sanitize::balanceFormatting() renders them.
+     * Sanitize::balanceFormatting() renders them. $emoji is a
+     * Sanitize::EMOJI_* mode: the preview leaves out what the page removes.
      */
     public static function previewField(
         string $name,
@@ -603,7 +604,8 @@ class Forms
         bool $showcharsleft = true,
         array|bool $info = false,
         bool $scriptOutput = true,
-        bool $formatting = false
+        bool $formatting = false,
+        int $emoji = Sanitize::EMOJI_KEEP
     ): string {
         global $session;
         $output = Output::getInstance();
@@ -628,7 +630,8 @@ class Forms
                 $maxChars,
                 $youhave,
                 $charsleft,
-                $formatting
+                $formatting,
+                $emoji
             );
         }
 
@@ -698,7 +701,7 @@ JS;
 JS;
         }
 
-        $switchKey = 'switchscript_comm' . rawurlencode($name) . ($formatting ? '-fmt' : '');
+        $switchKey = 'switchscript_comm' . rawurlencode($name) . ($formatting ? '-fmt' : '') . ($emoji !== Sanitize::EMOJI_KEEP ? '-emoji' . $emoji : '');
         $switchscript = DataCache::getInstance()->datacache($switchKey);
 
         if (!$switchscript) {
@@ -714,8 +717,23 @@ JS;
             }
             $cases = implode("\n            ", $cases);
 
-            $switchscript = <<<JS
+            // Emoji go as the page removes them (Sanitize::stripEmoji(), the
+            // same patterns and character references); the counter above
+            // still counts what is stored. Built at run time, so a browser
+            // without \p{} support only skips this.
+            $emojiScript = '';
+            $patterns = Sanitize::emojiPatternsForScript($emoji);
+            if ($patterns !== []) {
+                $json = json_encode($patterns, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                $emojiScript = "\n    try { var er = {$json}.map(function (p) { return new RegExp(p, 'gu'); });"
+                    . " var es = function (v) { for (var i = 0; i < er.length; i++) { v = v.replace(er[i], ''); } return v; };"
+                    . " var ed = document.createElement('textarea');"
+                    . " t = t.substr(0, x) + es(t.substr(x)).replace(/&(?:#[xX][0-9a-fA-F]{1,6}|#[0-9]{1,7}|[A-Za-z][A-Za-z0-9]{1,31});/g,"
+                    . " function (r) { ed.innerHTML = r; var c = ed.value; return c !== r && c !== '' && es(c) === '' ? '' : r; }); } catch (e) {}";
+            }
 
+            $switchscript = <<<JS
+{$emojiScript}
     var open = [];
     for (; x < t.length; x++) {
         y = t.substr(x, 1);
@@ -806,7 +824,8 @@ JS;
         int $maxChars,
         string $youhave,
         string $charsleft,
-        bool $formatting = false
+        bool $formatting = false,
+        int $emoji = Sanitize::EMOJI_KEEP
     ): string {
         global $session;
         $output = Output::getInstance();
@@ -824,6 +843,8 @@ JS;
             'charsLeft' => $charsleft,
             'colors' => (object) $output->getColors(),
             'formatting' => $formatting,
+            'emoji' => $emoji,
+            'emojiPatterns' => Sanitize::emojiPatternsForScript($emoji),
         ];
         $preview = ' data-lotgd-preview="' . htmlspecialchars((string) json_encode($config), ENT_QUOTES, 'UTF-8') . '"';
 
