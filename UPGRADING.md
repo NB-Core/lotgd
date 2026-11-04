@@ -466,7 +466,8 @@ These apply whatever the live settings are:
   pages.
 - **No inline scripts on such pages.** A page that prints `<script>` or adds to `<head>` (`Output::addHeadMarkup()`,
   `Output::requireVendorAsset()` on that page only) falls back to the stored page, once, without running twice;
-  the answer carries `X-Lotgd-Partial-Fallback` with the reason. Use instead: `autofocus` for focus,
+  the answer carries `X-Lotgd-Partial-Fallback` with the reason (for `script`, `X-Lotgd-Partial-Fallback-Detail` names
+  the region and the start of the tag). Use instead: `autofocus` for focus,
   `Forms::previewField()` for a colour preview (`$talkline` may be `false`; `$formatting` shows bold and italic),
   `Forms::dataTableAttributes()` on a `<table>` for sorting and searching, and in the dialog the declarative
   attributes documented in `assets/js/lotgd.overlay.js` (or check `Overlay::isRequested()`).

@@ -84,13 +84,18 @@ if ($session['user']['loggedin'] && $session['loggedin']) {
         }
         Footer::pageFooter();
     }
-    echo \Lotgd\Page\StoredPage::withSessionToken(\Lotgd\Realtime\Poll::storedPage(
+    // After a late partial fallback: the address the player asked for, put
+    // back in the location bar by the client. Once; any other way here
+    // keeps badnav.php.
+    $address = $session['partial_fallback_address'] ?? null;
+    unset($session['partial_fallback_address']);
+    echo \Lotgd\Page\StoredPage::withAddress(\Lotgd\Page\StoredPage::withSessionToken(\Lotgd\Realtime\Poll::storedPage(
         \Lotgd\Page\Overlay::storedPage(
             PartialRenderer::withRevision((string) $row['output'], (int) ($session['user']['page_revision'] ?? 0)),
             !empty($session['needtoviewmotd'])
         ),
         $session['user']
-    ));
+    )), is_string($address) ? $address : null);
     $session['debug'] = "";
     $session['user']['allowednavs'] = $session['allowednavs'];
     Accounts::saveUser();

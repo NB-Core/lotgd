@@ -23,6 +23,15 @@ class Redirect
      */
     public static function redirect(string $location, string|bool $reason = false): void
     {
+        if (self::isAsyncRequest()) {
+            // A request the page sends in the background (async/process.php,
+            // async/stream.php) is not a page change. Saving here would put
+            // this one link in place of the links the page on screen shows,
+            // and the player's next click would end on badnav.php -- a hook
+            // on everyhit that redirects (a login challenge, a jail) did
+            // exactly that. The page stays as it is; the caller gets JSON.
+            self::refuseAsync(str_replace(["\r", "\n"], '', $location));
+        }
         $session = &PhpGenericEnvironment::getSession();
         $requestUri = PhpGenericEnvironment::getRequestUri();
         $settings = Settings::getInstance();
@@ -62,6 +71,35 @@ class Redirect
         $text = Translator::translateInline('Whoops. There has been an error concering redirecting your to your new page. Please inform the admins about this. More Information for your petition down below:<br/><br/>');
         echo "<html><head><link href=\"templates/common/colors.css\" rel=\"stylesheet\" type=\"text/css\"></head><body style='background-color: #000000; color: #fff;'>$text</body></html>";
         echo $session['debug'];
+        exit();
+    }
+
+    /**
+     * Whether this request is one of the async endpoints rather than a page.
+     */
+    private static function isAsyncRequest(): bool
+    {
+        return defined('AJAX_MODE') && AJAX_MODE;
+    }
+
+    /**
+     * Answer an async request that would have been redirected, without saving.
+     *
+     * @param string $location Where a page would have gone
+     */
+    private static function refuseAsync(string $location): void
+    {
+        if (!headers_sent()) {
+            http_response_code(409);
+            header('Content-Type: application/json; charset=UTF-8');
+            header('Cache-Control: no-store');
+        }
+        // A target that is not valid UTF-8 must still give JSON, never an empty body.
+        $body = json_encode(
+            ['status' => 'error', 'error' => 'redirect', 'location' => $location],
+            JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_SLASHES
+        );
+        echo $body !== false ? $body : '{"status":"error","error":"redirect"}';
         exit();
     }
 }

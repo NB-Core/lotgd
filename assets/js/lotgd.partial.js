@@ -54,7 +54,27 @@
         if (displayedRevision === null) {
             displayedRevision = readRevision();
         }
+        restoreAddress();
     });
+
+    // badnav.php showing a page that could not change in place: the page ran
+    // under its own address, so the location bar shows that one again. The
+    // page is not loaded twice; a reload gets the stored page as before.
+    function restoreAddress() {
+        const meta = document.querySelector('meta[name="lotgd-address"]');
+        if (!meta || !/\/badnav\.php$/.test(window.location.pathname) || typeof window.history.replaceState !== 'function') {
+            return;
+        }
+        let target = null;
+        try {
+            target = new URL(meta.getAttribute('content') || '', window.location.href);
+        } catch (error) {
+            return;
+        }
+        if (target.origin === window.location.origin && /\.php$/.test(target.pathname)) {
+            window.history.replaceState(window.history.state, '', target.pathname + target.search);
+        }
+    }
     let inFlight = false;
 
     function readRevision() {

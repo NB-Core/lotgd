@@ -21,10 +21,12 @@ final class PartialModulePageTest extends TestCase
     private const REVISION_CLAIM = 'SET page_revision = page_revision + 1';
     private const SETTINGS = ['partial_render' => 1, 'defaultskin' => 'twig:aurora', 'show_error_details' => 1];
     private const UNGUARDED = 'zzpartialunguarded';
+    private const SCRIPTED = 'zzpartialscripted';
 
     protected function tearDown(): void
     {
         @unlink(dirname(__DIR__, 2) . '/modules/' . self::UNGUARDED . '.php');
+        @unlink(dirname(__DIR__, 2) . '/modules/' . self::SCRIPTED . '.php');
     }
 
     public function testADeclaredModulePageChangesInPlace(): void
@@ -80,6 +82,37 @@ PHP);
         $run = $this->partialGet($get, $this->moduleCache(self::UNGUARDED, '{"GET":[""]}'));
 
         self::assertSame('claim', $run->header('X-Lotgd-Partial-Fallback'), self::context($run));
+        self::assertSame('badnav.php', $run->header('HX-Redirect'));
+    }
+
+    public function testAPageWithAnInlineScriptSaysWhereTheScriptIs(): void
+    {
+        $file = dirname(__DIR__, 2) . '/modules/' . self::SCRIPTED . '.php';
+        file_put_contents($file, <<<'PHP'
+<?php
+function zzpartialscripted_getmoduleinfo(): array
+{
+    return ['name' => 'Scripted', 'version' => '1.0', 'category' => 'Test', 'partial' => ['GET' => ['']]];
+}
+function zzpartialscripted_install(): bool { return true; }
+function zzpartialscripted_uninstall(): bool { return true; }
+function zzpartialscripted_run(): void
+{
+    page_header('Scripted');
+    output('A page with a script.');
+    rawoutput("<script type='text/javascript'>\n  window.x = 1;</script>");
+    addnav('Village', 'village.php');
+    page_footer();
+}
+PHP);
+        $get = ['module' => self::SCRIPTED];
+        $run = $this->partialGet($get, $this->moduleCache(self::SCRIPTED, '{"GET":[""]}'));
+
+        self::assertSame('script', $run->header('X-Lotgd-Partial-Fallback'), self::context($run));
+        $detail = (string) $run->header('X-Lotgd-Partial-Fallback-Detail');
+        // The region, then up to 80 characters from the tag on, on one line.
+        self::assertStringStartsWith("content: <script type='text/javascript'> window.x = 1;</script>", $detail);
+        self::assertLessThanOrEqual(strlen('content: ') + 80, strlen($detail));
         self::assertSame('badnav.php', $run->header('HX-Redirect'));
     }
 
