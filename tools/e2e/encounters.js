@@ -74,7 +74,7 @@ const transport = cfg.transport('sse');
   check('Dora back in the village: the button is back', await waitFor(async () => (await button()) !== null, 8000));
 
   // The challenge.
-  await (await button()).click(); await a.waitForLoadState('load'); await settle(a);
+  await a.click(`button[name="target"][value="${dora}"]`); await a.waitForLoadState('load'); await settle(a);
   check('A waits for an answer', /Waiting for an answer/.test(await encText(a)), await encText(a));
   // The challenge was a form, a page change; from here on A's page stays.
   await a.evaluate(() => { window.__noReload = 1; });
@@ -107,7 +107,7 @@ const transport = cfg.transport('sse');
   await nav(d, 'village.php');
   await nav(a, 'encounter.php?c=');
   await waitFor(async () => (await button()) !== null, 8000);
-  await (await button()).click(); await a.waitForLoadState('load'); await settle(a);
+  await a.click(`button[name="target"][value="${dora}"]`); await a.waitForLoadState('load'); await settle(a);
   check('Dora is offered the second challenge', await waitFor(async () => /challenges you/.test(await slot(d)), 8000), await slot(d));
   await a.click('input[value="Withdraw the challenge"]'); await a.waitForLoadState('load'); await settle(a);
   check('A withdrew', /withdrew your challenge/.test(await encText(a)), await encText(a));
@@ -116,7 +116,7 @@ const transport = cfg.transport('sse');
   // Declined.
   await nav(a, 'encounter.php?c=');
   await waitFor(async () => (await button()) !== null, 8000);
-  await (await button()).click(); await a.waitForLoadState('load'); await settle(a);
+  await a.click(`button[name="target"][value="${dora}"]`); await a.waitForLoadState('load'); await settle(a);
   await waitFor(async () => /challenges you/.test(await slot(d)), 8000);
   await d.click('[data-lotgd-slot="grants"] a'); await d.waitForLoadState('load'); await settle(d);
   await d.click('input[value="Decline"]'); await d.waitForLoadState('load'); await settle(d);
@@ -126,7 +126,7 @@ const transport = cfg.transport('sse');
   await nav(a, 'encounter.php?c=');
   await waitFor(async () => (await button()) !== null, 8000);
   sql(`UPDATE presence SET place='forest' WHERE acctid=${dora}`);
-  await (await button()).click(); await a.waitForLoadState('load'); await settle(a);
+  await a.click(`button[name="target"][value="${dora}"]`); await a.waitForLoadState('load'); await settle(a);
   check('a stale button for a player now in the forest is refused', /not around to be challenged/.test(await text(a)), await text(a));
   sql(`UPDATE presence SET place='village' WHERE acctid=${dora}`);
 
