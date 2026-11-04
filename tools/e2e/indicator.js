@@ -1,0 +1,51 @@
+const { chromium } = require('playwright');
+const cfg = require('./config');
+const { execSync } = require('child_process');
+const BASE = cfg.BASE;
+const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
+const results = [];
+function check(name, ok, info = '') { results.push(!!ok); console.log((ok ? 'PASS ' : 'FAIL ') + name + (info ? ' -- ' + info : '')); }
+const OUT = process.env.OUT || '.';
+(async () => {
+  const skin = cfg.skin('twig:aurora');
+  const tag = skin.replace(/[:.]/g, '-');
+  const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
+  sql(`${cfg.setting('defaultskin', skin)}; INSERT INTO settings (setting,value) VALUES ('partial_render','1') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
+  sql(`UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}', alive=1, hitpoints=100, maxhitpoints=100, experience=0, seenmaster=1, badguy='', location='Degolburg', loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1; DELETE FROM accounts_output WHERE acctid=1`);
+  const b = await chromium.launch(cfg.launch);
+  const p = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  p.on('pageerror', e => console.log('pageerror:', e.message));
+  await p.goto(BASE + 'home.php'); await p.fill('#name', 'Admin'); await p.fill('#password', cfg.PASSWORD);
+  await p.click("input[value='Log in'], form[action*='login.php'] button[type='submit']");
+  await p.waitForLoadState('load'); await p.goto(BASE + 'badnav.php'); await p.waitForTimeout(500);
+  const dot = () => p.$eval('[data-lotgd-slot="mail"] .lotgd-live', el => ({ cls: el.className, title: el.title, anim: getComputedStyle(el).animationName, bg: getComputedStyle(el).backgroundColor, w: el.getBoundingClientRect().width })).catch(() => null);
+  const d0 = await dot();
+  check('a filled dot beside the mail link', d0 && d0.cls.includes('--on') && d0.title === 'Pages change in place' && d0.w > 3, JSON.stringify(d0));
+  const mailBox = await p.$('[data-lotgd-slot="mail"]');
+  await mailBox.screenshot({ path: `${OUT}/80-indicator-${tag}-on.png` });
+  // Slow the next swap down.
+  await p.route('**/forest.php*', async route => { await new Promise(r => setTimeout(r, 900)); route.continue(); });
+  const forest = await p.$eval('[data-lotgd-region="nav"] a[href^="forest.php"]', a => a.getAttribute('href'));
+  await p.evaluate(() => { window.__noReload = 1; });
+  const click = p.click(`a[href="${forest}"] >> nth=0`);
+  await p.waitForTimeout(450);
+  const d1 = await dot();
+  check('it spins while the page is swapped in', d1 && d1.anim === 'lotgd-live-spin', JSON.stringify(d1));
+  await mailBox.screenshot({ path: `${OUT}/81-indicator-${tag}-loading.png` }).catch(() => {});
+  await click; await p.waitForTimeout(1500);
+  await p.unroute('**/forest.php*');
+  const d2 = await dot();
+  check('and is a dot again after the swap, without a reload', d2 && d2.anim === 'none' && (await p.evaluate(() => window.__noReload === 1)) && (await p.title()).includes('Forest'), JSON.stringify(d2));
+  // Preference off: a hollow ring.
+  sql(`UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:0;}' WHERE acctid=1`);
+  const back = await p.$eval('[data-lotgd-region="nav"] a[href^="village.php"]', a => a.getAttribute('href'));
+  await p.click(`a[href="${back}"] >> nth=0`); await p.waitForLoadState('load'); await p.waitForTimeout(1200);
+  const d3 = await dot();
+  check('a hollow ring with the hint when the player turned it off', d3 && d3.cls.includes('--off') && /preferences/.test(d3.title) && d3.bg === 'rgba(0, 0, 0, 0)', JSON.stringify(d3));
+  await (await p.$('[data-lotgd-slot="mail"]')).screenshot({ path: `${OUT}/82-indicator-${tag}-off.png` });
+  sql(`UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}' WHERE acctid=1; ${cfg.setting('defaultskin', oldSkin)}`);
+  await b.close();
+  const passed = results.filter(Boolean).length;
+  console.log(`${passed}/${results.length} passed`);
+  process.exit(passed === results.length ? 0 : 1);
+})().catch(e => { console.error(e); process.exit(2); });

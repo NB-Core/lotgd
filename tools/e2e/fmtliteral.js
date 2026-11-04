@@ -1,0 +1,24 @@
+const { chromium } = require('playwright');
+const cfg = require('./config');
+const { execSync } = require('child_process');
+const BASE = cfg.BASE;
+const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
+(async () => {
+  sql(`INSERT INTO settings (setting,value) VALUES ('formatting_commentary','1'),('postinglimit','0') ON DUPLICATE KEY UPDATE value=VALUES(value); UPDATE accounts SET prefs='a:2:{s:4:"ajax";i:1;s:13:"partialrender";i:1;}', lasthit=NOW(), restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}', loggedin=0 WHERE acctid=1; DELETE FROM accounts_output WHERE acctid=1`);
+  const tag = Date.now().toString(36);
+  const b = await chromium.launch(cfg.launch);
+  const p = await (await b.newContext()).newPage();
+  await p.goto(BASE + 'home.php'); await p.fill('#name', 'Admin'); await p.fill('#password', cfg.PASSWORD);
+  await Promise.all([p.waitForNavigation(), p.click("input[value='Log in']")]);
+  const f = '[data-lotgd-commentary-form] [name="insertcommentary"]';
+  await p.click(f); await p.keyboard.type('``bLIT' + tag + ' `bBOLD');
+  await p.waitForTimeout(300);
+  const preview = await p.$eval('#previewtextinsertcommentary', e => e.innerHTML);
+  await p.press(f, 'Enter'); await p.waitForTimeout(1500);
+  const line = await p.evaluate(t => { const e = [...document.querySelectorAll('[data-cid]')].find(x => x.textContent.includes('LIT' + t)); return e ? e.innerHTML : null; }, tag);
+  const want = '`bLIT' + tag + ' <b>BOLD</b>';
+  console.log((preview.includes(want) ? 'PASS' : 'FAIL') + ' preview -- ' + preview.slice(-80));
+  console.log((line && line.includes(want) ? 'PASS' : 'FAIL') + ' posted line matches the preview -- ' + String(line).slice(-80));
+  sql(`INSERT INTO settings (setting,value) VALUES ('formatting_commentary','0') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
+  await b.close();
+})();
