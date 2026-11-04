@@ -60,6 +60,23 @@ final class CommentaryFormattingTest extends TestCase
         self::assertStringContainsString('``cmiddle', $line);
     }
 
+    public function testEmojiStayUnlessTheGameRemovesThem(): void
+    {
+        $comment = ":waves \u{1F44B}\u{1F3FD} with \u{2122}";
+
+        Settings::setInstance(new DummySettings(['charset' => 'UTF-8']));
+        self::assertStringContainsString("waves \u{1F44B}\u{1F3FD} with &trade;", Commentary::renderCommentLine($this->row($comment), false), 'Off by default.');
+
+        Settings::setInstance(new DummySettings(['charset' => 'UTF-8', 'commentary_emoji' => 1]));
+        $line = Commentary::renderCommentLine($this->row($comment), false);
+        self::assertStringContainsString('waves  with &trade;', $line, 'Pictographs go, the trademark stays.');
+
+        Settings::setInstance(new DummySettings(['charset' => 'UTF-8', 'commentary_emoji' => 2, 'formatting_commentary' => 1]));
+        $line = Commentary::renderCommentLine($this->row(":`b\u{1F600}bold"), false);
+        self::assertStringContainsString('`bbold`b', $line, 'Removed before bold is balanced.');
+        self::assertStringNotContainsString("\u{1F600}", $line);
+    }
+
     /**
      * @return array<string,mixed>
      */

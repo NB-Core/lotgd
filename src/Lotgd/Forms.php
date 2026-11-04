@@ -594,7 +594,8 @@ class Forms
      * With $talkline false the preview shows the text alone, without the
      * talk line in front (a name, a title). With $formatting the preview
      * shows bold and italic, closed again at its end, as
-     * Sanitize::balanceFormatting() renders them.
+     * Sanitize::balanceFormatting() renders them. $emoji is a
+     * Sanitize::EMOJI_* mode: the preview leaves out what the page removes.
      */
     public static function previewField(
         string $name,
@@ -603,7 +604,8 @@ class Forms
         bool $showcharsleft = true,
         array|bool $info = false,
         bool $scriptOutput = true,
-        bool $formatting = false
+        bool $formatting = false,
+        int $emoji = Sanitize::EMOJI_KEEP
     ): string {
         global $session;
         $output = Output::getInstance();
@@ -628,7 +630,8 @@ class Forms
                 $maxChars,
                 $youhave,
                 $charsleft,
-                $formatting
+                $formatting,
+                $emoji
             );
         }
 
@@ -698,7 +701,7 @@ JS;
 JS;
         }
 
-        $switchKey = 'switchscript_comm' . rawurlencode($name) . ($formatting ? '-fmt' : '');
+        $switchKey = 'switchscript_comm' . rawurlencode($name) . ($formatting ? '-fmt' : '') . ($emoji !== Sanitize::EMOJI_KEEP ? '-emoji' . $emoji : '');
         $switchscript = DataCache::getInstance()->datacache($switchKey);
 
         if (!$switchscript) {
@@ -714,8 +717,22 @@ JS;
             }
             $cases = implode("\n            ", $cases);
 
-            $switchscript = <<<JS
+            // Emoji go as the page removes them (Sanitize::stripEmoji()); the
+            // counter above still counts what is stored. Built at run time, so
+            // a browser without \p{} support only skips this.
+            $emojiScript = '';
+            if ($emoji === Sanitize::EMOJI_ALL || $emoji === Sanitize::EMOJI_PICTOGRAPHS) {
+                $parts = '\\\\u{1F1E6}-\\\\u{1F1FF}\\\\u{1F3FB}-\\\\u{1F3FF}\\\\u{200D}\\\\u{FE0E}\\\\u{FE0F}\\\\u{20E3}\\\\u{E0020}-\\\\u{E007F}';
+                $replace = $emoji === Sanitize::EMOJI_ALL
+                    ? ".replace(new RegExp('[\\\\p{Extended_Pictographic}{$parts}]', 'gu'), '')"
+                    : ".replace(new RegExp('\\\\p{Extended_Pictographic}(?=\\\\u{FE0F})', 'gu'), '')"
+                        . ".replace(new RegExp('(?=\\\\p{Extended_Pictographic})[\\\\u{2300}-\\\\u{10FFFF}]', 'gu'), '')"
+                        . ".replace(new RegExp('[{$parts}]', 'gu'), '')";
+                $emojiScript = "\n    try { t = t.substr(0, x) + t.substr(x){$replace}; } catch (e) {}";
+            }
 
+            $switchscript = <<<JS
+{$emojiScript}
     var open = [];
     for (; x < t.length; x++) {
         y = t.substr(x, 1);
@@ -806,7 +823,8 @@ JS;
         int $maxChars,
         string $youhave,
         string $charsleft,
-        bool $formatting = false
+        bool $formatting = false,
+        int $emoji = Sanitize::EMOJI_KEEP
     ): string {
         global $session;
         $output = Output::getInstance();
@@ -824,6 +842,7 @@ JS;
             'charsLeft' => $charsleft,
             'colors' => (object) $output->getColors(),
             'formatting' => $formatting,
+            'emoji' => $emoji,
         ];
         $preview = ' data-lotgd-preview="' . htmlspecialchars((string) json_encode($config), ENT_QUOTES, 'UTF-8') . '"';
 

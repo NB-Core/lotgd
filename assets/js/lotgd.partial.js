@@ -366,6 +366,26 @@
      * settings in data-lotgd-preview instead of an inline script. The output
      * matches the inline previewtext<name>() function it replaces.
      */
+
+    // Sanitize::stripEmoji(): 2 removes everything Unicode marks as a
+    // pictograph and the parts of emoji sequences, 1 keeps text symbols below
+    // U+2300 unless written in emoji form. Patterns are built at run time, so a
+    // browser without \p{} support only skips this (the text stays as typed).
+    function stripEmoji(text, mode) {
+        const parts = '\\u{1F1E6}-\\u{1F1FF}\\u{1F3FB}-\\u{1F3FF}\\u{200D}\\u{FE0E}\\u{FE0F}\\u{20E3}\\u{E0020}-\\u{E007F}';
+        try {
+            if (mode === 2) {
+                return text.replace(new RegExp('[\\p{Extended_Pictographic}' + parts + ']', 'gu'), '');
+            }
+            return text
+                .replace(new RegExp('\\p{Extended_Pictographic}(?=\\u{FE0F})', 'gu'), '')
+                .replace(new RegExp('(?=\\p{Extended_Pictographic})[\\u{2300}-\\u{10FFFF}]', 'gu'), '')
+                .replace(new RegExp('[' + parts + ']', 'gu'), '');
+        } catch (e) {
+            return text;
+        }
+    }
+
     function renderPreview(field) {
         let cfg;
         try {
@@ -373,7 +393,7 @@
         } catch (e) {
             return;
         }
-        const t = field.value || '';
+        let t = field.value || '';
         let l = cfg.limit;
         let out = "<span class='colLtWhite'>" + (cfg.start || '') + ' ';
         let end = '</span>';
@@ -419,6 +439,12 @@
             if (counter) {
                 counter.innerHTML = charsleft + '<br/>';
             }
+        }
+
+        // Emoji go as the page removes them (Sanitize::stripEmoji(),
+        // commentary_emoji); the counter above still counts what is stored.
+        if (cfg.emoji) {
+            t = t.slice(0, x) + stripEmoji(t.slice(x), cfg.emoji);
         }
 
         const colors = cfg.colors || {};

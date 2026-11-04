@@ -218,6 +218,64 @@ class Sanitize
         return (int) Settings::getInstance()->getSetting('formatting_' . $area, $defaults[$area] ?? 0) === 1;
     }
 
+    /** Emoji in chat lines (commentary_emoji): kept. */
+    public const EMOJI_KEEP = 0;
+
+    /** Emoji in chat lines: pictographs removed, text symbols (©, ™, arrows) kept. */
+    public const EMOJI_PICTOGRAPHS = 1;
+
+    /** Emoji in chat lines: everything Unicode marks as an emoji removed. */
+    public const EMOJI_ALL = 2;
+
+    /**
+     * What turns pictographs into emoji sequences, removed with them: flag
+     * letters, skin tones, the zero width joiner, variation selectors, the
+     * keycap and the tag characters (subdivision flags).
+     */
+    private const EMOJI_PARTS = '\x{1F1E6}-\x{1F1FF}\x{1F3FB}-\x{1F3FF}\x{200D}\x{FE0E}\x{FE0F}\x{20E3}\x{E0020}-\x{E007F}';
+
+    /**
+     * Remove emoji from a text.
+     *
+     * EMOJI_ALL removes every character Unicode marks Extended_Pictographic
+     * (this includes ©, ®, ™ and arrows) and the parts of emoji sequences.
+     * EMOJI_PICTOGRAPHS removes pictographs from U+2300 on and any character
+     * written in emoji form (followed by U+FE0F), so text symbols below
+     * U+2300 stay. Colour and formatting codes, letters of any script and
+     * text emoticons like :-) are never touched; a text that is not valid
+     * UTF-8 comes back unchanged.
+     */
+    public static function stripEmoji(string $in, int $mode): string
+    {
+        if ($mode !== self::EMOJI_PICTOGRAPHS && $mode !== self::EMOJI_ALL) {
+            return $in;
+        }
+        $patterns = $mode === self::EMOJI_ALL
+            ? ['/[\p{Extended_Pictographic}' . self::EMOJI_PARTS . ']/u']
+            : [
+                '/\p{Extended_Pictographic}(?=\x{FE0F})/u',
+                '/(?=\p{Extended_Pictographic})[\x{2300}-\x{10FFFF}]/u',
+                '/[' . self::EMOJI_PARTS . ']/u',
+            ];
+        $out = preg_replace($patterns, '', $in);
+
+        return is_string($out) ? $out : $in;
+    }
+
+    /**
+     * How the game treats emoji in chat lines: the setting commentary_emoji,
+     * EMOJI_KEEP unless it holds one of the other modes.
+     */
+    public static function commentaryEmojiMode(): int
+    {
+        if (!Settings::hasInstance()) {
+            return self::EMOJI_KEEP;
+        }
+        $mode = (int) Settings::getInstance()->getSetting('commentary_emoji', self::EMOJI_KEEP);
+
+        return in_array($mode, [self::EMOJI_PICTOGRAPHS, self::EMOJI_ALL], true) ? $mode : self::EMOJI_KEEP;
+    }
+
     /**
      * A player's text as it may be shown: bold and italic balanced where the
      * game allows them, literal where it does not.

@@ -6,6 +6,7 @@ namespace Lotgd\Tests\Forms;
 
 use Lotgd\Forms;
 use Lotgd\Output;
+use Lotgd\Sanitize;
 use Lotgd\Settings;
 use Lotgd\Tests\Stubs\DummySettings;
 use Lotgd\TwigTemplate;
@@ -136,6 +137,25 @@ final class PreviewFieldTest extends TestCase
         self::assertStringContainsString("for (var c = open.length - 1; c >= 0; c--)", $markup, 'What it opened is closed at the end.');
         self::assertStringContainsString("case \"`\": out+='`';break;", $markup, 'An escaped backtick shows as one.');
         self::assertStringContainsString("// A backtick at the very end is shown, as the page shows it.\n                out += '`';", $markup, 'So does one at the very end.');
+    }
+
+    public function testThePreviewLeavesOutTheEmojiThePageRemoves(): void
+    {
+        $this->enablePartialClient();
+        self::assertSame(Sanitize::EMOJI_KEEP, $this->config($this->render())['emoji'], 'Kept unless the caller says.');
+        $markup = Forms::previewField('insertcommentary', 'Admin', 'says', true, ['size' => 40], true, false, Sanitize::EMOJI_ALL);
+        self::assertSame(Sanitize::EMOJI_ALL, $this->config($markup)['emoji']);
+    }
+
+    public function testAClassicPreviewRemovesEmojiOnlyWhenAsked(): void
+    {
+        Settings::setInstance(new DummySettings(['maxchars' => 200, 'partial_render' => 1]));
+
+        self::assertStringNotContainsString('Extended_Pictographic', Forms::previewField('plaincomment', 'Admin', 'says', true, ['size' => 40], true));
+
+        $markup = Forms::previewField('emojicomment', 'Admin', 'says', true, ['size' => 40], true, false, Sanitize::EMOJI_PICTOGRAPHS);
+        self::assertStringContainsString("new RegExp('(?=\\\\p{Extended_Pictographic})[\\\\u{2300}-\\\\u{10FFFF}]', 'gu')", $markup, 'Pictographs from U+2300 on.');
+        self::assertStringContainsString('try { t = t.substr(0, x) + t.substr(x)', $markup, 'After the prefix, and only when the browser can.');
     }
 
     private function enablePartialClient(): void

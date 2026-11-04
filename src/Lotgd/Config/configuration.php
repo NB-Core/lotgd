@@ -132,6 +132,7 @@ $setup = array(
     "formatting_bio" => "Allow bold and italic in bios?,bool",
     "formatting_mail" => "Allow bold and italic in mail?,bool",
     "formatting_clan" => "Allow bold and italic in a clan's message of the day and description?,bool",
+    "commentary_emoji" => "Emoji in chat lines,enum,0,Keep them,1,Remove pictographs but keep text symbols like copyright and arrows,2,Remove everything Unicode marks as emoji",
 
     "Place names and People names,title",
     "villagename" => "Name for the main village",
