@@ -94,7 +94,12 @@ class Redirect
             header('Content-Type: application/json; charset=UTF-8');
             header('Cache-Control: no-store');
         }
-        echo json_encode(['status' => 'error', 'error' => 'redirect', 'location' => $location]);
+        // A target that is not valid UTF-8 must still give JSON, never an empty body.
+        $body = json_encode(
+            ['status' => 'error', 'error' => 'redirect', 'location' => $location],
+            JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_SLASHES
+        );
+        echo $body !== false ? $body : '{"status":"error","error":"redirect"}';
         exit();
     }
 }
