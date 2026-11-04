@@ -367,20 +367,26 @@
      * matches the inline previewtext<name>() function it replaces.
      */
 
-    // Sanitize::stripEmoji(): 2 removes everything Unicode marks as a
-    // pictograph and the parts of emoji sequences, 1 keeps text symbols below
-    // U+2300 unless written in emoji form. Patterns are built at run time, so a
-    // browser without \p{} support only skips this (the text stays as typed).
-    function stripEmoji(text, mode) {
-        const parts = '\\u{1F1E6}-\\u{1F1FF}\\u{1F3FB}-\\u{1F3FF}\\u{200D}\\u{FE0E}\\u{FE0F}\\u{20E3}\\u{E0020}-\\u{E007F}';
+    // Sanitize::stripEmoji() with the patterns the page uses
+    // (Sanitize::emojiPatternsForScript()), and character references that
+    // the page would show as such an emoji. Patterns are built at run time,
+    // so a browser without \p{} support only skips this.
+    let decoder = null;
+    function stripEmoji(text, patterns) {
+        if (!Array.isArray(patterns) || patterns.length === 0) {
+            return text;
+        }
         try {
-            if (mode === 2) {
-                return text.replace(new RegExp('[\\p{Extended_Pictographic}' + parts + ']', 'gu'), '');
-            }
-            return text
-                .replace(new RegExp('\\p{Extended_Pictographic}(?=\\u{FE0F})', 'gu'), '')
-                .replace(new RegExp('(?=\\p{Extended_Pictographic})[\\u{2300}-\\u{10FFFF}]', 'gu'), '')
-                .replace(new RegExp('[' + parts + ']', 'gu'), '');
+            const regexes = patterns.map(function (p) { return new RegExp(p, 'gu'); });
+            const strip = function (value) {
+                return regexes.reduce(function (acc, re) { return acc.replace(re, ''); }, value);
+            };
+            decoder = decoder || document.createElement('textarea');
+            return strip(text).replace(/&(?:#[xX][0-9a-fA-F]{1,6}|#[0-9]{1,7}|[A-Za-z][A-Za-z0-9]{1,31});/g, function (ref) {
+                decoder.innerHTML = ref;
+                const char = decoder.value;
+                return char !== ref && char !== '' && strip(char) === '' ? '' : ref;
+            });
         } catch (e) {
             return text;
         }
@@ -443,8 +449,8 @@
 
         // Emoji go as the page removes them (Sanitize::stripEmoji(),
         // commentary_emoji); the counter above still counts what is stored.
-        if (cfg.emoji) {
-            t = t.slice(0, x) + stripEmoji(t.slice(x), cfg.emoji);
+        if (cfg.emojiPatterns) {
+            t = t.slice(0, x) + stripEmoji(t.slice(x), cfg.emojiPatterns);
         }
 
         const colors = cfg.colors || {};

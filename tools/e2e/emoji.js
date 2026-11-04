@@ -9,14 +9,15 @@ const sql = q => execSync(cfg.DB_CMD, { input: q }).toString().trim();
 
 const FACE = '\u{1F600}';
 const WAVE = '\u{1F44B}\u{1F3FD}';
-// What a mode leaves of "mark FACE WAVE © end": the copyright sign is a text
+// What a mode leaves of "mark FACE WAVE © &#x1F600; end": the copyright sign is a text
 // symbol, kept unless everything Unicode marks as emoji goes. The line ends
 // in plain letters: the classic preview updates on keyup, and Playwright
 // types other characters without key events.
+// A character reference to the face shows as the face, and goes with it.
 const expected = {
-  0: m => `${m} ${FACE} ${WAVE} © end`,
-  1: m => `${m}   © end`,
-  2: m => `${m}    end`,
+  0: m => `${m} ${FACE} ${WAVE} © ${FACE} end`,
+  1: m => `${m}   ©  end`,
+  2: m => `${m}     end`,
 };
 
 const results = [];
@@ -41,7 +42,7 @@ function check(name, ok, info = '') {
         await Promise.all([p.waitForNavigation(), p.press('#password', 'Enter')]);
         if (!(await p.title()).includes('Square')) await p.goto(BASE + 'badnav.php');
         const mark = `emo${mode}x${Date.now() % 100000}`;
-        const typed = `${mark} ${FACE} ${WAVE} © end`;
+        const typed = `${mark} ${FACE} ${WAVE} © &#x1F600; end`;
         const tag = `${skin} mode ${mode}`;
 
         await p.click('[name="insertcommentary"]');

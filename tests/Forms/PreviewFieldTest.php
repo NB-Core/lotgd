@@ -145,6 +145,7 @@ final class PreviewFieldTest extends TestCase
         self::assertSame(Sanitize::EMOJI_KEEP, $this->config($this->render())['emoji'], 'Kept unless the caller says.');
         $markup = Forms::previewField('insertcommentary', 'Admin', 'says', true, ['size' => 40], true, false, Sanitize::EMOJI_ALL);
         self::assertSame(Sanitize::EMOJI_ALL, $this->config($markup)['emoji']);
+        self::assertSame(Sanitize::emojiPatternsForScript(Sanitize::EMOJI_ALL), $this->config($markup)['emojiPatterns'], 'The page\'s own patterns.');
     }
 
     public function testAClassicPreviewRemovesEmojiOnlyWhenAsked(): void
@@ -154,8 +155,9 @@ final class PreviewFieldTest extends TestCase
         self::assertStringNotContainsString('Extended_Pictographic', Forms::previewField('plaincomment', 'Admin', 'says', true, ['size' => 40], true));
 
         $markup = Forms::previewField('emojicomment', 'Admin', 'says', true, ['size' => 40], true, false, Sanitize::EMOJI_PICTOGRAPHS);
-        self::assertStringContainsString("new RegExp('(?=\\\\p{Extended_Pictographic})[\\\\u{2300}-\\\\u{10FFFF}]', 'gu')", $markup, 'Pictographs from U+2300 on.');
-        self::assertStringContainsString('try { t = t.substr(0, x) + t.substr(x)', $markup, 'After the prefix, and only when the browser can.');
+        $json = json_encode(Sanitize::emojiPatternsForScript(Sanitize::EMOJI_PICTOGRAPHS), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        self::assertStringContainsString("try { var er = {$json}.map(", $markup, 'The page\'s own patterns, only when the browser can.');
+        self::assertStringContainsString('t = t.substr(0, x) + es(t.substr(x))', $markup, 'After the prefix.');
     }
 
     private function enablePartialClient(): void

@@ -228,36 +228,84 @@ class Sanitize
     public const EMOJI_ALL = 2;
 
     /**
-     * What turns pictographs into emoji sequences, removed with them: flag
-     * letters, skin tones, the zero width joiner, variation selectors, the
-     * keycap and the tag characters (subdivision flags).
+     * The patterns stripEmoji() removes, without delimiters or flags, written
+     * so JavaScript reads them the same way after \x{...} becomes \u{...}
+     * (the comment previews get them through emojiPatternsForScript()).
+     *
+     * An emoji is matched as a whole sequence: a pictograph, its modifiers
+     * (variation selectors, skin tones, tag characters) and further
+     * pictographs joined by a zero width joiner. A joiner elsewhere (Indic
+     * shaping) is not part of an emoji and stays. Flag letters go; a keycap
+     * keeps its digit or sign.
+     *
+     * @return list<string>
      */
-    private const EMOJI_PARTS = '\x{1F1E6}-\x{1F1FF}\x{1F3FB}-\x{1F3FF}\x{200D}\x{FE0E}\x{FE0F}\x{20E3}\x{E0020}-\x{E007F}';
+    public static function emojiPatterns(int $mode): array
+    {
+        if ($mode !== self::EMOJI_PICTOGRAPHS && $mode !== self::EMOJI_ALL) {
+            return [];
+        }
+        // Pictographs only: from U+2300 on, or anything written in emoji form.
+        $pictograph = $mode === self::EMOJI_ALL
+            ? '\p{Extended_Pictographic}'
+            : '(?:(?=\p{Extended_Pictographic})[\x{2300}-\x{10FFFF}]|\p{Extended_Pictographic}(?=\x{FE0F}))';
+        $modifiers = '[\x{FE0E}\x{FE0F}\x{1F3FB}-\x{1F3FF}\x{E0020}-\x{E007F}]*';
+
+        return [
+            $pictograph . $modifiers . '(?:\x{200D}' . $pictograph . $modifiers . ')*',
+            '[\x{1F1E6}-\x{1F1FF}\x{1F3FB}-\x{1F3FF}]',
+            '(?<=[0-9#*])\x{FE0F}?\x{20E3}',
+        ];
+    }
+
+    /**
+     * emojiPatterns() for JavaScript's RegExp (with the u flag).
+     *
+     * @return list<string>
+     */
+    public static function emojiPatternsForScript(int $mode): array
+    {
+        return array_map(static fn (string $p): string => str_replace('\\x{', '\\u{', $p), self::emojiPatterns($mode));
+    }
 
     /**
      * Remove emoji from a text.
      *
-     * EMOJI_ALL removes every character Unicode marks Extended_Pictographic
-     * (this includes ©, ®, ™ and arrows) and the parts of emoji sequences.
-     * EMOJI_PICTOGRAPHS removes pictographs from U+2300 on and any character
+     * EMOJI_ALL removes every emoji sequence built on a character Unicode
+     * marks Extended_Pictographic (this includes ©, ®, ™ and arrows).
+     * EMOJI_PICTOGRAPHS removes those from U+2300 on and any character
      * written in emoji form (followed by U+FE0F), so text symbols below
-     * U+2300 stay. Colour and formatting codes, letters of any script and
-     * text emoticons like :-) are never touched; a text that is not valid
-     * UTF-8 comes back unchanged.
+     * U+2300 stay. A character reference (&#x1F600;, &hearts;) that the page
+     * would show as such an emoji goes too. Colour and formatting codes,
+     * letters of any script, joiners outside emoji and text emoticons like
+     * :-) are never touched; a text that is not valid UTF-8 comes back
+     * unchanged.
      */
     public static function stripEmoji(string $in, int $mode): string
     {
-        if ($mode !== self::EMOJI_PICTOGRAPHS && $mode !== self::EMOJI_ALL) {
+        $patterns = self::emojiPatterns($mode);
+        if ($patterns === []) {
             return $in;
         }
-        $patterns = $mode === self::EMOJI_ALL
-            ? ['/[\p{Extended_Pictographic}' . self::EMOJI_PARTS . ']/u']
-            : [
-                '/\p{Extended_Pictographic}(?=\x{FE0F})/u',
-                '/(?=\p{Extended_Pictographic})[\x{2300}-\x{10FFFF}]/u',
-                '/[' . self::EMOJI_PARTS . ']/u',
-            ];
-        $out = preg_replace($patterns, '', $in);
+        $regexes = array_map(static fn (string $p): string => '/' . $p . '/u', $patterns);
+        $out = preg_replace($regexes, '', $in);
+        if (!is_string($out)) {
+            return $in;
+        }
+        // References the browser turns into an emoji (the page keeps & as is).
+        $out = preg_replace_callback(
+            '/&(?:#[xX][0-9a-fA-F]{1,6}|#[0-9]{1,7}|[A-Za-z][A-Za-z0-9]{1,31});/',
+            static function (array $m) use ($regexes): string {
+                $char = html_entity_decode($m[0], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                if ($char === $m[0] || $char === '') {
+                    return $m[0];
+                }
+                $left = preg_replace($regexes, '', $char);
+
+                return is_string($left) && $left === '' ? '' : $m[0];
+            },
+            $out
+        );
 
         return is_string($out) ? $out : $in;
     }

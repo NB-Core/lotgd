@@ -40,6 +40,11 @@ final class EmojiTest extends TestCase
         yield 'copyright and trademark' => ['© ®™', '© ®™', ' '];
         yield 'an arrow' => ['a ↔ b', 'a ↔ b', 'a  b'];
         yield 'an arrow in emoji form' => ["a \u{2194}\u{FE0F} b", 'a  b', 'a  b'];
+        yield 'a woman with a skin tone and a sign' => ["\u{1F469}\u{1F3FD}\u{200D}\u{2640}\u{FE0F}.", '.', '.'];
+        yield 'a face as a hex reference' => ['hi &#x1F600;', 'hi ', 'hi '];
+        yield 'a face as a decimal reference' => ['hi &#128512;', 'hi ', 'hi '];
+        yield 'a heart as a named reference' => ['&hearts;!', '!', '!'];
+        yield 'copyright as a reference' => ['&copy;', '&copy;', ''];
     }
 
     #[DataProvider('emoji')]
@@ -56,6 +61,36 @@ final class EmojiTest extends TestCase
 
         self::assertSame($text, Sanitize::stripEmoji($text, Sanitize::EMOJI_PICTOGRAPHS));
         self::assertSame($text, Sanitize::stripEmoji($text, Sanitize::EMOJI_ALL));
+    }
+
+    public function testJoinersOutsideEmojiStay(): void
+    {
+        // Indic shaping asks for a joiner; there is no emoji in it.
+        $text = "\u{0915}\u{094D}\u{200D}\u{0937}";
+
+        self::assertSame($text, Sanitize::stripEmoji($text, Sanitize::EMOJI_PICTOGRAPHS));
+        self::assertSame($text, Sanitize::stripEmoji($text, Sanitize::EMOJI_ALL));
+    }
+
+    public function testOtherReferencesStay(): void
+    {
+        $text = 'Tom &amp; Jerry &lt;3 &#65; &nbsp; &unknown;';
+
+        self::assertSame($text, Sanitize::stripEmoji($text, Sanitize::EMOJI_ALL));
+    }
+
+    public function testThePreviewsGetTheSamePatternsForJavaScript(): void
+    {
+        self::assertSame([], Sanitize::emojiPatternsForScript(Sanitize::EMOJI_KEEP));
+        foreach ([Sanitize::EMOJI_PICTOGRAPHS, Sanitize::EMOJI_ALL] as $mode) {
+            $php = Sanitize::emojiPatterns($mode);
+            $js = Sanitize::emojiPatternsForScript($mode);
+            self::assertCount(count($php), $js);
+            foreach ($js as $i => $pattern) {
+                self::assertStringNotContainsString('\\x{', $pattern);
+                self::assertSame($php[$i], str_replace('\\u{', '\\x{', $pattern));
+            }
+        }
     }
 
     public function testATextThatIsNotUtf8ComesBackUnchanged(): void

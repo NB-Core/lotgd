@@ -717,18 +717,19 @@ JS;
             }
             $cases = implode("\n            ", $cases);
 
-            // Emoji go as the page removes them (Sanitize::stripEmoji()); the
-            // counter above still counts what is stored. Built at run time, so
-            // a browser without \p{} support only skips this.
+            // Emoji go as the page removes them (Sanitize::stripEmoji(), the
+            // same patterns and character references); the counter above
+            // still counts what is stored. Built at run time, so a browser
+            // without \p{} support only skips this.
             $emojiScript = '';
-            if ($emoji === Sanitize::EMOJI_ALL || $emoji === Sanitize::EMOJI_PICTOGRAPHS) {
-                $parts = '\\\\u{1F1E6}-\\\\u{1F1FF}\\\\u{1F3FB}-\\\\u{1F3FF}\\\\u{200D}\\\\u{FE0E}\\\\u{FE0F}\\\\u{20E3}\\\\u{E0020}-\\\\u{E007F}';
-                $replace = $emoji === Sanitize::EMOJI_ALL
-                    ? ".replace(new RegExp('[\\\\p{Extended_Pictographic}{$parts}]', 'gu'), '')"
-                    : ".replace(new RegExp('\\\\p{Extended_Pictographic}(?=\\\\u{FE0F})', 'gu'), '')"
-                        . ".replace(new RegExp('(?=\\\\p{Extended_Pictographic})[\\\\u{2300}-\\\\u{10FFFF}]', 'gu'), '')"
-                        . ".replace(new RegExp('[{$parts}]', 'gu'), '')";
-                $emojiScript = "\n    try { t = t.substr(0, x) + t.substr(x){$replace}; } catch (e) {}";
+            $patterns = Sanitize::emojiPatternsForScript($emoji);
+            if ($patterns !== []) {
+                $json = json_encode($patterns, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                $emojiScript = "\n    try { var er = {$json}.map(function (p) { return new RegExp(p, 'gu'); });"
+                    . " var es = function (v) { for (var i = 0; i < er.length; i++) { v = v.replace(er[i], ''); } return v; };"
+                    . " var ed = document.createElement('textarea');"
+                    . " t = t.substr(0, x) + es(t.substr(x)).replace(/&(?:#[xX][0-9a-fA-F]{1,6}|#[0-9]{1,7}|[A-Za-z][A-Za-z0-9]{1,31});/g,"
+                    . " function (r) { ed.innerHTML = r; var c = ed.value; return c !== r && c !== '' && es(c) === '' ? '' : r; }); } catch (e) {}";
             }
 
             $switchscript = <<<JS
@@ -843,6 +844,7 @@ JS;
             'colors' => (object) $output->getColors(),
             'formatting' => $formatting,
             'emoji' => $emoji,
+            'emojiPatterns' => Sanitize::emojiPatternsForScript($emoji),
         ];
         $preview = ' data-lotgd-preview="' . htmlspecialchars((string) json_encode($config), ENT_QUOTES, 'UTF-8') . '"';
 

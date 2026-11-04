@@ -75,6 +75,11 @@ final class CommentaryFormattingTest extends TestCase
         $line = Commentary::renderCommentLine($this->row(":`b\u{1F600}bold"), false);
         self::assertStringContainsString('`bbold`b', $line, 'Removed before bold is balanced.');
         self::assertStringNotContainsString("\u{1F600}", $line);
+
+        // A reference the browser would turn into the same face goes too.
+        $line = Commentary::renderCommentLine($this->row(':grins &#x1F600; &amp; more'), false);
+        self::assertStringNotContainsString('1F600', $line);
+        self::assertStringContainsString('&amp; more', $line);
     }
 
     /**
