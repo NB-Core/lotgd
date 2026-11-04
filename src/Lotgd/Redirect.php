@@ -47,13 +47,15 @@ class Redirect
         $host = PhpGenericEnvironment::getServer('HTTP_HOST');
         $http = PhpGenericEnvironment::getServer('SERVER_PORT') == 443 ? 'https' : 'http';
         $uri = rtrim(dirname(PhpGenericEnvironment::getServer('PHP_SELF')), '/\\');
+        // One header value for both ways out: no line break can end it early.
+        $target = str_replace(["\r", "\n"], '', $location);
         if (PartialMode::isActive()) {
             // The client would follow a Location inside its request and swap
             // the target page into a region. A redirect is a real page change.
-            PartialMode::sendHeader('HX-Redirect: ' . str_replace(["\r", "\n"], '', $location));
+            PartialMode::sendHeader('HX-Redirect: ' . $target);
             exit();
         }
-        header("Location: $http://$host$uri/$location");
+        header("Location: $http://$host$uri/$target");
 
     //fall through if this does not work!
         $session['debug'] .= "Redirected on '$host' with protocol '$http' to uri '$uri' to location '$location' from location '$requestUri'.<br/><br/>Reasion if given:<br/>  $reason<br>";

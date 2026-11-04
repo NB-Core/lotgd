@@ -47,4 +47,11 @@ final class EntityFingerprintTest extends TestCase
 
         self::assertNotSame($before, EntityFingerprint::of($this->dir));
     }
+
+    public function testAMissingDirectoryGivesTheFingerprintOfNoFiles(): void
+    {
+        $missing = sys_get_temp_dir() . '/lotgd-no-entities-' . bin2hex(random_bytes(4));
+
+        self::assertSame(substr(hash('sha256', ''), 0, 12), EntityFingerprint::of($missing));
+    }
 }

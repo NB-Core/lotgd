@@ -13,9 +13,12 @@ final class EntityFingerprint
     public static function of(string $entityDir): string
     {
         $state = '';
-        foreach ((array) glob($entityDir . '/*.php') as $file) {
-            $file = (string) $file;
-            $state .= basename($file) . ':' . (int) @filesize($file) . ':' . (int) @filemtime($file) . ';';
+        // glob() is false on an error: no files then, not one empty path.
+        foreach (glob($entityDir . '/*.php') ?: [] as $file) {
+            if (!is_file($file)) {
+                continue;
+            }
+            $state .= basename($file) . ':' . (int) filesize($file) . ':' . (int) filemtime($file) . ';';
         }
 
         return substr(hash('sha256', $state), 0, 12);
