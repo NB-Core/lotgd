@@ -55,7 +55,7 @@ final class StoredPage
         if ($uri === null || preg_match('#^[A-Za-z0-9_/-]+\.php(\?[^\s"\'<>]*)?$#', $uri) !== 1 || str_starts_with($uri, '/')) {
             return $html;
         }
-        $meta = '<meta name="lotgd-address" content="' . htmlspecialchars($uri, ENT_QUOTES, 'UTF-8') . '">';
+        $meta = '<meta name="lotgd-address" content="' . Escape::html($uri) . '">';
         $closed = stripos($html, '</head>');
         if ($closed === false) {
             return $html;
