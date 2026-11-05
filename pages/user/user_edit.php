@@ -87,7 +87,7 @@ if (Http::get('subop') == "") {
     */
     $showformargs = modulehook("modifyuserview", array("userinfo" => $userinfo, "user" => $row));
     $info = Forms::showFormTabbed($showformargs['userinfo'], $showformargs['user']);
-    $output->rawOutput("<input type='hidden' value=\"" . htmlentities(serialize($info), ENT_COMPAT, $charset) . "\" name='oldvalues'>");
+    $output->rawOutput("<input type='hidden' value=\"" . htmlentities(\Lotgd\Forms::encodeOldValues($info), ENT_COMPAT, $charset) . "\" name='oldvalues'>");
     $output->rawOutput("</form>");
     // The stored page inline, in a sealed frame: no request of its own,
     // which would claim this page's revision and leave Save without links.

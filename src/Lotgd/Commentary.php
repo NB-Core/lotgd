@@ -196,6 +196,26 @@ class Commentary
     }
 
     /**
+     * How long a posted line may be: the form's limit. A line that speaks
+     * with the talkline ("says, ...") gives up room for it, as the form's
+     * maxlength does; one that starts as an emote (`:`, `::`, `/me`,
+     * `/game` for a game master) does not, as the preview counts it
+     * (Forms::previewField()).
+     */
+    public static function postRoom(string $comment, string $said): int
+    {
+        global $session;
+
+        $max = (int) Settings::getInstance()->getSetting('maxchars', 200);
+        $emote = mb_substr($comment, 0, 1) === ':'
+            || mb_substr($comment, 0, 3) === '/me'
+            || (mb_substr($comment, 0, 5) === '/game'
+                && (((int) ($session['user']['superuser'] ?? 0)) & SU_IS_GAMEMASTER) === SU_IS_GAMEMASTER);
+
+        return $said !== 'says' && !$emote ? $max - (strlen($said) + 11) : $max;
+    }
+
+    /**
      * A comment posted over the async endpoint, to a section a page showed
      * this player (mayRead()) with the talkline and schema that page used.
      * Every check of a posted form is made here too: mute, the daily limit,
@@ -225,8 +245,7 @@ class Commentary
         $talkline = (string) $talk['talkline'];
         $schema = $talk['schema'] === '' ? false : (string) $talk['schema'];
         $said = (string) Translator::translateInline($talkline, $schema);
-        $room = (int) Settings::getInstance()->getSetting('maxchars', 200) - ($said !== 'says' ? strlen($said) + 11 : 0);
-        $comment = mb_substr($comment, 0, max(1, $room));
+        $comment = mb_substr($comment, 0, max(1, self::postRoom($comment, $said)));
 
         self::injectCommentary($section, $talkline, $comment, $schema);
 

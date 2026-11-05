@@ -179,10 +179,16 @@
         return el.hasAttribute('onclick')
             || el.hasAttribute('target')
             || el.hasAttribute('download')
+            // A picture for a lightbox: its script opens it on the click.
+            || el.hasAttribute('data-lightbox')
+            || /(^|\s)lightbox/i.test(el.getAttribute('rel') || '')
             || href === ''
             || href.charAt(0) === '#'
             || /^(javascript|mailto):/i.test(href)
-            || (el.host && el.host !== window.location.host);
+            || (el.host && el.host !== window.location.host)
+            // Only a game page can be swapped in: a picture, a file or a
+            // directory loads as the browser would load it.
+            || !/\.php$/i.test(el.pathname || '');
     }
 
     function boostRegions() {

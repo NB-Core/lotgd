@@ -131,7 +131,9 @@ final class PartialMode
             return;
         }
 
-        if (self::settingEnabled() && self::isAllowed(self::script(), self::method(), self::op(), $_GET)) {
+        // A tab still showing a page from before a logout: the page loads in
+        // full, as for any visitor who is not logged in (isEnabledFor()).
+        if (self::settingEnabled() && self::loggedIn() && self::isAllowed(self::script(), self::method(), self::op(), $_GET)) {
             self::$active = true;
 
             return;
@@ -146,6 +148,19 @@ final class PartialMode
 
         self::sendHeader('HX-Redirect: ' . self::requestUri());
         exit();
+    }
+
+    /**
+     * The session is a logged-in player's, before forced navigation reads
+     * the account.
+     */
+    private static function loggedIn(): bool
+    {
+        $session = $GLOBALS['session'] ?? [];
+
+        return is_array($session)
+            && !empty($session['loggedin'])
+            && (int) ($session['user']['acctid'] ?? 0) > 0;
     }
 
     /**
@@ -244,12 +259,17 @@ final class PartialMode
      * player chose it -- or never chose, and the game's default for players
      * (`partial_render_default`) is on.
      *
+     * Never for a visitor who is not logged in: no page of theirs can claim
+     * a page revision, so every page would fall back to badnav.php -- which
+     * needs a login (home.php -> list.php ended on index.php?op=timeout).
+     * Their empty prefs are not "never chose".
+     *
      * @param array<string,mixed> $user The session user, with prefs unserialized.
      */
     public static function isEnabledFor(array $user): bool
     {
         $prefs = $user['prefs'] ?? [];
-        if (!self::settingEnabled() || !is_array($prefs)) {
+        if (!self::settingEnabled() || !is_array($prefs) || (int) ($user['acctid'] ?? 0) <= 0) {
             return false;
         }
 
