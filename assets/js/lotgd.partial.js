@@ -546,8 +546,10 @@
         if (target && (['INPUT', 'TEXTAREA', 'SELECT'].indexOf(target.nodeName) !== -1 || target.isContentEditable)) {
             return;
         }
+        // Any one visible character, as the full page's script takes it:
+        // the core gives Comment Moderation "," (",?Comment Moderation").
         const key = String.fromCharCode(event.charCode || event.keyCode).toUpperCase();
-        if (!/^[A-Z0-9]$/.test(key)) {
+        if (key.length !== 1 || key.trim() === '') {
             return;
         }
         const links = document.querySelectorAll('[data-lotgd-region="nav"] a[accesskey]');
