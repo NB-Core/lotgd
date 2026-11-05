@@ -1682,8 +1682,15 @@ JS;
                 return $values;
             }
         }
-        $legacy = \Lotgd\Serialization::safeUnserialize(str_replace("\r\n", "\n", $encoded));
+        // As sent first: a value that held CRLF already is valid as it is.
+        // Then with the line breaks a browser turned into CRLF put back.
+        foreach ([$encoded, str_replace("\r\n", "\n", $encoded)] as $candidate) {
+            $legacy = \Lotgd\Serialization::safeUnserialize($candidate);
+            if (is_array($legacy)) {
+                return $legacy;
+            }
+        }
 
-        return is_array($legacy) ? $legacy : [];
+        return [];
     }
 }

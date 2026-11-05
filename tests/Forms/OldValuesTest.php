@@ -37,6 +37,11 @@ final class OldValuesTest extends TestCase
         self::assertSame(['bio' => "a\nb", 'ajax' => '1'], Forms::decodeOldValues($sent));
     }
 
+    public function testAnOldFormWhoseValueHeldCrlfAlreadyIsReadAsSent(): void
+    {
+        self::assertSame(['bio' => "a\r\nb"], Forms::decodeOldValues(serialize(['bio' => "a\r\nb"])));
+    }
+
     public function testAnObjectInAnOldFormIsNotCreated(): void
     {
         $decoded = Forms::decodeOldValues(serialize(['x' => new \ArrayObject([1])]));
