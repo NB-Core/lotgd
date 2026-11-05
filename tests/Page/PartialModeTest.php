@@ -261,16 +261,30 @@ final class PartialModeTest extends TestCase
         $previous = \Lotgd\Settings::hasInstance() ? \Lotgd\Settings::getInstance() : null;
         try {
             \Lotgd\Settings::setInstance(new \Lotgd\Tests\Stubs\DummySettings(['partial_render' => 1]));
-            self::assertTrue(PartialMode::isEnabledFor(['prefs' => []]), 'The default for players is on.');
-            self::assertFalse(PartialMode::isEnabledFor(['prefs' => ['partialrender' => 0]]), 'Their own choice stays.');
-            self::assertTrue(PartialMode::isEnabledFor(['prefs' => ['partialrender' => 1]]));
+            self::assertTrue(PartialMode::isEnabledFor(['acctid' => 7, 'prefs' => []]), 'The default for players is on.');
+            self::assertFalse(PartialMode::isEnabledFor(['acctid' => 7, 'prefs' => ['partialrender' => 0]]), 'Their own choice stays.');
+            self::assertTrue(PartialMode::isEnabledFor(['acctid' => 7, 'prefs' => ['partialrender' => 1]]));
 
             \Lotgd\Settings::setInstance(new \Lotgd\Tests\Stubs\DummySettings(['partial_render' => 1, 'partial_render_default' => 0]));
-            self::assertFalse(PartialMode::isEnabledFor(['prefs' => []]));
-            self::assertTrue(PartialMode::isEnabledFor(['prefs' => ['partialrender' => 1]]));
+            self::assertFalse(PartialMode::isEnabledFor(['acctid' => 7, 'prefs' => []]));
+            self::assertTrue(PartialMode::isEnabledFor(['acctid' => 7, 'prefs' => ['partialrender' => 1]]));
 
             \Lotgd\Settings::setInstance(new \Lotgd\Tests\Stubs\DummySettings(['partial_render' => 0]));
-            self::assertFalse(PartialMode::isEnabledFor(['prefs' => []]), 'Off for the game is off for everyone.');
+            self::assertFalse(PartialMode::isEnabledFor(['acctid' => 7, 'prefs' => []]), 'Off for the game is off for everyone.');
+        } finally {
+            \Lotgd\Settings::setInstance($previous);
+        }
+    }
+
+    public function testAVisitorWhoIsNotLoggedInNeverGetsIt(): void
+    {
+        $previous = \Lotgd\Settings::hasInstance() ? \Lotgd\Settings::getInstance() : null;
+        try {
+            \Lotgd\Settings::setInstance(new \Lotgd\Tests\Stubs\DummySettings(['partial_render' => 1]));
+            // Logged out on home.php: empty prefs are not "never chose".
+            self::assertFalse(PartialMode::isEnabledFor(['prefs' => []]));
+            self::assertFalse(PartialMode::isEnabledFor(['acctid' => 0, 'prefs' => ['partialrender' => 1]]));
+            self::assertFalse(PartialMode::isEnabledFor([]));
         } finally {
             \Lotgd\Settings::setInstance($previous);
         }

@@ -229,13 +229,9 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     }
 
 
-    $oldvalues = Http::post('oldvalues');
-    $oldvalues = html_entity_decode(
-        (string) $oldvalues,
-        ENT_COMPAT,
-        $settings->getSetting('charset', 'UTF-8')
+    $oldvalues = \Lotgd\Forms::decodeOldValues(
+        html_entity_decode((string) Http::post('oldvalues'), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'))
     );
-    $oldvalues = unserialize($oldvalues);
 
     $showFormTabIndex = Http::post('showFormTabIndex');
     if (is_array($showFormTabIndex)) {
@@ -664,7 +660,7 @@ if ($op == "suicide" && $settings->getSetting('selfdelete', 0) != 0) {
     $output->rawOutput("<input type='hidden' name='username' class='visually-hidden' value='{$usernameValue}' autocomplete='username' readonly>");
     $info = Forms::showFormTabbed($form, $prefs);
     $output->rawOutput("<input type='hidden' value=\"" .
-            htmlentities(serialize($info), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" name='oldvalues'>");
+            htmlentities(\Lotgd\Forms::encodeOldValues($info), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8')) . "\" name='oldvalues'>");
 
     $output->rawOutput("</form><br>");
     Nav::add("", "prefs.php?op=save");

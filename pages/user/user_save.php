@@ -19,17 +19,10 @@ $updates = 0;
 $output = Output::getInstance();
 $settings = Settings::getInstance();
 $post = Csrf::stripFrom(Http::allPost());
-$oldvalues = Http::post('oldvalues');
-$oldvalues = html_entity_decode(
-    (string) $oldvalues,
-    ENT_COMPAT,
-    $settings->getSetting('charset', 'UTF-8')
+// The values the edit form showed (Forms::encodeOldValues()); [] when unreadable.
+$oldvalues = \Lotgd\Forms::decodeOldValues(
+    html_entity_decode((string) Http::post('oldvalues'), ENT_COMPAT, $settings->getSetting('charset', 'UTF-8'))
 );
-/** @var array|string $oldvalues */
-$oldvalues = unserialize($oldvalues);
-if (!\is_array($oldvalues)) {
-    $oldvalues = [];
-}
 // Handle recombining the old name
 $otitle = $oldvalues['title'] ?? '';
 if (isset($oldvalues['ctitle']) && $oldvalues['ctitle']) {

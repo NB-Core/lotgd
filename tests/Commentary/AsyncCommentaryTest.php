@@ -238,6 +238,51 @@ final class AsyncCommentaryTest extends TestCase
     }
 
     /**
+     * The preview gives an emote (`:`, `::`, `/me`) the whole length and a
+     * line that speaks with the talkline the length less its room; the post
+     * keeps to the same counts, so a line that fit is not cut.
+     *
+     * @return iterable<string,array{0:string,1:string,2:int}>
+     */
+    public static function linesAtTheLimit(): iterable
+    {
+        // maxchars 40, talkline "whispers": 40 - (8 + 11) = 21 for a spoken line.
+        yield 'an emote keeps all 40' => [':' . str_repeat('e', 39), str_repeat('e', 39), 39];
+        yield 'a double-colon emote keeps all 40' => ['::' . str_repeat('d', 38), str_repeat('d', 38), 38];
+        yield '/me keeps all 40' => ['/me' . str_repeat('m', 37), str_repeat('m', 37), 37];
+        yield 'a spoken line gives room to the talkline' => [str_repeat('s', 40), str_repeat('s', 21), 21];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('linesAtTheLimit')]
+    public function testALineIsCutWhereThePreviewSaysItEnds(string $line, string $kept, int $length): void
+    {
+        Settings::setInstance(new DummySettings(['realtime_enabled' => 1, 'postinglimit' => 1, 'maxchars' => 40, 'maxcolors' => 10]));
+        $GLOBALS['session']['commentary_talk']['village']['talkline'] = 'whispers';
+
+        (new CommentaryHandler())->post('village', $line);
+
+        $insert = $this->statements('INSERT INTO commentary');
+        self::assertCount(1, $insert);
+        $stored = (string) $insert[0]['params']['comment'];
+        self::assertStringContainsString($kept, $stored);
+        self::assertStringNotContainsString($kept . substr($kept, 0, 1), $stored, "Kept {$length} characters at most.");
+    }
+
+    public function testAGameMastersGameLineKeepsAllAndAPlayersDoesNot(): void
+    {
+        self::assertSame(40, $this->room('/game' . str_repeat('g', 35), SU_IS_GAMEMASTER));
+        self::assertSame(21, $this->room('/game' . str_repeat('g', 35), 0));
+    }
+
+    private function room(string $line, int $superuser): int
+    {
+        Settings::setInstance(new DummySettings(['maxchars' => 40]));
+        $GLOBALS['session']['user']['superuser'] = $superuser;
+
+        return Commentary::postRoom($line, 'whispers');
+    }
+
+    /**
      * @param array<string,mixed> $row
      */
     private function lineToRemove(array $row = []): void
