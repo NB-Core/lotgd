@@ -1650,7 +1650,8 @@ JS;
      * form (prefs.php `oldvalues`): base64 of JSON. Serialized PHP did not
      * survive the trip -- a browser sends a line break in a hidden field as
      * CRLF, so the stored lengths no longer matched and unserialize() failed
-     * -- and unserializing what a request carries could create objects.
+     * -- and unserializing what a request carries could instantiate any
+     * class the request named.
      *
      * @param array<array-key,mixed> $values
      */
@@ -1665,7 +1666,9 @@ JS;
      * The values a form showed, from the hidden field encodeOldValues()
      * wrote; [] when it is missing or unreadable (every value then counts as
      * changed). A form from before this format (serialized PHP) is read once
-     * more, without objects.
+     * more through Serialization::safeUnserialize() (allowed_classes false):
+     * no class is instantiated, but an object in it comes back as a
+     * __PHP_Incomplete_Class, which compares equal to no submitted value.
      *
      * @return array<array-key,mixed>
      */
@@ -1682,7 +1685,8 @@ JS;
                 return $values;
             }
         }
-        // As sent first: a value that held CRLF already is valid as it is.
+        // Legacy serialized PHP (no class instantiated, see above). As sent
+        // first: a value that held CRLF already is valid as it is.
         // Then with the line breaks a browser turned into CRLF put back.
         foreach ([$encoded, str_replace("\r\n", "\n", $encoded)] as $candidate) {
             $legacy = \Lotgd\Serialization::safeUnserialize($candidate);
