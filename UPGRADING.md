@@ -401,7 +401,7 @@ example, `ALTER TABLE accounts ENGINE=InnoDB;`.
 request left behind. Events are relayed right after each change anyway. The daily cleanup removes old
 `action_log`, event, presence and encounter rows; a decided duel keeps one small row for the duel record.
 
-**Files and endpoints.** Upload `assets/` with the rest (htmx 2.0.4 ships in `assets/vendor/htmx/`). Every async
+**Files and endpoints.** Upload `assets/` with the rest (htmx 2.0.11 ships in `assets/vendor/htmx/`). Every async
 call goes to `async/process.php` and needs the header `X-Lotgd-Async: 1`, else the answer is `400` (the shipped
 client sends it; a page loaded before the upgrade needs a reload). The realtime poll follows
 `ajax_rate_limit_seconds`. With `sse`, `async/stream.php` must be reachable too and must not be

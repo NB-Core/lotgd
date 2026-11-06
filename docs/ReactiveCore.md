@@ -297,7 +297,7 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `{mail}` gets the dot unstyled, an empty and so invisible `<span>`).
 - **Redirects** (`Redirect::redirect()`, e.g. the new day or a login timeout)
   inside a partial request are `HX-Redirect` page changes.
-- **Client** (`assets/js/lotgd.partial.js`, after htmx 2.0.4 from
+- **Client** (`assets/js/lotgd.partial.js`, after htmx 2.0.11 from
   `assets/vendor/htmx/`): boosts links in the `content` and `nav` regions,
   and the forms there the page names (`lotgd-partial-forms`, then
   `X-Lotgd-Partial-Forms` after each swap); other forms, the
