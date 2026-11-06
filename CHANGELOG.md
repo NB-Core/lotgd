@@ -51,6 +51,7 @@ Everything below covers the path from 1.3.2 through the 2.0 release candidates a
 
 ### Fixed
 
+- On a page that changes in place, a navigation shortcut that is not a letter or a digit did nothing: the client took only A–Z and 0–9, while the core gives *Comment Moderation* the key `,`. It takes any one visible character now, as the full page did.
 - A chat line sent without reloading the page lost its last characters when it began as an emote (`:`, `::`, `/me`, `/game` for a game master): the server took room for the talkline ("says, …") from every line, while the preview gives an emote the whole length. Both count the same now (`Commentary::postRoom()`).
 - A picture link with a lightbox (`data-lightbox`, `rel="lightbox"`) opened and closed again: the in-place client took the click and asked for the picture as a page. Such links, and every link that does not lead to a `.php` page, stay ordinary links.
 - *List Warriors* and *Daily News* on the home page ended on `index.php?op=timeout` for a visitor who is not logged in. The in-place client is only for logged-in players now (`PartialMode::isEnabledFor()` needs an account), and a partial request without a login loads in full before the page runs.

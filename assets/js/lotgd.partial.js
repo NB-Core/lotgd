@@ -546,10 +546,17 @@
         if (target && (['INPUT', 'TEXTAREA', 'SELECT'].indexOf(target.nodeName) !== -1 || target.isContentEditable)) {
             return;
         }
-        const key = String.fromCharCode(event.charCode || event.keyCode).toUpperCase();
-        if (!/^[A-Z0-9]$/.test(key)) {
+        // Any one visible character, as the full page's script takes it:
+        // the core gives Comment Moderation "," (",?Comment Moderation").
+        // Checked before uppercasing, by code point: "ß" uppercases to "SS",
+        // and a character outside the BMP is two UTF-16 units.
+        const raw = typeof event.key === 'string' && event.key !== ''
+            ? event.key
+            : String.fromCharCode(event.charCode || event.keyCode);
+        if (Array.from(raw).length !== 1 || raw.trim() === '') {
             return;
         }
+        const key = raw.toUpperCase();
         const links = document.querySelectorAll('[data-lotgd-region="nav"] a[accesskey]');
         for (let i = 0; i < links.length; i++) {
             // Twig skins escape the attribute markup Nav builds, so the value
