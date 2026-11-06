@@ -41,7 +41,7 @@ async function login(page) {
   const oldSkin = sql(`SELECT value FROM settings WHERE setting='defaultskin'`);
   sql(`INSERT INTO settings (setting,value) VALUES ('partial_render','1'),('realtime_enabled','1'),('realtime_transport','poll') ON DUPLICATE KEY UPDATE value=VALUES(value)`);
   sql(`${cfg.setting('defaultskin', skin)}`);
-  sql(`UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}', alive=1, level=5, dragonkills=0, gold=20000, gems=100, hitpoints=10, maxhitpoints=100, weapon='Fists', weaponvalue=0, weapondmg=0, armor='T-Shirt', armorvalue=0, armordef=0, hashorse=0, location='Degolburg', badguy='', boughtroomtoday=0, loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1; DELETE FROM accounts_output WHERE acctid=1`);
+  sql(`UPDATE accounts SET prefs='a:1:{s:13:"partialrender";i:1;}', alive=1, level=5, dragonkills=0, gold=20000, gems=100, hitpoints=10, maxhitpoints=100, lasthit=NOW(), weapon='Fists', weaponvalue=0, weapondmg=0, armor='T-Shirt', armorvalue=0, armordef=0, hashorse=0, location='Degolburg', badguy='', boughtroomtoday=0, loggedin=0, restorepage='village.php', allowednavs='a:1:{s:11:"village.php";b:1;}' WHERE acctid=1; DELETE FROM accounts_output WHERE acctid=1`);
   try {
     const browser = await chromium.launch(cfg.launch);
     const a = await (await browser.newContext({ viewport: { width: 1280, height: 1000 } })).newPage();
