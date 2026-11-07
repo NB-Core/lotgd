@@ -176,9 +176,13 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `X-Lotgd-Resubmit: 1` and an empty body instead (a redirect would turn it
   into a GET and lose the form); the client then sends the same form, with
   the button it was sent with, as an ordinary page change.
-- **Only the game's client gets regions**: `lotgd.partial.js` sends
+- **Regions are opt-in per request**: `lotgd.partial.js` sends
   `X-Lotgd-Client: partial` with every request, and `PartialMode::isRequested()`
   takes the partial path only when that header comes with `HX-Request: true`.
+  The header is an opt-in, not a security boundary: anyone can send it, and
+  the partial path checks forced navigation and the page revision as any page
+  does. Partial answers carry `Vary: HX-Request, X-Lotgd-Client,
+  HX-History-Restore-Request`.
   htmx sends `HX-Request` on every request, also the htmx a skin brings
   itself; such a request is an ordinary page request – the full page and a
   plain `Location` redirect, never fragments, `HX-Redirect` or a fallback.

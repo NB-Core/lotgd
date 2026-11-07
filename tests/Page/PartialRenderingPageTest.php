@@ -37,6 +37,9 @@ final class PartialRenderingPageTest extends TestCase
 
         self::assertSame('1', $run->header('X-Lotgd-Partial'), $this->context($run));
         self::assertSame('1', $run->header('X-Lotgd-Page-Revision'));
+        // The answer depends on all three request headers: a cache must not
+        // hand a fragment to a request without them.
+        self::assertSame('HX-Request, X-Lotgd-Client, HX-History-Restore-Request', $run->header('Vary'));
         self::assertNull($run->header('HX-Redirect'));
         self::assertStringNotContainsString('<html', $run->html, 'A partial answer is never a document.');
         self::assertStringContainsString('hx-swap-oob="innerHTML:[data-lotgd-region=&quot;nav&quot;]"', $run->html);

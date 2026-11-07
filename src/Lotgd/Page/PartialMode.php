@@ -113,7 +113,7 @@ final class PartialMode
     public const REQUEST_HEADER = 'HTTP_HX_REQUEST';
 
     /**
-     * The game's own client says it is the one asking (lotgd.partial.js sends
+     * A request opts into the partial path (lotgd.partial.js sends
      * X-Lotgd-Client: partial). htmx sends HX-Request on every request,
      * including the htmx a skin brings itself; without this header such a
      * request is an ordinary page request -- a full page and a plain

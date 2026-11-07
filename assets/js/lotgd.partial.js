@@ -236,9 +236,10 @@
     // a page another tab has left since is turned away, even when the
     // latest page offers the same link.
     document.addEventListener('htmx:configRequest', function (event) {
-        // This client, not just any htmx: the server answers with regions,
-        // HX-Redirect and its fallbacks only when it is us asking
-        // (PartialMode::isRequested()). A skin's own htmx gets full pages.
+        // Opt into the partial path: the server answers with regions,
+        // HX-Redirect and its fallbacks only to requests that send this
+        // header (PartialMode::isRequested()); a skin's own htmx does not,
+        // and gets full pages.
         event.detail.headers['X-Lotgd-Client'] = 'partial';
         const meta = document.querySelector('meta[name="lotgd-head"]');
         if (meta) {

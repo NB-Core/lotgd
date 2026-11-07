@@ -91,7 +91,7 @@ class Footer
             exit();
         }
         if ($partial !== null) {
-            PartialMode::sendHeader('Vary: HX-Request');
+            PartialMode::sendHeader('Vary: HX-Request, X-Lotgd-Client, HX-History-Restore-Request');
             foreach ($partial['headers'] as $name => $value) {
                 PartialMode::sendHeader($name . ': ' . $value);
             }
