@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Page;
 
+use Lotgd\Page\PartialMode;
 use Lotgd\Tests\Security\PageCsrf\PageOutcome;
 use Lotgd\Tests\Security\PageCsrf\PageRunner;
 use PHPUnit\Framework\TestCase;
@@ -37,9 +38,9 @@ final class PartialRenderingPageTest extends TestCase
 
         self::assertSame('1', $run->header('X-Lotgd-Partial'), $this->context($run));
         self::assertSame('1', $run->header('X-Lotgd-Page-Revision'));
-        // The answer depends on all three request headers: a cache must not
+        // The answer depends on these request headers: a cache must not
         // hand a fragment to a request without them.
-        self::assertSame('HX-Request, X-Lotgd-Client, HX-History-Restore-Request', $run->header('Vary'));
+        self::assertSame(PartialMode::VARY, $run->header('Vary'));
         self::assertNull($run->header('HX-Redirect'));
         self::assertStringNotContainsString('<html', $run->html, 'A partial answer is never a document.');
         self::assertStringContainsString('hx-swap-oob="innerHTML:[data-lotgd-region=&quot;nav&quot;]"', $run->html);
@@ -131,6 +132,8 @@ final class PartialRenderingPageTest extends TestCase
 
         self::assertSame('badnav.php', $run->header('HX-Redirect'), $this->context($run));
         self::assertNull($run->header('X-Lotgd-Partial'));
+        // The late fallback depends on X-Lotgd-Head: keyed apart in a cache.
+        self::assertSame(PartialMode::VARY, $run->header('Vary'));
     }
 
     public function testAPageOffTheAllowListBecomesAPageChangeBeforeItRuns(): void
@@ -140,6 +143,7 @@ final class PartialRenderingPageTest extends TestCase
         // The URI is already reduced to the script and its query at this point,
         // which the client resolves against the page it is on.
         self::assertSame('account.php', $run->header('HX-Redirect'));
+        self::assertSame(PartialMode::VARY, $run->header('Vary'));
         self::assertSame('', $run->html);
         // Bootstrap may touch the settings table; the page itself, the forced
         // navigation and saveUser() write to accounts, and none of them ran.
@@ -158,6 +162,9 @@ final class PartialRenderingPageTest extends TestCase
         self::assertNull($run->header('X-Lotgd-Partial'), $this->context($run));
         self::assertNull($run->header('HX-Redirect'));
         self::assertNull($run->header('X-Lotgd-Partial-Fallback'));
+        // The full page names the same headers, so a cache never hands it
+        // to the game's client, nor a fragment to this request.
+        self::assertSame(PartialMode::VARY, $run->header('Vary'));
         self::assertStringContainsString('<html', $run->html, 'A full page, as without the live features.');
     }
 

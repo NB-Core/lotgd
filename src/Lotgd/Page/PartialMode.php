@@ -121,6 +121,13 @@ final class PartialMode
      */
     public const CLIENT_HEADER = 'HTTP_X_LOTGD_CLIENT';
     public const CLIENT_VALUE = 'partial';
+
+    /**
+     * The request headers that shape a page's answer: the partial path
+     * itself, its early and late fallbacks, the head check and the revision
+     * claim. Sent on every page so a shared cache keeps them apart.
+     */
+    public const VARY = 'HX-Request, X-Lotgd-Client, HX-History-Restore-Request, X-Lotgd-Head, X-Lotgd-Page-Revision';
     public const HISTORY_RESTORE_HEADER = 'HTTP_HX_HISTORY_RESTORE_REQUEST';
 
     private static bool $active = false;
@@ -137,6 +144,7 @@ final class PartialMode
     public static function preCheck(): void
     {
         self::$active = false;
+        self::sendHeader('Vary: ' . self::VARY, false);
         if (!self::isRequested()) {
             return;
         }

@@ -181,8 +181,10 @@ player on a skin with regions; everyone else gets exactly the game of before.
   takes the partial path only when that header comes with `HX-Request: true`.
   The header is an opt-in, not a security boundary: anyone can send it, and
   the partial path checks forced navigation and the page revision as any page
-  does. Partial answers carry `Vary: HX-Request, X-Lotgd-Client,
-  HX-History-Restore-Request`.
+  does. Every page (`PartialMode::preCheck()`) carries
+  `Vary: HX-Request, X-Lotgd-Client, HX-History-Restore-Request,
+  X-Lotgd-Head, X-Lotgd-Page-Revision` (`PartialMode::VARY`), so full pages,
+  fragments, redirects and both fallbacks are kept apart in a shared cache.
   htmx sends `HX-Request` on every request, also the htmx a skin brings
   itself; such a request is an ordinary page request – the full page and a
   plain `Location` redirect, never fragments, `HX-Redirect` or a fallback.
@@ -245,7 +247,7 @@ player on a skin with regions; everyone else gets exactly the game of before.
   takes a top-level title, and page content may leave elements open), then
   the content region, then every other region as an `hx-swap-oob` element
   addressed by `[data-lotgd-region=…]`. Headers `X-Lotgd-Partial: 1`,
-  `X-Lotgd-Page-Revision`, `Vary: HX-Request`, and for AJAX players
+  `X-Lotgd-Page-Revision`, `Vary` (above), and for AJAX players
   `X-Lotgd-Async-State` (below).
 - **Commentary preview**: for a partial player `Forms::previewField()` renders
   the same elements and ids without the inline `previewtext<name>()` script

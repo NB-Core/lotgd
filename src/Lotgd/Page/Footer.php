@@ -91,7 +91,6 @@ class Footer
             exit();
         }
         if ($partial !== null) {
-            PartialMode::sendHeader('Vary: HX-Request, X-Lotgd-Client, HX-History-Restore-Request');
             foreach ($partial['headers'] as $name => $value) {
                 PartialMode::sendHeader($name . ': ' . $value);
             }
@@ -441,7 +440,7 @@ class Footer
             $overlay = Overlay::render($state);
             Accounts::saveUser();
             session_write_close();
-            PartialMode::sendHeader('Vary: X-Lotgd-Overlay');
+            PartialMode::sendHeader('Vary: X-Lotgd-Overlay', false);
             foreach ($overlay['headers'] as $name => $value) {
                 PartialMode::sendHeader($name . ': ' . $value);
             }
