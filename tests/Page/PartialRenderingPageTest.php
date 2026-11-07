@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lotgd\Tests\Page;
 
+use Lotgd\Page\PartialMode;
 use Lotgd\Tests\Security\PageCsrf\PageOutcome;
 use Lotgd\Tests\Security\PageCsrf\PageRunner;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +29,7 @@ final class PartialRenderingPageTest extends TestCase
         'maxhitpoints' => 10,
     ];
 
-    private const PARTIAL_REQUEST = ['HTTP_HX_REQUEST' => 'true'];
+    private const PARTIAL_REQUEST = ['HTTP_HX_REQUEST' => 'true', 'HTTP_X_LOTGD_CLIENT' => 'partial'];
     private const REVISION_CLAIM = 'SET page_revision = page_revision + 1';
 
     public function testAnAllowedPageAnswersWithRegionsAndClaimsTheRevision(): void
@@ -37,6 +38,9 @@ final class PartialRenderingPageTest extends TestCase
 
         self::assertSame('1', $run->header('X-Lotgd-Partial'), $this->context($run));
         self::assertSame('1', $run->header('X-Lotgd-Page-Revision'));
+        // The answer depends on these request headers: a cache must not
+        // hand a fragment to a request without them.
+        self::assertSame(PartialMode::VARY, $run->header('Vary'));
         self::assertNull($run->header('HX-Redirect'));
         self::assertStringNotContainsString('<html', $run->html, 'A partial answer is never a document.');
         self::assertStringContainsString('hx-swap-oob="innerHTML:[data-lotgd-region=&quot;nav&quot;]"', $run->html);
@@ -128,6 +132,8 @@ final class PartialRenderingPageTest extends TestCase
 
         self::assertSame('badnav.php', $run->header('HX-Redirect'), $this->context($run));
         self::assertNull($run->header('X-Lotgd-Partial'));
+        // The late fallback depends on X-Lotgd-Head: keyed apart in a cache.
+        self::assertSame(PartialMode::VARY, $run->header('Vary'));
     }
 
     public function testAPageOffTheAllowListBecomesAPageChangeBeforeItRuns(): void
@@ -137,10 +143,37 @@ final class PartialRenderingPageTest extends TestCase
         // The URI is already reduced to the script and its query at this point,
         // which the client resolves against the page it is on.
         self::assertSame('account.php', $run->header('HX-Redirect'));
+        self::assertSame(PartialMode::VARY, $run->header('Vary'));
         self::assertSame('', $run->html);
         // Bootstrap may touch the settings table; the page itself, the forced
         // navigation and saveUser() write to accounts, and none of them ran.
         self::assertSame([], $run->statementsContaining('accounts'), 'The page must not have run.');
+    }
+
+    /**
+     * A skin that brings its own htmx sends HX-Request on every request it
+     * makes. Without the game's client header that is an ordinary page
+     * request: the full page, never fragments, HX-Redirect or a fallback.
+     */
+    public function testASkinsOwnHtmxGetsTheFullPage(): void
+    {
+        $run = $this->request('forest.php', ['HTTP_HX_REQUEST' => 'true']);
+
+        self::assertNull($run->header('X-Lotgd-Partial'), $this->context($run));
+        self::assertNull($run->header('HX-Redirect'));
+        self::assertNull($run->header('X-Lotgd-Partial-Fallback'));
+        // The full page names the same headers, so a cache never hands it
+        // to the game's client, nor a fragment to this request.
+        self::assertSame(PartialMode::VARY, $run->header('Vary'));
+        self::assertStringContainsString('<html', $run->html, 'A full page, as without the live features.');
+    }
+
+    public function testASkinsOwnHtmxIsNotSentAwayFromAPageOffTheAllowList(): void
+    {
+        $run = $this->request('account.php', ['HTTP_HX_REQUEST' => 'true']);
+
+        self::assertNull($run->header('HX-Redirect'), $this->context($run));
+        self::assertStringContainsString('<html', $run->html, 'The page ran and answered in full.');
     }
 
     public function testALostRevisionClaimIsTurnedAwayWithoutSaving(): void

@@ -64,7 +64,7 @@ final class LiveIndicatorPageTest extends TestCase
         $full = PageRunner::withRequest('forest.php', 0, 'GET', [], [], $globals, self::SETTINGS);
         self::assertSame(1, preg_match('/<meta name="lotgd-head" content="([0-9a-f]+)">/', $full->html, $match));
 
-        $run = PageRunner::withRequest('forest.php', 0, 'GET', [], [], $globals, self::SETTINGS, ['HTTP_HX_REQUEST' => 'true', 'HTTP_X_LOTGD_HEAD' => $match[1]]);
+        $run = PageRunner::withRequest('forest.php', 0, 'GET', [], [], $globals, self::SETTINGS, ['HTTP_HX_REQUEST' => 'true', 'HTTP_X_LOTGD_CLIENT' => 'partial', 'HTTP_X_LOTGD_HEAD' => $match[1]]);
 
         self::assertSame('1', $run->header('X-Lotgd-Partial'));
         self::assertMatchesRegularExpression('/data-lotgd-slot=&quot;mail&quot;\]">.*lotgd-live--on/s', $run->html);

@@ -111,6 +111,23 @@ final class PartialMode
     public const RESUBMIT_HEADER = 'X-Lotgd-Resubmit';
 
     public const REQUEST_HEADER = 'HTTP_HX_REQUEST';
+
+    /**
+     * A request opts into the partial path (lotgd.partial.js sends
+     * X-Lotgd-Client: partial). htmx sends HX-Request on every request,
+     * including the htmx a skin brings itself; without this header such a
+     * request is an ordinary page request -- a full page and a plain
+     * redirect -- never our fragments, HX-Redirect or fallback.
+     */
+    public const CLIENT_HEADER = 'HTTP_X_LOTGD_CLIENT';
+    public const CLIENT_VALUE = 'partial';
+
+    /**
+     * The request headers that shape a page's answer: the partial path
+     * itself, its early and late fallbacks, the head check and the revision
+     * claim. Sent on every page so a shared cache keeps them apart.
+     */
+    public const VARY = 'HX-Request, X-Lotgd-Client, HX-History-Restore-Request, X-Lotgd-Head, X-Lotgd-Page-Revision';
     public const HISTORY_RESTORE_HEADER = 'HTTP_HX_HISTORY_RESTORE_REQUEST';
 
     private static bool $active = false;
@@ -127,6 +144,7 @@ final class PartialMode
     public static function preCheck(): void
     {
         self::$active = false;
+        self::sendHeader('Vary: ' . self::VARY, false);
         if (!self::isRequested()) {
             return;
         }
@@ -226,12 +244,14 @@ final class PartialMode
     }
 
     /**
-     * Whether the client asked for regions. A history restore is a full
-     * page load in disguise and is never answered partially.
+     * Whether the game's client asked for regions: an htmx request that also
+     * names our client (CLIENT_HEADER). A history restore is a full page
+     * load in disguise and is never answered partially.
      */
     public static function isRequested(): bool
     {
         return ($_SERVER[self::REQUEST_HEADER] ?? '') === 'true'
+            && ($_SERVER[self::CLIENT_HEADER] ?? '') === self::CLIENT_VALUE
             && ($_SERVER[self::HISTORY_RESTORE_HEADER] ?? '') !== 'true';
     }
 

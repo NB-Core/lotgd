@@ -176,6 +176,36 @@ player on a skin with regions; everyone else gets exactly the game of before.
   `X-Lotgd-Resubmit: 1` and an empty body instead (a redirect would turn it
   into a GET and lose the form); the client then sends the same form, with
   the button it was sent with, as an ordinary page change.
+- **Regions are opt-in per request**: `lotgd.partial.js` sends
+  `X-Lotgd-Client: partial` with every request, and `PartialMode::isRequested()`
+  takes the partial path only when that header comes with `HX-Request: true`.
+  The header is an opt-in, not a security boundary: anyone can send it, and
+  the partial path checks forced navigation and the page revision as any page
+  does. Every page (`PartialMode::preCheck()`) carries
+  `Vary: HX-Request, X-Lotgd-Client, HX-History-Restore-Request,
+  X-Lotgd-Head, X-Lotgd-Page-Revision` (`PartialMode::VARY`), so full pages,
+  fragments, redirects and both fallbacks are kept apart in a shared cache.
+  htmx sends `HX-Request` on every request, also the htmx a skin brings
+  itself; such a request is an ordinary page request – the full page and a
+  plain `Location` redirect, never fragments, `HX-Redirect` or a fallback.
+  Forced navigation (`allowednavs`) applies to it as to any page.
+- **Why `HX-Redirect`**: the partial path answers a page change it cannot do
+  in place with `HX-Redirect`, in three places, and none of them can be left
+  out while the game's client runs:
+  - *Early fallback* (`PartialMode::preCheck()`): a page off the allowlist
+    loads in full; it has not run yet. With a plain answer instead, htmx would
+    swap a whole document, `<head>` and all, into the content region.
+  - *Redirects* (`Redirect::redirect()`): a redirect – a new day, a timeout, a
+    login, a page that sends the player on – is a real page change. htmx would
+    follow a `Location` inside its fetch and swap the next page into the
+    content region the same way.
+  - *Late fallback* (`Footer::pageFooter()`, to badnav.php): the page has run
+    and stored itself, but cannot change in place. badnav.php shows the stored
+    page; loading the URL again would run it a second time – another fight
+    round, another purchase.
+  So there is no setting to turn `HX-Redirect` off. A skin that wants to use
+  htmx its own way does not declare `regions` (the game's client then does
+  not run for it) or the game turns `partial_render` off.
 - **Tabbed forms** (`Forms::showFormTabbed()`: the preferences, the game
   settings – standard, extended and module settings – and the user editor)
   are markup only: one table, every row marked with its section, an empty
@@ -217,7 +247,7 @@ player on a skin with regions; everyone else gets exactly the game of before.
   takes a top-level title, and page content may leave elements open), then
   the content region, then every other region as an `hx-swap-oob` element
   addressed by `[data-lotgd-region=…]`. Headers `X-Lotgd-Partial: 1`,
-  `X-Lotgd-Page-Revision`, `Vary: HX-Request`, and for AJAX players
+  `X-Lotgd-Page-Revision`, `Vary` (above), and for AJAX players
   `X-Lotgd-Async-State` (below).
 - **Commentary preview**: for a partial player `Forms::previewField()` renders
   the same elements and ids without the inline `previewtext<name>()` script
