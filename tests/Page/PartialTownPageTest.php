@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class PartialTownPageTest extends TestCase
 {
-    private const PARTIAL_REQUEST = ['HTTP_HX_REQUEST' => 'true'];
+    private const PARTIAL_REQUEST = ['HTTP_HX_REQUEST' => 'true', 'HTTP_X_LOTGD_CLIENT' => 'partial'];
     private const REVISION_CLAIM = 'SET page_revision = page_revision + 1';
 
     private const WEAPON = [

@@ -97,16 +97,31 @@ final class PartialModeTest extends TestCase
         self::assertSame($allowed, PartialMode::isAllowed($script, $method, $op));
     }
 
-    public function testOnlyAnHtmxRequestThatIsNotAHistoryRestoreIsPartial(): void
+    public function testOnlyTheGamesClientThatIsNotRestoringHistoryIsPartial(): void
     {
-        unset($_SERVER[PartialMode::REQUEST_HEADER], $_SERVER[PartialMode::HISTORY_RESTORE_HEADER]);
-        self::assertFalse(PartialMode::isRequested());
+        unset($_SERVER[PartialMode::REQUEST_HEADER], $_SERVER[PartialMode::CLIENT_HEADER], $_SERVER[PartialMode::HISTORY_RESTORE_HEADER]);
+        try {
+            self::assertFalse(PartialMode::isRequested());
 
-        $_SERVER[PartialMode::REQUEST_HEADER] = 'true';
-        self::assertTrue(PartialMode::isRequested());
+            // A skin's own htmx: HX-Request alone is an ordinary page request.
+            $_SERVER[PartialMode::REQUEST_HEADER] = 'true';
+            self::assertFalse(PartialMode::isRequested(), 'Any htmx is not the game\'s client.');
 
-        $_SERVER[PartialMode::HISTORY_RESTORE_HEADER] = 'true';
-        self::assertFalse(PartialMode::isRequested(), 'A history restore is a full page load.');
+            $_SERVER[PartialMode::CLIENT_HEADER] = 'something-else';
+            self::assertFalse(PartialMode::isRequested());
+
+            $_SERVER[PartialMode::CLIENT_HEADER] = PartialMode::CLIENT_VALUE;
+            self::assertTrue(PartialMode::isRequested());
+
+            unset($_SERVER[PartialMode::REQUEST_HEADER]);
+            self::assertFalse(PartialMode::isRequested(), 'Our header without htmx is no partial request.');
+
+            $_SERVER[PartialMode::REQUEST_HEADER] = 'true';
+            $_SERVER[PartialMode::HISTORY_RESTORE_HEADER] = 'true';
+            self::assertFalse(PartialMode::isRequested(), 'A history restore is a full page load.');
+        } finally {
+            unset($_SERVER[PartialMode::REQUEST_HEADER], $_SERVER[PartialMode::CLIENT_HEADER], $_SERVER[PartialMode::HISTORY_RESTORE_HEADER]);
+        }
     }
 
     /**

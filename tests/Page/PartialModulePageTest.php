@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class PartialModulePageTest extends TestCase
 {
-    private const PARTIAL_REQUEST = ['HTTP_HX_REQUEST' => 'true'];
+    private const PARTIAL_REQUEST = ['HTTP_HX_REQUEST' => 'true', 'HTTP_X_LOTGD_CLIENT' => 'partial'];
     private const REVISION_CLAIM = 'SET page_revision = page_revision + 1';
     private const SETTINGS = ['partial_render' => 1, 'defaultskin' => 'twig:aurora', 'show_error_details' => 1];
     private const UNGUARDED = 'zzpartialunguarded';

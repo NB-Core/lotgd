@@ -514,6 +514,11 @@ These apply whatever the live settings are:
   [docs/ReactiveCore.md](docs/ReactiveCore.md) (*Region contract for Twig skins*), the walk-throughs in
   `templates_twig/README.md` and `templates/README.md`; `tests/Templates/RegionContractTest.php` and
   `tests/Templates/LegacyRegionContractTest.php` check the result.
+- A skin that brings its own htmx: its requests get ordinary full pages and plain redirects. The game answers with
+  regions, `HX-Redirect` and its fallbacks only to its own client (`X-Lotgd-Client: partial`, sent by
+  `assets/js/lotgd.partial.js`). Such a skin does not declare `regions`, or the game turns `partial_render` off; do not
+  load both clients on one page. Why `HX-Redirect` cannot be switched off while the game's client runs:
+  [docs/ReactiveCore.md](docs/ReactiveCore.md) (*Why `HX-Redirect`*).
 - Header slots are `motd`, `mail`, `petition`, `petitiondisplay` and `grants`. A skin that styled `#maillink` styles
   `[data-lotgd-slot="mail"]` instead. Mobile menus marked `data-lotgd-close-on-swap` close after a swap.
 - The dialog takes `--lotgd-overlay-bg`, `--lotgd-overlay-fg`, `--lotgd-overlay-border` and

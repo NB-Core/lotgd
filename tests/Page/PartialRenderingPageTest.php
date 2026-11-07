@@ -28,7 +28,7 @@ final class PartialRenderingPageTest extends TestCase
         'maxhitpoints' => 10,
     ];
 
-    private const PARTIAL_REQUEST = ['HTTP_HX_REQUEST' => 'true'];
+    private const PARTIAL_REQUEST = ['HTTP_HX_REQUEST' => 'true', 'HTTP_X_LOTGD_CLIENT' => 'partial'];
     private const REVISION_CLAIM = 'SET page_revision = page_revision + 1';
 
     public function testAnAllowedPageAnswersWithRegionsAndClaimsTheRevision(): void
@@ -141,6 +141,29 @@ final class PartialRenderingPageTest extends TestCase
         // Bootstrap may touch the settings table; the page itself, the forced
         // navigation and saveUser() write to accounts, and none of them ran.
         self::assertSame([], $run->statementsContaining('accounts'), 'The page must not have run.');
+    }
+
+    /**
+     * A skin that brings its own htmx sends HX-Request on every request it
+     * makes. Without the game's client header that is an ordinary page
+     * request: the full page, never fragments, HX-Redirect or a fallback.
+     */
+    public function testASkinsOwnHtmxGetsTheFullPage(): void
+    {
+        $run = $this->request('forest.php', ['HTTP_HX_REQUEST' => 'true']);
+
+        self::assertNull($run->header('X-Lotgd-Partial'), $this->context($run));
+        self::assertNull($run->header('HX-Redirect'));
+        self::assertNull($run->header('X-Lotgd-Partial-Fallback'));
+        self::assertStringContainsString('<html', $run->html, 'A full page, as without the live features.');
+    }
+
+    public function testASkinsOwnHtmxIsNotSentAwayFromAPageOffTheAllowList(): void
+    {
+        $run = $this->request('account.php', ['HTTP_HX_REQUEST' => 'true']);
+
+        self::assertNull($run->header('HX-Redirect'), $this->context($run));
+        self::assertStringContainsString('<html', $run->html, 'The page ran and answered in full.');
     }
 
     public function testALostRevisionClaimIsTurnedAwayWithoutSaving(): void
