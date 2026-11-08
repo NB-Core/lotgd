@@ -76,7 +76,7 @@ if ($op == "") {
             $output->outputNotl($translator->sprintfTranslate($description));
         }
     } else {
-        $output->output('%s', $texts['desc']);
+        $output->output($texts['desc']);
     }
     $translator->setSchema();
 
@@ -101,7 +101,7 @@ if ($op == "") {
             $output->outputNotl($translator->sprintfTranslate($description));
         }
     } else {
-        $output->output('%s', $texts['tradein']);
+        $output->output($texts['tradein']);
     }
     $translator->setSchema();
 
@@ -167,7 +167,7 @@ if ($op == "") {
     );
     if (Database::numRows($result) == 0) {
         $translator->setSchema($schemas['nosuchweapon']);
-        $output->output('%s', $texts['nosuchweapon']);
+        $output->output($texts['nosuchweapon']);
         $translator->setSchema();
         Nav::add("Navigation");
         VillageNav::render();

@@ -222,7 +222,7 @@ class Battle
             }
             if ($power) {
                 Translator::getInstance()->setSchema('battle');
-                Output::getInstance()->output('%s', $msg);
+                Output::getInstance()->output($msg);
                 Translator::getInstance()->setSchema();
 
                 $dmg += random_int((int)($crit / 4), (int)($crit / 2));
@@ -257,7 +257,7 @@ class Battle
             if ($schema) {
                 Translator::getInstance()->setSchema($schema);
             }
-                Output::getInstance()->output('%s', Sanitize::sanitizeMb($msg));
+                Output::getInstance()->output(Sanitize::sanitizeMb($msg));
             if ($schema) {
                 Translator::getInstance()->setSchema();
             }
@@ -282,7 +282,7 @@ class Battle
             if ($schema) {
                 Translator::getInstance()->setSchema($schema);
             }
-            Output::getInstance()->output('%s', $msg);
+            Output::getInstance()->output($msg);
             if ($schema) {
                 Translator::getInstance()->setSchema();
             }
@@ -303,7 +303,7 @@ class Battle
             if ($schema) {
                 Translator::getInstance()->setSchema($schema);
             }
-            Output::getInstance()->output('%s', $msg);
+            Output::getInstance()->output($msg);
             if ($schema) {
                 Translator::getInstance()->setSchema();
             }
@@ -339,7 +339,7 @@ class Battle
             if ($schema) {
                 Translator::getInstance()->setSchema($schema);
             }
-            Output::getInstance()->output('%s', $msg);
+            Output::getInstance()->output($msg);
             if ($schema) {
                 Translator::getInstance()->setSchema();
             }
@@ -767,7 +767,7 @@ class Battle
                 if ($schema) {
                     Translator::getInstance()->setSchema($schema);
                 }
-                Output::getInstance()->output('%s', $nomsg);
+                Output::getInstance()->output($nomsg);
                 if ($schema) {
                     Translator::getInstance()->setSchema();
                 }
@@ -807,7 +807,7 @@ class Battle
                 if ($schema) {
                     Translator::getInstance()->setSchema($schema);
                 }
-                Output::getInstance()->output('%s', $nomsg);
+                Output::getInstance()->output($nomsg);
                 if ($schema) {
                     Translator::getInstance()->setSchema();
                 }
@@ -879,7 +879,7 @@ class Battle
 
         $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}"), array($companion['name'] ?? ''));
         Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
-        $output->output('%s', $msg);
+        $output->output($msg);
         $output->outputNotl("`0`n");
         Translator::getInstance()->setSchema();
     }
@@ -942,7 +942,7 @@ class Battle
                 }
                     $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}"), array($companion['name'],$hptoheal));
                     Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                    $output->output('%s', $msg);
+                    $output->output($msg);
                     Translator::getInstance()->setSchema();
             } else {
                     // Okay. We really have to do this :(
@@ -965,7 +965,7 @@ class Battle
                         }
                         $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}","{target}"), array($companion['name'],$hptoheal,$mycompanion['name']));
                         Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                        $output->output('%s', $msg);
+                        $output->output($msg);
                         Translator::getInstance()->setSchema();
                         $healed = true;
                         $newcompanions[$myname] = $mycompanion;
@@ -996,7 +996,7 @@ class Battle
                                     }
                                     $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}","{target}"), array($companion['name'],$hptoheal,$mycompanion['name']));
                                     Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                                    $output->output('%s', $msg);
+                                    $output->output($msg);
                                     Translator::getInstance()->setSchema();
                                     $healed = true;
                                     $companions[$myname] = $mycompanion;
@@ -1061,7 +1061,7 @@ class Battle
                 }
                        $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}"), array($companion['name']));
                        Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                       $output->output('%s', $msg);
+                       $output->output($msg);
                        Translator::getInstance()->setSchema();
             } else {
                 if (isset($companion['magicmsg'])) {
@@ -1071,7 +1071,7 @@ class Battle
                 }
                       $msg = Substitute::applyArray("`)" . $msg . "`0`n", array("{companion}","{damage}"), array($companion['name'],$damage_done));
                       Translator::getInstance()->setSchema(isset($companion['schema']) ? $companion['schema'] : "battle");
-                      $output->output('%s', $msg);
+                      $output->output($msg);
                       Translator::getInstance()->setSchema();
                       $badguy['creaturehealth'] -= $damage_done;
             }

@@ -126,12 +126,12 @@ switch ($op) {
         }
 
         if ($affected === 0) {
-            $output->output('%s', $errnote);
+            $output->output($errnote);
             if ($dbalErrorMessage !== '') {
                 $output->rawOutput(htmlspecialchars($dbalErrorMessage, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
             }
         } else {
-            $output->output('%s', $note);
+            $output->output($note);
         }
         $op = "";
         break;

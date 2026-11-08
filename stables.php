@@ -163,7 +163,7 @@ if ($op == "") {
             $output->outputNotl($translator->sprintfTranslate($description));
         }
     } else {
-        $output->output('%s', $texts['desc']);
+        $output->output($texts['desc']);
     }
     $translator->setSchema();
     HookHandler::hook("stables-desc");
@@ -171,13 +171,13 @@ if ($op == "") {
     $mount = stables_load_mount_by_id((int) $id);
     if ($mount === false) {
         $translator->setSchema($schemas['nosuchbeast']);
-        $output->output('%s', $texts['nosuchbeast']);
+        $output->output($texts['nosuchbeast']);
         $translator->setSchema();
     } else {
         // Idea taken from Robert of dragonprime.cawsquad.net
         $t = Random::eRand(0, count($texts['finebeast']) - 1);
         $translator->setSchema($schemas['finebeast']);
-        $output->output('%s', $texts['finebeast'][$t]);
+        $output->output($texts['finebeast'][$t]);
         $translator->setSchema();
         $mount = HookHandler::hook("mount-modifycosts", $mount);
         $output->output("`7Creature: `&%s`0`n", $mount['mountname']);
@@ -207,7 +207,7 @@ if ($op == 'confirmbuy') {
     $mount = stables_load_mount_by_id((int) $id);
     if ($mount === false) {
         $translator->setSchema($schemas['nosuchbeast']);
-        $output->output('%s', $texts['nosuchbeast']);
+        $output->output($texts['nosuchbeast']);
         $translator->setSchema();
     } else {
         $mount = HookHandler::hook("mount-modifycosts", $mount);

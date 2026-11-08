@@ -940,7 +940,7 @@ SQL;
             return;
         }
         if ($intro) {
-            $output->output('%s', $intro);
+            $output->output($intro);
         }
         self::viewCommentary($section, $message, $limit, $talkline, $schema);
     }
@@ -1428,12 +1428,12 @@ SQL;
         ) {
             if ($message != "X") {
                     $message = "`n`@$message`n";
-                    $output->output('%s', $message);
+                    $output->output($message);
                     self::talkForm($section, $talkline, $limit, $schema);
             }
         } else {
                 $message = "`n`@$message`n";
-                $output->output('%s', $message);
+                $output->output($message);
                 $output->output("Sorry, you've exhausted your posts in this section for now.`0`n");
         }
     }

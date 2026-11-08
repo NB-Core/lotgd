@@ -333,7 +333,7 @@ class Buffs
                     $output->outputNotl($msg);
                 } else {
                     $msg = Substitute::applyArray("`5" . $buff['startmsg'] . "`0`n");
-                    $output->output('%s', $msg);
+                    $output->output($msg);
                 }
 
                 unset($session['bufflist'][$key]['startmsg']);
@@ -397,7 +397,7 @@ class Buffs
                         $output->outputNotl($msg);
                     } else {
                         $msg = Substitute::applyArray("`5" . $buff['roundmsg'] . "`0`n");
-                        $output->output('%s', $msg);
+                        $output->output($msg);
                     }
                 }
             }
@@ -468,7 +468,7 @@ class Buffs
                     $output->outputNotl($msg);
                 } elseif ($msg != '') {
                     $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$hptoregen]);
-                    $output->output('%s', $msg);
+                    $output->output($msg);
                 }
                 if (isset($buff['aura']) && $buff['aura'] == true) {
                     global $companions;
@@ -490,7 +490,7 @@ class Buffs
                                 $auramsg = $buff['auramsg'] ?? '';
                                 if ($auramsg != '') {
                                     $msg = Substitute::applyArray('`)' . $auramsg . '`0`n', ['{damage}', '{companion}'], [$hptoregen, $companion['name']]);
-                                    $output->output('%s', $msg);
+                                    $output->output($msg);
                                 }
                                 // Read back what was just written, not the copy the
                                 // foreach made before it. Testing $companion here meant
@@ -587,7 +587,7 @@ class Buffs
                         $output->outputNotl($msg);
                     } elseif ($msg > '') {
                         $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [abs($damage)]);
-                        $output->output('%s', $msg);
+                        $output->output($msg);
                     }
                     if ($badguy['dead'] == true) {
                         break;
@@ -645,7 +645,7 @@ class Buffs
                 $output->outputNotl($msg);
             } elseif ($msg > '') {
                 $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$healhp]);
-                $output->output('%s', $msg);
+                $output->output($msg);
             }
             if ($buff['schema']) {
                 Translator::getInstance()->setSchema();
@@ -696,7 +696,7 @@ class Buffs
                 $output->outputNotl($msg);
             } elseif ($msg > '') {
                 $msg = Substitute::applyArray('`)' . $msg . '`0`n', ['{damage}'], [$realdamage]);
-                $output->output('%s', $msg);
+                $output->output($msg);
             }
             if ($buff['schema']) {
                 Translator::getInstance()->setSchema();
@@ -731,7 +731,7 @@ class Buffs
                             $output->outputNotl($msg);
                         } else {
                             $msg = Substitute::applyArray('`5' . $buff['wearoff'] . '`0`n');
-                            $output->output('%s', $msg);
+                            $output->output($msg);
                         }
                     }
                     self::stripBuff($key);
@@ -767,7 +767,7 @@ class Buffs
                             $output->outputNotl($msg);
                         } else {
                             $msg = Substitute::applyArray('`5' . $buff['wearoff'] . '`0`n');
-                            $output->output('%s', $msg);
+                            $output->output($msg);
                         }
                     }
                     self::stripBuff($key);

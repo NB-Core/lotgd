@@ -25,7 +25,7 @@ function mailDefault(): void
 
     $output->output('`b`iMail Box`i`b');
     if (isset($session['message'])) {
-        $output->output('%s', $session['message']);
+        $output->output($session['message']);
     }
     $session['message'] = '';
 
