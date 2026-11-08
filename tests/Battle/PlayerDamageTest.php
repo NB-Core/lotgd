@@ -316,8 +316,8 @@ final class PlayerDamageTest extends TestCase
 
         $roll = Battle::computePlayerDamage($badguy, $player, $context, $random);
 
-        self::assertEquals(0, $roll->selfDamage);
-        self::assertEquals(1, $roll->creatureDamage, 'the third iteration lands the player\'s blow');
+        self::assertSame(0, $roll->selfDamage);
+        self::assertSame(1.0, $roll->creatureDamage, 'the third iteration lands the player\'s blow');
         self::assertTrue($random->isDrained(), 'one power-attack draw for three iterations');
     }
 
