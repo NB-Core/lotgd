@@ -23,9 +23,10 @@ use PHPUnit\Framework\TestCase;
  * blow, a negative one is the creature riposting; a positive self damage is the
  * creature landing one, a negative one is the player riposting.
  *
- * Randomness is consumed in a fixed order per iteration -- the critical-hit
- * roll, then the player's attack roll, the creature's defence roll, the player's
- * defence roll and the creature's attack roll, then the power-attack roll. Every
+ * Randomness is consumed in a fixed order: the power-attack roll once for the
+ * exchange (when power attacks are on), then per iteration the critical-hit
+ * roll, the player's attack roll, the creature's defence roll, the player's
+ * defence roll and the creature's attack roll. Every
  * case below scripts exactly that many values and asserts the script ran dry, so
  * a case that silently takes a different path through the method shows up as a
  * failure rather than passing for the wrong reason.
@@ -276,22 +277,61 @@ final class PlayerDamageTest extends TestCase
     }
 
     /**
-     * The forest's power attack multiplies the creature's attack roll, and the
-     * die for it is drawn after the four rolls rather than before.
+     * The forest's power attack multiplies the creature's attack roll. Its die
+     * is drawn once for the exchange, before the first roll.
      */
     public function testThePowerAttackMultipliesTheCreaturesRoll(): void
     {
         $context = new CombatContext(powerAttackChance: 10, powerAttackMulti: 3.0);
 
         $badguy = self::badguy();
-        $struck = $this->roll($badguy, [5, 1], [12.0, 4.0, 2.0, 4.0], $context);
+        $struck = $this->roll($badguy, [1, 5], [12.0, 4.0, 2.0, 4.0], $context);
 
         self::assertSame(10.0, $struck->selfDamage, 'a creature roll of 4 tripled to 12 against a defence roll of 2');
 
         $badguy = self::badguy();
-        $spared = $this->roll($badguy, [5, 2], [12.0, 4.0, 2.0, 4.0], $context);
+        $spared = $this->roll($badguy, [2, 5], [12.0, 4.0, 2.0, 4.0], $context);
 
         self::assertSame(2.0, $spared->selfDamage, 'without the power attack the same rolls give 2');
+    }
+
+    /**
+     * A re-roll is no new chance at a power attack.
+     *
+     * With low stats most rolls truncate to 0 and the exchange is rolled again.
+     * When the die was drawn on every re-roll, the loop ran until a power
+     * attack landed and a new character lost nearly every fight. Here the die
+     * misses once, two fruitless iterations follow, and the third lands an
+     * ordinary blow: one power-attack draw, three crit draws.
+     */
+    public function testARerollIsNoNewChanceAtAPowerAttack(): void
+    {
+        $context = new CombatContext(powerAttackChance: 10, powerAttackMulti: 3.0);
+        $badguy = ['creaturehealth' => 10, 'creatureattack' => 1, 'creaturedefense' => 1, 'physicalresistance' => 0];
+        $player = new Combatant(attack: 1.0, defense: 1.0, hitpoints: 10.0, resistance: 0.0);
+        $random = new ScriptedRandom(
+            [2, 5, 5, 5],
+            [0.5, 0.5, 0.5, 0.5, 0.4, 0.6, 0.5, 0.5, 1.0, 0.0, 1.0, 1.0]
+        );
+
+        $roll = Battle::computePlayerDamage($badguy, $player, $context, $random);
+
+        self::assertSame(0, $roll->selfDamage);
+        self::assertSame(1.0, $roll->creatureDamage, 'the third iteration lands the player\'s blow');
+        self::assertTrue($random->isDrained(), 'one power-attack draw for three iterations');
+    }
+
+    /**
+     * No power attacks against a level-1 player; from level 2 the setting
+     * applies, and 0 still turns them off.
+     */
+    public function testNoPowerAttacksAgainstALevelOnePlayer(): void
+    {
+        $settings = new \Lotgd\Tests\Stubs\DummySettings(['forestpowerattackchance' => 10]);
+
+        self::assertSame(0, Battle::powerAttackChance(['level' => 1], $settings));
+        self::assertSame(10, Battle::powerAttackChance(['level' => 2], $settings));
+        self::assertSame(0, Battle::powerAttackChance(['level' => 5], new \Lotgd\Tests\Stubs\DummySettings(['forestpowerattackchance' => 0])));
     }
 
     /**

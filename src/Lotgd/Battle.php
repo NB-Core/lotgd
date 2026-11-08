@@ -68,7 +68,7 @@ class Battle
                 dmgMod: (float) $buffset['dmgmod'],
                 badguyDmgMod: (float) $buffset['badguydmgmod'],
                 invulnerable: (bool) $buffset['invulnerable'],
-                powerAttackChance: (int) $settings->getSetting('forestpowerattackchance', 10),
+                powerAttackChance: self::powerAttackChance($session['user'], $settings),
                 powerAttackMulti: (float) $settings->getSetting('forestpowerattackmulti', 3),
             ),
             new SystemRandomSource(),
@@ -92,6 +92,24 @@ class Battle
             'creaturedmg' => $roll->creatureDamage,
             'selfdmg' => $roll->selfDamage,
         ];
+    }
+
+    /**
+     * How often a forest creature lands a power attack on this player: one
+     * exchange in N (forestpowerattackchance), 0 for none.
+     *
+     * Never against a level-1 player: a new character has attack and defence 1
+     * and nothing to answer a tripled blow with.
+     *
+     * @param array<string, mixed> $user
+     */
+    public static function powerAttackChance(array $user, Settings $settings): int
+    {
+        if ((int) ($user['level'] ?? 1) <= 1) {
+            return 0;
+        }
+
+        return max(0, (int) $settings->getSetting('forestpowerattackchance', 10));
     }
 
     /**
@@ -146,6 +164,15 @@ class Battle
                 $badguy['physicalresistance'] = 0;
             }
 
+            // The creature's power attack is decided once for the exchange.
+            // Drawn inside the re-roll below, every fruitless re-roll was
+            // another chance at it: with low stats nearly every roll truncates
+            // to 0, so the loop ran until a power attack landed and a new
+            // character lost almost every fight at level 1.
+            $powerAttack = $context->powerAttackChance > 0
+                && !$context->isPvp
+                && $random->int(1, $context->powerAttackChance) == 1;
+
             $bad_check = 1;
             while ($creaturedmg == 0 && $selfdmg == 0) {
                 $atk = $self->attack * $context->atkMod;
@@ -166,10 +193,8 @@ class Battle
                 }
                 $pdefroll = $random->bell(0, $adjustedselfdefense);
                 $catkroll = $random->bell(0, $creatureattack);
-                if ($context->powerAttackChance != 0 && !$context->isPvp) {
-                    if ($random->int(1, $context->powerAttackChance) == 1) {
-                        $catkroll *= $context->powerAttackMulti;
-                    }
+                if ($powerAttack) {
+                    $catkroll *= $context->powerAttackMulti;
                 }
                 $selfdmg = 0 - (int) ($pdefroll - $catkroll);
                 if ($selfdmg < 0) {
