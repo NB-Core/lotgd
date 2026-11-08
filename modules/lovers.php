@@ -147,7 +147,7 @@ function lovers_run(): void
     page_header($iname);
     rawoutput("<span style='color: #9900FF'>");
     output_notl("`c`b");
-    output('%s', $iname);
+    output($iname);
     output_notl("`b`c");
     switch (httpget('op')) {
         case "flirt":

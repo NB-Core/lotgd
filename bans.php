@@ -85,7 +85,7 @@ if ($op == "search" || $op == "") {
     $err = $lookup['error'];
     $op = "";
     if ($err) {
-        $output->output('%s', $err);
+        $output->output($err);
     } else {
         if ($searchresult) {
             $display = 1;

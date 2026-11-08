@@ -262,15 +262,27 @@ class Output
             return;
         }
         $args = func_get_args();
-        if (is_array($args[0])) {
-            $args = $args[0];
+        if ($args !== [] && is_array($args[0])) {
+            // A message with its arguments, as Substitute::applyArray() and
+            // module texts give it: the format is what gets translated.
+            $args = array_values($args[0]);
         }
+        if ($args === []) {
+            return;
+        }
+        $schema = false;
         if (is_bool($args[0]) && array_shift($args)) {
-            $schema  = array_shift($args);
-            $args[0] = Translator::translate($args[0], $schema);
-        } else {
-            $args[0] = Translator::translate($args[0]);
+            $schema = array_shift($args);
         }
+        if ($args === []) {
+            return;
+        }
+        // A message that is missing (null) or a number is shown as text; the
+        // translator only takes strings.
+        if (!is_string($args[0]) && !is_array($args[0])) {
+            $args[0] = is_scalar($args[0]) ? (string) $args[0] : '';
+        }
+        $args[0] = Translator::translate($args[0], is_string($schema) ? $schema : false);
         call_user_func_array([$this, 'outputNotl'], $args);
     }
 

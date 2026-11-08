@@ -196,7 +196,7 @@ if ($dp < $dkills) {
                     array_key_exists('newdaymessage', $val) &&
                         $val['newdaymessage']
                 ) {
-                    $output->output('%s', $val['newdaymessage']);
+                    $output->output($val['newdaymessage']);
                     $output->outputNotl("`n");
                 }
                 if (array_key_exists('schema', $val) && $val['schema']) {
@@ -337,7 +337,7 @@ if ($dp < $dkills) {
         }
         $msg   = $mount['newday'];
         $msg   = Substitute::applyArray("`n`&" . $msg . "`0`n");
-        $output->output('%s', $msg);
+        $output->output($msg);
                 list($name, $lcname) = MountName::getmountname();
 
         $mff = (int) $mount['mountforestfights'];
