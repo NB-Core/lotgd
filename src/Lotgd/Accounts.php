@@ -10,6 +10,7 @@ namespace Lotgd;
 
 use Lotgd\MySQL\Database;
 use Lotgd\Buffs;
+use Lotgd\Commentary;
 use Lotgd\Doctrine\Bootstrap;
 use Lotgd\Entity\Account;
 
@@ -128,6 +129,7 @@ class Accounts
         Buffs::restoreBuffFields();
 
         $session['user']['allowednavs'] = serialize($session['allowednavs'] ?? []);
+        Commentary::rememberPageNavs($session);
         $session['user']['bufflist']    = serialize($session['bufflist']);
         // legacy support, allows boolean values for alive
         $session['user']['alive']       = (int) $session['user']['alive'];

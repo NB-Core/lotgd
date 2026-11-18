@@ -53,6 +53,53 @@ class Commentary
     }
 
     /**
+     * The links a chat line adds: its author's bio and its [Del].
+     */
+    public static function isLineLink(string $key): bool
+    {
+        return preg_match('/^bio\.php\?char=\d+&ret=/', $key) === 1 || str_contains($key, 'removecomment=');
+    }
+
+    /**
+     * The navigation of a page, without the links its chat lines add: what
+     * stays the same while the async chat appends lines to that page, and
+     * changes when the player moves on.
+     *
+     * @param array<mixed> $navs allowednavs, as stored
+     */
+    public static function navsFingerprint(array $navs): string
+    {
+        $keys = array_values(array_filter(
+            array_map('strval', array_keys($navs)),
+            static fn (string $key): bool => !self::isLineLink($key)
+        ));
+        sort($keys, SORT_STRING);
+
+        return hash('sha256', implode("\n", $keys));
+    }
+
+    /**
+     * Note, as the page saves, whether it shows a chat, and the fingerprint
+     * of its navigation: the async chat adds the links of later lines to
+     * this page only (ForcedNavigation::allowOnStoredPage()). A page without
+     * a chat -- the forest, a fight -- clears it, so nothing is added there.
+     *
+     * @param array<string, mixed> $session
+     */
+    public static function rememberPageNavs(array &$session): void
+    {
+        if (self::isAsyncRequest()) {
+            return;
+        }
+        if (self::$shownSection === '') {
+            unset($session['commentary_navs']);
+
+            return;
+        }
+        $session['commentary_navs'] = self::navsFingerprint((array) ($session['allowednavs'] ?? []));
+    }
+
+    /**
      * For tests.
      */
     public static function resetState(): void
@@ -972,8 +1019,8 @@ SQL;
             $scriptname = pathinfo(basename((string) $scriptname_pre), PATHINFO_FILENAME);
         }
 
-        if ($_SERVER['REQUEST_URI'] == '/async/process.php') {
-            $real_request_uri = $session['last_comment_request_uri'];
+        if (self::isAsyncRequest()) {
+            $real_request_uri = (string) ($session['last_comment_request_uri'] ?? '');
         } else {
             $real_request_uri = $_SERVER['REQUEST_URI'];
             $session['last_comment_request_uri'] = $real_request_uri;
@@ -1288,13 +1335,23 @@ SQL;
     {
         global $session;
 
-        if ($_SERVER['REQUEST_URI'] == '/async/process.php') {
-            return $session['last_comment_request_uri'] ?? $_SERVER['REQUEST_URI'];
+        if (self::isAsyncRequest()) {
+            return (string) ($session['last_comment_request_uri'] ?? $_SERVER['REQUEST_URI']);
         }
 
         $session['last_comment_request_uri'] = $_SERVER['REQUEST_URI'];
 
         return $_SERVER['REQUEST_URI'];
+    }
+
+    /**
+     * An async request (async/process.php, async/stream.php) draws lines for
+     * the page the player is on, not for itself. REQUEST_URI cannot tell:
+     * PhpGenericEnvironment::sanitizeUri() has reduced it to "process.php".
+     */
+    private static function isAsyncRequest(): bool
+    {
+        return defined('AJAX_MODE') && AJAX_MODE;
     }
 
     /**

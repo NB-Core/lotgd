@@ -8,6 +8,7 @@ use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 use Lotgd\Async\Response;
 use Lotgd\Commentary as CoreCommentary;
+use Lotgd\ForcedNavigation;
 use Lotgd\Util\ScriptName;
 use Lotgd\Output;
 use Lotgd\Async\Handler\Exception;
@@ -100,6 +101,8 @@ class Commentary
         $newId = $lastId;
         /** @var Output $output */
         $output = Output::getInstance();
+        // The links the new lines register (bio, [Del]) go to the stored page below.
+        $navsBefore = $session['allowednavs'] ?? [];
         foreach ($rows as $row) {
             $newId = $row['commentid'];
             // [Del] as the page draws it, for whom it draws it.
@@ -110,6 +113,19 @@ class Commentary
             $comments[] = "<div data-cid='{$row['commentid']}'>" . $line . '</div>';
         }
         $html = implode('', $comments);
+        $added = array_map('strval', array_keys(array_diff_key($session['allowednavs'] ?? [], is_array($navsBefore) ? $navsBefore : [])));
+        $page = (string) ($session['commentary_navs'] ?? '');
+        if ($added !== [] && $page !== '') {
+            $added = array_values(array_filter($added, static fn (string $link): bool => CoreCommentary::isLineLink($link)));
+        }
+        if ($added !== [] && $page !== '') {
+            // Only while the stored page is still the one that showed this chat.
+            ForcedNavigation::allowOnStoredPage(
+                (int) ($session['user']['acctid'] ?? 0),
+                $added,
+                static fn (array $navs): bool => hash_equals($page, CoreCommentary::navsFingerprint($navs))
+            );
+        }
         $objResponse = new Response();
         if ($html !== '') {
             $objResponse->append("{$section}-comment", 'innerHTML', $html);
