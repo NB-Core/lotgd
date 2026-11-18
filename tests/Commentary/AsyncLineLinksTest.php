@@ -167,6 +167,33 @@ final class AsyncLineLinksTest extends TestCase
         self::assertFalse(ForcedNavigation::allowOnStoredPage(7, ['bio.php?char=3&ret=village.php'], static fn (): bool => true));
     }
 
+    /**
+     * A post and a refresh for the same page at once: the first adds its link,
+     * the second's write then misses. It reads again, finds the same page
+     * plus the first link, and adds its own on top.
+     */
+    public function testAConcurrentAdditionOnTheSamePageIsReadAgain(): void
+    {
+        Database::$mockResults = [
+            [['allowednavs' => serialize(['village.php' => true])]],
+            [['allowednavs' => serialize(['village.php' => true, 'bio.php?char=9&ret=village.php' => true])]],
+        ];
+        $this->connection->executeStatementResults = [0, 1];
+        $page = Commentary::navsFingerprint(['village.php' => true]);
+
+        self::assertTrue(ForcedNavigation::allowOnStoredPage(
+            7,
+            ['bio.php?char=3&ret=village.php'],
+            static fn (array $navs): bool => hash_equals($page, Commentary::navsFingerprint($navs))
+        ));
+
+        $writes = $this->navWrites();
+        self::assertCount(2, $writes);
+        $navs = unserialize($writes[1]['params']['added']);
+        self::assertTrue($navs['bio.php?char=9&ret=village.php'] ?? false, 'the first one\'s link stays');
+        self::assertTrue($navs['bio.php?char=3&ret=village.php'] ?? false);
+    }
+
     public function testALinkAlreadyStoredWritesNothing(): void
     {
         $this->connection->queryResultsByPattern = [

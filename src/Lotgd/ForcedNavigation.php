@@ -251,6 +251,9 @@ class ForcedNavigation
         }
     }
 
+    /** How often allowOnStoredPage() reads again after a concurrent write. */
+    private const STORED_PAGE_ATTEMPTS = 3;
+
     /**
      * Add links to the navigation stored with the page the player is on.
      *
@@ -282,34 +285,44 @@ class ForcedNavigation
         try {
             $conn = Database::getDoctrineConnection();
             $accounts = Database::prefix('accounts');
-            $stored = $conn->fetchOne(
-                "SELECT allowednavs FROM {$accounts} WHERE acctid = :acctid",
-                ['acctid' => $acctid],
-                ['acctid' => ParameterType::INTEGER]
-            );
-            if (!is_string($stored) || $stored === '') {
-                return false;
-            }
-            $navs = Serialization::safeUnserialize($stored);
-            if (!is_array($navs) || $navs === [] || !$stillThePage($navs)) {
-                return false;
-            }
-            $added = false;
-            foreach ($links as $link) {
-                if (empty($navs[$link])) {
-                    $navs[$link] = true;
-                    $added = true;
+            // A miss is not always a page change: another async answer for the
+            // same page (a post and a refresh at once) may have added its own
+            // links first. Read again and retry while it is still the page.
+            for ($attempt = 0; $attempt < self::STORED_PAGE_ATTEMPTS; $attempt++) {
+                $stored = $conn->fetchOne(
+                    "SELECT allowednavs FROM {$accounts} WHERE acctid = :acctid",
+                    ['acctid' => $acctid],
+                    ['acctid' => ParameterType::INTEGER]
+                );
+                if (!is_string($stored) || $stored === '') {
+                    return false;
+                }
+                $navs = Serialization::safeUnserialize($stored);
+                if (!is_array($navs) || $navs === [] || !$stillThePage($navs)) {
+                    return false;
+                }
+                $added = false;
+                foreach ($links as $link) {
+                    if (empty($navs[$link])) {
+                        $navs[$link] = true;
+                        $added = true;
+                    }
+                }
+                if (!$added) {
+                    return true;
+                }
+
+                $written = $conn->executeStatement(
+                    "UPDATE {$accounts} SET allowednavs = :added WHERE acctid = :acctid AND allowednavs = :stored",
+                    ['added' => serialize($navs), 'acctid' => $acctid, 'stored' => $stored],
+                    ['added' => ParameterType::STRING, 'acctid' => ParameterType::INTEGER, 'stored' => ParameterType::STRING]
+                );
+                if ($written === 1) {
+                    return true;
                 }
             }
-            if (!$added) {
-                return true;
-            }
 
-            return $conn->executeStatement(
-                "UPDATE {$accounts} SET allowednavs = :added WHERE acctid = :acctid AND allowednavs = :stored",
-                ['added' => serialize($navs), 'acctid' => $acctid, 'stored' => $stored],
-                ['added' => ParameterType::STRING, 'acctid' => ParameterType::INTEGER, 'stored' => ParameterType::STRING]
-            ) === 1;
+            return false;
         } catch (\Throwable $e) {
             error_log('ForcedNavigation::allowOnStoredPage: ' . $e->getMessage());
 
