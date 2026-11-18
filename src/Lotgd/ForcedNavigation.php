@@ -250,4 +250,83 @@ class ForcedNavigation
             error_log('Could not give back an unsaved page revision claim: ' . $e->getMessage());
         }
     }
+
+    /** How often allowOnStoredPage() reads again after a concurrent write. */
+    private const STORED_PAGE_ATTEMPTS = 3;
+
+    /**
+     * Add links to the navigation stored with the page the player is on.
+     *
+     * A line the async chat appends after the page was built (the player's
+     * own post, a line another player wrote) links its author's bio and,
+     * for a moderator, its [Del]. Those links were registered in the async
+     * request only, which saves no navigation, so following one ended on
+     * badnav.php. This adds them to the stored links of the same page.
+     *
+     * The write is conditional on the stored links being those just read: if
+     * a page change claimed or replaced them meanwhile, nothing is written --
+     * the next page draws its own lines and links. A page in the middle of a
+     * navigation (no stored links) is left alone the same way.
+     *
+     * $stillThePage gets the stored links and says whether they are still
+     * those of the page the new links belong to; without it, nothing is
+     * written.
+     *
+     * @param list<string>             $links       allowednavs keys, as Nav::add() stores them
+     * @param callable(array): bool    $stillThePage
+     */
+    public static function allowOnStoredPage(int $acctid, array $links, callable $stillThePage): bool
+    {
+        $links = array_values(array_filter($links, static fn ($link): bool => is_string($link) && $link !== ''));
+        if ($acctid <= 0 || $links === []) {
+            return false;
+        }
+
+        try {
+            $conn = Database::getDoctrineConnection();
+            $accounts = Database::prefix('accounts');
+            // A miss is not always a page change: another async answer for the
+            // same page (a post and a refresh at once) may have added its own
+            // links first. Read again and retry while it is still the page.
+            for ($attempt = 0; $attempt < self::STORED_PAGE_ATTEMPTS; $attempt++) {
+                $stored = $conn->fetchOne(
+                    "SELECT allowednavs FROM {$accounts} WHERE acctid = :acctid",
+                    ['acctid' => $acctid],
+                    ['acctid' => ParameterType::INTEGER]
+                );
+                if (!is_string($stored) || $stored === '') {
+                    return false;
+                }
+                $navs = Serialization::safeUnserialize($stored);
+                if (!is_array($navs) || $navs === [] || !$stillThePage($navs)) {
+                    return false;
+                }
+                $added = false;
+                foreach ($links as $link) {
+                    if (empty($navs[$link])) {
+                        $navs[$link] = true;
+                        $added = true;
+                    }
+                }
+                if (!$added) {
+                    return true;
+                }
+
+                $written = $conn->executeStatement(
+                    "UPDATE {$accounts} SET allowednavs = :added WHERE acctid = :acctid AND allowednavs = :stored",
+                    ['added' => serialize($navs), 'acctid' => $acctid, 'stored' => $stored],
+                    ['added' => ParameterType::STRING, 'acctid' => ParameterType::INTEGER, 'stored' => ParameterType::STRING]
+                );
+                if ($written === 1) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (\Throwable $e) {
+            error_log('ForcedNavigation::allowOnStoredPage: ' . $e->getMessage());
+
+            return false;
+        }
+    }
 }
