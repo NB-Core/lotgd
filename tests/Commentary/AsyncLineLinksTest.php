@@ -225,6 +225,20 @@ final class AsyncLineLinksTest extends TestCase
         self::assertSame('kept', $session['commentary_navs']);
     }
 
+    /**
+     * A late partial fallback, a reload: badnav.php shows the stored page and
+     * saves its links unchanged. It is still the page with the chat.
+     */
+    public function testThePageShownAgainByBadnavKeepsItsNote(): void
+    {
+        $navs = ['runmodule.php?module=dwellings&op=enter&dwid=5' => true, 'bio.php?char=3&ret=x' => true];
+        $session = ['allowednavs' => $navs, 'commentary_navs' => Commentary::navsFingerprint($navs)];
+
+        Commentary::rememberPageNavs($session);
+
+        self::assertSame(Commentary::navsFingerprint($navs), $session['commentary_navs'] ?? null);
+    }
+
     public function testNoPlayerOrNoLinksAsksNothing(): void
     {
         self::assertFalse(ForcedNavigation::allowOnStoredPage(0, ['bio.php?char=3'], static fn (): bool => true));
