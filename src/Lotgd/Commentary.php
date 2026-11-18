@@ -82,7 +82,9 @@ class Commentary
      * Note, as the page saves, whether it shows a chat, and the fingerprint
      * of its navigation: the async chat adds the links of later lines to
      * this page only (ForcedNavigation::allowOnStoredPage()). A page without
-     * a chat -- the forest, a fight -- clears it, so nothing is added there.
+     * a chat -- the forest, a fight -- clears it, so nothing is added there;
+     * a request that saves the same links (badnav.php showing the stored
+     * page) keeps it.
      *
      * @param array<string, mixed> $session
      */
@@ -91,12 +93,17 @@ class Commentary
         if (self::isAsyncRequest()) {
             return;
         }
+        $fingerprint = self::navsFingerprint((array) ($session['allowednavs'] ?? []));
         if (self::$shownSection === '') {
-            unset($session['commentary_navs']);
+            // badnav.php shows the stored page and saves its links unchanged
+            // (a late partial fallback, a reload): still that page.
+            if (($session['commentary_navs'] ?? null) !== $fingerprint) {
+                unset($session['commentary_navs']);
+            }
 
             return;
         }
-        $session['commentary_navs'] = self::navsFingerprint((array) ($session['allowednavs'] ?? []));
+        $session['commentary_navs'] = $fingerprint;
     }
 
     /**
