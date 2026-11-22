@@ -57,7 +57,7 @@ function expbar_dohook(string $hookname, array $args): array
                 $min = $exp;
             }
             if ($req - $min > 0) {
-                $nonpct = floor(($req - $exp) / ($req - $min) * 100);
+                $nonpct = (int) ceil(($req - $exp) / ($req - $min) * 100);
             } else {
                 $nonpct = 0;
             }
