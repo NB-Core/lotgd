@@ -51,6 +51,13 @@ Previously, removed registrations could remain in cached lists until expiry.
 writes do, so prefixes such as `module_prepare` also remove their on-disk
 entries. No module API changes or manual hook deletion are required.
 
+### Experience Bar rounding
+
+The bundled Experience Bar now rounds the remaining experience share up, so its
+filled width reaches 100% only when the required XP has been earned. Previously
+it could appear full while up to almost 1% of the level's XP span was still
+missing. No data migration or settings changes are required.
+
 ### Updating from 2.0.8 to 2.0.9
 
 1. Replace the code and run `composer install`, as for every update (step 3 above).
