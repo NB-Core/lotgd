@@ -29,13 +29,11 @@ Header::pageHeader("Module Manager");
 
 SuperuserNav::render();
 
-Output::requireVendorAsset('jquery', 'js', Output::VENDOR_BUCKET_MID);
-Output::requireVendorAsset('datatables', 'css', Output::VENDOR_BUCKET_PRE);
-Output::requireVendorAsset('datatables', 'js', Output::VENDOR_BUCKET_MID);
-
 Output::addHeadMarkup("<style>
 .dataTables_length select,
-.dataTables_filter input {
+.dataTables_filter input,
+.dt-length select,
+.dt-search input {
     color: CanvasText;
     background-color: Canvas;
     border-color: ButtonBorder;
@@ -43,6 +41,41 @@ Output::addHeadMarkup("<style>
 }
 </style>");
 
+
+// Both lists search, sort and page in the browser. lotgd.showform.js loads
+// jQuery and DataTables for them, onto whatever jQuery the page ends up with:
+// a module that brings its own (a lightbox, say) no longer takes the search
+// away.
+$moduleTableAttributes = Forms::dataTableAttributes([
+    'language' => [
+        'search' => Translator::translateInline("Search"),
+        'searchPlaceholder' => Translator::translateInline("Search modules"),
+        'lengthMenu' => Translator::translateInline("Show _MENU_ entries"),
+        'info' => Translator::translateInline("Showing _START_ to _END_ of _TOTAL_ entries"),
+        'infoEmpty' => Translator::translateInline("Showing 0 to 0 of 0 entries"),
+        'infoFiltered' => Translator::translateInline("(filtered from _MAX_ total entries)"),
+        'emptyTable' => Translator::translateInline("No data available in table"),
+        'loadingRecords' => Translator::translateInline("Loading..."),
+        'processing' => Translator::translateInline("Processing..."),
+        'zeroRecords' => Translator::translateInline("No matching records found"),
+        'paginate' => [
+            'first' => Translator::translateInline("First"),
+            'last' => Translator::translateInline("Last"),
+            'next' => Translator::translateInline("Next"),
+            'previous' => Translator::translateInline("Previous"),
+        ],
+        'aria' => [
+            'sortAscending' => Translator::translateInline("Activate to sort column ascending"),
+            'sortDescending' => Translator::translateInline("Activate to sort column descending"),
+        ],
+    ],
+    'dom' => 'lfrtip',
+    'order' => [],
+    'pageLength' => 50,
+    'lengthMenu' => [10, 25, 50, 100],
+    'paging' => true,
+    'searching' => true,
+]);
 
 Nav::add("", PhpGenericEnvironment::getRequestUri());
 $op = Http::get('op');
@@ -198,11 +231,11 @@ if ($op == "") {
         Nav::add("", "modules.php?op=mass&cat=$catQuery");
         $installedCaption = Translator::translateInline("Installed modules table");
         $output->rawOutput("<div class='table-responsive'>");
-        $output->rawOutput("<table class='table table-striped table-hover js-modules-table'>");
+        $output->rawOutput("<table class='table table-striped table-hover js-modules-table'" . $moduleTableAttributes . ">");
         $output->rawOutput("<caption class='visually-hidden'>{$installedCaption}</caption>");
         $output->rawOutput("<thead>");
         $selectAllLabel = Translator::translateInline("Select all");
-        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></th></tr>");
+        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' data-lotgd-select-all aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=active&order=" . ($sortby == "active" ? !$order : 1) . "'>$status</a></th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=formalname&order=" . ($sortby == "formalname" ? !$order : 1) . "'>$mname</a></th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=moduleauthor&order=" . ($sortby == "moduleauthor" ? !$order : 1) . "'>$mauth</a></th><th scope='col'><a href='modules.php?cat=$catQuery&sortby=installdate&order=" . ($sortby == "installdate" ? !$order : 0) . "'>$inon</a></th></tr>");
         $output->rawOutput("</thead>");
         $output->rawOutput("<tbody>");
         Nav::add("", "modules.php?cat=$catQuery&sortby=active&order=" . ($sortby == "active" ? !$order : 1));
@@ -297,11 +330,11 @@ if ($op == "") {
         Nav::add("", "modules.php?op=mass&cat=$catQuery");
         $uninstalledCaption = Translator::translateInline("Uninstalled modules table");
         $output->rawOutput("<div class='table-responsive'>");
-        $output->rawOutput("<table class='table table-striped table-hover js-uninstalled-modules-table'>");
+        $output->rawOutput("<table class='table table-striped table-hover js-uninstalled-modules-table'" . $moduleTableAttributes . ">");
         $output->rawOutput("<caption class='visually-hidden'>{$uninstalledCaption}</caption>");
         $output->rawOutput("<thead>");
         $selectAllLabel = Translator::translateInline("Select all");
-        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0) . "'>$mname</a></th><th scope='col'><a href='modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0) . "'>$mauth</a></th><th scope='col'><a href='modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0) . "'>$categ</a></th><th scope='col'><a href='modules.php?sorting=shortname&order=" . ($sorting == "shortname" ? !$order : 0) . "'>$fname</a></th></tr>");
+        $output->rawOutput("<tr class='table-secondary'><th scope='col'><input type='checkbox' class='js-select-all' data-lotgd-select-all aria-label='{$selectAllLabel}'></th><th scope='col'>$ops</th><th scope='col'><a href='modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0) . "'>$mname</a></th><th scope='col'><a href='modules.php?sorting=author&order=" . ($sorting == "author" ? !$order : 0) . "'>$mauth</a></th><th scope='col'><a href='modules.php?sorting=category&order=" . ($sorting == "category" ? !$order : 0) . "'>$categ</a></th><th scope='col'><a href='modules.php?sorting=shortname&order=" . ($sorting == "shortname" ? !$order : 0) . "'>$fname</a></th></tr>");
         $output->rawOutput("</thead>");
         $output->rawOutput("<tbody>");
         Nav::add("", "modules.php?sorting=name&order=" . ($sorting == "name" ? !$order : 0));
@@ -402,95 +435,5 @@ if ($op == "") {
         $output->rawOutput("<input type='submit' name='install' class='button' value='$install'>");
     }
 }
-
-$datatableSearch = Translator::translateInline("Search");
-$datatableSearchPlaceholder = Translator::translateInline("Search modules");
-$datatableLengthMenu = Translator::translateInline("Show _MENU_ entries");
-$datatableInfo = Translator::translateInline("Showing _START_ to _END_ of _TOTAL_ entries");
-$datatableInfoEmpty = Translator::translateInline("Showing 0 to 0 of 0 entries");
-$datatableInfoFiltered = Translator::translateInline("(filtered from _MAX_ total entries)");
-$datatableEmpty = Translator::translateInline("No data available in table");
-$datatableLoading = Translator::translateInline("Loading...");
-$datatableProcessing = Translator::translateInline("Processing...");
-$datatableZeroRecords = Translator::translateInline("No matching records found");
-$datatablePaginateFirst = Translator::translateInline("First");
-$datatablePaginateLast = Translator::translateInline("Last");
-$datatableNext = Translator::translateInline("Next");
-$datatablePrevious = Translator::translateInline("Previous");
-$datatableAriaSortAscending = Translator::translateInline("Activate to sort column ascending");
-$datatableAriaSortDescending = Translator::translateInline("Activate to sort column descending");
-$output->rawOutput(
-    "<script>
-document.addEventListener('DOMContentLoaded', function () {
-    if (typeof jQuery === 'undefined' || typeof jQuery.fn.DataTable === 'undefined') {
-        return;
-    }
-    var dataTableConfig = {
-        language: {
-            search: " . json_encode($datatableSearch) . ",
-            searchPlaceholder: " . json_encode($datatableSearchPlaceholder) . ",
-            lengthMenu: " . json_encode($datatableLengthMenu) . ",
-            info: " . json_encode($datatableInfo) . ",
-            infoEmpty: " . json_encode($datatableInfoEmpty) . ",
-            infoFiltered: " . json_encode($datatableInfoFiltered) . ",
-            emptyTable: " . json_encode($datatableEmpty) . ",
-            loadingRecords: " . json_encode($datatableLoading) . ",
-            processing: " . json_encode($datatableProcessing) . ",
-            zeroRecords: " . json_encode($datatableZeroRecords) . ",
-            paginate: {
-                first: " . json_encode($datatablePaginateFirst) . ",
-                last: " . json_encode($datatablePaginateLast) . ",
-                next: " . json_encode($datatableNext) . ",
-                previous: " . json_encode($datatablePrevious) . "
-            },
-            aria: {
-                sortAscending: " . json_encode($datatableAriaSortAscending) . ",
-                sortDescending: " . json_encode($datatableAriaSortDescending) . "
-            }
-        },
-        dom: 'lfrtip',
-        order: [],
-        pageLength: 50,
-        lengthMenu: [10, 25, 50, 100],
-        paging: true,
-        searching: true,
-        serverSide: false,
-        processing: false
-    };
-    jQuery('.js-modules-table').DataTable(dataTableConfig);
-    jQuery('.js-uninstalled-modules-table').DataTable(dataTableConfig);
-
-    function updateSelectAllState(table) {
-        var \$table = jQuery(table);
-        var \$checkboxes = \$table.find('tbody input[type=\"checkbox\"]').not(':disabled');
-        var \$selectAll = \$table.find('thead .js-select-all');
-        if (!\$selectAll.length) {
-            return;
-        }
-        if (\$checkboxes.length === 0) {
-            \$selectAll.prop('checked', false).prop('indeterminate', false);
-            return;
-        }
-        var checkedCount = \$checkboxes.filter(':checked').length;
-        \$selectAll.prop('checked', checkedCount === \$checkboxes.length);
-        \$selectAll.prop('indeterminate', checkedCount > 0 && checkedCount < \$checkboxes.length);
-    }
-
-    jQuery(document).on('change', '.js-select-all', function () {
-        var \$table = jQuery(this).closest('table');
-        \$table.find('tbody input[type=\"checkbox\"]').not(':disabled').prop('checked', this.checked);
-        updateSelectAllState(\$table);
-    });
-
-    jQuery(document).on('change', 'tbody input[type=\"checkbox\"]', function () {
-        updateSelectAllState(jQuery(this).closest('table'));
-    });
-
-    jQuery('.js-modules-table, .js-uninstalled-modules-table').each(function () {
-        updateSelectAllState(this);
-    });
-});
-</script>"
-);
 
 Footer::pageFooter();
