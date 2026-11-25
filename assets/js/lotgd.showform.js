@@ -182,6 +182,12 @@
     function setupAll(root) {
         (root || document).querySelectorAll('[data-lotgd-showform]').forEach(setup);
         (root || document).querySelectorAll('table[data-lotgd-datatable]').forEach(setupTable);
+        (root || document).querySelectorAll('thead input[data-lotgd-select-all]').forEach(function (all) {
+            const table = all.closest('table');
+            if (table) {
+                syncSelectAll(table);
+            }
+        });
     }
 
     /*
@@ -239,18 +245,65 @@
                 return;
             }
             // The server's striping drifts from the order shown once rows
-            // are sorted or filtered; stripe the rows on the page shown.
+            // are sorted or filtered; stripe the rows on the page shown. A
+            // table striped by its own classes (Bootstrap's table-striped)
+            // keeps them.
+            const striped = table.querySelector('tbody tr.trlight, tbody tr.trdark') !== null;
             options.drawCallback = function (settings) {
-                const rows = new $.fn.dataTable.Api(settings).rows({ page: 'current', search: 'applied', order: 'applied' }).nodes();
-                $(rows).removeClass('trlight trdark').each(function (index) {
-                    $(this).addClass(index % 2 === 0 ? 'trlight' : 'trdark');
-                });
+                if (striped) {
+                    const rows = new $.fn.dataTable.Api(settings).rows({ page: 'current', search: 'applied', order: 'applied' }).nodes();
+                    $(rows).removeClass('trlight trdark').each(function (index) {
+                        $(this).addClass(index % 2 === 0 ? 'trlight' : 'trdark');
+                    });
+                }
+                syncSelectAll(table);
             };
             $(table).DataTable(options);
         }).catch(function () {
             // The plain table stays.
         });
     }
+
+    /*
+     * A checkbox in a table's header that ticks every checkbox in its body:
+     * <input type='checkbox' data-lotgd-select-all>. It shows itself ticked,
+     * empty or in between as the rows are, and works with or without
+     * DataTables (then on the rows of the page shown).
+     */
+    function rowBoxes(table) {
+        return Array.prototype.filter.call(
+            table.querySelectorAll('tbody input[type="checkbox"]'),
+            function (box) { return !box.disabled && box.closest('table') === table; }
+        );
+    }
+
+    function syncSelectAll(table) {
+        const all = table.querySelector('thead input[data-lotgd-select-all]');
+        if (!all) {
+            return;
+        }
+        const boxes = rowBoxes(table);
+        const checked = boxes.filter(function (box) { return box.checked; }).length;
+        all.checked = boxes.length > 0 && checked === boxes.length;
+        all.indeterminate = checked > 0 && checked < boxes.length;
+    }
+
+    document.addEventListener('change', function (event) {
+        const box = event.target;
+        if (!box || box.type !== 'checkbox' || !box.closest) {
+            return;
+        }
+        const table = box.closest('table');
+        if (!table) {
+            return;
+        }
+        if (box.hasAttribute('data-lotgd-select-all')) {
+            rowBoxes(table).forEach(function (row) { row.checked = box.checked; });
+        }
+        if (table.querySelector('thead input[data-lotgd-select-all]')) {
+            syncSelectAll(table);
+        }
+    });
 
     // Before any other submit handler (htmx sends boosted forms from its own).
     document.addEventListener('submit', function (event) {
